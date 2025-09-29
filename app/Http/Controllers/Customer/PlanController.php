@@ -499,6 +499,7 @@ class PlanController extends Controller
                     'metadata' => $meta_json,
                 ]);
             } else {
+                $invoice->status = 'failed';
                 $existingInvoice = Invoice::create([
                     'chargebee_invoice_id' => $invoice->id,
                     'chargebee_customer_id' => $customer->id,
@@ -1349,11 +1350,11 @@ class PlanController extends Controller
                     if (!$invoiceData) {
                         throw new \Exception('No invoice data in webhook content');
                     }
-                    $invoiceData['id'] = 2461;
-                    $invoiceData['status'] = 'failed';
-                    $invoiceData['paid_at'] = null;
-                    $invoiceData['amount_paid'] = 5000; // Amount in cents
-                    $subscriptionId = "AzZrUUUyA05aV4f8";
+                    // $invoiceData['id'] = 2461;
+                    // $invoiceData['status'] = 'failed';
+                    // $invoiceData['paid_at'] = null;
+                    // $invoiceData['amount_paid'] = 5000; // Amount in cents
+                    // $subscriptionId = "AzZrUUUyA05aV4f8";
                     // For invoice updates, only update the status and basic fields
                     $existingInvoice = Invoice::where('chargebee_invoice_id', $invoiceData['id'])->first();
                     
@@ -1637,17 +1638,19 @@ class PlanController extends Controller
                     //     }
                     // }
                     
-                    // Remove any payment failure records for this subscription
-                    try {
-                        DB::table('payment_failures')
-                            ->where('chargebee_subscription_id', $subscriptionId)
-                            ->where('chargebee_customer_id', $customerId)
-                            ->where('created_at', '>=', now('UTC')->subHours(72)) // last 72 hours
-                            ->delete();
+                    // Remove any payment failure records for this subscription only if invoice is paid
+                    if ($invoice->status === 'paid') {
+                        try {
+                            DB::table('payment_failures')
+                                ->where('chargebee_subscription_id', $subscriptionId)
+                                ->where('chargebee_customer_id', $customerId)
+                                ->where('created_at', '>=', now('UTC')->subHours(72)) // last 72 hours
+                                ->delete();
 
-                        Log::info("✅ Cleared payment failure for subscription: $subscriptionId");
-                    } catch (\Exception $e) {
-                        Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                            Log::info("✅ Cleared payment failure for subscription: $subscriptionId");
+                        } catch (\Exception $e) {
+                            Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                        }
                     }
                     // Send email notification if invoice is generated
                     if ($eventType === 'invoice_generated') {
