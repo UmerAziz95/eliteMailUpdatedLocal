@@ -1592,7 +1592,8 @@ class PlanController extends Controller
                             'plan_id' => $plan_id,
                             'order_id' => $order_id,
                             'amount' => $amount,
-                            'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
+                            // 'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
+                            'status' => 'failed',
                             'paid_at' => isset($invoiceData['paid_at']) 
                                 ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
                                 : null,
