@@ -1302,7 +1302,6 @@ class PlanController extends Controller
             ], 500);
         }
     }
-
     public function handleInvoiceWebhook(Request $request)
     {
         try {
@@ -1321,7 +1320,6 @@ class PlanController extends Controller
             // Process based on event type
             switch ($eventType) {
                 case 'invoice_created':
-                case 'invoice_updated':
                 case 'invoice_paid':
                     //  case 'invoice_payment_succeeded':
                     // $invoiceData = $webhookData['content']['invoice'] ?? [];
@@ -1343,6 +1341,61 @@ class PlanController extends Controller
                     // }
 
                     // break;
+
+                case 'invoice_updated':
+                    $invoiceData = $content['invoice'] ?? null;
+                    
+                    if (!$invoiceData) {
+                        throw new \Exception('No invoice data in webhook content');
+                    }
+
+                    // For invoice updates, only update the status and basic fields
+                    $existingInvoice = Invoice::where('chargebee_invoice_id', $invoiceData['id'])->first();
+                    
+                    if ($existingInvoice) {
+                        $existingInvoice->update([
+                            'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
+                            'paid_at' => isset($invoiceData['paid_at']) 
+                                ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
+                                : null,
+                            'amount' => isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : $existingInvoice->amount,
+                            'metadata' => json_encode(['invoice' => $invoiceData]),
+                        ]);
+
+                        Log::info('Invoice status updated successfully', [
+                            'invoice_id' => $existingInvoice->id,
+                            'chargebee_invoice_id' => $invoiceData['id'],
+                            'old_status' => $existingInvoice->getOriginal('status'),
+                            'new_status' => $existingInvoice->status,
+                            'event_type' => $eventType
+                        ]);
+
+                        // Create activity log for status update
+                        ActivityLogService::log(
+                            'customer-invoice-updated',
+                            'Invoice status updated: ' . $existingInvoice->id,
+                            $existingInvoice, 
+                            [
+                                'user_id' => $existingInvoice->user_id,
+                                'invoice_id' => $existingInvoice->id,
+                                'chargebee_invoice_id' => $invoiceData['id'],
+                                'old_status' => $existingInvoice->getOriginal('status'),
+                                'new_status' => $existingInvoice->status,
+                            ],
+                            $existingInvoice->user_id
+                        );
+                    } else {
+                        Log::warning('Invoice not found for update', [
+                            'chargebee_invoice_id' => $invoiceData['id'],
+                            'event_type' => $eventType
+                        ]);
+                        
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Invoice not found for update'
+                        ], 404);
+                    }
+                    break;
 
                 case 'invoice_payment_failed':
                     if ($eventType === 'invoice_payment_failed') {
