@@ -82,8 +82,7 @@ class InvoiceObserver
                         $isPaymentFailed
                     );
                 }
-                
-                Log::channel('slack_notifications')->info('InvoiceObserver: Slack notification sent', [
+                Log::channel('slack_notifications')->info('InvoiceObserver: Slack notification sent for invoice updated', [
                     'invoice_id' => $invoice->id,
                     'chargebee_invoice_id' => $invoice->chargebee_invoice_id,
                     'user_id' => $user->id,
