@@ -507,8 +507,8 @@ class PlanController extends Controller
                     'plan_id' => $plan_id,
                     'order_id' => $order->id,
                     'amount' => ($invoice->amountPaid ?? 0) / 100,
-                    // 'status' => $invoice->status,
-                    'status' => 'failed', // directly set to paid as we are getting this from hosted page after successful payment
+                    'status' => $invoice->status,
+                    // 'status' => 'failed', // directly set to paid as we are getting this from hosted page after successful payment
                     'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
                     'metadata' => $meta_json,
                 ]);
