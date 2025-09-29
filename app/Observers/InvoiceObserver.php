@@ -26,6 +26,32 @@ class InvoiceObserver
         } else {
             $this->sendInvoiceSlackNotification($invoice, false);
         }
+
+        // Record payment failure if status is not paid
+        if (strtolower($invoice->status) !== 'paid') {
+            try {
+                \DB::table('payment_failures')->updateOrInsert(
+                    [
+                        'chargebee_subscription_id' => $invoice->chargebee_subscription_id,
+                        'chargebee_customer_id' => $invoice->chargebee_customer_id,
+                    ],
+                    [
+                        'reason' => 'Invoice status: ' . $invoice->status,
+                        'invoice_id' => $invoice->chargebee_invoice_id,
+                        'updated_at' => now('UTC'),
+                        'created_at' => now('UTC'),
+                    ]
+                );
+
+                Log::info('Payment failure recorded successfully', [
+                    'invoice_id' => $invoice->id,
+                    'chargebee_invoice_id' => $invoice->chargebee_invoice_id,
+                    'status' => $invoice->status,
+                ]);
+            } catch (\Exception $ex) {
+                Log::error('Failed to record payment failure: ' . $ex->getMessage());
+            }
+        }
     }
 
     /**
