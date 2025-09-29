@@ -1474,17 +1474,17 @@ class PlanController extends Controller
                     // }
                     
                     // Remove any payment failure records for this subscription
-                try {
-                    DB::table('payment_failures')
-                        ->where('chargebee_subscription_id', $subscriptionId)
-                        ->where('chargebee_customer_id', $customerId)
-                        ->where('created_at', '>=', now('UTC')->subHours(72)) // last 72 hours
-                        ->delete();
+                    try {
+                        DB::table('payment_failures')
+                            ->where('chargebee_subscription_id', $subscriptionId)
+                            ->where('chargebee_customer_id', $customerId)
+                            ->where('created_at', '>=', now('UTC')->subHours(72)) // last 72 hours
+                            ->delete();
 
-                    Log::info("✅ Cleared payment failure for subscription: $subscriptionId");
-                } catch (\Exception $e) {
-                    Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
-                }
+                        Log::info("✅ Cleared payment failure for subscription: $subscriptionId");
+                    } catch (\Exception $e) {
+                        Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                    }
                     // Send email notification if invoice is generated
                     if ($eventType === 'invoice_generated') {
                         try {
