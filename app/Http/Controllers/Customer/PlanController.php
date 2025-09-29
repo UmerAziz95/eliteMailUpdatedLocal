@@ -1341,9 +1341,11 @@ class PlanController extends Controller
                     // }
 
                     // break;
-
+                
                 case 'invoice_updated':
                     $invoiceData = $content['invoice'] ?? null;
+                    $subscriptionId = $invoiceData['subscription_id'] ?? null;
+                    $customerId = $invoiceData['customer_id'] ?? null;
                     
                     if (!$invoiceData) {
                         throw new \Exception('No invoice data in webhook content');
@@ -1353,6 +1355,9 @@ class PlanController extends Controller
                     $existingInvoice = Invoice::where('chargebee_invoice_id', $invoiceData['id'])->first();
                     
                     if ($existingInvoice) {
+                        // Store old status for comparison
+                        $oldStatus = $existingInvoice->status;
+                        
                         $existingInvoice->update([
                             'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
                             'paid_at' => isset($invoiceData['paid_at']) 
@@ -1360,14 +1365,71 @@ class PlanController extends Controller
                                 : null,
                             'amount' => isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : $existingInvoice->amount,
                             'metadata' => json_encode(['invoice' => $invoiceData]),
+                            'updated_at' => now('UTC'), // Set data generated time
                         ]);
+
+                        // Update subscription billing dates if invoice is paid
+                        if (isset($invoiceData['paid_at']) && $subscriptionId) {
+                            $subscription = UserSubscription::where('chargebee_subscription_id', $subscriptionId)->first();
+                            if ($subscription) {
+                                $subscription->update([
+                                    'last_billing_date' => Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString(),
+                                    'next_billing_date' => Carbon::createFromTimestamp($invoiceData['paid_at'])->addMonth()->addDay()->toDateTimeString()
+                                ]);
+                            }
+                        }
+
+                        // Remove payment failure records if invoice is now paid
+                        if ($existingInvoice->status === 'paid' && $subscriptionId && $customerId) {
+                            try {
+                                DB::table('payment_failures')
+                                    ->where('chargebee_subscription_id', $subscriptionId)
+                                    ->where('chargebee_customer_id', $customerId)
+                                    ->where('created_at', '>=', now('UTC')->subHours(72)) // last 72 hours
+                                    ->delete();
+
+                                Log::info("✅ Cleared payment failure for subscription: $subscriptionId");
+                            } catch (\Exception $e) {
+                                Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                            }
+                        }
+
+                        // Send email notification if status changed to specific states
+                        if ($oldStatus !== $existingInvoice->status) {
+                            try {
+                                $user = User::find($existingInvoice->user_id);
+                                if ($user) {
+                                    // Send notification for important status changes
+                                    if (in_array($existingInvoice->status, ['paid', 'failed'])) {
+                                        // Send email to user about status change
+                                        Mail::to($user->email)
+                                            ->queue(new InvoiceGeneratedMail(
+                                                $existingInvoice,
+                                                $user,
+                                                false
+                                            ));
+
+                                        // Send email to admin about status change
+                                        Mail::to(config('mail.admin_address', 'admin@example.com'))
+                                            ->queue(new InvoiceGeneratedMail(
+                                                $existingInvoice,
+                                                $user,
+                                                true
+                                            ));
+                                    }
+                                }
+                            } catch (\Exception $e) {
+                                Log::error('Failed to send invoice update emails: ' . $e->getMessage());
+                            }
+                        }
 
                         Log::info('Invoice status updated successfully', [
                             'invoice_id' => $existingInvoice->id,
                             'chargebee_invoice_id' => $invoiceData['id'],
-                            'old_status' => $existingInvoice->getOriginal('status'),
+                            'old_status' => $oldStatus,
                             'new_status' => $existingInvoice->status,
-                            'event_type' => $eventType
+                            'event_type' => $eventType,
+                            'updated_at' => $existingInvoice->updated_at
                         ]);
 
                         // Create activity log for status update
@@ -1379,8 +1441,11 @@ class PlanController extends Controller
                                 'user_id' => $existingInvoice->user_id,
                                 'invoice_id' => $existingInvoice->id,
                                 'chargebee_invoice_id' => $invoiceData['id'],
-                                'old_status' => $existingInvoice->getOriginal('status'),
+                                'old_status' => $oldStatus,
                                 'new_status' => $existingInvoice->status,
+                                'amount' => $existingInvoice->amount,
+                                'paid_at' => $existingInvoice->paid_at,
+                                'updated_at' => $existingInvoice->updated_at,
                             ],
                             $existingInvoice->user_id
                         );

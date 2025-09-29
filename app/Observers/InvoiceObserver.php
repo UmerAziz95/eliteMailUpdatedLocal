@@ -28,26 +28,67 @@ class InvoiceObserver
         }
     }
 
+    /**
+     * Handle the Invoice "updated" event.
+     */
+    public function updated(Invoice $invoice): void
+    {
+        Log::info('InvoiceObserver: Invoice updated event triggered', [
+            'invoice_id' => $invoice->id,
+            'chargebee_invoice_id' => $invoice->chargebee_invoice_id,
+            'status' => $invoice->status,
+            'old_status' => $invoice->getOriginal('status')
+        ]);
+
+        // Only send Slack notification if status has changed
+        if ($invoice->isDirty('status')) {
+            $oldStatus = $invoice->getOriginal('status');
+            $newStatus = $invoice->status;
+            
+            Log::info('InvoiceObserver: Invoice status changed', [
+                'invoice_id' => $invoice->id,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus
+            ]);
+
+            // Send Slack notification based on new status
+            if (strtolower($newStatus) === 'failed') {
+                $this->sendInvoiceSlackNotification($invoice, true, 'updated');
+            } elseif (in_array(strtolower($newStatus), ['paid', 'pending'])) {
+                $this->sendInvoiceSlackNotification($invoice, false, 'updated');
+            }
+        }
+    }
 
     /**
      * Send invoice Slack notification
      */
-    private function sendInvoiceSlackNotification(Invoice $invoice, bool $isPaymentFailed): void
+    private function sendInvoiceSlackNotification(Invoice $invoice, bool $isPaymentFailed, string $eventType = 'created'): void
     {
         try {
             $user = User::find($invoice->user_id);
             if ($user) {
-                SlackNotificationService::sendInvoiceGeneratedNotification(
-                    $invoice, 
-                    $user, 
-                    $isPaymentFailed
-                );
+                // Choose appropriate notification method based on event type
+                if ($eventType === 'updated') {
+                    SlackNotificationService::sendInvoiceUpdatedNotification(
+                        $invoice, 
+                        $user, 
+                        $isPaymentFailed
+                    );
+                } else {
+                    SlackNotificationService::sendInvoiceGeneratedNotification(
+                        $invoice, 
+                        $user, 
+                        $isPaymentFailed
+                    );
+                }
                 
                 Log::channel('slack_notifications')->info('InvoiceObserver: Slack notification sent', [
                     'invoice_id' => $invoice->id,
                     'chargebee_invoice_id' => $invoice->chargebee_invoice_id,
                     'user_id' => $user->id,
-                    'is_payment_failed' => $isPaymentFailed
+                    'is_payment_failed' => $isPaymentFailed,
+                    'event_type' => $eventType
                 ]);
             } else {
                 Log::warning('InvoiceObserver: User not found for invoice', [
@@ -59,7 +100,8 @@ class InvoiceObserver
             Log::channel('slack_notifications')->error('InvoiceObserver: Failed to send Slack notification', [
                 'invoice_id' => $invoice->id,
                 'chargebee_invoice_id' => $invoice->chargebee_invoice_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'event_type' => $eventType
             ]);
         }
     }
