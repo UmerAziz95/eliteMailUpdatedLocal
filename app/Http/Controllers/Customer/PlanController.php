@@ -1629,14 +1629,11 @@ class PlanController extends Controller
             case 'paid':
                 return 'paid';
             case 'payment_due':
-                return 'pending';
+                return 'failed';
             case 'voided':
                 return 'voided';
             case 'not_paid':
                 return $eventType === 'invoice_payment_failed' ? 'failed' : 'pending';
-            // payment_due
-            case 'payment_due':
-                return 'failed';
             default:
                 return 'pending';
         }

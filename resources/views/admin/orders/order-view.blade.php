@@ -112,7 +112,6 @@ $(function() {
             });
             return;
         }
-
         // First check if contractor is in helpers
         $.ajax({
             url: '/admin/orders/{{ $order->id }}/check-contractor-helpers',
