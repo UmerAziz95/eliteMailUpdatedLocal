@@ -1351,7 +1351,7 @@ class PlanController extends Controller
                     }
                     $invoiceData['id'] = 2461;
                     $invoiceData['status'] = 'failed';
-                    $invoiceData['paid_at'] = 1700000000;
+                    $invoiceData['paid_at'] = null;
                     $invoiceData['amount_paid'] = 5000; // Amount in cents
                     $subscriptionId = "AzZrUUUyA05aV4f8";
                     // For invoice updates, only update the status and basic fields
@@ -1739,6 +1739,8 @@ class PlanController extends Controller
     {
         // Map Chargebee invoice status to our system status
         switch ($chargebeeStatus) {
+            case 'failed':
+                return 'failed';
             case 'paid':
                 return 'paid';
             case 'payment_due':
