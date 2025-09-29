@@ -77,6 +77,13 @@ class InvoiceObserver
                 ]);
                 // Choose appropriate notification method based on event type
                 if ($eventType === 'updated') {
+                    Log::channel('slack_notifications')->info('InvoiceObserver: Sending invoice updated notification', [
+                        'invoice_id' => $invoice->id,
+                        'chargebee_invoice_id' => $invoice->chargebee_invoice_id,
+                        'user_id' => $user->id,
+                        'is_payment_failed' => $isPaymentFailed,
+                        'event_type' => $eventType
+                    ]);
                     SlackNotificationService::sendInvoiceUpdatedNotification(
                         $invoice, 
                         $user, 
