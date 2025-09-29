@@ -26,7 +26,12 @@ class InvoiceObserver
         } else {
             $this->sendInvoiceSlackNotification($invoice, false);
         }
-
+        // Log invoice creation
+        Log::info('InvoiceObserver: T1 Invoice created with status', [
+            'invoice_id' => $invoice->id,
+            'chargebee_invoice_id' => $invoice->chargebee_invoice_id,
+            'status' => $invoice->status
+        ]);
         // Record payment failure if status is not paid
         if (strtolower($invoice->status) !== 'paid') {
             try {
@@ -36,8 +41,12 @@ class InvoiceObserver
                         'chargebee_customer_id' => $invoice->chargebee_customer_id,
                     ],
                     [
-                        'reason' => 'Invoice status: ' . $invoice->status,
-                        'invoice_id' => $invoice->chargebee_invoice_id,
+                        'type' => 'invoice',
+                        'status' => $invoice->status ?? 'unknown',
+                        'user_id' => $invoice->user_id ?? null,
+                        'plan_id' => $invoice->plan_id ?? null,
+                        'failed_at' => now('UTC'),
+                        'invoice_data' => json_encode($invoice->toArray()) ?? null,
                         'updated_at' => now('UTC'),
                         'created_at' => now('UTC'),
                     ]

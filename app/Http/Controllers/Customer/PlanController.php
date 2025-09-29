@@ -499,7 +499,6 @@ class PlanController extends Controller
                     'metadata' => $meta_json,
                 ]);
             } else {
-                $invoice->status = 'failed';
                 $existingInvoice = Invoice::create([
                     'chargebee_invoice_id' => $invoice->id,
                     'chargebee_customer_id' => $customer->id,
@@ -508,7 +507,8 @@ class PlanController extends Controller
                     'plan_id' => $plan_id,
                     'order_id' => $order->id,
                     'amount' => ($invoice->amountPaid ?? 0) / 100,
-                    'status' => $invoice->status,
+                    // 'status' => $invoice->status,
+                    'status' => 'failed', // directly set to paid as we are getting this from hosted page after successful payment
                     'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
                     'metadata' => $meta_json,
                 ]);
@@ -1512,18 +1512,31 @@ class PlanController extends Controller
                 case 'invoice_payment_failed':
                     if ($eventType === 'invoice_payment_failed') {
                     try {
-                       DB::table('payment_failures')->updateOrInsert(
-                        [
-                            'chargebee_subscription_id' => $subscriptionId,
-                            'chargebee_customer_id' => $customerId,
-                        ],
-                        [
-                            'reason' => $failureReason,
-                            'invoice_id' => $invoiceId,
-                            'updated_at' => now('UTC'),
-                            'created_at' => now('UTC'), // optional — use only if table doesn't auto-set this
-                        ]
-                    );
+                        $invoiceData = $content['invoice'] ?? null;
+                        $subscriptionId = $invoiceData['subscription_id'] ?? null;
+                        $customerId = $invoiceData['customer_id'] ?? null;
+
+                        // Find user_id and plan_id from existing invoice record
+                        $existingInvoice = Invoice::where('chargebee_subscription_id', $subscriptionId)->first();
+                        $user_id = $existingInvoice ? $existingInvoice->user_id : null;
+                        $plan_id = $existingInvoice ? $existingInvoice->plan_id : null;
+
+                        DB::table('payment_failures')->updateOrInsert(
+                            [
+                                'chargebee_subscription_id' => $subscriptionId,
+                                'chargebee_customer_id' => $customerId,
+                            ],
+                            [
+                                'type' => 'invoice',
+                                'status' => 'failed',
+                                'user_id' => $user_id,
+                                'plan_id' => $plan_id,
+                                'failed_at' => now('UTC'),
+                                'invoice_data' => json_encode($invoiceData),
+                                'updated_at' => now('UTC'),
+                                'created_at' => now('UTC'),
+                            ]
+                        );
 
                         Log::info('Payment failure recorded successfully', [
                             'subscription_id' => $invoiceData['subscription_id'] ?? null,
@@ -1535,6 +1548,7 @@ class PlanController extends Controller
                     }
                 }
                 case 'invoice_generated':
+                    Log::info('Processing invoice event: invoice_generated', ['event_type' => $eventType]);
                     $invoiceData = $content['invoice'] ?? null;
                      $subscriptionId = $invoiceData['subscription_id'] ?? null;
                     $customerId = $invoiceData['customer_id'] ?? null;
@@ -1592,8 +1606,7 @@ class PlanController extends Controller
                             'plan_id' => $plan_id,
                             'order_id' => $order_id,
                             'amount' => $amount,
-                            // 'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
-                            'status' => 'failed',
+                            'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
                             'paid_at' => isset($invoiceData['paid_at']) 
                                 ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
                                 : null,
@@ -1640,7 +1653,7 @@ class PlanController extends Controller
                     // }
                     
                     // Remove any payment failure records for this subscription only if invoice is paid
-                    if ($invoice->status === 'paid') {
+                    if ($invoice->status == 'paid') {
                         try {
                             DB::table('payment_failures')
                                 ->where('chargebee_subscription_id', $subscriptionId)
