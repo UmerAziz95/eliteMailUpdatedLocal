@@ -169,14 +169,46 @@ class FixPendingInvoicesCommand extends Command
             ]);
 
             // Update subscription billing dates if invoice is now paid
-            if ($newStatus === 'paid' && isset($invoiceData['paid_at']) && $subscriptionId) {
+            if ($newStatus === 'paid' && $subscriptionId) {
                 $subscription = UserSubscription::where('chargebee_subscription_id', $subscriptionId)->first();
                 if ($subscription) {
-                    $subscription->update([
-                        'last_billing_date' => Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString(),
-                        'next_billing_date' => Carbon::createFromTimestamp($invoiceData['paid_at'])->addMonth()->addDay()->toDateTimeString()
-                    ]);
-                    $this->info("  Updated subscription billing dates");
+                    try {
+                        // Retrieve subscription from ChargeBee to get actual billing dates
+                        $chargebeeSubscription = \ChargeBee\ChargeBee\Models\Subscription::retrieve($subscriptionId);
+                        $subscriptionData = $chargebeeSubscription->subscription()->getValues();
+                        
+                        $updateData = [];
+                        // Update current period end as last billing date if available
+                        // if (isset($subscriptionData['current_term_end'])) {
+                        //     $this->info("  Found current_term_end: " . $subscriptionData['current_term_end']);
+                        //     $updateData['last_billing_date'] = Carbon::createFromTimestamp($subscriptionData['current_term_end'])->toDateTimeString();
+                        // }
+                        
+                        // Update next billing date if available
+                        if (isset($subscriptionData['next_billing_at'])) {
+                            $this->info("  Found next_billing_at: " . $subscriptionData['next_billing_at']);
+                            $updateData['next_billing_date'] = Carbon::createFromTimestamp($subscriptionData['next_billing_at'])->toDateTimeString();
+                            // set last billing date as current next billing date minus one month not use current_term_end
+                            $updateData['last_billing_date'] = Carbon::createFromTimestamp($subscriptionData['next_billing_at'])->subMonth()->toDateTimeString();
+                        }
+                        
+                        if (!empty($updateData)) {
+                            $subscription->update($updateData);
+                            $this->info("  Updated subscription billing dates from ChargeBee");
+                        }
+                        
+                    } catch (\Exception $e) {
+                        $this->warn("  Failed to retrieve subscription billing dates from ChargeBee: " . $e->getMessage());
+                        
+                        // Fallback to using paid_at if ChargeBee subscription retrieval fails
+                        if (isset($invoiceData['paid_at'])) {
+                            $subscription->update([
+                                'last_billing_date' => Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString(),
+                                'next_billing_date' => Carbon::createFromTimestamp($invoiceData['paid_at'])->addMonth()->addDay()->toDateTimeString()
+                            ]);
+                            $this->info("  Updated subscription billing dates using fallback method");
+                        }
+                    }
                 }
             }
 
