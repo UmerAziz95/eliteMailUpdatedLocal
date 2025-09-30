@@ -304,11 +304,11 @@
 
                 <h5 class="mb-2 mt-5">Email Account Information</h5>
 
-
-
                 <div class="inboxes-per-domain col-md-6">
                     <label>Inboxes per Domain / Prefix Variant</label>
-                    <select name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required>
+                    <!-- if already set then disable fields -->
+                    <select name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required
+                        {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain ? 'disabled' : '' }}>
                         <option value="1" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain
                             == 1 ? 'selected' : '' }}>1</option>
                         <option value="2" {{ isset($order) && optional($order->reorderInfo)->first()->inboxes_per_domain
