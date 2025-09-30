@@ -193,6 +193,10 @@ class OrderController extends Controller
 
     public function edit($id)
     {
+        // if order pending or in-progress then only editable
+        if(!in_array(Order::find($id)->status_manage_by_admin, ['pending', 'in-progress'])){
+            return redirect()->route('admin.orders')->with('error', 'Only pending or in-progress orders can be edited.');
+        }
         $order = Order::with(['plan', 'reorderInfo'])->findOrFail($id);
         
         $plan = $order->plan;
@@ -295,7 +299,13 @@ class OrderController extends Controller
                                 <i class="fa-solid fa-eye"></i> &nbsp;View
                             </a>
                         </li>'
-                        . (auth()->user()->hasPermissionTo('Mod') ? '' : '
+                        . (in_array($order->status_manage_by_admin, ['pending', 'in-progress']) ? '
+                        <li>
+                            <a class="dropdown-item" href="' . route('admin.orders.edit', $order->id) . '">
+                                <i class="fa-solid fa-edit"></i> &nbsp;Edit
+                            </a>
+                        </li>' : '') .
+                        (auth()->user()->hasPermissionTo('Mod') ? '' : '
                         
                         <li>
                             <a href="#" class="dropdown-item"  onclick="viewOrderSplits(' . $order->id . ')" 
@@ -2696,21 +2706,21 @@ class OrderController extends Controller
                 'platform_login' => 'nullable|string|max:255',
                 'platform_password' => 'nullable|string|min:3',
                 'backup_codes' => 'required_if:hosting_platform,namecheap|string',
-                'domains' => [
-                    'required',
-                    'string',
-                    function ($attribute, $value, $fail) {
-                        $domains = array_filter(preg_split('/[\r\n,]+/', $value));
-                        if (count($domains) !== count(array_unique($domains))) {
-                            $fail('Duplicate domains are not allowed.');
-                        }
-                        foreach ($domains as $domain) {
-                            if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/', trim($domain))) {
-                                $fail('Invalid domain format: ' . trim($domain));
-                            }
-                        }
-                    }
-                ],
+                // 'domains' => [
+                //     'required',
+                //     'string',
+                //     function ($attribute, $value, $fail) {
+                //         $domains = array_filter(preg_split('/[\r\n,]+/', $value));
+                //         if (count($domains) !== count(array_unique($domains))) {
+                //             $fail('Duplicate domains are not allowed.');
+                //         }
+                //         foreach ($domains as $domain) {
+                //             if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/', trim($domain))) {
+                //                 $fail('Invalid domain format: ' . trim($domain));
+                //             }
+                //         }
+                //     }
+                // ],
                 'sending_platform' => 'required|string|max:50',
                 'sequencer_login' => 'required|email|max:255',
                 'sequencer_password' => 'required|string|min:3',
@@ -2827,7 +2837,12 @@ class OrderController extends Controller
             if($request->edit_id && $request->order_id){
                 $temp_order = Order::with('reorderInfo')->findOrFail($request->order_id);
                 $TOTAL_INBOXES = $temp_order->reorderInfo->first()->total_inboxes;
-                
+                $existingDomains = $temp_order->reorderInfo->first()->domains ?? '';
+                // If domains already exist and are not empty, prevent update
+                if (!empty($existingDomains)) {
+                    // Only allow updating other fields, not domains
+                    $domains = array_filter(preg_split('/[\r\n,]+/', $existingDomains));
+                }
                 // Validate against order's total_inboxes limit
                 if ($TOTAL_INBOXES > 0 && $calculatedTotalInboxes > $TOTAL_INBOXES) {
                     return response()->json([
@@ -2840,34 +2855,24 @@ class OrderController extends Controller
                         ]
                     ], 422);
                 }
-                // "currentInboxes" => "3332" "max_inboxes" => "5000"
                 $currentInboxes = $request->current_inboxes ?? 0;
                 $maxInboxes = $request->max_inboxes ?? 0;
                 $order = Order::with('reorderInfo')->findOrFail($request->order_id);
-                // Set status based on whether total_inboxes equals calculated total from request domains
-                // $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
-                // $status = ($currentInboxes == $maxInboxes) ? 'pending' : 'draft';
                 $is_draft = $request->is_draft ?? 0;
-                // If is_draft is set to 1, set status to draft, otherwise pending
                 $status = $is_draft == 1 ? 'draft' : 'pending';
-                // Update order status
                 $order->update([
                     'status_manage_by_admin' => $status,
                 ]);
-
                 if($order->assigned_to && $status != 'draft') {
                     $order->update([
                         'status_manage_by_admin' => 'in-progress',
                     ]);
                 }
-                // Get the current session data
                 $orderInfo = $request->session()->get('order_info', []);
-                
-                // Update session with reorder info data (preserve new form input over old data)
                 if($order->reorderInfo && !$order->reorderInfo->isEmpty()) {
                     $reorderInfo = $order->reorderInfo->first();
                     // update data on table ReorderInfo
-                    ReorderInfo::where('id', $reorderInfo->id)->update([
+                    $updateData = [
                         'user_id' => $request->user_id,
                         'plan_id' => $request->plan_id,
                         'forwarding_url' => $request->forwarding_url,
@@ -2878,28 +2883,28 @@ class OrderController extends Controller
                         'backup_codes' => $request->backup_codes,
                         'platform_login' => $request->platform_login,
                         'platform_password' => $request->platform_password,
-                        'domains' => implode(',', array_filter($domains)),
                         'sending_platform' => $request->sending_platform,
                         'sequencer_login' => $request->sequencer_login,
                         'sequencer_password' => $request->sequencer_password,
-                        // 'total_inboxes' => ($maxInboxes == $currentInboxes) ? $calculatedTotalInboxes : $reorderInfo->total_inboxes,
-                        'total_inboxes' => $is_draft == 1 ? $reorderInfo->total_inboxes : $calculatedTotalInboxes, // Use existing total_inboxes if draft, otherwise use calculated
-                        // initial_total_inboxes
-                        'initial_total_inboxes' => $reorderInfo->initial_total_inboxes == 0 ? $reorderInfo->total_inboxes : $reorderInfo->initial_total_inboxes, // Store initial total inboxes at reorder time
+                        'total_inboxes' => $is_draft == 1 ? $reorderInfo->total_inboxes : $calculatedTotalInboxes,
+                        'initial_total_inboxes' => $reorderInfo->initial_total_inboxes == 0 ? $reorderInfo->total_inboxes : $reorderInfo->initial_total_inboxes,
                         'inboxes_per_domain' => $request->inboxes_per_domain,
-                        // 'first_name' => 'N/A',
-                        // 'last_name' => 'N/A',
                         'prefix_variants' => $request->prefix_variants,
                         'prefix_variants_details' => $request->prefix_variants_details,
                         'persona_password' => $request->persona_password,
                         'profile_picture_link' => $request->profile_picture_link,
-                        'email_persona_password' => '123', // Set to 123 as per requirement
+                        'email_persona_password' => '123',
                         'email_persona_picture_link' => $request->email_persona_picture_link,
                         'master_inbox_email' => $request->master_inbox_email,
                         'master_inbox_confirmation' => $request->master_inbox_confirmation ?? false,
                         'additional_info' => $request->additional_info,
                         'coupon_code' => $request->coupon_code,
-                    ]);
+                    ];
+                    // Only update domains if not already set
+                    if (empty($existingDomains)) {
+                        $updateData['domains'] = implode(',', array_filter($domains));
+                    }
+                    ReorderInfo::where('id', $reorderInfo->id)->update($updateData);
                    $message = 'Order information updated successfully.';
                    // Create a new activity log using the custom log service
                     ActivityLogService::log(

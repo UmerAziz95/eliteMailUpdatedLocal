@@ -329,8 +329,13 @@
                     Domains *
                     <span class="badge bg-primary ms-2" id="domain-count-badge">0 domains</span>
                 </label>
-                <textarea id="domains" name="domains" class="form-control" rows="8"
-                    required>{{ isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->domains : '' }}</textarea>
+
+                @php
+                    $domainsValue = isset($order) && $order->reorderInfo ? $order->reorderInfo->first()->domains : '';
+                    $domainsDisabled = !empty($domainsValue) ? 'disabled' : '';
+                    $domainsRequired = empty($domainsValue) ? 'required' : '';
+                @endphp
+                <textarea id="domains" name="domains" class="form-control" rows="8" {{ $domainsRequired }} {{ $domainsDisabled }}>{{ $domainsValue }}</textarea>
                 <div class="invalid-feedback" id="domains-error"></div>
                 <small class="note">
                     Please enter each domain on a new line and ensure you double-check the number of domains you submit
@@ -2590,19 +2595,21 @@ $(document).ready(function() {
             }
         }
         
-        // Validate domains
+        // Validate domains (skip validation if field is disabled)
         const domainsField = $('#domains');
-        const domains = domainsField.val().trim().split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
         
-        if (domains.length === 0) {
-            isValid = false;
-            domainsField.addClass('is-invalid');
-            $('#domains-error').text('Please enter at least one domain');
+        if (!domainsField.prop('disabled')) {
+            const domains = domainsField.val().trim().split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
             
-            if (!firstErrorField) {
-                firstErrorField = domainsField;
-            }
-        } else {
+            if (domains.length === 0) {
+                isValid = false;
+                domainsField.addClass('is-invalid');
+                $('#domains-error').text('Please enter at least one domain');
+                
+                if (!firstErrorField) {
+                    firstErrorField = domainsField;
+                }
+            } else {
             // Check for duplicates
             const seen = new Set();
             const duplicates = domains.filter(domain => {
@@ -2656,6 +2663,7 @@ $(document).ready(function() {
                         }
                     }
                 }
+            }
             }
         }
         
