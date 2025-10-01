@@ -174,7 +174,7 @@
 </style>
 @endpush
 @section('content')
-<!-- when  -->
+
 
 @if(isset($pool) && $pool->reason)
     <div class="mb-4">
@@ -335,7 +335,7 @@
                     <span class="badge bg-primary ms-2" id="domain-count-badge">0 domains</span>
                 </label>
                 <textarea id="domains" name="domains" class="form-control" rows="8"
-                    required>{{ isset($pool) && $pool->domains ? (is_array($pool->domains) ? implode("\n", $pool->domains) : $pool->domains) : '' }}</textarea>
+                    required>{{ isset($pool) && $pool->domains ? (is_array($pool->domains) ? (isset($pool->domains[0]['name']) ? implode("\n", array_column($pool->domains, 'name')) : implode("\n", $pool->domains)) : $pool->domains) : '' }}</textarea>
                 <div class="invalid-feedback" id="domains-error"></div>
                 <small class="note">
                     Please enter each domain on a new line and ensure you double-check the number of domains you submit
@@ -1639,7 +1639,32 @@ $(document).ready(function() {
         if (poolInfo.forwarding_url) $('#forwarding').val(poolInfo.forwarding_url);
         if (poolInfo.hosting_platform) $('#hosting').val(poolInfo.hosting_platform).trigger('change');
         if (poolInfo.domains) {
-            $('#domains').val(poolInfo.domains);
+            // Handle both old format (array of strings) and new format (array of objects with id/name)
+            let domainsText = '';
+            if (Array.isArray(poolInfo.domains)) {
+                if (poolInfo.domains.length > 0 && typeof poolInfo.domains[0] === 'object' && poolInfo.domains[0].name) {
+                    // New format: array of objects with id/name
+                    domainsText = poolInfo.domains.map(d => d.name).join('\n');
+                    // Update existing domain IDs to avoid duplicates
+                    poolInfo.domains.forEach(domain => {
+                        if (domain.id && domain.name) {
+                            existingDomainIds.set(domain.name, domain.id);
+                            // Extract sequence number from imported ID (format: poolId_sequence)
+                            const importIdParts = domain.id.toString().split('_');
+                            if (importIdParts.length === 2 && !isNaN(importIdParts[1])) {
+                                domainSequenceCounter = Math.max(domainSequenceCounter, parseInt(importIdParts[1]) + 1);
+                            }
+                        }
+                    });
+                } else {
+                    // Old format: array of strings
+                    domainsText = poolInfo.domains.join('\n');
+                }
+            } else if (typeof poolInfo.domains === 'string') {
+                domainsText = poolInfo.domains;
+            }
+            
+            $('#domains').val(domainsText);
             // Trigger domain counting after populating domains
             setTimeout(() => {
                 if (typeof countDomains === 'function') {
@@ -2749,6 +2774,57 @@ $(document).ready(function() {
     });
 
     // Function to handle the actual form submission
+    // Function to manage domain IDs with pool prefix for uniqueness
+    const poolId = {{ isset($pool) && $pool->id ? $pool->id : 'Date.now()' }}; // Use pool ID or timestamp for new pools
+    let domainSequenceCounter = 1;
+    let existingDomainIds = new Map(); // Map to store domain name -> ID mapping
+    // Initialize existing domain IDs if editing
+    @if(isset($pool) && $pool->domains)
+        @php
+            $existingDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+        @endphp
+        @if(is_array($existingDomains))
+            @foreach($existingDomains as $domain)
+                @if(isset($domain['id']) && isset($domain['name']))
+                    existingDomainIds.set('{{ $domain['name'] }}', '{{ $domain['id'] }}');
+                    // Extract sequence number from existing ID (format: poolId_sequence)
+                    (function() {
+                        const parts = '{{ $domain['id'] }}'.split('_');
+                        if (parts.length === 2 && !isNaN(parts[1])) {
+                            domainSequenceCounter = Math.max(domainSequenceCounter, parseInt(parts[1]) + 1);
+                        }
+                    })();
+                @endif
+            @endforeach
+        @endif
+    @endif
+
+    function processDomainIds(domainArray) {
+        const processedDomains = [];
+        
+        for (const domainName of domainArray) {
+            if (domainName.trim()) {
+                let domainId;
+                
+                // Check if this domain already has an ID
+                if (existingDomainIds.has(domainName)) {
+                    domainId = existingDomainIds.get(domainName);
+                } else {
+                    // Assign new unique ID with pool prefix: poolId_sequence
+                    domainId = poolId + '_' + domainSequenceCounter++;
+                    existingDomainIds.set(domainName, domainId);
+                }
+                
+                processedDomains.push({
+                    id: domainId,
+                    name: domainName
+                });
+            }
+        }
+        
+        return processedDomains;
+    }
+
     function submitForm() {
         // Show loading indicator
         const isEdit = {{ isset($pool) && $pool->id ? 'true' : 'false' }};
@@ -2767,10 +2843,27 @@ $(document).ready(function() {
 
         // If validation passes, submit via AJAX
         const form = $('#editOrderForm');
+        
+        // Process domains to JSON format with unique IDs
+        const domainsText = $('#domains').val().trim();
+        let domainsArray = [];
+        if (domainsText) {
+            const domainLines = domainsText.split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
+            domainsArray = processDomainIds(domainLines);
+        }
+        
+        // Get form data and replace domains with processed JSON
+        let formData = form.serializeArray();
+        formData = formData.filter(item => item.name !== 'domains');
+        formData.push({
+            name: 'domains',
+            value: JSON.stringify(domainsArray)
+        });
+        
         $.ajax({
             url: form.attr('action'),
             method: form.attr('method') || 'POST',
-            data: form.serialize(),
+            data: formData,
             success: function(response) {
                 Swal.close();
                 if (response.success) {
