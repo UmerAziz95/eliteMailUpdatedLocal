@@ -137,7 +137,7 @@ class HostingPlatformSeeder extends Seeder
                 'name' => 'Spaceship',
                 'value' => 'spaceship',
                 'requires_tutorial' => true,
-                'tutorial_link' => '#',
+                'tutorial_link' => 'https://www.dropbox.com/scl/fi/xuewkaqsmuleb995isd4r/How-to-Remove-Email-Verificatio[…]ceship.paper?rlkey=o7l24of1l63113iikn5a70ppe&st=4rrpz0xw&dl=0',
                 'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Spaceship hosting account:',
                 'fields' => [
                     'platform_login' => [
