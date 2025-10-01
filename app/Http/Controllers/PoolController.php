@@ -76,8 +76,8 @@ class PoolController extends Controller
         $plans = Plan::all(); // Get all plans for create form
         $hostingPlatforms = HostingPlatform::where('is_active', true)->orderBy('sort_order')->get();
         $sendingPlatforms = SendingPlatform::orderBy('name')->get();
-
-        return view('admin.pools.create', compact('users', 'plans', 'hostingPlatforms', 'sendingPlatforms'));
+        $pool = null;
+        return view('admin.pools.create', compact('users', 'plans', 'hostingPlatforms', 'sendingPlatforms', 'pool'));
     }
 
     /**

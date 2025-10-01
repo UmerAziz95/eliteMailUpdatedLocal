@@ -174,7 +174,7 @@
 </style>
 @endpush
 @section('content')
-
+<!-- when  -->
 
 @if(isset($pool) && $pool->reason)
     <div class="mb-4">
