@@ -116,6 +116,8 @@ class HostingPlatformSeeder extends Seeder
             [
                 'name' => 'Squarespace',
                 'value' => 'squarespace',
+                'requires_tutorial' => true,
+                'tutorial_link' => '#',
                 'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Squarespace hosting account:',
                 'fields' => [
                     'platform_login' => [
@@ -134,6 +136,8 @@ class HostingPlatformSeeder extends Seeder
             [
                 'name' => 'Spaceship',
                 'value' => 'spaceship',
+                'requires_tutorial' => true,
+                'tutorial_link' => '#',
                 'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Spaceship hosting account:',
                 'fields' => [
                     'platform_login' => [
@@ -152,6 +156,8 @@ class HostingPlatformSeeder extends Seeder
             [
                 'name' => 'Hostinger',
                 'value' => 'hostinger',
+                'requires_tutorial' => true,
+                'tutorial_link' => '#',
                 'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Hostinger hosting account:',
                 'fields' => [
                     'platform_login' => [
@@ -194,6 +200,8 @@ class HostingPlatformSeeder extends Seeder
             [
                 'name' => 'Cloudflare',
                 'value' => 'cloudflare',
+                'requires_tutorial' => true,
+                'tutorial_link' => '#',
                 'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Cloudflare hosting account:',
                 'fields' => [
                     'platform_login' => [

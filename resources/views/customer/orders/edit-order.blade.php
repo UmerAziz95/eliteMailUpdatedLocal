@@ -2332,12 +2332,24 @@ $(document).ready(function() {
             const importNoteElement = $('#hosting-platform-import-note');
             console.log('Import Note from Seeder:', importNote);
             if (importNote && importNote.trim() !== '') {
-                // Show the import note from seeder with tutorial link
-                importNoteElement.html(importNote + ' <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>');
+                // Show the import note from seeder with tutorial link if it's not just '#'
+                if (tutorialLink && tutorialLink !== '#') {
+                    importNoteElement.html(importNote + ' <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>');
+                } else {
+                    // Show just the import note without tutorial link if tutorialLink is '#'
+                    importNoteElement.html(importNote);
+                }
             } else {
                 // Fallback to default message if no import note is set
                 importNoteElement.html('<strong>IMPORTANT</strong> - please follow the steps from this document to grant us access to your hosting account: <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>');
             }
+        } else if (importNote && importNote.trim() !== '') {
+            // Show tutorial section with import note even when no tutorial link is provided
+            $('#tutorial_section').show();
+            const importNoteElement = $('#hosting-platform-import-note');
+            console.log('Import Note from Seeder (no tutorial):', importNote);
+            // Show just the import note without tutorial link
+            importNoteElement.html(importNote);
         } else {
             $('#tutorial_section').hide();
         }
