@@ -15,7 +15,7 @@ class HostingPlatformSeeder extends Seeder
                 'value' => 'namecheap',
                 'requires_tutorial' => true,
                 'tutorial_link' => 'https://www.dropbox.com/scl/fi/4qilvns2hdrtlufp5f94l/Guide-to-Get-Backup-Codes-for-Namecheap.paper?rlkey=z10rnjj9wqkow99b3vmjwujnj&dl=0',
-                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Namecheap hosting account:',
+                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Namecheap account:',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - Namecheap - Access Tutorial',
@@ -49,7 +49,7 @@ class HostingPlatformSeeder extends Seeder
                 'value' => 'godaddy',
                 'requires_tutorial' => true,
                 'tutorial_link' => ' https://www.dropbox.com/scl/fi/tvdnb5a1bq49uxmunlloq/GoDaddy.paper?rlkey=zdb2jyucyus9i6dy6d0404whn&st=agajh1lx&dl=0',
-                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your GoDaddy hosting account:',
+                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your GoDaddy account:',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - GoDaddy - Access Tutorial',
@@ -89,7 +89,7 @@ class HostingPlatformSeeder extends Seeder
                 'value' => 'porkbun',
                 'requires_tutorial' => true,
                 'tutorial_link' => 'https://www.dropbox.com/scl/fi/ervz2j220xncqyfq2nr3k/Porkbun-access.paper?rlkey=phml69sl98yyrmr2tjhqc89ei&st=u50hu1qr&dl=0',
-                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Porkbun hosting account:',
+                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Porkbun account:',
                 'fields' => [
                     'access_tutorial' => [
                         'label' => 'Domain Hosting Platform - Porkbun - Access Tutorial',
@@ -118,7 +118,7 @@ class HostingPlatformSeeder extends Seeder
                 'value' => 'squarespace',
                 'requires_tutorial' => true,
                 'tutorial_link' => '#',
-                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Squarespace hosting account:',
+                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Squarespace account:',
                 'fields' => [
                     'platform_login' => [
                         'label' => 'Domain Hosting Platform - Login',
@@ -138,8 +138,17 @@ class HostingPlatformSeeder extends Seeder
                 'value' => 'spaceship',
                 'requires_tutorial' => true,
                 'tutorial_link' => 'https://www.dropbox.com/scl/fi/xuewkaqsmuleb995isd4r/How-to-Remove-Email-Verificatio[…]ceship.paper?rlkey=o7l24of1l63113iikn5a70ppe&st=4rrpz0xw&dl=0',
-                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Spaceship hosting account:',
+                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Spaceship account:',
                 'fields' => [
+                    'access_tutorial' => [
+                        'label' => 'Domain Hosting Platform - Spaceship - Access Tutorial',
+                        'type' => 'select',
+                        'options' => [
+                            'yes' => "Yes - I reviewed the tutorial and am submitting the access information in requested format.",
+                            'no' => "No - I haven't reviewed the tutorial, and understand that incorrect submission might delay the delivery.",
+                        ],
+                        'required' => true
+                    ],
                     'platform_login' => [
                         'label' => 'Domain Hosting Platform - Login',
                         'type' => 'text',
@@ -149,7 +158,7 @@ class HostingPlatformSeeder extends Seeder
                         'label' => 'Domain Hosting Platform - Password',
                         'type' => 'password',
                         'required' => true
-                    ]
+                    ],
                 ],
                 'sort_order' => 5
             ],
@@ -158,7 +167,7 @@ class HostingPlatformSeeder extends Seeder
                 'value' => 'hostinger',
                 'requires_tutorial' => true,
                 'tutorial_link' => '#',
-                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Hostinger hosting account:',
+                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Hostinger account:',
                 'fields' => [
                     'platform_login' => [
                         'label' => 'Domain Hosting Platform - Login',
@@ -176,7 +185,7 @@ class HostingPlatformSeeder extends Seeder
             [
                 'name' => 'Other (Fill in further details in the ‘Additional Details’ field below)',
                 'value' => 'other',
-                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Other hosting account:',
+                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Other account:',
                 'fields' => [
                     'other_platform' => [
                         'label' => 'Please specify your hosting platform',
@@ -202,7 +211,7 @@ class HostingPlatformSeeder extends Seeder
                 'value' => 'cloudflare',
                 'requires_tutorial' => true,
                 'tutorial_link' => '#',
-                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Cloudflare hosting account:',
+                'import_note' => '<strong>IMPORTANT</strong> - Please follow the steps from this document to grant us access to your Cloudflare account:',
                 'fields' => [
                     'platform_login' => [
                         'label' => 'Domain Hosting Platform - Login',
