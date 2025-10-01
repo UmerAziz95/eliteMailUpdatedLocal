@@ -108,7 +108,11 @@ class Pool extends Model
     {
         return $this->belongsTo(User::class, 'rejected_by');
     }
-
+    // Call to undefined relationship [plan] on model [App\Models\Pool].
+    public function plan()
+    {
+        return $this->belongsTo(Plan::class);
+    }
     // Helper contractors (multiple contractors assigned to shared pools)
     public function helpers()
     {

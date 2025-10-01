@@ -33,6 +33,7 @@ use App\Http\Controllers\Contractor\OrderQueueController as ContractorOrderQueue
 
 // Customer
 use App\Http\Controllers\Customer\OrderEmailController as CustomerOrderEmailController;
+use App\Http\Controllers\PoolController;
 //role
 use App\Http\Controllers\CustomRolePermissionController;
 use App\Http\Controllers\Admin\MediaHandlerController;
@@ -205,6 +206,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // Plans routes
         Route::resource('plans', PlanController::class);
         Route::get('plans-with-features', [PlanController::class, 'getPlansWithFeatures'])->name('plans.with.features');
+        
+        // Pools routes
+        Route::resource('pools', PoolController::class);
+        Route::post('pools/{pool}/assign', [PoolController::class, 'assign'])->name('pools.assign');
+        Route::post('pools/{pool}/complete', [PoolController::class, 'complete'])->name('pools.complete');
         
         // Special Plans routes (is_discounted = 3)
         Route::get('special-plans', [SpecialPlanController::class, 'index'])->name('special-plans.index');
