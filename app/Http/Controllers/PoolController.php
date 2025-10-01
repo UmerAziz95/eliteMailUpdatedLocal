@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Pool;
 use App\Models\User;
 use App\Models\Plan;
+use App\Models\HostingPlatform;
+use App\Models\SendingPlatform;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -72,8 +74,10 @@ class PoolController extends Controller
     {
         $users = User::all();
         $plans = Plan::all(); // Get all plans for create form
+        $hostingPlatforms = HostingPlatform::where('is_active', true)->orderBy('sort_order')->get();
+        $sendingPlatforms = SendingPlatform::orderBy('name')->get();
 
-        return view('admin.pools.create', compact('users', 'plans'));
+        return view('admin.pools.create', compact('users', 'plans', 'hostingPlatforms', 'sendingPlatforms'));
     }
 
     /**
@@ -87,13 +91,24 @@ class PoolController extends Controller
             'status' => 'in:pending,in_progress,completed,cancelled',
             'amount' => 'nullable|numeric|min:0',
             'currency' => 'string|max:3',
-            'forwarding_url' => 'nullable|url',
-            'hosting_platform' => 'nullable|string|max:255',
+            'forwarding_url' => 'required|url',
+            'hosting_platform' => 'required|string|max:255',
+            'sending_platform' => 'required|string|max:255',
+            'domains' => 'required',
             'total_inboxes' => 'nullable|integer|min:1',
-            'inboxes_per_domain' => 'nullable|integer|min:1',
+            'inboxes_per_domain' => 'required|integer|min:1|max:3',
             'first_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'master_inbox_email' => 'nullable|email',
+            'master_inbox_confirmation' => 'boolean',
+            'platform_login' => 'nullable|string|max:255',
+            'platform_password' => 'nullable|string|max:255',
+            'sequencer_login' => 'nullable|string|max:255',
+            'sequencer_password' => 'nullable|string|max:255',
+            'backup_codes' => 'nullable|string',
+            'additional_info' => 'nullable|string',
+            'prefix_variants' => 'nullable|array',
+            'prefix_variants_details' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -113,6 +128,24 @@ class PoolController extends Controller
             // Handle domains JSON conversion
             if ($request->has('domains') && is_string($request->domains)) {
                 $data['domains'] = json_decode($request->domains, true);
+            }
+
+            // Handle prefix variants JSON conversion
+            if ($request->has('prefix_variants') && is_array($request->prefix_variants)) {
+                $data['prefix_variants'] = $request->prefix_variants;
+            }
+
+            // Handle prefix variants details JSON conversion
+            if ($request->has('prefix_variants_details') && is_array($request->prefix_variants_details)) {
+                $data['prefix_variants_details'] = $request->prefix_variants_details;
+            }
+
+            // Handle boolean conversion for master_inbox_confirmation
+            $data['master_inbox_confirmation'] = $request->boolean('master_inbox_confirmation');
+
+            // Set status to pending if not specified
+            if (!isset($data['status'])) {
+                $data['status'] = 'pending';
             }
 
             $pool = Pool::create($data);
@@ -155,8 +188,10 @@ class PoolController extends Controller
     {
         $users = User::all();
         $plans = Plan::all(); // Get all plans for edit form
+        $hostingPlatforms = HostingPlatform::where('is_active', true)->orderBy('sort_order')->get();
+        $sendingPlatforms = SendingPlatform::orderBy('name')->get();
 
-        return view('admin.pools.edit', compact('pool', 'users', 'plans'));
+        return view('admin.pools.edit', compact('pool', 'users', 'plans', 'hostingPlatforms', 'sendingPlatforms'));
     }
 
     /**
@@ -170,13 +205,24 @@ class PoolController extends Controller
             'status' => 'in:pending,in_progress,completed,cancelled',
             'amount' => 'nullable|numeric|min:0',
             'currency' => 'string|max:3',
-            'forwarding_url' => 'nullable|url',
-            'hosting_platform' => 'nullable|string|max:255',
+            'forwarding_url' => 'required|url',
+            'hosting_platform' => 'required|string|max:255',
+            'sending_platform' => 'required|string|max:255',
+            'domains' => 'required',
             'total_inboxes' => 'nullable|integer|min:1',
-            'inboxes_per_domain' => 'nullable|integer|min:1',
+            'inboxes_per_domain' => 'required|integer|min:1|max:3',
             'first_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'master_inbox_email' => 'nullable|email',
+            'master_inbox_confirmation' => 'boolean',
+            'platform_login' => 'nullable|string|max:255',
+            'platform_password' => 'nullable|string|max:255',
+            'sequencer_login' => 'nullable|string|max:255',
+            'sequencer_password' => 'nullable|string|max:255',
+            'backup_codes' => 'nullable|string',
+            'additional_info' => 'nullable|string',
+            'prefix_variants' => 'nullable|array',
+            'prefix_variants_details' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -197,6 +243,19 @@ class PoolController extends Controller
             if ($request->has('domains') && is_string($request->domains)) {
                 $data['domains'] = json_decode($request->domains, true);
             }
+
+            // Handle prefix variants JSON conversion
+            if ($request->has('prefix_variants') && is_array($request->prefix_variants)) {
+                $data['prefix_variants'] = $request->prefix_variants;
+            }
+
+            // Handle prefix variants details JSON conversion
+            if ($request->has('prefix_variants_details') && is_array($request->prefix_variants_details)) {
+                $data['prefix_variants_details'] = $request->prefix_variants_details;
+            }
+
+            // Handle boolean conversion for master_inbox_confirmation
+            $data['master_inbox_confirmation'] = $request->boolean('master_inbox_confirmation');
 
             $pool->update($data);
 
