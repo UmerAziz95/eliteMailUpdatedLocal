@@ -211,6 +211,9 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::resource('pools', PoolController::class);
         Route::post('pools/{pool}/assign', [PoolController::class, 'assign'])->name('pools.assign');
         Route::post('pools/{pool}/complete', [PoolController::class, 'complete'])->name('pools.complete');
+        Route::get('pools/import/data', [PoolController::class, 'importData'])->name('pools.import.data');
+        Route::get('pools/import-data/{id}', [PoolController::class, 'importDataById'])->name('pools.import-data');
+        Route::post('pools/capacity-check', [PoolController::class, 'capacityCheck'])->name('pools.capacity-check');
         
         // Special Plans routes (is_discounted = 3)
         Route::get('special-plans', [SpecialPlanController::class, 'index'])->name('special-plans.index');

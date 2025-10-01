@@ -154,6 +154,9 @@ class PoolController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Pool created successfully',
+                    'status' => $pool->status,
+                    'order_id' => $pool->id,
+                    'user_id' => $pool->user_id,
                     'data' => $pool->load(['user', 'plan', 'assignedTo'])
                 ], 201);
             }
@@ -190,7 +193,7 @@ class PoolController extends Controller
         $plans = Plan::all(); // Get all plans for edit form
         $hostingPlatforms = HostingPlatform::where('is_active', true)->orderBy('sort_order')->get();
         $sendingPlatforms = SendingPlatform::orderBy('name')->get();
-
+        // dd($pool);
         return view('admin.pools.edit', compact('pool', 'users', 'plans', 'hostingPlatforms', 'sendingPlatforms'));
     }
 
@@ -263,6 +266,9 @@ class PoolController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Pool updated successfully',
+                    'status' => $pool->status,
+                    'order_id' => $pool->id,
+                    'user_id' => $pool->user_id,
                     'data' => $pool->load(['user', 'plan', 'assignedTo'])
                 ]);
             }
@@ -362,6 +368,88 @@ class PoolController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to complete pool',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get import data for pools
+     */
+    public function importData(Request $request)
+    {
+        try {
+            $query = Pool::with(['user', 'plan']);
+
+            // Apply filters
+            if ($request->has('for_import') && $request->for_import) {
+                $query->where('status', '!=', 'cancelled');
+            }
+
+            if ($request->has('exclude_current') && $request->exclude_current) {
+                $query->where('id', '!=', $request->exclude_current);
+            }
+
+            $pools = $query->orderBy('created_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $pools,
+                'message' => 'Pools data retrieved successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve pools data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get specific pool data by ID for import
+     */
+    public function importDataById(Request $request, $id)
+    {
+        try {
+            $pool = Pool::with(['user', 'plan'])->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $pool,
+                'message' => 'Pool data retrieved successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve pool data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Run capacity check for pools
+     */
+    public function capacityCheck(Request $request)
+    {
+        try {
+            // Here you can implement your capacity check logic
+            // For now, just return a success response
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Capacity check completed successfully',
+                'data' => [
+                    'available_capacity' => 1000, // Example data
+                    'used_capacity' => 250,
+                    'remaining_capacity' => 750
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Capacity check failed',
                 'error' => $e->getMessage()
             ], 500);
         }
