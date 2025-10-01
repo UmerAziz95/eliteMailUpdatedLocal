@@ -434,12 +434,21 @@
                 </div>
 
                 <div class="col-md-6 master-inbox">
-                    <label>Centralized master inbox email</label>
-                    <input type="email" name="master_inbox_email" class="form-control"
-                        value="{{ isset($internalOrder) ? $internalOrder->master_inbox_email : '' }}">
+                    <label for="master_inbox_confirmation">Do you want to enable domain forwarding?</label>
+                    <select name="master_inbox_confirmation" id="master_inbox_confirmation" class="form-control">
+                        <option value="0" {{ isset($internalOrder) && !$internalOrder->master_inbox_confirmation ? 'selected' : (!isset($internalOrder) ? 'selected' : '') }}>No</option>
+                        <option value="1" {{ isset($internalOrder) && $internalOrder->master_inbox_confirmation ? 'selected' : '' }}>Yes</option>
+                    </select>
+                    <p class="note">(Choose "Yes" if you want to forward all email inboxes to a specific email)</p>
+                </div>
+
+                <div class="col-md-6 master-inbox-email" style="display: {{ isset($internalOrder) && $internalOrder->master_inbox_confirmation ? 'block' : 'none' }};">
+                    <label>Master Domain Email *</label>
+                    <input type="email" name="master_inbox_email" id="master_inbox_email" class="form-control"
+                        value="{{ isset($internalOrder) ? $internalOrder->master_inbox_email : '' }}"
+                        {{ isset($internalOrder) && $internalOrder->master_inbox_confirmation ? 'required' : '' }}>
                     <div class="invalid-feedback" id="master_inbox_email-error"></div>
-                    <p class="note">(This is optional - if you want to forward all email inboxes to a
-                        specific email, enter above)</p>
+                    <p class="note">(Enter the main email where all messages should be forwarded)</p>
                 </div>
 
                 <div id="additional-assets-section">
@@ -1622,6 +1631,10 @@ $(document).ready(function() {
         if (reorderInfo.last_name) $('input[name="last_name"]').val(reorderInfo.last_name);
         if (reorderInfo.email_persona_password) $('input[name="email_persona_password"]').val(reorderInfo.email_persona_password);
         if (reorderInfo.email_persona_picture_link) $('input[name="email_persona_picture_link"]').val(reorderInfo.email_persona_picture_link);
+        if (reorderInfo.master_inbox_confirmation !== undefined) {
+            $('#master_inbox_confirmation').val(reorderInfo.master_inbox_confirmation ? '1' : '0');
+            toggleMasterInboxEmail();
+        }
         if (reorderInfo.master_inbox_email) $('input[name="master_inbox_email"]').val(reorderInfo.master_inbox_email);
         if (reorderInfo.additional_info) $('textarea[name="additional_info"]').val(reorderInfo.additional_info);
         
@@ -2337,6 +2350,27 @@ $(document).ready(function() {
     // Handle platform changes
     $('#hosting').on('change', updatePlatformFields);
 
+    // Master inbox functionality
+    function toggleMasterInboxEmail() {
+        if ($('#master_inbox_confirmation').val() == '1') {
+            $('.master-inbox-email').show();
+            $('#master_inbox_email').attr('required', true);
+        } else {
+            $('.master-inbox-email').hide();
+            $('#master_inbox_email').removeAttr('required');
+            $('#master_inbox_email').removeClass('is-invalid'); // Remove validation error when hiding
+            $('#master_inbox_email-error').text(''); // Clear error message
+        }
+    }
+
+    // Handle master inbox confirmation change
+    $(document).on('change', '#master_inbox_confirmation', function() {
+        toggleMasterInboxEmail();
+    });
+
+    // Initialize master inbox email visibility
+    toggleMasterInboxEmail();
+
         // Handle sending platform changes
         function updateSendingPlatformFields() {
         const selectedOption = $('#sending_platform option:selected');
@@ -2704,6 +2738,11 @@ $(document).ready(function() {
 
     // Function to handle the actual form submission
     function submitForm() {
+        // Clear master inbox email if confirmation is set to "No" (0)
+        if ($('#master_inbox_confirmation').val() == '0') {
+            $('#master_inbox_email').val('');
+        }
+        
         // Show loading indicator
         Swal.fire({
             title: 'Updating Order...',
