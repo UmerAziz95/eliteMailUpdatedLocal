@@ -127,7 +127,7 @@ class OrderController extends Controller
             ->orderBy('sort_order')
             ->get();
         $sendingPlatforms = \App\Models\SendingPlatform::get();
-        
+        // dd($hostingPlatforms);
         return view('customer.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
     }
     // neworder

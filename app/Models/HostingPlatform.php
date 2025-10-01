@@ -12,6 +12,7 @@ class HostingPlatform extends Model
         'is_active',
         'requires_tutorial',
         'tutorial_link',
+        'import_note',
         'fields',
         'sort_order'
     ];

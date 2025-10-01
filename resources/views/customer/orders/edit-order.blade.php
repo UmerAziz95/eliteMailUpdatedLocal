@@ -247,7 +247,8 @@
                     @foreach($hostingPlatforms as $platform)
                     <option value="{{ $platform->value }}" data-fields='@json($platform->fields)'
                         data-requires-tutorial="{{ $platform->requires_tutorial }}"
-                        data-tutorial-link="{{ $platform->tutorial_link }}" {{ (optional(optional($order)->
+                        data-tutorial-link="{{ $platform->tutorial_link }}"
+                        data-import-note="{{ $platform->import_note ?? '' }}" {{ (optional(optional($order)->
                         reorderInfo)->count() > 0 && $order->reorderInfo->first()->hosting_platform ===
                         $platform->value) ? ' selected' : '' }}>
                         {{ $platform->name }}
@@ -261,9 +262,8 @@
 
             <div id="tutorial_section" class="mb-3" style="display: none;">
                 <div class="">
-                    <p class="mb-0">
-                        <strong>IMPORTANT</strong> - please follow the steps from this document to grant us access to
-                        your hosting account:
+                    <p class="mb-0" id="hosting-platform-import-note">
+                        <!-- Hosting platform import note will be dynamically inserted here -->
                         <a href="#" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>
                     </p>
                 </div>
@@ -2296,6 +2296,7 @@ $(document).ready(function() {
         const fieldsData = selectedOption.data('fields');
         const requiresTutorial = selectedOption.data('requires-tutorial');
         const tutorialLink = selectedOption.data('tutorial-link');
+        const importNote = selectedOption.data('import-note');
         const platformValue = selectedOption.val();
         
         const container = $('#platform-fields-container');
@@ -2322,11 +2323,21 @@ $(document).ready(function() {
             $('#other_platform').removeClass('is-invalid');
             $('#other-platform-error').text('');
         }
-
         // Handle tutorial section visibility
         if (requiresTutorial && tutorialLink) {
             $('#tutorial_section').show();
             $('.tutorial-link').attr('href', tutorialLink);
+            
+            // Update import note dynamically
+            const importNoteElement = $('#hosting-platform-import-note');
+            console.log('Import Note from Seeder:', importNote);
+            if (importNote && importNote.trim() !== '') {
+                // Show the import note from seeder with tutorial link
+                importNoteElement.html(importNote + ' <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>');
+            } else {
+                // Fallback to default message if no import note is set
+                importNoteElement.html('<strong>IMPORTANT</strong> - please follow the steps from this document to grant us access to your hosting account: <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>');
+            }
         } else {
             $('#tutorial_section').hide();
         }
