@@ -334,8 +334,19 @@
                     Domains *
                     <span class="badge bg-primary ms-2" id="domain-count-badge">0 domains</span>
                 </label>
-                <textarea id="domains" name="domains" class="form-control" rows="8"
-                    required>{{ isset($pool) && $pool->domains ? (is_array($pool->domains) ? (isset($pool->domains[0]['name']) ? implode("\n", array_column($pool->domains, 'name')) : implode("\n", $pool->domains)) : $pool->domains) : '' }}</textarea>
+                <div id="domains-container">
+                    <!-- Editable domains textarea -->
+                    <textarea id="domains" name="domains" class="form-control" rows="6"
+                        required>{{ isset($pool) && $pool->domains ? (is_array($pool->domains) ? implode("\n", array_filter(array_map(function($d) { return is_array($d) && !($d['is_used'] ?? false) ? $d['name'] : (is_string($d) ? $d : null); }, $pool->domains))) : $pool->domains) : '' }}</textarea>
+                    
+                    <!-- Read-only domains display -->
+                    <div id="readonly-domains" class="mt-2" style="display: none;">
+                        <label class="form-label text-muted">Used Domains (Read-only)</label>
+                        <div id="readonly-domains-list" class="border rounded p-2 bg-light text-muted">
+                            <!-- Used domains will be populated here -->
+                        </div>
+                    </div>
+                </div>
                 <div class="invalid-feedback" id="domains-error"></div>
                 <small class="note">
                     Please enter each domain on a new line and ensure you double-check the number of domains you submit
@@ -343,6 +354,11 @@
                     <span class="text-info" style="display: none;">
                         <i class="fa-solid fa-info-circle me-1"></i>
                         Total domains: <strong id="domain-count-text">0</strong>
+                    </span>
+                    <br>
+                    <span class="text-warning" id="used-domains-note" style="display: none;">
+                        <i class="fa-solid fa-lock me-1"></i>
+                        Some domains are locked and cannot be edited as they are currently in use.
                     </span>
                 </small>
             </div>
@@ -1148,20 +1164,20 @@ function calculateTotalInboxes() {
     const domainsText = $('#domains').val();
     const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
     
-    if (!domainsText) {
-        $('#total_inboxes').val(0);
-        updateRemainingInboxesBar(0);
-        updatePriceDisplay(0);
-        return 0;
+    let editableDomainsCount = 0;
+    if (domainsText) {
+        // Split domains by newlines and filter out empty entries
+        const domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+            
+        const uniqueDomains = [...new Set(domains)];
+        editableDomainsCount = uniqueDomains.length;
     }
     
-    // Split domains by newlines and filter out empty entries
-    const domains = domainsText.split(/[\n,]+/)
-        .map(domain => domain.trim())
-        .filter(domain => domain.length > 0);
-        
-    const uniqueDomains = [...new Set(domains)];
-    const calculatedInboxes = uniqueDomains.length * inboxesPerDomain;
+    // Total domains include both editable and used domains
+    const totalDomainsCount = editableDomainsCount + usedDomains.length;
+    const calculatedInboxes = totalDomainsCount * inboxesPerDomain;
     
     // Always use calculated inboxes and apply current order limit validation
     $('#total_inboxes').val(calculatedInboxes);
@@ -2772,12 +2788,15 @@ $(document).ready(function() {
         // If validation passes and no confirmation needed, submit directly
         submitForm();
     });
-
+    
     // Function to handle the actual form submission
     // Function to manage domain IDs with pool prefix for uniqueness
     const poolId = {{ isset($pool) && $pool->id ? $pool->id : 'Date.now()' }}; // Use pool ID or timestamp for new pools
     let domainSequenceCounter = 1;
     let existingDomainIds = new Map(); // Map to store domain name -> ID mapping
+    let usedDomains = []; // Array to store used domains that cannot be edited
+    let editableDomains = []; // Array to store editable domains
+    
     // Initialize existing domain IDs if editing
     @if(isset($pool) && $pool->domains)
         @php
@@ -2786,7 +2805,19 @@ $(document).ready(function() {
         @if(is_array($existingDomains))
             @foreach($existingDomains as $domain)
                 @if(isset($domain['id']) && isset($domain['name']))
-                    existingDomainIds.set('{{ $domain['name'] }}', '{{ $domain['id'] }}');
+                    existingDomainIds.set('{{ $domain['name'] }}', {
+                        id: '{{ $domain['id'] }}',
+                        is_used: {{ isset($domain['is_used']) && $domain['is_used'] ? 'true' : 'false' }}
+                    });
+                    @if(isset($domain['is_used']) && $domain['is_used'])
+                        usedDomains.push({
+                            id: '{{ $domain['id'] }}',
+                            name: '{{ $domain['name'] }}',
+                            is_used: true
+                        });
+                    @else
+                        editableDomains.push('{{ $domain['name'] }}');
+                    @endif
                     // Extract sequence number from existing ID (format: poolId_sequence)
                     (function() {
                         const parts = '{{ $domain['id'] }}'.split('_');
@@ -2802,23 +2833,43 @@ $(document).ready(function() {
     function processDomainIds(domainArray) {
         const processedDomains = [];
         
+        // First, add all used domains (they cannot be edited)
+        usedDomains.forEach(domain => {
+            processedDomains.push({
+                id: domain.id,
+                name: domain.name,
+                is_used: true
+            });
+        });
+        
+        // Then process editable domains from textarea
         for (const domainName of domainArray) {
             if (domainName.trim()) {
-                let domainId;
+                let domainData;
                 
                 // Check if this domain already has an ID
                 if (existingDomainIds.has(domainName)) {
-                    domainId = existingDomainIds.get(domainName);
+                    const existing = existingDomainIds.get(domainName);
+                    domainData = {
+                        id: existing.id,
+                        name: domainName,
+                        is_used: existing.is_used || false
+                    };
                 } else {
                     // Assign new unique ID with pool prefix: poolId_sequence
-                    domainId = poolId + '_' + domainSequenceCounter++;
-                    existingDomainIds.set(domainName, domainId);
+                    const newId = poolId + '_' + domainSequenceCounter++;
+                    domainData = {
+                        id: newId,
+                        name: domainName,
+                        is_used: false
+                    };
+                    existingDomainIds.set(domainName, { id: newId, is_used: false });
                 }
                 
-                processedDomains.push({
-                    id: domainId,
-                    name: domainName
-                });
+                // Only add if not already in used domains
+                if (!usedDomains.some(used => used.name === domainName)) {
+                    processedDomains.push(domainData);
+                }
             }
         }
         
@@ -3096,10 +3147,38 @@ $(document).ready(function() {
     // Initialize remaining inboxes progress bar on page load
     updateRemainingInboxesBar();
     
+    // Function to display used domains in read-only section
+    function displayUsedDomains() {
+        const readonlyContainer = $('#readonly-domains');
+        const readonlyList = $('#readonly-domains-list');
+        const usedNote = $('#used-domains-note');
+        
+        if (usedDomains.length > 0) {
+            readonlyContainer.show();
+            usedNote.show();
+            
+            const domainsList = usedDomains.map(domain => 
+                `<div class="d-flex align-items-center mb-1">
+                    <i class="fa-solid fa-lock text-warning me-2"></i>
+                    <span>${domain.name}</span>
+                    <small class="text-muted ms-auto">(In Use)</small>
+                </div>`
+            ).join('');
+            
+            readonlyList.html(domainsList);
+        } else {
+            readonlyContainer.hide();
+            usedNote.hide();
+        }
+    }
+    
+    // Initialize used domains display
+    displayUsedDomains();
+    
     // Domain counting functionality
     function countDomains() {
         const domainsText = $('#domains').val().trim();
-        let domainCount = 0;
+        let editableDomainCount = 0;
         
         if (domainsText) {
             // Handle both comma-separated and newline-separated domains
@@ -3111,12 +3190,19 @@ $(document).ready(function() {
                 // Newline-separated format (default)
                 domains = domainsText.split('\n').map(d => d.trim()).filter(d => d.length > 0);
             }
-            domainCount = domains.length;
+            editableDomainCount = domains.length;
         }
         
-        // Update both badge and text
-        $('#domain-count-badge').text(`${domainCount} domain${domainCount !== 1 ? 's' : ''}`);
-        $('#domain-count-text').text(domainCount);
+        // Total count includes both editable and used domains
+        const totalDomainCount = editableDomainCount + usedDomains.length;
+        
+        // Update badge with total count
+        let badgeText = `${totalDomainCount} domain${totalDomainCount !== 1 ? 's' : ''}`;
+        if (usedDomains.length > 0) {
+            badgeText += ` (${usedDomains.length} locked)`;
+        }
+        $('#domain-count-badge').text(badgeText);
+        $('#domain-count-text').text(totalDomainCount);
         
         // Add visual feedback based on count
         const badge = $('#domain-count-badge');

@@ -125,9 +125,28 @@ class PoolController extends Controller
         try {
             $data = $request->all();
             
-            // Handle domains JSON conversion
+            // Handle domains JSON conversion and ensure unique id, is_used
             if ($request->has('domains') && is_string($request->domains)) {
-                $data['domains'] = json_decode($request->domains, true);
+                $domains = json_decode($request->domains, true);
+                $processedDomains = [];
+                $sequence = 1;
+                foreach ($domains as $domain) {
+                    // If domain is string, convert to object
+                    if (is_string($domain)) {
+                        $processedDomains[] = [
+                            'id' => 'new_' . $sequence++,
+                            'name' => $domain,
+                            'is_used' => false
+                        ];
+                    } elseif (is_array($domain)) {
+                        $processedDomains[] = [
+                            'id' => $domain['id'] ?? ('new_' . $sequence++),
+                            'name' => $domain['name'] ?? '',
+                            'is_used' => $domain['is_used'] ?? false
+                        ];
+                    }
+                }
+                $data['domains'] = $processedDomains;
             }
 
             // Handle prefix variants JSON conversion
@@ -242,9 +261,37 @@ class PoolController extends Controller
         try {
             $data = $request->all();
             
-            // Handle domains JSON conversion
+            // Handle domains JSON conversion and ensure id is not changed, is_used logic
             if ($request->has('domains') && is_string($request->domains)) {
-                $data['domains'] = json_decode($request->domains, true);
+                $domains = json_decode($request->domains, true);
+                $existingDomains = is_array($pool->domains) ? $pool->domains : [];
+                $existingDomainMap = [];
+                foreach ($existingDomains as $domain) {
+                    if (isset($domain['name'])) {
+                        $existingDomainMap[$domain['name']] = $domain;
+                    }
+                }
+                $processedDomains = [];
+                $sequence = 1;
+                foreach ($domains as $domain) {
+                    if (is_string($domain)) {
+                        // New domain
+                        $processedDomains[] = [
+                            'id' => 'new_' . $sequence++,
+                            'name' => $domain,
+                            'is_used' => false
+                        ];
+                    } elseif (is_array($domain)) {
+                        // If domain exists, keep id, update name, preserve is_used
+                        $old = $existingDomainMap[$domain['name']] ?? null;
+                        $processedDomains[] = [
+                            'id' => $domain['id'] ?? ($old['id'] ?? 'new_' . $sequence++),
+                            'name' => $domain['name'] ?? ($old['name'] ?? ''),
+                            'is_used' => $domain['is_used'] ?? ($old['is_used'] ?? false)
+                        ];
+                    }
+                }
+                $data['domains'] = $processedDomains;
             }
 
             // Handle prefix variants JSON conversion
