@@ -1,5 +1,4 @@
 @extends('admin.layouts.app')
-
 @section('title', isset($pool) ? 'Edit Pool' : 'Create Pool')
 
 @push('styles')
@@ -35,6 +34,18 @@
     /* Show invalid feedback when field has is-invalid class */
     .is-invalid+.invalid-feedback,
     .is-invalid~.invalid-feedback {
+        display: block !important;
+    }
+
+    /* Specific rule for domains-error to show when domains textarea is invalid or when it has content */
+    .domains:has(#domains.is-invalid) #domains-error,
+    .domains #domains.is-invalid ~ #domains-error,
+    #domains-error:not(:empty) {
+        display: block !important;
+    }
+    
+    /* Fallback for browsers that don't support :has() - using JavaScript control */
+    #domains-error.show-error {
         display: block !important;
     }
 
@@ -1159,6 +1170,30 @@
         toggleMasterInboxEmail();
     });
 
+    // Initialize domain arrays early for global functions
+    let usedDomains = []; // Array to store used domains that cannot be edited
+    let editableDomains = []; // Array to store editable domains
+    
+    // Initialize used domains from pool data
+    @if(isset($pool) && $pool->domains)
+        @php
+            $existingDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+        @endphp
+        @if(is_array($existingDomains))
+            @foreach($existingDomains as $domain)
+                @if(isset($domain['is_used']) && $domain['is_used'] && isset($domain['name']))
+                    usedDomains.push({
+                        id: '{{ $domain['id'] ?? '' }}',
+                        name: '{{ $domain['name'] }}',
+                        is_used: true
+                    });
+                @elseif(isset($domain['name']))
+                    editableDomains.push('{{ $domain['name'] }}');
+                @endif
+            @endforeach
+        @endif
+    @endif
+
     // Global function for calculating total inboxes and updating price - accessible from import functionality
 function calculateTotalInboxes() {
     const domainsText = $('#domains').val();
@@ -1175,8 +1210,9 @@ function calculateTotalInboxes() {
         editableDomainsCount = uniqueDomains.length;
     }
     
-    // Total domains include both editable and used domains
-    const totalDomainsCount = editableDomainsCount + usedDomains.length;
+    // Total domains include both editable and used domains (safely check if usedDomains exists)
+    const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
+    const totalDomainsCount = editableDomainsCount + usedDomainsCount;
     const calculatedInboxes = totalDomainsCount * inboxesPerDomain;
     
     // Always use calculated inboxes and apply current order limit validation
@@ -1271,31 +1307,39 @@ function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
         const domainsText = $('#domains').val() || '';
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         
+        let editableDomainsCount = 0;
+        if (domainsText) {
+            const domains = domainsText.split(/[\n,]+/)
+                .map(domain => domain.trim())
+                .filter(domain => domain.length > 0);
+            const uniqueDomains = [...new Set(domains)];
+            editableDomainsCount = uniqueDomains.length;
+        }
+        
+        // Include used domains in total count (safely check if usedDomains exists)
+        const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
+        const totalDomainsCount = editableDomainsCount + usedDomainsCount;
+        currentInboxes = totalDomainsCount * inboxesPerDomain;
+    }
+    
+    // For progress bar display, maxInboxes should be the current total (used + editable domains)
+    // This shows "current inboxes / total current inboxes" rather than "current inboxes / pool limit"
+    const poolInfo = @json(isset($pool) ? $pool : null);
+    const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+    
+    // Calculate current total domains (used + editable)
+    const domainsText = $('#domains').val() || '';
+    let editableDomainsCount = 0;
+    if (domainsText) {
         const domains = domainsText.split(/[\n,]+/)
             .map(domain => domain.trim())
             .filter(domain => domain.length > 0);
         const uniqueDomains = [...new Set(domains)];
-        currentInboxes = uniqueDomains.length * inboxesPerDomain;
+        editableDomainsCount = uniqueDomains.length;
     }
-    
-    // Always use the CURRENT pool's limit, not the imported pool's limit
-    const poolInfo = @json(isset($pool) ? $pool : null);
-    let maxInboxes = 0;
-    
-    if (poolInfo && poolInfo.total_inboxes !== undefined && poolInfo.total_inboxes > 0) {
-        const rawTotalInboxes = poolInfo.total_inboxes;
-        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-        
-        // For very small limits (like 1 inbox), handle the case where inboxes_per_domain > total_inboxes
-        if (rawTotalInboxes < inboxesPerDomain) {
-            maxInboxes = 0; // Can't fit even 1 domain with the required inboxes per domain
-        } else {
-            // Calculate maximum usable inboxes based on inboxes_per_domain
-            // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
-            const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
-            maxInboxes = maxDomainsAllowed * inboxesPerDomain;
-        }
-    }
+    const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
+    const totalCurrentDomains = editableDomainsCount + usedDomainsCount;
+    const maxInboxes = totalCurrentDomains * inboxesPerDomain;
     
     // Update hidden form fields for server submission
     $('#current_inboxes').val(currentInboxes);
@@ -1318,65 +1362,94 @@ function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
     progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
     progressBar.attr('aria-valuemax', 100);
     
-    // Update text display
+    // Check against pool limits for validation
+    let poolLimit = 0;
+    let exceedsLimit = false;
+    
     if (poolInfo && poolInfo.total_inboxes !== undefined && poolInfo.total_inboxes > 0) {
         const rawTotalInboxes = poolInfo.total_inboxes;
-        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         
-        if (maxInboxes === 0 && rawTotalInboxes < inboxesPerDomain) {
-            // Order has a limit but can't fit any domains with current inboxes_per_domain setting
-            progressText.text(`${currentInboxes} inboxes used (Order limit: ${rawTotalInboxes}, cannot fit domains with ${inboxesPerDomain} inboxes each)`);
-            progressBar.css('width', '100%'); // Show as full because limit is exceeded
-            progressNote.html('(Reduce inboxes per domain to fit within limit)');
-            progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
-        } else if (maxInboxes > 0) {
-            // Normal case - show progress within limits
-            const rawTotal = rawTotalInboxes;
-            
-            // Show both usable and total if they differ
-            if (rawTotal > maxInboxes) {
-                progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used (${rawTotal} total, ${inboxesPerDomain} per domain)`);
-            } else {
-                progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used`);
-            }
-             
-            // Update color and note based on usage
-            if (percentageUsed > 100) {
-                progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
-                progressNote.html('(Opps: Limit Exceeded)');
-            } else if (percentageUsed == 100) {
-                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-                progressNote.html('(Perfect: Limit Reached)');
-            } else if (percentageUsed >= 90) {
-                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-                progressNote.html('(Good: Nearly at limit)');
-            } else if (percentageUsed >= 75) {
-                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-                progressNote.html('(Approaching limit)');
-            } else if (percentageUsed >= 50) {
-                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-                progressNote.html('(Moderate usage)');
-            } else {
-                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-                progressNote.html('(Current usage)');
+        // For your case: rawTotalInboxes should be 3, inboxesPerDomain should be 1
+        // So poolLimit should be 3 (3 domains × 1 inbox = 3 inboxes)
+        poolLimit = rawTotalInboxes; // Direct assignment - pool limit is the total inboxes allowed
+        
+        // Check if current usage exceeds pool limit
+        exceedsLimit = currentInboxes > poolLimit;
+        
+        // Show domain validation error if limit exceeded (but don't overwrite other validation errors)
+        if (exceedsLimit) {
+            const currentError = $('#domains-error').text();
+            // Only show limit error if there's no other validation error (like duplicates)
+            if (!currentError || (!currentError.includes('Duplicate') && !currentError.includes('Invalid'))) {
+                const domainsField = $('#domains');
+                const usedDomainsText = usedDomainsCount > 0 ? ` (${editableDomainsCount} editable + ${usedDomainsCount} used)` : '';
+                domainsField.addClass('is-invalid');
+                $('#domains-error').html(`
+                    <strong>Order Limit Exceeded</strong> — You currently have ${currentInboxes} inboxes from ${totalCurrentDomains} domains${usedDomainsText}, but this order supports only ${poolLimit} usable inboxes.
+                    <br><small>Pool Limit: ${rawTotalInboxes} total inboxes with ${inboxesPerDomain} inbox${inboxesPerDomain > 1 ? 'es' : ''} per domain</small>
+                `);
             }
         } else {
-            // Order has 0 total_inboxes (unlimited)
-            progressText.text(`${currentInboxes} inboxes used (Unlimited Order)`);
-            progressBar.css('width', '0%'); // Don't show progress for unlimited
-            progressNote.html('(Unlimited usage)');
-            progressBar.css('background', 'linear-gradient(45deg, #17a2b8, #138496)');
+            // Only clear limit-related errors, keep other validation errors (like duplicates)
+            const currentError = $('#domains-error').text();
+            if (currentError && currentError.includes('Order Limit Exceeded')) {
+                $('#domains').removeClass('is-invalid');
+                $('#domains-error').text('');
+            }
+        }
+    }
+    
+    // Update text display - show current usage vs current total
+    if (maxInboxes > 0) {
+        // Show current usage: "current inboxes / total current inboxes"
+        const domainBreakdown = usedDomainsCount > 0 ? ` (${editableDomainsCount} editable + ${usedDomainsCount} used)` : '';
+        
+        if (exceedsLimit && poolLimit > 0) {
+            // Show limit exceeded in progress text
+            progressText.text(`${currentInboxes} / ${poolLimit} inboxes used (LIMIT EXCEEDED)${domainBreakdown}`);
+            progressBar.css('width', '100%');
+            progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
+            progressNote.html(`(Pool limit: ${poolLimit} inboxes, Current: ${currentInboxes} inboxes)`);
+        } else {
+            // Normal display - show current vs current (not vs pool limit)
+            progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used${domainBreakdown}`);
+            progressBar.css('width', '100%');
+            progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+            
+            // Show breakdown information with pool limit info if available
+            if (poolLimit > 0) {
+                const poolLimitText = poolLimit !== maxInboxes ? ` (Pool limit: ${poolLimit})` : '';
+                if (usedDomainsCount > 0) {
+                    progressNote.html(`(Total: ${totalCurrentDomains} domains - ${editableDomainsCount} editable, ${usedDomainsCount} used${poolLimitText})`);
+                } else {
+                    progressNote.html(`(Total: ${totalCurrentDomains} domains, ${inboxesPerDomain} inbox${inboxesPerDomain > 1 ? 'es' : ''} per domain${poolLimitText})`);
+                }
+            } else {
+                if (usedDomainsCount > 0) {
+                    progressNote.html(`(Total: ${totalCurrentDomains} domains - ${editableDomainsCount} editable, ${usedDomainsCount} used)`);
+                } else {
+                    progressNote.html(`(Total: ${totalCurrentDomains} domains, ${inboxesPerDomain} inbox${inboxesPerDomain > 1 ? 'es' : ''} per domain)`);
+                }
+            }
         }
     } else {
-        // No limit defined for current order - show current usage only
-        progressText.text(`${currentInboxes} inboxes used (No limit defined)`);
-        progressBar.css('width', '0%'); // Don't show progress bar
-        progressNote.html('(No limit set for this order)');
+        // No domains yet
+        progressText.text('0 / 0 inboxes used');
+        progressBar.css('width', '0%');
+        progressNote.html('(Add domains to see usage)');
         progressBar.css('background', 'linear-gradient(45deg, #6c757d, #5a6268)');
     }
 }
 
 $(document).ready(function() {
+    // Initialize domain counts and calculations on page load
+    if (typeof calculateTotalInboxes === 'function') {
+        calculateTotalInboxes();
+    }
+    if (typeof updateRemainingInboxesBar === 'function') {
+        updateRemainingInboxesBar();
+    }
+    
     // Show pool limit information
     const poolInfo = @json(isset($pool) ? $pool : null);
     if (poolInfo && poolInfo.total_inboxes) {
@@ -1947,8 +2020,8 @@ $(document).ready(function() {
                 }
                 
                 // Re-run validation to update error messages properly after trimming
-                if (typeof validateAndTrimDomains === 'function') {
-                    validateAndTrimDomains();
+                if (typeof validateDomainsFormat === 'function') {
+                    validateDomainsFormat(true, false);
                 }
                 
                 // Also update domain count and other UI elements
@@ -1983,68 +2056,258 @@ $(document).ready(function() {
     let isImporting = false;
     // Master inbox email functionality - no confirmation needed
     
-    // Function to validate domains format only (without limit checking)
-    function validateDomainsFormat() {
-        const domainsField = $('#domains');
-        const domainsText = domainsField.val();
-        // Reset validation state
-        domainsField.removeClass('is-invalid');
-        $('#domains-error').text('');
-        
-        if (!domainsText.trim()) {
-            calculateTotalInboxes();
-            return;
-        }
-        
-        let domains = domainsText.split(/[\n,]+/)
-            .map(domain => domain.trim())
-            .filter(domain => domain.length > 0);
-        
-        if (domains.length > 0) {
-            // Check for duplicates
-            const seen = new Set();
-            const duplicates = domains.filter(domain => {
-                if (seen.has(domain)) {
-                    return true;
-                }
-                seen.add(domain);
-                return false;
-            });
-
-            if (duplicates.length > 0) {
-                domainsField.addClass('is-invalid');
-                $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`);
-                calculateTotalInboxes();
-                return;
-            }
-            
-            // Updated domain format validation to handle multi-level domains
-            const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
-            const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
-            const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
-            
-            if (invalidDomains.length > 0) {
-                domainsField.addClass('is-invalid');
-                $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')} Valid formats: example.com, example.co.uk`);
-                calculateTotalInboxes();
-                return;
-            }
-        }
-        
-        // Update total inboxes calculation
-        calculateTotalInboxes();
-    }
-    // Function to validate and auto-trim domains - centralized logic
-    function validateAndTrimDomains() {
+    // ========================================
+    // DOMAIN VALIDATION SYSTEM
+    // ========================================
+    // New unified validation system using one comprehensive function:
+    // - validateDomainsFormat(checkLimits, showPopups) - Main validation function
+    // - validateDomainLimits() - Helper for limit checking  
+    // - validateAndTrimDomains() - Legacy wrapper for backward compatibility
+    // ========================================
+    
+    /**
+     * Comprehensive domain validation function that handles all domain validations:
+     * - Empty domain validation
+     * - Duplicate domain detection  
+     * - Domain format validation
+     * - Configuration error checking
+     * - Order limit validation and auto-trimming
+     * - Error display and clearing
+     * 
+     * @param {boolean} checkLimits - Whether to check order limits (default: true)
+     * @param {boolean} showPopups - Whether to show popups for limits (default: true)
+     * @returns {boolean} - True if validation passes, false otherwise
+     */
+    function validateDomainsFormat(checkLimits = true, showPopups = true) {
         const domainsField = $('#domains');
         const domainsText = domainsField.val();
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         
-        // Reset validation state
+        // Handle empty domains input
+        if (!domainsText.trim()) {
+            // Only clear errors if no high-priority errors exist
+            if (!$('#domains-error').text().includes('Duplicate') && 
+                !$('#domains-error').text().includes('Invalid') && 
+                !$('#domains-error').text().includes('Cannot create domains')) {
+                domainsField.removeClass('is-invalid');
+                $('#domains-error').text('').removeClass('show-error');
+            }
+            calculateTotalInboxes();
+            return true;
+        }
+
+        // Parse and clean domains
+        let domains = domainsText.split(/[\n,]+/)
+            .map(domain => domain.trim())
+            .filter(domain => domain.length > 0);
+        
+        if (domains.length === 0) {
+            calculateTotalInboxes();
+            return true;
+        }
+
+        // Step 1: Check for duplicate domains
+        const seen = new Set();
+        const duplicates = domains.filter(domain => {
+            if (seen.has(domain)) {
+                return true;
+            }
+            seen.add(domain);
+            return false;
+        });
+
+        if (duplicates.length > 0) {
+            domainsField.addClass('is-invalid');
+            $('#domains-error')
+                .text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`)
+                .addClass('show-error');
+            calculateTotalInboxes();
+            return false;
+        }
+        
+        // Step 2: Validate domain format
+        const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+        const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+        const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
+        
+        if (invalidDomains.length > 0) {
+            domainsField.addClass('is-invalid');
+            $('#domains-error')
+                .text(`Invalid domain format: ${invalidDomains.join(', ')} Valid formats: example.com, example.co.uk`)
+                .addClass('show-error');
+            calculateTotalInboxes();
+            return false;
+        }
+
+        // Step 3: Check limits if requested
+        if (checkLimits) {
+            return validateDomainLimits(domains, domainsField, inboxesPerDomain, showPopups);
+        }
+
+        // All basic validations passed - clear errors
+        if (!$('#domains-error').text().includes('Cannot create domains')) {
+            domainsField.removeClass('is-invalid');
+            $('#domains-error').text('').removeClass('show-error');
+        }
+        
+        calculateTotalInboxes();
+        return true;
+    }
+    /**
+     * Helper function to validate domain limits and handle configuration errors
+     * @param {Array} domains - Array of domain strings
+     * @param {jQuery} domainsField - jQuery object for domains textarea
+     * @param {number} inboxesPerDomain - Number of inboxes per domain
+     * @param {boolean} showPopups - Whether to show popups
+     * @returns {boolean} - True if within limits, false otherwise
+     */
+    function validateDomainLimits(domains, domainsField, inboxesPerDomain, showPopups) {
+        const totalInboxes = domains.length * inboxesPerDomain;
+        const poolInfo = @json(optional($pool));
+        
+        // Calculate limits based on pool configuration
+        let TOTAL_INBOXES = 0;
+        let isConfigurationError = false;
+        
+        if (poolInfo && poolInfo.total_inboxes !== undefined) {
+            const rawTotalInboxes = poolInfo.total_inboxes;
+            
+            // Check for configuration error (order limit can't fit any domains)
+            if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
+                TOTAL_INBOXES = 0;
+                isConfigurationError = true;
+            } else {
+                // Calculate maximum usable inboxes
+                const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
+                TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
+            }
+        }
+        
+        // Handle configuration error
+        if (isConfigurationError) {
+            domainsField.addClass('is-invalid');
+            $('#domains-error')
+                .text('Can\'t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.')
+                .addClass('show-error');
+            
+            if (isImporting) {
+                calculateTotalInboxes();
+                return false;
+            }
+            
+            // Show configuration error popup
+            if (showPopups && domains.length > 0 && !limitExceededShown) {
+                limitExceededShown = true;
+                Swal.fire({
+                    title: 'Configuration Issue',
+                    html: `<strong>Can't create inboxes with current settings.</strong><br><br>
+                           Your order limit is <strong>${poolInfo.total_inboxes}</strong> inboxes, but you have selected <strong>${inboxesPerDomain}</strong> inboxes per domain.<br><br>
+                           <small>Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.</small>`,
+                    icon: 'warning',
+                    confirmButtonText: 'Clear All Domains',
+                    confirmButtonColor: '#dc3545',
+                    showCancelButton: true,
+                    cancelButtonText: 'Keep Domains',
+                    cancelButtonColor: '#6c757d'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        domainsField.val('');
+                        domainsField.removeClass('is-invalid');
+                        $('#domains-error').text('').removeClass('show-error');
+                        
+                        calculateTotalInboxes();
+                        if (typeof countDomains === 'function') countDomains();
+                        if (typeof updateRemainingInboxesBar === 'function') updateRemainingInboxesBar();
+                        
+                        toastr.success('All domains have been cleared due to configuration constraints.', 'Domains Cleared');
+                    }
+                    limitExceededShown = false;
+                });
+            }
+            calculateTotalInboxes();
+            return false;
+        }
+        
+        // Handle order limit exceeded
+        if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+            const rawTotal = poolInfo && poolInfo.total_inboxes ? poolInfo.total_inboxes : TOTAL_INBOXES;
+            
+            domainsField.addClass('is-invalid');
+            $('#domains-error').html(`
+                <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} usable inboxes.
+                <br><small>Usable Limit: ${TOTAL_INBOXES} inboxes</small>
+            `).addClass('show-error');
+            
+            if (isImporting) {
+                calculateTotalInboxes();
+                return false;
+            }
+            
+            // Show limit exceeded popup with auto-trim option
+            if (showPopups && !limitExceededShown) {
+                limitExceededShown = true;
+                const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
+                const excessDomains = domains.length - maxDomainsAllowed;
+                
+                Swal.fire({
+                    title: 'Order Limit Exceeded',
+                    html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but this order supports only <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br><br>
+                           You need to remove <strong>${excessDomains}</strong> domains.<br><br>
+                           <small>Maximum domains allowed: ${maxDomainsAllowed}</small>`,
+                    icon: 'warning',
+                    confirmButtonText: 'I Understand',
+                    confirmButtonColor: '#f0ad4e',
+                    showCancelButton: true,
+                    cancelButtonText: 'Remove Excess Domains',
+                    cancelButtonColor: '#dc3545'
+                }).then((result) => {
+                    if (!result.isConfirmed && result.dismiss === Swal.DismissReason.cancel) {
+                        // Auto-trim excess domains
+                        const trimmedDomains = domains.slice(0, maxDomainsAllowed);
+                        domainsField.val(trimmedDomains.join('\n'));
+                        
+                        // Clear errors and revalidate
+                        domainsField.removeClass('is-invalid');
+                        $('#domains-error').text('').removeClass('show-error');
+                        
+                        calculateTotalInboxes();
+                        
+                        // Re-run validation after trimming
+                        setTimeout(() => {
+                            validateDomainsFormat(true, false);
+                            if (typeof countDomains === 'function') countDomains();
+                            if (typeof updateRemainingInboxesBar === 'function') updateRemainingInboxesBar();
+                        }, 100);
+                        
+                        toastr.success(`${excessDomains} domains were removed to fit your order limit. You now have ${maxDomainsAllowed} domains (${TOTAL_INBOXES} usable inboxes).`, 'Domains Trimmed');
+                    }
+                    limitExceededShown = false;
+                });
+            }
+            calculateTotalInboxes();
+            return false;
+        }
+        
+        // Within limits - clear flags and errors
+        limitExceededShown = false;
         domainsField.removeClass('is-invalid');
-        $('#domains-error').text('');
+        $('#domains-error').text('').removeClass('show-error');
+        
+        calculateTotalInboxes();
+        return true;
+    }
+
+    // Legacy function for backward compatibility - redirects to new function
+    function validateAndTrimDomains() {
+        // Redirect to the new comprehensive validation function with full checks
+        return validateDomainsFormat(true, true);
         
         if (!domainsText.trim()) {
+            // Only clear errors if no high-priority errors exist
+            if (!$('#domains-error').text().includes('Duplicate') && !$('#domains-error').text().includes('Invalid') && !$('#domains-error').text().includes('Cannot create domains')) {
+                domainsField.removeClass('is-invalid');
+                $('#domains-error').text('').removeClass('show-error');
+            }             
             calculateTotalInboxes();
             return;
         }
@@ -2066,7 +2329,7 @@ $(document).ready(function() {
 
             if (duplicates.length > 0) {
                 domainsField.addClass('is-invalid');
-                $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`);
+                $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`).addClass('show-error');
                 calculateTotalInboxes();
                 return;
             }
@@ -2074,11 +2337,11 @@ $(document).ready(function() {
             // Updated domain format validation to handle multi-level domains
             const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
             const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
-            const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
+            const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegex.test(d));
             
             if (invalidDomains.length > 0) {
                 domainsField.addClass('is-invalid');
-                $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`);
+                $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`).addClass('show-error');
                 calculateTotalInboxes();
                 return;
             }
@@ -2209,7 +2472,7 @@ $(document).ready(function() {
                             
                             // Re-run validation to update error messages properly
                             setTimeout(() => {
-                                validateAndTrimDomains();
+                                validateDomainsFormat(true, false);
                                 
                                 // Also update domain count and other UI elements
                                 if (typeof countDomains === 'function') {
@@ -2234,7 +2497,7 @@ $(document).ready(function() {
                 // Configuration errors are already handled in the main logic above
                 if (!isConfigurationError && !$('#domains-error').text().includes('Duplicate') && !$('#domains-error').text().includes('Invalid') && !$('#domains-error').text().includes('Cannot create domains')) {
                     $('#domains').removeClass('is-invalid');
-                    $('#domains-error').text('');
+                    $('#domains-error').text('').removeClass('show-error');
                 }
             }
         }
@@ -2456,13 +2719,21 @@ $(document).ready(function() {
         const domainsText = $('#domains').val();
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
         
-        // Split domains by newlines and filter out empty entries
-        const domains = domainsText.split(/[\n,]+/)
-            .map(domain => domain.trim())
-            .filter(domain => domain.length > 0);
-            
-        const uniqueDomains = [...new Set(domains)];
-        const totalInboxes = uniqueDomains.length * inboxesPerDomain;
+        let editableDomainsCount = 0;
+        if (domainsText) {
+            // Split domains by newlines and filter out empty entries
+            const domains = domainsText.split(/[\n,]+/)
+                .map(domain => domain.trim())
+                .filter(domain => domain.length > 0);
+                
+            const uniqueDomains = [...new Set(domains)];
+            editableDomainsCount = uniqueDomains.length;
+        }
+        
+        // Include used domains in total calculation (safely check if usedDomains exists)
+        const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
+        const totalDomainsCount = editableDomainsCount + usedDomainsCount;
+        const totalInboxes = totalDomainsCount * inboxesPerDomain;
         
         $('#total_inboxes').val(totalInboxes);
         
@@ -2480,37 +2751,37 @@ $(document).ready(function() {
     }
     // Domain validation with auto-trimming - using centralized function (less aggressive for input)
     $('#domains').on('input', function() {
-        // Only validate format, don't show limit popups on input
-        validateDomainsFormat();
+        // Only validate format, don't check limits or show popups on input
+        validateDomainsFormat(false, false);
     });
     
     // Add event listener for inboxes per domain changes with domain validation
     $('#inboxes_per_domain').on('input change', function() {
         // Reset the limit exceeded flag when user changes inboxes per domain
         limitExceededShown = false;
-        validateAndTrimDomains();
+        validateDomainsFormat(true, true);
     });
     
     // Add paste event handler for domains field to handle auto-trimming
     $('#domains').on('paste', function() {
         // Use setTimeout to allow the paste content to be processed first
         setTimeout(() => {
-            validateAndTrimDomains();
+            validateDomainsFormat(true, true);
         }, 100);
     });
     
     // Add change event handler for domains field to handle auto-trimming when content changes
     $('#domains').on('change', function() {
-        validateAndTrimDomains();
+        validateDomainsFormat(true, true);
     });
 
     // Add focusout event handler for domains field to show popup when user leaves the field
     $('#domains').on('focusout', function() {
-        validateAndTrimDomains();
+        validateDomainsFormat(true, true);
     });
 
     // Initial validation and calculation
-    validateAndTrimDomains();
+    validateDomainsFormat(true, false);
     
     // Debug function to test order limit display (can be called from browser console)
     window.testOrderLimitDisplay = function(totalInboxes) {
@@ -2784,7 +3055,7 @@ $(document).ready(function() {
             });
             return false;
         }
-
+    
         // If validation passes and no confirmation needed, submit directly
         submitForm();
     });
@@ -2794,8 +3065,6 @@ $(document).ready(function() {
     const poolId = {{ isset($pool) && $pool->id ? $pool->id : 'Date.now()' }}; // Use pool ID or timestamp for new pools
     let domainSequenceCounter = 1;
     let existingDomainIds = new Map(); // Map to store domain name -> ID mapping
-    let usedDomains = []; // Array to store used domains that cannot be edited
-    let editableDomains = []; // Array to store editable domains
     
     // Initialize existing domain IDs if editing
     @if(isset($pool) && $pool->domains)
@@ -2809,15 +3078,6 @@ $(document).ready(function() {
                         id: '{{ $domain['id'] }}',
                         is_used: {{ isset($domain['is_used']) && $domain['is_used'] ? 'true' : 'false' }}
                     });
-                    @if(isset($domain['is_used']) && $domain['is_used'])
-                        usedDomains.push({
-                            id: '{{ $domain['id'] }}',
-                            name: '{{ $domain['name'] }}',
-                            is_used: true
-                        });
-                    @else
-                        editableDomains.push('{{ $domain['name'] }}');
-                    @endif
                     // Extract sequence number from existing ID (format: poolId_sequence)
                     (function() {
                         const parts = '{{ $domain['id'] }}'.split('_');
@@ -3146,14 +3406,14 @@ $(document).ready(function() {
     
     // Initialize remaining inboxes progress bar on page load
     updateRemainingInboxesBar();
-    
     // Function to display used domains in read-only section
     function displayUsedDomains() {
         const readonlyContainer = $('#readonly-domains');
         const readonlyList = $('#readonly-domains-list');
         const usedNote = $('#used-domains-note');
         
-        if (usedDomains.length > 0) {
+        // Safely check if usedDomains exists and has items
+        if (typeof usedDomains !== 'undefined' && usedDomains.length > 0) {
             readonlyContainer.show();
             usedNote.show();
             
@@ -3193,13 +3453,14 @@ $(document).ready(function() {
             editableDomainCount = domains.length;
         }
         
-        // Total count includes both editable and used domains
-        const totalDomainCount = editableDomainCount + usedDomains.length;
+        // Total count includes both editable and used domains (safely check if usedDomains exists)
+        const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
+        const totalDomainCount = editableDomainCount + usedDomainsCount;
         
         // Update badge with total count
         let badgeText = `${totalDomainCount} domain${totalDomainCount !== 1 ? 's' : ''}`;
-        if (usedDomains.length > 0) {
-            badgeText += ` (${usedDomains.length} locked)`;
+        if (usedDomainsCount > 0) {
+            badgeText += ` (${usedDomainsCount} locked)`;
         }
         $('#domain-count-badge').text(badgeText);
         $('#domain-count-text').text(totalDomainCount);
@@ -3208,17 +3469,17 @@ $(document).ready(function() {
         const badge = $('#domain-count-badge');
         badge.removeClass('bg-primary bg-success bg-warning bg-danger');
         
-        if (domainCount === 0) {
+        if (totalDomainCount === 0) {
             badge.addClass('bg-danger');
-        } else if (domainCount < 10) {
+        } else if (totalDomainCount < 10) {
             badge.addClass('bg-warning');
-        } else if (domainCount < 50) {
+        } else if (totalDomainCount < 50) {
             badge.addClass('bg-primary');
         } else {
             badge.addClass('bg-success');
         }
         
-        return domainCount;
+        return totalDomainCount;
     }
     
     // Real-time domain counting
