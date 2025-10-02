@@ -385,8 +385,8 @@
                     
                     <!-- Read-only domains display -->
                     <div id="readonly-domains" class="mt-2" style="display: none;">
-                        <label class="form-label text-muted">Used Domains (Read-only)</label>
-                        <div id="readonly-domains-list" class="border rounded p-2 bg-light text-muted">
+                        <label class="form-label">Used Domains (Read-only)</label>
+                        <div id="readonly-domains-list" class="rounded p-1 text-muted">
                             <!-- Used domains will be populated here -->
                         </div>
                     </div>
@@ -1436,7 +1436,8 @@ function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
     // Update text display - show current usage vs current total
     if (maxInboxes > 0) {
         // Show current usage: "current inboxes / total current inboxes"
-        const domainBreakdown = usedDomainsCount > 0 ? ` (${editableDomainsCount} editable + ${usedDomainsCount} used)` : '';
+        // const domainBreakdown = usedDomainsCount > 0 ? ` (${editableDomainsCount} editable + ${usedDomainsCount} used)` : '';
+        const domainBreakdown = '';
         
         if (exceedsLimit && poolLimit > 0) {
             // Show limit exceeded in progress text
@@ -3575,13 +3576,11 @@ $(document).ready(function() {
         if (typeof usedDomains !== 'undefined' && usedDomains.length > 0) {
             readonlyContainer.show();
             usedNote.show();
-            
             const domainsList = usedDomains.map(domain => 
-                `<div class="d-flex align-items-center mb-1">
-                    <i class="fa-solid fa-lock text-warning me-2"></i>
-                    <span>${domain.name}</span>
-                    <small class="text-muted ms-auto">(In Use)</small>
-                </div>`
+                `<span class="badge bg-warning text-dark me-2 mb-1 d-inline-flex align-items-center">
+                    <i class="fa-solid fa-lock me-1"></i>
+                    ${domain.name}
+                </span>`
             ).join('');
             
             readonlyList.html(domainsList);
