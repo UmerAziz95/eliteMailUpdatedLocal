@@ -3,9 +3,6 @@
 @section('title', 'Pools')
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
 <style>
     .status-badge {
         font-size: 0.75rem;
@@ -19,7 +16,85 @@
     .badge-completed { background-color: rgba(25, 135, 84, 0.2); color: #198754; border: 1px solid #198754; }
     .badge-cancelled { background-color: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid #dc3545; }
 
+    /* .table-responsive {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    } */
 
+
+    /* .action-buttons {
+        display: flex;
+        gap: 0.25rem;
+        justify-content: center;
+    }
+
+    .action-buttons .btn {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.75rem;
+    } */
+
+    .badge-type {
+        font-size: 0.625rem;
+        padding: 0.25rem 0.375rem;
+        margin-right: 0.25rem;
+    }
+
+    /* DataTable custom styling to match theme */
+    .dataTables_wrapper .dataTables_filter {
+        float: right;
+        margin-bottom: 1rem;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        margin-left: 0.5rem;
+    }
+
+    .dataTables_wrapper .dataTables_length {
+        float: left;
+        margin-bottom: 1rem;
+    }
+
+    .dataTables_wrapper .dataTables_length select {
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        margin: 0 0.5rem;
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        padding-top: 1rem;
+        color: var(--bs-gray-600);
+    }
+
+    .dataTables_wrapper .dataTables_paginate {
+        padding-top: 1rem;
+        float: right;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 0.375rem 0.75rem;
+        margin: 0 0.125rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        color: var(--bs-body-color);
+        text-decoration: none;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background-color: var(--bs-primary);
+        color: white;
+        border-color: var(--bs-primary);
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background-color: var(--bs-primary);
+        color: white;
+        border-color: var(--bs-primary);
+    }
 </style>
 @endpush
 
@@ -36,11 +111,11 @@
     </div>
 
     <!-- DataTable -->
-    <div class="dataTables_wrapper">
-        <table id="poolsTable" class="table table-dark table-striped table-hover">
+    <div class="table-responsive">
+        <table id="poolsTable" class="table table-hover w-100">
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>Pool ID</th>
                     <th>Customer</th>
                     <th>Name</th>
                     <th>Status</th>
@@ -53,6 +128,8 @@
                     <th>Actions</th>
                 </tr>
             </thead>
+            <tbody>
+            </tbody>
         </table>
     </div>
 </div>
@@ -79,12 +156,7 @@
 
 @push('scripts')
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
 
 <script>
 let poolToDelete = null;
@@ -94,6 +166,8 @@ $(document).ready(function() {
         processing: true,
         serverSide: true,
         responsive: true,
+        // autoWidth: false,
+        dom: '<"top"f>rt<"bottom"lip><"clear">',
         ajax: {
             url: "{{ route('admin.pools.index') }}",
             data: function (d) {
@@ -104,15 +178,26 @@ $(document).ready(function() {
             {
                 data: 'id',
                 name: 'id',
-                width: '60px',
                 render: function(data, type, row) {
-                    return '#' + data;
+                    return `
+                        <div class="d-flex gap-1 align-items-center">
+                            <i class="ti ti-hash fs-6 opacity-50"></i>
+                            <span>${data}</span>
+                        </div>
+                    `;
                 }
             },
             {
                 data: 'user.name',
                 name: 'user.name',
-                defaultContent: 'N/A'
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex gap-1 align-items-center">
+                            <i class="ti ti-user fs-6 opacity-50"></i>
+                            <span>${data || 'N/A'}</span>
+                        </div>
+                    `;
+                }
             },
             {
                 data: null,
@@ -120,10 +205,8 @@ $(document).ready(function() {
                 orderable: false,
                 searchable: false,
                 render: function(data, type, row) {
-                    if (row.first_name || row.last_name) {
-                        return (row.first_name || '') + ' ' + (row.last_name || '');
-                    }
-                    return '-';
+                    const fullName = ((row.first_name || '') + ' ' + (row.last_name || '')).trim();
+                    return fullName || '-';
                 }
             },
             {
@@ -138,33 +221,63 @@ $(document).ready(function() {
             {
                 data: 'hosting_platform',
                 name: 'hosting_platform',
-                defaultContent: '-'
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex gap-1 align-items-center">
+                            <i class="ti ti-server fs-6 opacity-50"></i>
+                            <span>${data || '-'}</span>
+                        </div>
+                    `;
+                }
             },
             {
                 data: 'sending_platform',
                 name: 'sending_platform',
-                defaultContent: '-'
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex gap-1 align-items-center">
+                            <i class="ti ti-send fs-6 opacity-50"></i>
+                            <span>${data || '-'}</span>
+                        </div>
+                    `;
+                }
             },
             {
                 data: 'total_inboxes',
                 name: 'total_inboxes',
-                defaultContent: '-',
-                className: 'text-center'
+                className: 'text-center',
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex gap-1 align-items-center justify-content-center">
+                            <i class="ti ti-mail fs-6 opacity-50"></i>
+                            <span>${data || '-'}</span>
+                        </div>
+                    `;
+                }
             },
             {
                 data: 'assigned_to_name',
                 name: 'assignedTo.name',
-                defaultContent: '-'
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex gap-1 align-items-center">
+                            <i class="ti ti-user-check fs-6 opacity-50"></i>
+                            <span>${data || '-'}</span>
+                        </div>
+                    `;
+                }
             },
             {
                 data: null,
                 name: 'type',
                 orderable: false,
                 searchable: false,
+                // visible none
+                visible: false,
                 render: function(data, type, row) {
                     let badges = '';
                     if (row.is_internal) {
-                        badges += '<span class="badge bg-info badge-type me-1">Internal</span>';
+                        badges += '<span class="badge bg-info badge-type">Internal</span>';
                     }
                     if (row.is_shared) {
                         badges += '<span class="badge bg-warning badge-type">Shared</span>';
@@ -176,11 +289,17 @@ $(document).ready(function() {
                 data: 'created_at',
                 name: 'created_at',
                 render: function(data, type, row) {
-                    return new Date(data).toLocaleDateString('en-US', {
+                    const date = new Date(data).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric'
                     });
+                    return `
+                        <div class="d-flex gap-1 align-items-center opacity-50">
+                            <i class="ti ti-calendar-month fs-6"></i>
+                            <span>${date}</span>
+                        </div>
+                    `;
                 }
             },
             {
@@ -193,14 +312,11 @@ $(document).ready(function() {
                     return `
                         <div class="action-buttons">
                             <a href="/admin/pools/${row.id}" class="btn btn-outline-primary btn-sm" title="View">
-                                <i class="fas fa-eye"></i>
+                                <i class="ti ti-eye"></i>
                             </a>
                             <a href="/admin/pools/${row.id}/edit" class="btn btn-outline-secondary btn-sm" title="Edit">
-                                <i class="fas fa-edit"></i>
+                                <i class="ti ti-edit"></i>
                             </a>
-                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deletePool(${row.id})" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
                         </div>
                     `;
                 }
@@ -209,41 +325,21 @@ $(document).ready(function() {
         order: [[0, 'desc']],
         pageLength: 25,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-        dom: '<"row"<"col-md-6"l><"col-md-6"f>>' +
-             '<"row"<"col-md-12"Bt>>' +
-             '<"row"<"col-md-12"tr>>' +
-             '<"row"<"col-md-5"i><"col-md-7"p>>',
-        buttons: [
-            {
-                extend: 'excel',
-                text: '<i class="fas fa-file-excel me-1"></i>Export Excel',
-                className: 'btn btn-success btn-sm me-2'
-            },
-            {
-                extend: 'pdf',
-                text: '<i class="fas fa-file-pdf me-1"></i>Export PDF',
-                className: 'btn btn-danger btn-sm me-2'
-            },
-            {
-                text: '<i class="fas fa-sync me-1"></i>Refresh',
-                className: 'btn btn-info btn-sm',
-                action: function (e, dt, node, config) {
-                    dt.ajax.reload();
-                }
-            }
-        ],
         language: {
             processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
             emptyTable: `
                 <div class="text-center py-4">
-                    <i class="fas fa-swimming-pool fa-3x text-muted mb-3"></i>
+                    <i class="ti ti-swimming-pool fs-1 text-muted mb-3"></i>
                     <h5 class="text-muted">No pools found</h5>
                     <p class="text-muted">Create your first pool to get started.</p>
                     <a href="{{ route('admin.pools.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Create Pool
+                        <i class="ti ti-plus me-2"></i>Create Pool
                     </a>
                 </div>
             `
+        },
+        drawCallback: function() {
+            $('[data-bs-toggle="tooltip"]').tooltip();
         }
     });
 });
