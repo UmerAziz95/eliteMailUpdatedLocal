@@ -103,34 +103,35 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1">Pools Management</h2>
-            <p class="text-muted mb-0">Manage and track all your pools</p>
+            <p class="mb-0">Manage and track all your pools</p>
         </div>
         <a href="{{ route('admin.pools.create') }}" class="btn btn-primary">
             <i class="fas fa-plus me-2"></i>Create New Pool
         </a>
     </div>
-
-    <!-- DataTable -->
-    <div class="table-responsive">
-        <table id="poolsTable" class="table table-hover w-100">
-            <thead>
-                <tr>
-                    <th>Pool ID</th>
-                    <th>Customer</th>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Hosting Platform</th>
-                    <th>Sending Platform</th>
-                    <th>Total Inboxes</th>
-                    <th>Assigned To</th>
-                    <th>Type</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+    <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+        <!-- DataTable -->
+        <div class="table-responsive">
+            <table id="poolsTable" class="table table-hover w-100">
+                <thead>
+                    <tr>
+                        <th>Pool ID</th>
+                        <th>Customer</th>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Hosting Platform</th>
+                        <th>Sending Platform</th>
+                        <th>Total Inboxes</th>
+                        <th>Assigned To</th>
+                        <th>Type</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -204,6 +205,7 @@ $(document).ready(function() {
                 name: 'full_name',
                 orderable: false,
                 searchable: false,
+                visible: false,
                 render: function(data, type, row) {
                     const fullName = ((row.first_name || '') + ' ' + (row.last_name || '')).trim();
                     return fullName || '-';
@@ -310,13 +312,22 @@ $(document).ready(function() {
                 className: 'text-center',
                 render: function(data, type, row) {
                     return `
-                        <div class="action-buttons">
-                            <a href="/admin/pools/${row.id}" class="btn btn-outline-primary btn-sm" title="View">
-                                <i class="ti ti-eye"></i>
-                            </a>
-                            <a href="/admin/pools/${row.id}/edit" class="btn btn-outline-secondary btn-sm" title="Edit">
-                                <i class="ti ti-edit"></i>
-                            </a>
+                        <div class="dropdown">
+                            <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="/admin/pools/${row.id}">
+                                        <i class="fa-solid fa-eye"></i> &nbsp;View
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="/admin/pools/${row.id}/edit">
+                                        <i class="fa-solid fa-edit"></i> &nbsp;Edit
+                                    </a>
+                                </li>
+                            </ul>
                         </div>
                     `;
                 }
