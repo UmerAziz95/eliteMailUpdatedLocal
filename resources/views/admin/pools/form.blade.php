@@ -108,6 +108,39 @@
         display: block;
     }
 
+    /* Enhanced validation error styling */
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+        animation: shake 0.5s ease-in-out;
+        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+
+    /* Validation error summary styling */
+    .validation-error-summary {
+        background: rgba(220, 53, 69, 0.1);
+        border: 1px solid rgba(220, 53, 69, 0.3);
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+
+    .validation-error-summary.show {
+        display: block;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Domain count badge styling */
     #domain-count-badge {
         position: absolute;
@@ -220,11 +253,11 @@
     </div>
 @endif
 @if(isset($pool) && $pool->id)
-<form id="editOrderForm" action="{{ route('admin.pools.update', $pool->id) }}" method="POST" novalidate>
+<form id="editOrderForm" action="{{ route('admin.pools.update', $pool->id) }}" method="POST" novalidate onsubmit="return false;">
     @csrf
     @method('PUT')
 @else
-<form id="editOrderForm" action="{{ route('admin.pools.store') }}" method="POST" novalidate>
+<form id="editOrderForm" action="{{ route('admin.pools.store') }}" method="POST" novalidate onsubmit="return false;">
     @csrf
 @endif
     @csrf
@@ -2815,9 +2848,28 @@ $(document).ready(function() {
     // Initial URL validation
     $('#forwarding').trigger('blur');
 
+    // Form submission state management
+    let isFormSubmitting = false;
+    let formValidationInProgress = false;
+    
     // Form validation and submission
     $('#editOrderForm').on('submit', function(e) {
         e.preventDefault();
+        e.stopPropagation();
+        
+        // Prevent multiple simultaneous submissions
+        if (isFormSubmitting || formValidationInProgress) {
+            console.log('Form submission blocked: already in progress');
+            return false;
+        }
+        
+        // Set validation flag
+        formValidationInProgress = true;
+        
+        // Disable submit button immediately
+        const submitButton = $(this).find('button[type="submit"]');
+        const originalButtonText = submitButton.text();
+        submitButton.prop('disabled', true).text('Validating...');
         
         // Clear master inbox email if confirmation is set to "No" (0)
         if ($('#master_inbox_confirmation').val() == '0') {
@@ -2827,19 +2879,23 @@ $(document).ready(function() {
         // Reset all validations
         $('.is-invalid').removeClass('is-invalid');
         $('.invalid-feedback').text('');
+        $('#domains-error').text('').removeClass('show-error');
         
         let isValid = true;
         let firstErrorField = null;
+        let validationErrors = [];
         
         // Validate required fields
         $(this).find(':input[required]').each(function() {
             const field = $(this);
             const value = field.val()?.trim();
+            const fieldName = field.attr('name') || field.attr('id') || 'Unknown field';
             
             if (!value) {
                 isValid = false;
                 field.addClass('is-invalid');
                 field.siblings('.invalid-feedback').text('This field is required');
+                validationErrors.push(`${fieldName}: This field is required`);
                 
                 if (!firstErrorField) {
                     firstErrorField = field;
@@ -2851,6 +2907,7 @@ $(document).ready(function() {
         $(this).find('input[type="email"]').each(function() {
             const field = $(this);
             const value = field.val()?.trim();
+            const fieldName = field.attr('name') || field.attr('id') || 'Email field';
             
             if (value) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -2858,6 +2915,7 @@ $(document).ready(function() {
                     isValid = false;
                     field.addClass('is-invalid');
                     field.siblings('.invalid-feedback').text('Please enter a valid email address');
+                    validationErrors.push(`${fieldName}: Please enter a valid email address`);
                     
                     if (!firstErrorField) {
                         firstErrorField = field;
@@ -2870,6 +2928,7 @@ $(document).ready(function() {
         $(this).find('input[type="url"]').each(function() {
             const field = $(this);
             const value = field.val()?.trim();
+            const fieldName = field.attr('name') || field.attr('id') || 'URL field';
             
             if (value) {
                 try {
@@ -2878,6 +2937,7 @@ $(document).ready(function() {
                     isValid = false;
                     field.addClass('is-invalid');
                     field.siblings('.invalid-feedback').text('Please enter a valid URL (include http:// or https://)');
+                    validationErrors.push(`${fieldName}: Please enter a valid URL`);
                     
                     if (!firstErrorField) {
                         firstErrorField = field;
@@ -2895,6 +2955,7 @@ $(document).ready(function() {
             accessTutorial.siblings('.invalid-feedback').text(
                 'Please review the Domain Hosting Platform - Access Tutorial and select "Yes".'
             );
+            validationErrors.push('Access Tutorial: Please review and select "Yes"');
            
             if (!firstErrorField) {
                 firstErrorField = accessTutorial;
@@ -2911,6 +2972,7 @@ $(document).ready(function() {
                 isValid = false;
                 prefixField.addClass('is-invalid');
                 prefixField.siblings('.invalid-feedback').text('This field is required');
+                validationErrors.push(`Prefix Variant ${i}: This field is required`);
                 
                 if (!firstErrorField) {
                     firstErrorField = prefixField;
@@ -2922,6 +2984,7 @@ $(document).ready(function() {
                     isValid = false;
                     prefixField.addClass('is-invalid');
                     prefixField.siblings('.invalid-feedback').text('Only letters, numbers, dots, hyphens and underscores are allowed');
+                    validationErrors.push(`Prefix Variant ${i}: Invalid format`);
                     
                     if (!firstErrorField) {
                         firstErrorField = prefixField;
@@ -2937,7 +3000,8 @@ $(document).ready(function() {
         if (domains.length === 0) {
             isValid = false;
             domainsField.addClass('is-invalid');
-            $('#domains-error').text('Please enter at least one domain');
+            $('#domains-error').text('Please enter at least one domain').addClass('show-error');
+            validationErrors.push('Domains: Please enter at least one domain');
             
             if (!firstErrorField) {
                 firstErrorField = domainsField;
@@ -2956,7 +3020,8 @@ $(document).ready(function() {
             if (duplicates.length > 0) {
                 isValid = false;
                 domainsField.addClass('is-invalid');
-                $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`);
+                $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`).addClass('show-error');
+                validationErrors.push(`Domains: Duplicate domains found - ${duplicates.join(', ')}`);
                 
                 if (!firstErrorField) {
                     firstErrorField = domainsField;
@@ -2970,7 +3035,8 @@ $(document).ready(function() {
                 if (invalidDomains.length > 0) {
                     isValid = false;
                     domainsField.addClass('is-invalid');
-                    $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`);
+                    $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`).addClass('show-error');
+                    validationErrors.push(`Domains: Invalid format - ${invalidDomains.join(', ')}`);
                     
                     if (!firstErrorField) {
                         firstErrorField = domainsField;
@@ -3000,6 +3066,16 @@ $(document).ready(function() {
         }
         
         if (!isValid) {
+            // Reset form submission state
+            formValidationInProgress = false;
+            isFormSubmitting = false;
+            
+            // Re-enable submit button
+            submitButton.prop('disabled', false).text(originalButtonText);
+            
+            // Log validation errors for debugging
+            console.error('Form validation failed:', validationErrors);
+            
             // Focus and scroll to the first error field
             if (firstErrorField) {
                 // Smooth scroll to the error field
@@ -3009,9 +3085,23 @@ $(document).ready(function() {
                     firstErrorField.focus();
                 }, 500);
             }
+            
+            // Show validation error alert
+            Swal.fire({
+                title: 'Validation Error!',
+                html: `<p>Please fix the following errors before submitting:</p><ul>${validationErrors.map(err => `<li>${err}</li>`).join('')}</ul>`,
+                icon: 'error',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#dc3545'
+            });
+            
+            // Absolutely prevent any form submission
             return false;
         }
 
+        // Reset validation flag as we passed validation
+        formValidationInProgress = false;
+        
         // Check if total inboxes are not fully completed
         const currentTotalInboxes = parseInt($('#total_inboxes').val()) || 0;
         const poolInfo = @json(optional($pool));
@@ -3050,8 +3140,12 @@ $(document).ready(function() {
                     $('#total_inboxes').val(originalTotalInboxes);
                     $('#is_draft').val('0');
                     submitForm();
+                } else {
+                    // If cancelled, reset form state and re-enable button
+                    isFormSubmitting = false;
+                    formValidationInProgress = false;
+                    submitButton.prop('disabled', false).text(originalButtonText);
                 }
-                // If cancelled, do nothing
             });
             return false;
         }
@@ -3137,6 +3231,36 @@ $(document).ready(function() {
     }
 
     function submitForm() {
+        // Final validation check before submission
+        const hasValidationErrors = $('.is-invalid').length > 0;
+        const hasErrorMessages = $('#domains-error').hasClass('show-error') || $('#domains-error').text().trim() !== '';
+        
+        if (hasValidationErrors || hasErrorMessages) {
+            console.error('Attempted to submit form with validation errors present');
+            console.log('Invalid fields:', $('.is-invalid').length);
+            console.log('Error messages:', hasErrorMessages);
+            
+            // Reset form state
+            isFormSubmitting = false;
+            formValidationInProgress = false;
+            
+            // Re-enable submit button
+            const submitButton = $('#editOrderForm').find('button[type="submit"]');
+            submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
+            
+            Swal.fire({
+                title: 'Validation Error!',
+                text: 'Please fix all validation errors before submitting the form.',
+                icon: 'error',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#dc3545'
+            });
+            return false;
+        }
+        
+        // Set form submitting flag
+        isFormSubmitting = true;
+        
         // Show loading indicator
         const isEdit = {{ isset($pool) && $pool->id ? 'true' : 'false' }};
         Swal.fire({
@@ -3210,6 +3334,14 @@ $(document).ready(function() {
                         window.location.href = "{{ route('admin.pools.index') }}";
                     });
                 } else {
+                    // Reset form state on response error
+                    isFormSubmitting = false;
+                    formValidationInProgress = false;
+                    
+                    // Re-enable submit button
+                    const submitButton = $('#editOrderForm').find('button[type="submit"]');
+                    submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
+                    
                     Swal.fire({
                         title: 'Error!',
                         text: response.message || 'An error occurred. Please try again later.',
@@ -3220,6 +3352,15 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 Swal.close();
+                
+                // Reset form state on any error
+                isFormSubmitting = false;
+                formValidationInProgress = false;
+                
+                // Re-enable submit button
+                const submitButton = $('#editOrderForm').find('button[type="submit"]');
+                submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
+                
                 if (xhr.status === 422 && xhr.responseJSON.errors) {
                     // Handle validation errors from server
                     let firstErrorField = null;
