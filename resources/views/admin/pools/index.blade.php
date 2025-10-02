@@ -3,51 +3,23 @@
 @section('title', 'Pools')
 
 @push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
 <style>
-    .pool-card {
-        background-color: #ffffff04;
-        border: 1px solid #404040;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-        box-shadow: rgba(125, 125, 186, 0.109) 0px 50px 100px -20px, rgb(0, 0, 0) 0px 30px 60px -20px, rgba(173, 173, 173, 0) 0px -2px 6px 0px inset;
-    }
-
-    .pool-card:hover {
-        border-color: #667eea;
-        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
-        transform: translateY(-2px);
-    }
-
     .status-badge {
         font-size: 0.75rem;
         padding: 0.25rem 0.5rem;
         border-radius: 6px;
+        font-weight: 500;
     }
 
-    .badge-pending { background-color: rgba(255, 193, 7, 0.2); color: #ffc107; }
-    .badge-in_progress { background-color: rgba(13, 202, 240, 0.2); color: #0dcaf0; }
-    .badge-completed { background-color: rgba(25, 135, 84, 0.2); color: #198754; }
-    .badge-cancelled { background-color: rgba(220, 53, 69, 0.2); color: #dc3545; }
+    .badge-pending { background-color: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid #ffc107; }
+    .badge-in_progress { background-color: rgba(13, 202, 240, 0.2); color: #0dcaf0; border: 1px solid #0dcaf0; }
+    .badge-completed { background-color: rgba(25, 135, 84, 0.2); color: #198754; border: 1px solid #198754; }
+    .badge-cancelled { background-color: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid #dc3545; }
 
-    .filter-section {
-        background-color: #1e1e1e;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-    }
 
-    .search-box {
-        background-color: #2a2a2a;
-        border: 1px solid #404040;
-        color: #fff;
-    }
-
-    .search-box:focus {
-        background-color: #2a2a2a;
-        border-color: #667eea;
-        color: #fff;
-        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
-    }
 </style>
 @endpush
 
@@ -63,147 +35,26 @@
         </a>
     </div>
 
-    <!-- Filters Section -->
-    <div class="filter-section">
-        <form id="filterForm" method="GET">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Search</label>
-                    <input type="text" name="search" class="form-control search-box" 
-                           placeholder="Search pools..." value="{{ request('search') }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select search-box">
-                        <option value="">All Status</option>
-                        <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                        <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
-                        <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Type</label>
-                    <select name="is_internal" class="form-select search-box">
-                        <option value="">All Types</option>
-                        <option value="1" {{ request('is_internal') == '1' ? 'selected' : '' }}>Internal</option>
-                        <option value="0" {{ request('is_internal') == '0' ? 'selected' : '' }}>External</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Shared</label>
-                    <select name="is_shared" class="form-select search-box">
-                        <option value="">All</option>
-                        <option value="1" {{ request('is_shared') == '1' ? 'selected' : '' }}>Shared</option>
-                        <option value="0" {{ request('is_shared') == '0' ? 'selected' : '' }}>Not Shared</option>
-                    </select>
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-outline-primary me-2">
-                        <i class="fas fa-search me-1"></i>Filter
-                    </button>
-                    <a href="{{ route('admin.pools.index') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-times me-1"></i>Clear
-                    </a>
-                </div>
-            </div>
-        </form>
+    <!-- DataTable -->
+    <div class="dataTables_wrapper">
+        <table id="poolsTable" class="table table-dark table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Customer</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Hosting Platform</th>
+                    <th>Sending Platform</th>
+                    <th>Total Inboxes</th>
+                    <th>Assigned To</th>
+                    <th>Type</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+        </table>
     </div>
-
-    <!-- Pools Grid -->
-    <div class="row">
-        @forelse($pools as $pool)
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="pool-card card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">Pool #{{ $pool->id }}</h6>
-                    <span class="status-badge badge-{{ $pool->status }}">
-                        {{ ucfirst(str_replace('_', ' ', $pool->status)) }}
-                    </span>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <small class="text-muted">Customer:</small>
-                        <p class="mb-1">{{ $pool->user->name ?? 'N/A' }}</p>
-                    </div>
-
-                    @if($pool->first_name || $pool->last_name)
-                    <div class="mb-3">
-                        <small class="text-muted">Name:</small>
-                        <p class="mb-1">{{ trim($pool->first_name . ' ' . $pool->last_name) }}</p>
-                    </div>
-                    @endif
-
-                    @if($pool->hosting_platform)
-                    <div class="mb-3">
-                        <small class="text-muted">Hosting Platform:</small>
-                        <p class="mb-1">{{ $pool->hosting_platform }}</p>
-                    </div>
-                    @endif
-
-                    @if($pool->total_inboxes)
-                    <div class="mb-3">
-                        <small class="text-muted">Total Inboxes:</small>
-                        <p class="mb-1">{{ $pool->total_inboxes }}</p>
-                    </div>
-                    @endif
-
-                    @if($pool->assigned_to)
-                    <div class="mb-3">
-                        <small class="text-muted">Assigned To:</small>
-                        <p class="mb-1">{{ $pool->assignedTo->name ?? 'N/A' }}</p>
-                    </div>
-                    @endif
-
-                    <div class="mb-3">
-                        <small class="text-muted">Created:</small>
-                        <p class="mb-1">{{ $pool->created_at->format('M d, Y') }}</p>
-                    </div>
-
-                    @if($pool->is_internal)
-                    <span class="badge bg-info mb-2">Internal</span>
-                    @endif
-
-                    @if($pool->is_shared)
-                    <span class="badge bg-warning mb-2">Shared</span>
-                    @endif
-                </div>
-                <div class="card-footer">
-                    <div class="btn-group w-100" role="group">
-                        <a href="{{ route('admin.pools.show', $pool) }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-eye me-1"></i>View
-                        </a>
-                        <a href="{{ route('admin.pools.edit', $pool) }}" class="btn btn-outline-secondary btn-sm">
-                            <i class="fas fa-edit me-1"></i>Edit
-                        </a>
-                        <button type="button" class="btn btn-outline-danger btn-sm" 
-                                onclick="deletePool({{ $pool->id }})">
-                            <i class="fas fa-trash me-1"></i>Delete
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @empty
-        <div class="col-12">
-            <div class="text-center py-5">
-                <i class="fas fa-swimming-pool fa-3x text-muted mb-3"></i>
-                <h4 class="text-muted">No pools found</h4>
-                <p class="text-muted">Create your first pool to get started.</p>
-                <a href="{{ route('admin.pools.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Create Pool
-                </a>
-            </div>
-        </div>
-        @endforelse
-    </div>
-
-    <!-- Pagination -->
-    @if($pools->hasPages())
-    <div class="d-flex justify-content-center mt-4">
-        {{ $pools->appends(request()->query())->links() }}
-    </div>
-    @endif
 </div>
 
 <!-- Delete Confirmation Modal -->
@@ -227,8 +78,175 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
 <script>
 let poolToDelete = null;
+
+$(document).ready(function() {
+    $('#poolsTable').DataTable({
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        ajax: {
+            url: "{{ route('admin.pools.index') }}",
+            data: function (d) {
+                d.datatable = true;
+            }
+        },
+        columns: [
+            {
+                data: 'id',
+                name: 'id',
+                width: '60px',
+                render: function(data, type, row) {
+                    return '#' + data;
+                }
+            },
+            {
+                data: 'user.name',
+                name: 'user.name',
+                defaultContent: 'N/A'
+            },
+            {
+                data: null,
+                name: 'full_name',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    if (row.first_name || row.last_name) {
+                        return (row.first_name || '') + ' ' + (row.last_name || '');
+                    }
+                    return '-';
+                }
+            },
+            {
+                data: 'status',
+                name: 'status',
+                render: function(data, type, row) {
+                    const statusClass = 'badge-' + data;
+                    const statusText = data.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    return `<span class="status-badge ${statusClass}">${statusText}</span>`;
+                }
+            },
+            {
+                data: 'hosting_platform',
+                name: 'hosting_platform',
+                defaultContent: '-'
+            },
+            {
+                data: 'sending_platform',
+                name: 'sending_platform',
+                defaultContent: '-'
+            },
+            {
+                data: 'total_inboxes',
+                name: 'total_inboxes',
+                defaultContent: '-',
+                className: 'text-center'
+            },
+            {
+                data: 'assigned_to_name',
+                name: 'assignedTo.name',
+                defaultContent: '-'
+            },
+            {
+                data: null,
+                name: 'type',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    let badges = '';
+                    if (row.is_internal) {
+                        badges += '<span class="badge bg-info badge-type me-1">Internal</span>';
+                    }
+                    if (row.is_shared) {
+                        badges += '<span class="badge bg-warning badge-type">Shared</span>';
+                    }
+                    return badges || '-';
+                }
+            },
+            {
+                data: 'created_at',
+                name: 'created_at',
+                render: function(data, type, row) {
+                    return new Date(data).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                }
+            },
+            {
+                data: null,
+                name: 'actions',
+                orderable: false,
+                searchable: false,
+                className: 'text-center',
+                render: function(data, type, row) {
+                    return `
+                        <div class="action-buttons">
+                            <a href="/admin/pools/${row.id}" class="btn btn-outline-primary btn-sm" title="View">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="/admin/pools/${row.id}/edit" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deletePool(${row.id})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        ],
+        order: [[0, 'desc']],
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        dom: '<"row"<"col-md-6"l><"col-md-6"f>>' +
+             '<"row"<"col-md-12"Bt>>' +
+             '<"row"<"col-md-12"tr>>' +
+             '<"row"<"col-md-5"i><"col-md-7"p>>',
+        buttons: [
+            {
+                extend: 'excel',
+                text: '<i class="fas fa-file-excel me-1"></i>Export Excel',
+                className: 'btn btn-success btn-sm me-2'
+            },
+            {
+                extend: 'pdf',
+                text: '<i class="fas fa-file-pdf me-1"></i>Export PDF',
+                className: 'btn btn-danger btn-sm me-2'
+            },
+            {
+                text: '<i class="fas fa-sync me-1"></i>Refresh',
+                className: 'btn btn-info btn-sm',
+                action: function (e, dt, node, config) {
+                    dt.ajax.reload();
+                }
+            }
+        ],
+        language: {
+            processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
+            emptyTable: `
+                <div class="text-center py-4">
+                    <i class="fas fa-swimming-pool fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No pools found</h5>
+                    <p class="text-muted">Create your first pool to get started.</p>
+                    <a href="{{ route('admin.pools.create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Pool
+                    </a>
+                </div>
+            `
+        }
+    });
+});
 
 function deletePool(poolId) {
     poolToDelete = poolId;
@@ -248,7 +266,24 @@ document.getElementById('confirmDelete').addEventListener('click', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload();
+                $('#poolsTable').DataTable().ajax.reload();
+                $('#deleteModal').modal('hide');
+                
+                // Show success message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                alert.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>Pool deleted successfully!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alert);
+                
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 5000);
             } else {
                 alert('Error deleting pool: ' + data.message);
             }
@@ -258,14 +293,6 @@ document.getElementById('confirmDelete').addEventListener('click', function() {
             alert('Error deleting pool');
         });
     }
-    $('#deleteModal').modal('hide');
-});
-
-// Auto-submit form on filter change
-document.querySelectorAll('select[name]').forEach(select => {
-    select.addEventListener('change', function() {
-        document.getElementById('filterForm').submit();
-    });
 });
 </script>
 @endpush

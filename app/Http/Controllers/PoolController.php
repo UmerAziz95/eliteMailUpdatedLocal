@@ -18,6 +18,11 @@ class PoolController extends Controller
      */
     public function index(Request $request)
     {
+        // Handle DataTable AJAX request
+        if ($request->has('datatable')) {
+            return $this->getDataTableData($request);
+        }
+
         $query = Pool::with(['user', 'plan', 'assignedTo']);
 
         // Apply filters
@@ -65,6 +70,121 @@ class PoolController extends Controller
 
         // Otherwise return view
         return view('admin.pools.index', compact('pools'));
+    }
+
+    /**
+     * Handle DataTable AJAX requests
+     */
+    private function getDataTableData(Request $request)
+    {
+        try {
+            $query = Pool::with(['user', 'assignedTo']);
+
+            // Handle DataTable search
+            if ($request->has('search') && !empty($request->search['value'])) {
+                $search = $request->search['value'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('id', 'LIKE', "%{$search}%")
+                      ->orWhere('first_name', 'LIKE', "%{$search}%")
+                      ->orWhere('last_name', 'LIKE', "%{$search}%")
+                      ->orWhere('forwarding_url', 'LIKE', "%{$search}%")
+                      ->orWhere('hosting_platform', 'LIKE', "%{$search}%")
+                      ->orWhere('sending_platform', 'LIKE', "%{$search}%")
+                      ->orWhere('master_inbox_email', 'LIKE', "%{$search}%")
+                      ->orWhereHas('user', function ($userQuery) use ($search) {
+                          $userQuery->where('name', 'LIKE', "%{$search}%");
+                      })
+                      ->orWhereHas('assignedTo', function ($assignedQuery) use ($search) {
+                          $assignedQuery->where('name', 'LIKE', "%{$search}%");
+                      });
+                });
+            }
+
+            // Handle column sorting
+        if ($request->has('order')) {
+            $columnIndex = $request->order[0]['column'];
+            $sortDirection = $request->order[0]['dir'];
+            
+            $columns = [
+                0 => 'id',
+                1 => 'user.name',
+                3 => 'status',
+                4 => 'hosting_platform',
+                5 => 'sending_platform',
+                6 => 'total_inboxes',
+                7 => 'assignedTo.name',
+                9 => 'created_at'
+            ];
+            
+            if (isset($columns[$columnIndex])) {
+                $column = $columns[$columnIndex];
+                
+                if (strpos($column, '.') !== false) {
+                    // Handle relationship sorting
+                    $relation = explode('.', $column);
+                    $query->join($relation[0] === 'user' ? 'users' : 'users as assigned_users', function($join) use ($relation) {
+                        if ($relation[0] === 'user') {
+                            $join->on('pools.user_id', '=', 'users.id');
+                        } else {
+                            $join->on('pools.assigned_to', '=', 'assigned_users.id');
+                        }
+                    })->orderBy($relation[0] === 'user' ? 'users.name' : 'assigned_users.name', $sortDirection);
+                } else {
+                    $query->orderBy($column, $sortDirection);
+                }
+            }
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        // Get total count before pagination
+        $totalRecords = Pool::count();
+        $filteredRecords = $query->count();
+
+        // Handle pagination
+        $start = $request->start ?? 0;
+        $length = $request->length ?? 25;
+        
+        $pools = $query->skip($start)->take($length)->get();
+
+        // Format data for DataTable
+        $data = $pools->map(function ($pool) {
+            return [
+                'id' => $pool->id,
+                'user' => [
+                    'name' => $pool->user->name ?? 'N/A'
+                ],
+                'first_name' => $pool->first_name,
+                'last_name' => $pool->last_name,
+                'status' => $pool->status,
+                'hosting_platform' => $pool->hosting_platform,
+                'sending_platform' => $pool->sending_platform,
+                'total_inboxes' => $pool->total_inboxes,
+                'assigned_to_name' => $pool->assignedTo->name ?? null,
+                'is_internal' => $pool->is_internal,
+                'is_shared' => $pool->is_shared,
+                'created_at' => $pool->created_at->toISOString(),
+            ];
+        })->toArray();
+
+            return response()->json([
+                'draw' => intval($request->draw),
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $filteredRecords,
+                'data' => $data
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('DataTable Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'draw' => intval($request->draw ?? 0),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'An error occurred while loading data.'
+            ], 500);
+        }
     }
 
     /**
