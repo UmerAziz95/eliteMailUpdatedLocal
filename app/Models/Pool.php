@@ -113,10 +113,24 @@ class Pool extends Model
     {
         return $this->belongsTo(Plan::class);
     }
-    // Helper contractors (multiple contractors assigned to shared pools)
-    public function helpers()
+    // Helper contractors accessor - returns collection of User models
+    public function getHelpersAttribute()
     {
-        return $this->belongsToMany(User::class, 'pool_helpers', 'pool_id', 'user_id')->withTimestamps();
+        if (empty($this->helpers_ids)) {
+            return collect();
+        }
+        
+        return User::whereIn('id', $this->helpers_ids)->get();
+    }
+    
+    // Get helper users as a method (not a relationship)
+    public function getHelperUsers()
+    {
+        if (empty($this->helpers_ids)) {
+            return collect();
+        }
+        
+        return User::whereIn('id', $this->helpers_ids)->get();
     }
 
 

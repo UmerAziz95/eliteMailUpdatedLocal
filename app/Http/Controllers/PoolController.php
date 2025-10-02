@@ -318,8 +318,13 @@ class PoolController extends Controller
      */
     public function show(Pool $pool)
     {
-        $pool->load(['user', 'plan', 'assignedTo', 'rejectedBy', 'helpers', 'panels']);
-
+        // Load relationships needed for the show view
+        $pool->load([
+            'user',           // Pool creator (used as createdBy in view)
+            'assignedTo',     // User assigned to this pool
+            'plan'            // Associated plan if any
+        ]);
+        
         return view('admin.pools.show', compact('pool'));
     }
 
