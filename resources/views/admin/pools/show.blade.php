@@ -98,6 +98,10 @@
             <button class="nav-link fs-6 px-5" id="domains-tab" data-bs-toggle="tab" data-bs-target="#domains-tab-pane"
                 type="button" role="tab" aria-controls="domains-tab-pane" aria-selected="false">Domains</button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fs-6 px-5" id="details-tab" data-bs-toggle="tab" data-bs-target="#details-tab-pane"
+                type="button" role="tab" aria-controls="details-tab-pane" aria-selected="false">Additional Details</button>
+        </li>
         @if($pool->helpers && count($pool->helpers) > 0)
         <li class="nav-item" role="presentation">
             <button class="nav-link fs-6 px-5" id="helpers-tab" data-bs-toggle="tab" data-bs-target="#helpers-tab-pane"
@@ -127,21 +131,12 @@
                             $totalDomains = count($poolDomains);
                             @endphp
                             <span>Total Domains <br> {{ $totalDomains }}</span>
-                            <span>Pool Type <br>
-                                {{ $pool->is_internal ? 'Internal' : 'External' }}</span>
+                            <span>Total Inboxes <br> {{ $pool->total_inboxes ?? '0' }}</span>
                         </div>
                         <hr>
                         <div class="d-flex flex-column">
-                            <span class="opacity-50">Pool Name</span>
-                            <span>{{ $pool->name ?? 'N/A' }}</span>
-                        </div>
-                        <div class="d-flex flex-column mt-3">
-                            <span class="opacity-50">Description</span>
-                            <span>{{ $pool->description ?? 'N/A' }}</span>
-                        </div>
-                        <div class="d-flex flex-column mt-3">
-                            <span class="opacity-50">Status</span>
-                            <span>{{ ucfirst(str_replace('_', ' ', $pool->status)) }}</span>
+                            <span class="opacity-50">Pool ID</span>
+                            <span>{{ $pool->id ?? 'N/A' }}</span>
                         </div>
                         @if($pool->assigned_to)
                         <div class="d-flex flex-column mt-3">
@@ -156,8 +151,15 @@
                         <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Created By</span>
                             <div class="d-flex align-items-center gap-2">
-                                <img src="{{ $pool->user->profile_image ?? $defaultProfilePic }}" 
-                                     width="30" height="30" class="rounded-circle" alt="Profile">
+                                @if($pool->user->profile_image)
+                                    <img src="{{ Storage::url('profile_images/'.$pool->user->profile_image) }}" 
+                                        width="30" height="30" class="rounded-circle" alt="Profile">
+                                @else
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 30px; height: 30px; background-color: #007bff; color: white; font-size: 12px; font-weight: bold;">
+                                        {{ strtoupper(substr($pool->user->name ?? 'N', 0, 1)) }}{{ strtoupper(substr(explode(' ', $pool->user->name ?? 'A')[1] ?? 'A', 0, 1)) }}
+                                    </div>
+                                @endif
                                 <span>{{ $pool->user->name ?? 'N/A' }}</span>
                             </div>
                         </div>
@@ -175,13 +177,11 @@
                             <div>
                                 <span class="opacity-50">Pool Domain Collection</span>
                                 <br>
-                                <span>({{ count($pool->domains ?? []) }} domains)</span>
+                                <span>({{ count($pool->domains ?? []) }} domains × {{ $pool->inboxes_per_domain ?? 1 }} inboxes)</span>
                             </div>
                         </div>
-                        <h6 class="my-3 small"><span class="theme-text">Pool Type:</span> {{ $pool->is_internal ? 'Internal' : 'External' }}</h6>
-                        <h6 class="small"><span class="theme-text">Status:</span> {{ ucfirst(str_replace('_', ' ', $pool->status)) }}</h6>
-                        @if($pool->is_shared)
-                        <h6 class="small"><span class="theme-text">Shared:</span> Yes</h6>
+                        @if($pool->coupon_code)
+                        <h6 class="small"><span class="theme-text">Coupon Code:</span> {{ $pool->coupon_code }}</h6>
                         @endif
                         @else
                         <h6><span class="theme-text">Pool Type:</span> <small>No pool data available</small>
@@ -201,21 +201,64 @@
                             Domains & Configuration
                         </h6>
 
-                        @if ($pool && count($pool->domains ?? []) > 0)
+                        @if ($pool)
                         <div class="d-flex flex-column mb-3">
-                            <span class="opacity-50">Pool Settings</span>
-                            <span>Shared: {{ $pool->is_shared ? 'Yes' : 'No' }}</span>
+                            <span class="opacity-50">Hosting Platform</span>
+                            <span>{{ $pool->hosting_platform ?? 'N/A' }}</span>
+                        </div>
+
+                        @if($pool->other_platform)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Other Platform</span>
+                            <span>{{ $pool->other_platform }}</span>
+                        </div>
+                        @endif
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Platform Login</span>
+                            <span>{{ $pool->platform_login ?? 'N/A' }}</span>
                         </div>
 
                         <div class="d-flex flex-column mb-3">
-                            <span class="opacity-50">Pool Type</span>
-                            <span>{{ $pool->is_internal ? 'Internal' : 'External' }}</span>
+                            <span class="opacity-50">Forwarding URL</span>
+                            <span>{{ $pool->forwarding_url ?? 'N/A' }}</span>
                         </div>
 
-                        @if($pool->notes)
                         <div class="d-flex flex-column mb-3">
-                            <span class="opacity-50">Notes</span>
-                            <span>{{ $pool->notes }}</span>
+                            <span class="opacity-50">Sending Platform</span>
+                            <span>{{ $pool->sending_platform ?? 'N/A' }}</span>
+                        </div>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Sequencer Login</span>
+                            <span>{{ $pool->sequencer_login ?? 'N/A' }}</span>
+                        </div>
+
+                        @if($pool->master_inbox_email)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Master Inbox Email</span>
+                            <span>{{ $pool->master_inbox_email }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->profile_picture_link)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Profile Picture Link</span>
+                            <a href="{{ $pool->profile_picture_link }}" target="_blank">{{ $pool->profile_picture_link }}</a>
+                        </div>
+                        @endif
+
+                        @if($pool->bison_url)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Bison URL</span>
+                            <span>{{ $pool->bison_url }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->bison_workspace)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Bison Workspace</span>
+                            <span>{{ $pool->bison_workspace }}</span>
                         </div>
                         @endif
 
@@ -228,6 +271,20 @@
                         <div class="d-flex flex-column mb-3">
                             <span class="opacity-50">Last Updated</span>
                             <span>{{ $pool->updated_at->format('M d, Y H:i A') }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->completed_at)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Completed At</span>
+                            <span>{{ $pool->completed_at->format('M d, Y H:i A') }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->paid_at)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Paid At</span>
+                            <span>{{ $pool->paid_at->format('M d, Y H:i A') }}</span>
                         </div>
                         @endif
 
@@ -304,6 +361,201 @@
                         <p>No domains assigned to this pool</p>
                     </div>
                     @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Details Tab -->
+        <div class="tab-pane fade" id="details-tab-pane" role="tabpanel" aria-labelledby="details-tab" tabindex="0">
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- <div class="card p-3 mb-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-clock"></i>
+                            </div>
+                            Timing & Status Information
+                        </h6>
+
+                        @if($pool->timer_started_at)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Timer Started At</span>
+                            <span>{{ $pool->timer_started_at->format('M d, Y H:i A') }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->timer_paused_at)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Timer Paused At</span>
+                            <span>{{ $pool->timer_paused_at->format('M d, Y H:i A') }}</span>
+                        </div>
+                        @endif
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Total Paused Time</span>
+                            <span>{{ gmdate('H:i:s', $pool->total_paused_seconds ?? 0) }}</span>
+                        </div>
+
+                        @if($pool->rejected_by)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Rejected By</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="{{ $pool->rejectedBy->profile_image ?? $defaultProfilePic }}" 
+                                     width="30" height="30" class="rounded-circle" alt="Profile">
+                                <span>{{ $pool->rejectedBy->name ?? 'N/A' }}</span>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if($pool->rejected_at)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Rejected At</span>
+                            <span>{{ $pool->rejected_at->format('M d, Y H:i A') }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->reason)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Reason</span>
+                            <span>{{ $pool->reason }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->shared_note)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Shared Note</span>
+                            <span>{{ $pool->shared_note }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->reassignment_note)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Reassignment Note</span>
+                            <span>{{ $pool->reassignment_note }}</span>
+                        </div>
+                        @endif
+                    </div> -->
+                    <div class="card p-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-user-tie"></i>
+                            </div>
+                            Persona Configuration
+                        </h6>
+
+                        @if($pool->prefix_variant_1)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Prefix Variant 1</span>
+                            <span>{{ $pool->prefix_variant_1 }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->prefix_variant_2)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Prefix Variant 2</span>
+                            <span>{{ $pool->prefix_variant_2 }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->prefix_variants_details)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Prefix Variants</span>
+                            @if(is_array($pool->prefix_variants_details))
+                                @foreach($pool->prefix_variants_details as $variantKey => $variantData)
+                                    <div class="mb-3 p-2 border rounded">
+                                        <strong class="text-primary">{{ ucfirst(str_replace('_', ' ', $variantKey)) }}</strong>
+                                        @if(is_array($variantData))
+                                            @foreach($variantData as $key => $value)
+                                                <div class="ms-3 mb-1">
+                                                    <span class="opacity-75">{{ ucfirst(str_replace('_', ' ', $key)) }}:</span>
+                                                    @if($key === 'profile_link')
+                                                        <a href="{{ $value }}" target="_blank" class="text-decoration-none">{{ $value }}</a>
+                                                    @else
+                                                        <span>{{ $value }}</span>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        @else
+                                            <div class="ms-3">{{ $variantData }}</div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            @else
+                                <pre class="small">{{ json_encode($pool->prefix_variants_details, JSON_PRETTY_PRINT) }}</pre>
+                            @endif
+                        </div>
+                        @endif
+
+                        @if($pool->email_persona_picture_link)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Email Persona Picture</span>
+                            <a href="{{ $pool->email_persona_picture_link }}" target="_blank">View Picture</a>
+                        </div>
+                        @endif
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Master Inbox Confirmation</span>
+                            <span class="badge bg-{{ $pool->master_inbox_confirmation ? 'success' : 'secondary' }}">{{ $pool->master_inbox_confirmation ? 'Confirmed' : 'Not Confirmed' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card p-3 mb-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-credit-card"></i>
+                            </div>
+                            Information
+                        </h6>
+
+                        @if($pool->chargebee_customer_id)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Chargebee Customer ID</span>
+                            <span>{{ $pool->chargebee_customer_id }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->chargebee_subscription_id)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Chargebee Subscription ID</span>
+                            <span>{{ $pool->chargebee_subscription_id }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->chargebee_invoice_id)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Chargebee Invoice ID</span>
+                            <span>{{ $pool->chargebee_invoice_id }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->meta)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Metadata</span>
+                            <pre class="small">{{ json_encode($pool->meta, JSON_PRETTY_PRINT) }}</pre>
+                        </div>
+                        @endif
+
+                        @if($pool->backup_codes)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Backup Codes</span>
+                            <span>{{ $pool->backup_codes }}</span>
+                        </div>
+                        @endif
+
+                        @if($pool->additional_info)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Additional Information</span>
+                            <span>{{ $pool->additional_info }}</span>
+                        </div>
+                        @endif
+                    </div>
+
+                    
                 </div>
             </div>
         </div>
