@@ -1443,11 +1443,25 @@ function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
             progressBar.css('width', '100%');
             progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
             progressNote.html(`(Pool limit: ${poolLimit} inboxes, Current: ${currentInboxes} inboxes)`);
+            
+            // Hide submit button when order limit is exceeded
+            const submitButton = $('button[type="submit"]');
+            if (submitButton.length) {
+                submitButton.prop('disabled', true);
+                submitButton.hide();
+            }
         } else {
             // Normal display - show current vs current (not vs pool limit)
             progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used${domainBreakdown}`);
             progressBar.css('width', '100%');
             progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+            
+            // Show submit button when within order limits
+            const submitButton = $('button[type="submit"]');
+            if (submitButton.length) {
+                submitButton.prop('disabled', false);
+                submitButton.show();
+            }
             
             // Show breakdown information with pool limit info if available
             if (poolLimit > 0) {
