@@ -3182,6 +3182,8 @@ $(document).ready(function() {
     @endif
     let domainSequenceCounter = 1;
     let existingDomainIds = new Map(); // Map to store domain name -> ID mapping
+    let existingDomainsById = new Map(); // Map to store ID -> domain data mapping
+    let existingDomainsByPosition = []; // Array to store original domain order with IDs
     
     // Initialize existing domain IDs if editing
     @if(isset($pool) && $pool->domains)
@@ -3189,12 +3191,16 @@ $(document).ready(function() {
             $existingDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
         @endphp
         @if(is_array($existingDomains))
-            @foreach($existingDomains as $domain)
+            @foreach($existingDomains as $index => $domain)
                 @if(isset($domain['id']) && isset($domain['name']))
-                    existingDomainIds.set('{{ $domain['name'] }}', {
+                    const domainData{{ $index }} = {
                         id: '{{ $domain['id'] }}',
+                        name: '{{ $domain['name'] }}',
                         is_used: {{ isset($domain['is_used']) && $domain['is_used'] ? 'true' : 'false' }}
-                    });
+                    };
+                    existingDomainIds.set('{{ $domain['name'] }}', domainData{{ $index }});
+                    existingDomainsById.set('{{ $domain['id'] }}', domainData{{ $index }});
+                    existingDomainsByPosition[{{ $index }}] = domainData{{ $index }};
                     // Extract sequence number from existing ID (format: poolId_sequence)
                     (function() {
                         const parts = '{{ $domain['id'] }}'.split('_');
@@ -3220,11 +3226,12 @@ $(document).ready(function() {
         });
         
         // Then process editable domains from textarea
-        for (const domainName of domainArray) {
+        for (let i = 0; i < domainArray.length; i++) {
+            const domainName = domainArray[i];
             if (domainName.trim()) {
                 let domainData;
                 
-                // Check if this domain already has an ID
+                // Priority 1: Check if this domain name already exists
                 if (existingDomainIds.has(domainName)) {
                     const existing = existingDomainIds.get(domainName);
                     domainData = {
@@ -3232,19 +3239,39 @@ $(document).ready(function() {
                         name: domainName,
                         is_used: existing.is_used || false
                     };
-                } else {
+                }
+                // Priority 2: Check if we have an existing domain at this position (name might have changed)
+                else if (existingDomainsByPosition[i] && !existingDomainsByPosition[i].is_used) {
+                    // Domain name changed but position is same, preserve the original ID
+                    const existingAtPosition = existingDomainsByPosition[i];
+                    domainData = {
+                        id: existingAtPosition.id, // PRESERVE original ID
+                        name: domainName.trim(), // Use new name
+                        is_used: existingAtPosition.is_used || false,
+                        original_id: existingAtPosition.id // Keep track of original ID for backend
+                    };
+                    
+                    console.log('Domain renamed:', {
+                        position: i,
+                        oldName: existingAtPosition.name,
+                        newName: domainName.trim(),
+                        preservedId: existingAtPosition.id
+                    });
+                }
+                // Priority 3: Completely new domain
+                else {
                     // Assign new unique ID with pool prefix: poolId_sequence
                     const newId = poolId + '_' + domainSequenceCounter++;
                     domainData = {
                         id: newId,
-                        name: domainName,
+                        name: domainName.trim(),
                         is_used: false
                     };
-                    existingDomainIds.set(domainName, { id: newId, is_used: false });
+                    existingDomainIds.set(domainName.trim(), { id: newId, is_used: false });
                 }
                 
                 // Only add if not already in used domains
-                if (!usedDomains.some(used => used.name === domainName)) {
+                if (!usedDomains.some(used => used.name === domainName.trim())) {
                     processedDomains.push(domainData);
                 }
             }
