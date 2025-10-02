@@ -1415,10 +1415,11 @@ function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
             // Only show limit error if there's no other validation error (like duplicates)
             if (!currentError || (!currentError.includes('Duplicate') && !currentError.includes('Invalid'))) {
                 const domainsField = $('#domains');
-                const usedDomainsText = usedDomainsCount > 0 ? ` (${editableDomainsCount} editable + ${usedDomainsCount} used)` : '';
+                // const usedDomainsText = usedDomainsCount > 0 ? ` (${editableDomainsCount} editable + ${usedDomainsCount} used)` : '';
+                const usedDomainsText = '';
                 domainsField.addClass('is-invalid');
                 $('#domains-error').html(`
-                    <strong>Order Limit Exceeded</strong> — You currently have ${currentInboxes} inboxes from ${totalCurrentDomains} domains${usedDomainsText}, but this order supports only ${poolLimit} usable inboxes.
+                    <strong>Order Limit Exceeded</strong> — You currently have ${currentInboxes} inboxes, but this order supports only ${poolLimit} usable inboxes.
                     <br><small>Pool Limit: ${rawTotalInboxes} total inboxes with ${inboxesPerDomain} inbox${inboxesPerDomain > 1 ? 'es' : ''} per domain</small>
                 `);
             }
@@ -3170,7 +3171,11 @@ $(document).ready(function() {
     
     // Function to handle the actual form submission
     // Function to manage domain IDs with pool prefix for uniqueness
-    const poolId = {{ isset($pool) && $pool->id ? $pool->id : 'Date.now()' }}; // Use pool ID or timestamp for new pools
+    @if(isset($pool) && $pool->id)
+    const poolId = {{ $pool->id }}; // Use existing pool ID
+    @else
+    const poolId = Date.now(); // Generate timestamp-based ID for new pools (will be updated by PoolObserver after creation)
+    @endif
     let domainSequenceCounter = 1;
     let existingDomainIds = new Map(); // Map to store domain name -> ID mapping
     
@@ -3243,7 +3248,6 @@ $(document).ready(function() {
         
         return processedDomains;
     }
-
     function submitForm() {
         // Final validation check before submission
         const hasValidationErrors = $('.is-invalid').length > 0;
