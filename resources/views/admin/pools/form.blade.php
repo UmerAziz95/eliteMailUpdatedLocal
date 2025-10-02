@@ -357,7 +357,7 @@
 
                 <div class="inboxes-per-domain col-md-6">
                     <label>Inboxes per Domain / Prefix Variant</label>
-                    <select name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required>
+                    <select name="inboxes_per_domain" id="inboxes_per_domain" class="form-control" required {{ isset($pool) && $pool->inboxes_per_domain ? 'disabled' : '' }}>
                         <option value="1" {{ isset($pool) && $pool->inboxes_per_domain
                             == 1 ? 'selected' : '' }}>1</option>
                         <option value="2" {{ isset($pool) && $pool->inboxes_per_domain
@@ -365,7 +365,10 @@
                         <option value="3" {{ isset($pool) && $pool->inboxes_per_domain
                             == 3 ? 'selected' : '' }}>3</option>
                     </select>
-                    <p class="note">(How many email accounts you would like us to create per domain - the maximum is 3)</p>
+                    @if(isset($pool) && $pool->inboxes_per_domain)
+                        <input type="hidden" name="inboxes_per_domain" value="{{ $pool->inboxes_per_domain }}">
+                    @endif
+                    <p class="note">(How many email accounts you would like us to create per domain - the maximum is 3){{ isset($pool) && $pool->inboxes_per_domain ? ' - This field cannot be changed once set.' : '' }}</p>
                 </div>
                 <div class="col-md-6 total-inbox">
                     <label>Total Inboxes</label>
