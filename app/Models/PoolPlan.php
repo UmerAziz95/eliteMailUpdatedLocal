@@ -1,0 +1,54 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class PoolPlan extends Model
+{
+    protected $table = 'pool_plans';
+
+    protected $fillable = [
+        'name',
+        'description',
+        'price',
+        'duration',
+        'is_active',
+        'min_inbox',
+        'max_inbox',
+        'currency_code'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'price' => 'decimal:2',
+        'min_inbox' => 'integer',
+        'max_inbox' => 'integer'
+    ];
+
+    public function features()
+    {
+        return $this->belongsToMany(Feature::class, 'pool_plan_feature')
+            ->withPivot('value')
+            ->withTimestamps();
+    }
+
+    public function poolSubscriptions()
+    {
+        return $this->hasMany(PoolSubscription::class);
+    }
+
+    // Helper methods
+    public static function getMostlyUsed()
+    {
+        return self::where('is_active', true)
+            ->withCount('poolSubscriptions')
+            ->orderBy('pool_subscriptions_count', 'desc')
+            ->first();
+    }
+
+    public function poolCoupons()
+    {
+        return $this->hasMany(PoolCoupon::class);
+    }
+}

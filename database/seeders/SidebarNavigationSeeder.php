@@ -85,6 +85,14 @@ class SidebarNavigationSeeder extends Seeder
                 'sub_menu' => [],
                 'order' => 8
             ],
+            [
+                'name' => 'Pool Pricing',
+                'icon' => 'ti ti-layer-group fs-5',
+                'route' => 'admin.pool-pricing.index',
+                'permission' => 'Pool Pricing',
+                'sub_menu' => [],
+                'order' => 8.5
+            ],
             // [
             //     'name' => 'Special Plans',
             //     'icon' => 'ti ti-star fs-5',

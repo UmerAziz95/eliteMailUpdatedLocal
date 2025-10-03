@@ -1,0 +1,1006 @@
+@extends('admin.layouts.app')
+@section('title', 'Pool Pricing Plans')
+
+@push('styles')
+<!-- remove Selected Feature button  -->
+<style>
+    .is-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+
+    .invalid-feedback,
+    .range-error {
+        display: block !important;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
+
+    .required-field::before {
+        content: "* ";
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .form-validation-summary {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+
+    .pricing-card {
+        background-color: var(--secondary-color);
+        border-radius: 10px;
+        padding: 30px;
+        text-align: center;
+        transition: 0.3s ease-in-out;
+        min-height: 28rem;
+    }
+
+    a {
+        text-decoration: none
+    }
+    
+    .pricing-card:hover {
+        transform: translateY(-10px);
+    }
+
+    .popular {
+        position: relative;
+        color: white;
+    }
+
+    .grey-btn {
+        background-color: var(--secondary-color);
+        color: #fff;
+    }
+
+    .popular::before {
+        content: "Most Popular";
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ffcc00;
+        color: #000;
+        padding: 5px 10px;
+        font-size: 14px;
+        font-weight: bold;
+        border-radius: 5px;
+    }
+
+    .feature-item {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        position: relative;
+    }
+
+    .remove-feature-btn {
+        position: absolute;
+        top: 17px;
+        right: 14px;
+        font-size: 8px;
+        padding: 2px 5px;
+        z-index: 1;
+    }
+
+    select option {
+        color: #fff;
+        background-color: var(--primary-color);
+        border: none !important;
+    }
+
+    .new-feature-form {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 10px;
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+    }
+
+    .features-container .feature-item {
+        border: 1px solid #9f9f9f83;
+    }
+
+    .selected-features-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .feature-item strong {
+        font-size: 13px
+    }
+
+    .plan-updated {
+        animation: planUpdate 0.5s ease-in-out;
+    }
+
+    @keyframes planUpdate {
+        0% {
+            transform: scale(1);
+            background-color: transparent;
+        }
+
+        50% {
+            transform: scale(1.02);
+            background-color: rgba(40, 167, 69, 0.1);
+        }
+
+        100% {
+            transform: scale(1);
+            background-color: transparent;
+        }
+    }
+
+    .success-message {
+        animation: slideInRight 0.5s ease-out;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+
+    .modal-close-btn {
+        top: 20px;
+        right: 25px;
+        width: 30px;
+        height: 30px;
+        background-color: var(--secondary-color);
+        color: #fff;
+        z-index: 999;
+    }
+
+    .plan-actions {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .pricing-card:hover .plan-actions {
+        opacity: 1;
+    }
+
+    .btn-action {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 5px;
+        border-radius: 50%;
+        border: none;
+        font-size: 12px;
+    }
+
+    .btn-edit {
+        background-color: rgba(255, 193, 7, 0.8);
+        color: #000;
+    }
+
+    .btn-delete {
+        background-color: rgba(220, 53, 69, 0.8);
+        color: #fff;
+    }
+
+    .range-summary {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .number {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+    }
+
+    .theme-text {
+        color: var(--primary-color) !important;
+    }
+
+    .features-list li {
+        opacity: 0.9;
+    }
+
+    .features-list li:hover {
+        opacity: 1;
+    }
+</style>
+
+@endpush
+
+@section('content')
+<div class="container-fluid">
+    <!-- Pool Pricing Plans Section -->
+    <div class="text-center text-white mb-5">
+        <h1 class="display-4 fw-bold mb-3">
+            <i class="fa-solid fa-layer-group me-3"></i>Pool Pricing Plans
+        </h1>
+        <p class="lead">Manage your pool-based pricing plans for flexible inbox management</p>
+    </div>
+
+    <!-- Pool Plans Display -->
+    <div class="row mt-5" id="pool-plans-container">
+        @foreach ($poolPlans as $poolPlan)
+        <div class="col-sm-6 col-lg-4 mb-5" id="pool-plan-{{ $poolPlan->id }}">
+            <div class="pricing-card card position-relative">
+                <!-- Plan Actions -->
+                <div class="plan-actions">
+                    <button class="btn btn-edit btn-action" data-bs-toggle="modal" 
+                            data-bs-target="#editPoolPlan{{ $poolPlan->id }}" title="Edit Pool Plan">
+                        <i class="fa-solid fa-edit"></i>
+                    </button>
+                    <button class="btn btn-delete btn-action" onclick="deletePoolPlan({{ $poolPlan->id }})" title="Delete Pool Plan">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+
+                <div class="inner-content d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="text-start">
+                            <h4 class="fw-semibold text-white plan-name text-capitalize fs-4">
+                                {{ $poolPlan->name }}</h4>
+                            <div class="mb-3">
+                                <span class="range-summary">
+                                    <span class="number">{{ $poolPlan->min_inbox }}
+                                        {{ $poolPlan->max_inbox == 0 ? '+' : '- ' . $poolPlan->max_inbox }}</span>
+                                    Inboxes
+                                </span>
+                            </div>
+
+                            <h2 class="fw-bold plan-price fs-1 theme-text mb-4 d-flex align-items-center gap-1 number">
+                                ${{ number_format($poolPlan->price, 2) }}
+                                <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
+                                    /{{ $poolPlan->duration == 'monthly' ? 'mo' : $poolPlan->duration }}
+                                    per Pool
+                                </span>
+                            </h2>
+                            <ul class="list-unstyled features-list text-start">
+                                @foreach ($poolPlan->features as $feature)
+                                <li style="font-size: 14px" class="mb-2 d-flex align-items-center gap-2">
+                                    <div>
+                                        <img src="https://cdn.prod.website-files.com/68271f86a7dc3b457904455f/682b27d387eda87e2ecf8ba5_checklist%20(1).png"
+                                            width="20" alt="">
+                                    </div>
+                                    {{ $feature->title }} {{ $feature->pivot->value }}
+                                </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Modal for each pool plan -->
+        <div class="modal fade" id="editPoolPlan{{ $poolPlan->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-body p-3 p-md-5 position-relative">
+                        <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
+                            data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                        <div class="text-center mb-4">
+                            <h4>Edit Pool Plan</h4>
+                        </div>
+                        <form id="editPoolPlanForm{{ $poolPlan->id }}" class="edit-pool-plan-form" data-id="{{ $poolPlan->id }}">
+                            @csrf
+                            @method('PUT')
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="name{{ $poolPlan->id }}" class="required-field">Pool Plan Name:</label>
+                                    <input type="text" class="form-control mb-3" id="name{{ $poolPlan->id }}"
+                                        name="name" value="{{ $poolPlan->name }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="duration{{ $poolPlan->id }}" class="required-field">Duration:</label>
+                                    <select class="form-control mb-3" id="duration{{ $poolPlan->id }}"
+                                        name="duration" required>
+                                        <option value="monthly" {{ $poolPlan->duration == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                                        <option value="yearly" {{ $poolPlan->duration == 'yearly' ? 'selected' : '' }}>Yearly</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="price{{ $poolPlan->id }}" class="required-field">Price ($):</label>
+                                    <input type="number" class="form-control mb-3" id="price{{ $poolPlan->id }}"
+                                        name="price" value="{{ $poolPlan->price }}" min="0" step="0.01" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="currency_code{{ $poolPlan->id }}">Currency Code:</label>
+                                    <input type="text" class="form-control mb-3" id="currency_code{{ $poolPlan->id }}"
+                                        name="currency_code" value="{{ $poolPlan->currency_code ?? 'USD' }}" maxlength="3">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="min_inbox{{ $poolPlan->id }}" class="required-field">Min Inboxes:</label>
+                                    <input type="number" class="form-control mb-3" id="min_inbox{{ $poolPlan->id }}"
+                                        name="min_inbox" value="{{ $poolPlan->min_inbox }}" min="0" step="1" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="max_inbox{{ $poolPlan->id }}" class="required-field">Max Inboxes:</label>
+                                    <input type="number" class="form-control mb-3" id="max_inbox{{ $poolPlan->id }}"
+                                        name="max_inbox" value="{{ $poolPlan->max_inbox }}" min="0" step="1" 
+                                        placeholder="0 for unlimited" required>
+                                    <small class="text-muted">Set to 0 for unlimited inboxes</small>
+                                </div>
+                            </div>
+
+                            <label for="description{{ $poolPlan->id }}" class="required-field">Description:</label>
+                            <textarea class="form-control mb-3" id="description{{ $poolPlan->id }}" name="description"
+                                rows="3" required>{{ $poolPlan->description }}</textarea>
+
+                            <!-- Features Section -->
+                            <h5 class="mt-4">Features</h5>
+                            <div class="selected-features-container" id="selectedFeatures{{ $poolPlan->id }}">
+                                @foreach ($poolPlan->features as $feature)
+                                <div class="feature-item" data-feature-id="{{ $feature->id }}">
+                                    <button type="button" class="btn btn-sm btn-danger remove-feature-btn">
+                                        <i class="fa-solid fa-times"></i>
+                                    </button>
+                                    <div class="row">
+                                        <div class="col-md-5">
+                                            <strong>{{ $feature->title }}</strong>
+                                            <input type="hidden" name="feature_ids[]" value="{{ $feature->id }}">
+                                        </div>
+                                        <div class="col-md-7">
+                                            <input type="text" class="form-control form-control-sm feature-value-input"
+                                                name="feature_values[]" value="{{ $feature->pivot->value }}"
+                                                placeholder="Value">
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+
+                            <div class="row mt-3 gy-3">
+                                <div class="col-md-7">
+                                    <select class="form-control feature-dropdown" id="featureDropdown{{ $poolPlan->id }}">
+                                        <option value="">Select an existing feature</option>
+                                        <!-- Will be populated via AJAX -->
+                                    </select>
+                                </div>
+                                <div class="col-md-5" style="text-align: right;">
+                                    <button type="button" class="btn btn-secondary add-selected-feature"
+                                        data-plan-id="{{ $poolPlan->id }}">
+                                        <i class="fa-solid fa-plus"></i> Selected Feature
+                                    </button>
+                                    <button type="button" class="btn btn-primary toggle-new-feature-form"
+                                        data-plan-id="{{ $poolPlan->id }}">
+                                        <i class="fa-solid fa-plus"></i> New
+                                    </button>
+                                </div>
+                            </div>
+                                
+                            <div class="new-feature-form mt-3" id="newFeatureForm{{ $poolPlan->id }}"
+                                style="display: none;">
+                                <h6>New Feature</h6>
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control mb-2 new-feature-title"
+                                            placeholder="Feature Title">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="text" class="form-control mb-2 new-feature-value"
+                                            placeholder="Feature Value">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-primary add-new-feature-btn"
+                                            data-plan-id="{{ $poolPlan->id }}">
+                                            <i class="fa-solid fa-plus"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-primary">Update Pool Plan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endforeach
+    </div>
+
+    <!-- Add New Pool Plan Button -->
+    <div class="text-center mt-5">
+        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createPoolPlanModal">
+            <i class="fa-solid fa-plus me-2"></i>Create New Pool Plan
+        </button>
+    </div>
+
+    <!-- Create Pool Plan Modal -->
+    <div class="modal fade" id="createPoolPlanModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-body p-3 p-md-5 position-relative">
+                    <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
+                        data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                    <div class="text-center mb-4">
+                        <h4>Create New Pool Plan</h4>
+                    </div>
+                    <form id="createPoolPlanForm">
+                        @csrf
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="name" class="required-field">Pool Plan Name:</label>
+                                <input type="text" class="form-control mb-3" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="duration" class="required-field">Duration:</label>
+                                <select class="form-control mb-3" id="duration" name="duration" required>
+                                    <option value="">Select Duration</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="yearly">Yearly</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="price" class="required-field">Price ($):</label>
+                                <input type="number" class="form-control mb-3" id="price" name="price" 
+                                       min="0" step="0.01" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="currency_code">Currency Code:</label>
+                                <input type="text" class="form-control mb-3" id="currency_code" 
+                                       name="currency_code" value="USD" maxlength="3">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="min_inbox" class="required-field">Min Inboxes:</label>
+                                <input type="number" class="form-control mb-3" id="min_inbox" name="min_inbox" 
+                                       min="0" step="1" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="max_inbox" class="required-field">Max Inboxes:</label>
+                                <input type="number" class="form-control mb-3" id="max_inbox" name="max_inbox" 
+                                       min="0" step="1" placeholder="0 for unlimited" required>
+                                <small class="text-muted">Set to 0 for unlimited inboxes</small>
+                            </div>
+                        </div>
+
+                        <label for="description" class="required-field">Description:</label>
+                        <textarea class="form-control mb-3" id="description" name="description" rows="3" required></textarea>
+
+                        <!-- Features Section -->
+                        <h5 class="mt-4">Features</h5>
+                        <div class="selected-features-container" id="selectedFeaturesCreate">
+                            <!-- Selected features will appear here -->
+                        </div>
+
+                        <div class="row mt-3 gy-3">
+                            <div class="col-md-7">
+                                <select class="form-control feature-dropdown" id="featureDropdownCreate">
+                                    <option value="">Select an existing feature</option>
+                                    <!-- Will be populated via AJAX -->
+                                </select>
+                            </div>
+                            <div class="col-md-5" style="text-align: right;">
+                                <button type="button" class="btn btn-secondary add-selected-feature"
+                                    data-plan-id="Create">
+                                    <i class="fa-solid fa-plus"></i> Selected Feature
+                                </button>
+                                <button type="button" class="btn btn-primary toggle-new-feature-form"
+                                    data-plan-id="Create">
+                                    <i class="fa-solid fa-plus"></i> New
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="new-feature-form mt-3" id="newFeatureFormCreate" style="display: none;">
+                            <h6>New Feature</h6>
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control mb-2 new-feature-title"
+                                        placeholder="Feature Title">
+                                </div>
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control mb-2 new-feature-value"
+                                        placeholder="Feature Value">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-primary add-new-feature-btn"
+                                        data-plan-id="Create">
+                                        <i class="fa-solid fa-plus"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">Create Pool Plan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    // Load features on page load
+    loadFeatures();
+
+    // Create Pool Plan Form Submission
+    $('#createPoolPlanForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        // Feature data is already included in the form via hidden inputs and value inputs
+
+        // Show loading
+        Swal.fire({
+            title: 'Creating Pool Plan...',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => {
+                Swal.showLoading()
+            }
+        });
+
+        $.ajax({
+            url: "{{ route('admin.pool-plans.store') }}",
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Pool plan created successfully!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: response.message || 'Something went wrong'
+                    });
+                }
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON;
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response?.message || 'Something went wrong'
+                });
+            }
+        });
+    });
+
+    // Edit Pool Plan Form Submission
+    $('.edit-pool-plan-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        const poolPlanId = $(this).data('id');
+        const formData = new FormData(this);
+        
+        // Feature data is already included in the form via hidden inputs and value inputs
+
+        // Show loading
+        Swal.fire({
+            title: 'Updating Pool Plan...',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => {
+                Swal.showLoading()
+            }
+        });
+
+        $.ajax({
+            url: `{{ url('admin/pool-plans') }}/${poolPlanId}`,
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Pool plan updated successfully!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: response.message || 'Something went wrong'
+                    });
+                }
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON;
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response?.message || 'Something went wrong'
+                });
+            }
+        });
+    });
+
+    // Validate min/max inbox range
+    $(document).on('input', 'input[name="min_inbox"], input[name="max_inbox"]', function() {
+        const form = $(this).closest('form');
+        const minInput = form.find('input[name="min_inbox"]');
+        const maxInput = form.find('input[name="max_inbox"]');
+        
+        const minValue = parseInt(minInput.val()) || 0;
+        const maxValue = parseInt(maxInput.val()) || 0;
+        
+        // Clear previous error messages
+        minInput.removeClass('is-invalid');
+        maxInput.removeClass('is-invalid');
+        form.find('.range-error').remove();
+        
+        if (maxValue > 0 && minValue > maxValue) {
+            maxInput.addClass('is-invalid');
+            maxInput.after('<div class="range-error">Max inboxes must be greater than or equal to min inboxes</div>');
+        }
+    });
+});
+
+// Load features from database
+function loadFeatures() {
+    $.ajax({
+        url: "{{ route('admin.features.list') }}",
+        type: "GET",
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                // Populate all feature dropdowns
+                $('.feature-dropdown').each(function() {
+                    const dropdown = $(this);
+                    let poolPlanId = dropdown.attr('id').replace('featureDropdown', '');
+                    
+                    // Handle the special case for create dropdown
+                    if (dropdown.attr('id') === 'featureDropdownCreate') {
+                        poolPlanId = 'Create';
+                    }
+                    
+                    let options = '<option value="">Select an existing feature</option>';
+                    
+                    // Get all currently added feature IDs for this pool plan
+                    const addedFeatureIds = [];
+                    const container = poolPlanId === 'Create' ? $('#selectedFeaturesCreate') : $(`#selectedFeatures${poolPlanId}`);
+                    container.find('.feature-item').each(function() {
+                        const featureId = $(this).data('feature-id');
+                        if (featureId) {
+                            addedFeatureIds.push(featureId.toString());
+                        }
+                    });
+                    
+                    // Filter out features that are already added to this pool plan
+                    $.each(response.features, function(index, feature) {
+                        if (!addedFeatureIds.includes(feature.id.toString())) {
+                            options += `<option value="${feature.id}" data-title="${feature.title}">${feature.title}</option>`;
+                        }
+                    });
+                    
+                    dropdown.html(options);
+                });
+            }
+        },
+        error: function(xhr) {
+            console.log("Failed to load features");
+        }
+    });
+}
+
+// Add selected feature button handler
+$(document).on('click', '.add-selected-feature', function() {
+    const poolPlanId = $(this).data('plan-id');
+    const dropdown = poolPlanId === 'Create' ? $('#featureDropdownCreate') : $(`#featureDropdown${poolPlanId}`);
+    const selectedFeatureId = dropdown.val();
+    const selectedFeatureTitle = dropdown.find('option:selected').data('title');
+    
+    if (!selectedFeatureId) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Feature Selected',
+            text: 'Please select a feature first'
+        });
+        return;
+    }
+    
+    // Check if feature already exists
+    const container = poolPlanId === 'Create' ? $('#selectedFeaturesCreate') : $(`#selectedFeatures${poolPlanId}`);
+    const existingFeature = container.find(`[data-feature-id="${selectedFeatureId}"]`);
+    if (existingFeature.length > 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Duplicate Feature',
+            text: 'This feature is already added to this plan'
+        });
+        return;
+    }
+    
+    // Add feature to the container
+    const featureHtml = `
+        <div class="feature-item" data-feature-id="${selectedFeatureId}">
+            <button type="button" class="btn btn-sm btn-danger remove-feature-btn">
+                <i class="fa-solid fa-times"></i>
+            </button>
+            <div class="row">
+                <div class="col-md-5">
+                    <strong>${selectedFeatureTitle}</strong>
+                    <input type="hidden" name="feature_ids[]" value="${selectedFeatureId}">
+                </div>
+                <div class="col-md-7">
+                    <input type="text" class="form-control form-control-sm feature-value-input"
+                        name="feature_values[]" value="" placeholder="Value">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.append(featureHtml);
+    
+    // Clear dropdown selection
+    dropdown.val('');
+    
+    // Reload features to update dropdown options
+    loadFeatures();
+});
+
+
+
+// Remove feature button handler
+$(document).on('click', '.remove-feature-btn', function() {
+    $(this).closest('.feature-item').remove();
+    // Reload features to update dropdown options
+    loadFeatures();
+});
+
+
+
+// Toggle new feature form visibility
+$(document).on('click', '.toggle-new-feature-form', function() {
+    const poolPlanId = $(this).data('plan-id');
+    const formContainer = $(`#newFeatureForm${poolPlanId}`);
+    
+    // Toggle form visibility
+    formContainer.slideToggle(300);
+});
+
+// Add new feature (create and add to pool plan)
+$(document).on('click', '.add-new-feature-btn', function() {
+    const poolPlanId = $(this).data('plan-id');
+    const formContainer = $(`#newFeatureForm${poolPlanId}`);
+    const titleInput = formContainer.find('.new-feature-title');
+    const valueInput = formContainer.find('.new-feature-value');
+    
+    const title = titleInput.val().trim();
+    const value = valueInput.val().trim();
+    
+    if (!title) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Missing Information',
+            text: 'Please enter a feature title'
+        });
+        return;
+    }
+    
+    // Create new feature via AJAX
+    $.ajax({
+        url: "{{ route('admin.features.store') }}",
+        type: "POST",
+        data: {
+            _token: "{{ csrf_token() }}",
+            title: title,
+            value: '', // Set empty value for new features
+            is_active: true // Set feature as active by default
+        },
+        dataType: "json",
+        beforeSend: function() {
+            // Show loading
+            Swal.fire({
+                title: 'Creating Feature...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading()
+                }
+            });
+        },
+        success: function(response) {
+            if (response.success) {
+                // Add the new feature to the container
+                const container = poolPlanId === 'Create' ? $('#selectedFeaturesCreate') : $(`#selectedFeatures${poolPlanId}`);
+                const featureHtml = `
+                    <div class="feature-item" data-feature-id="${response.feature.id}">
+                        <button type="button" class="btn btn-sm btn-danger remove-feature-btn">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                        <div class="row">
+                            <div class="col-md-5">
+                                <strong>${response.feature.title}</strong>
+                                <input type="hidden" name="feature_ids[]" value="${response.feature.id}">
+                            </div>
+                            <div class="col-md-7">
+                                <input type="text" class="form-control form-control-sm feature-value-input"
+                                    name="feature_values[]" value="${value}" placeholder="Value">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.append(featureHtml);
+                
+                // Clear inputs
+                titleInput.val('');
+                valueInput.val('');
+                
+                // Hide form
+                formContainer.slideUp(300);
+                
+                // Reload features dropdown
+                loadFeatures();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'New feature created and added successfully!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response.message || 'Unknown error occurred'
+                });
+            }
+        },
+        error: function(xhr) {
+            const response = xhr.responseJSON;
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: response?.message || 'Something went wrong'
+            });
+        }
+    });
+});
+
+// Delete pool plan
+function deletePoolPlan(poolPlanId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading
+            Swal.fire({
+                title: 'Deleting...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading()
+                }
+            });
+            
+            $.ajax({
+                url: `{{ url('admin/pool-plans') }}/${poolPlanId}`,
+                method: 'DELETE',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: 'Pool plan has been deleted.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        $(`#pool-plan-${poolPlanId}`).fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response.message || 'Something went wrong'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    const response = xhr.responseJSON;
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: response?.message || 'Something went wrong'
+                    });
+                }
+            });
+        }
+    });
+}
+
+// Show success toast message
+function showSuccessToast(message) {
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+    
+    Toast.fire({
+        icon: 'success',
+        title: message
+    });
+}
+
+// Show error toast message  
+function showErrorToast(message) {
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+    
+    Toast.fire({
+        icon: 'error',
+        title: message
+    });
+}
+</script>
+@endpush
+
+@endsection

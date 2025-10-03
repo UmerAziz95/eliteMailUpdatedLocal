@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\SpecialPlanController;
+use App\Http\Controllers\Admin\PoolPlanController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\AdminOrderEmailController;
 use App\Http\Controllers\Admin\AdminInvoiceController;
@@ -228,6 +229,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         
         // Special Plans Master Plan routes
         Route::get('special-plans/master-plan/{id?}', [SpecialPlanController::class, 'show'])->name('special-plans.master-plan.show');
+        
+        // Pool Pricing Plans routes 
+        Route::get('pool-pricing', [PoolPlanController::class, 'index'])->name('pool-pricing.index');
+        Route::resource('pool-plans', PoolPlanController::class);
+        Route::get('pool-plans-with-features', [PoolPlanController::class, 'getPlansWithFeatures'])->name('pool-plans.with.features');
         Route::post('special-plans/master-plan', [SpecialPlanController::class, 'storeMasterPlan'])->name('special-plans.master-plan.store');
         
         // Special Plans Static Link Generation

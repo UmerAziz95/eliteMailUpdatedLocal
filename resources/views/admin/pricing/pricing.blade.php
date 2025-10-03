@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
-
 @section('title', 'Pricing Plans')
+
 
 @push('styles')
 
