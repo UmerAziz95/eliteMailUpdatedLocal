@@ -210,6 +210,7 @@
     }
 
     .modal-close-btn {
+        position: absolute;
         top: 20px;
         right: 25px;
         width: 30px;
@@ -217,6 +218,12 @@
         background-color: var(--secondary-color);
         color: #fff;
         z-index: 999;
+        transition: none;
+    }
+
+    .modal-close-btn:hover {
+        background-color: var(--primary-color);
+        transform: none;
     }
 
     .plan-actions {
@@ -552,12 +559,13 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Edit Modal for each pool plan -->
         <div class="modal fade" id="editPoolPlan{{ $poolPlan->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                     <div class="modal-body p-3 p-md-5 position-relative">
+                        
                         <button type="button" class="modal-close-btn border-0 rounded-1 position-absolute"
                             data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                         <div class="text-center mb-4">
@@ -1468,15 +1476,15 @@ function showQuickTemplates() {
                                 <p class="card-text small">Select templates and we'll create multiple plans for you:</p>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" value="basic" id="templateBasic">
-                                    <label class="form-check-label" for="templateBasic">Basic Plan ($29.99/month)</label>
+                                    <label class="form-check-label" for="templateBasic">Basic Plan ($5.00/month)</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" value="premium" id="templatePremium">
-                                    <label class="form-check-label" for="templatePremium">Premium Plan ($59.99/month)</label>
+                                    <label class="form-check-label" for="templatePremium">Premium Plan ($7.00/month)</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" value="enterprise" id="templateEnterprise">
-                                    <label class="form-check-label" for="templateEnterprise">Enterprise Plan ($99.99/month)</label>
+                                    <label class="form-check-label" for="templateEnterprise">Enterprise Plan ($10.00/month)</label>
                                 </div>
                             </div>
                         </div>
