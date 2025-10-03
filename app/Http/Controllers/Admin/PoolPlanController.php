@@ -41,7 +41,7 @@ class PoolPlanController extends Controller
                 'period' => $request->duration,
                 'period_unit' => 1,
                 'currency_code' => $currencyCode,
-                'item_family_id' => 'cbdemo_omnisupport-solutions',
+                'item_family_id' => config('services.chargebee.item_family_id'),
             ]);
 
             if (!$chargeBeePlan['success']) {
@@ -226,7 +226,7 @@ class PoolPlanController extends Controller
                 if ($poolPlan->is_chargebee_synced) {
                     continue;
                 }
-
+                
                 // Create ChargeBee plan
                 $chargeBeePlan = $this->createChargeBeeItem([
                     'name' => $poolPlan->name,
@@ -235,7 +235,7 @@ class PoolPlanController extends Controller
                     'period' => $poolPlan->duration,
                     'period_unit' => 1,
                     'currency_code' => $poolPlan->currency_code,
-                    'item_family_id' => 'cbdemo_omnisupport-solutions',
+                    'item_family_id' => config('services.chargebee.item_family_id'),
                 ]);
 
                 if ($chargeBeePlan['success']) {
@@ -306,7 +306,7 @@ class PoolPlanController extends Controller
                         'period' => $originalPlan->duration,
                         'period_unit' => 1,
                         'currency_code' => $originalPlan->currency_code,
-                        'item_family_id' => 'cbdemo_omnisupport-solutions',
+                        'item_family_id' => config('services.chargebee.item_family_id'),
                     ]);
 
                     if ($chargeBeePlan['success']) {
@@ -374,7 +374,7 @@ class PoolPlanController extends Controller
                 'description' => $data['description'],
                 'type' => 'plan',
                 'enabled_in_portal' => true,
-                'item_family_id' => 'cbdemo_omnisupport-solutions',
+                'item_family_id' => $data['item_family_id'],
                 'status' => 'active',
                 'customer_facing_description' => $data['description'],
                 'show_description_in_invoices' => true,

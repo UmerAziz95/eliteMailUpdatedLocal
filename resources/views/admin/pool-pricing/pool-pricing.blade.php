@@ -221,8 +221,8 @@
 
     .plan-actions {
         position: absolute;
-        top: 0px;
-        right: 0px;
+        top: -25px;
+        right: -20px;
         opacity: 0;
         transition: opacity 0.3s ease;
     }
@@ -472,7 +472,7 @@
                     <button class="btn btn-info btn-sm" onclick="duplicateSelectedPlans()" id="duplicateBtn" style="display: none;">
                         <i class="fa-solid fa-copy me-1"></i>Duplicate Selected
                     </button>
-                    <button class="btn btn-warning btn-sm" onclick="toggleBulkMode()" id="bulkModeBtn">
+                    <button class="btn btn-warning btn-sm d-none" onclick="toggleBulkMode()" id="bulkModeBtn">
                         <i class="fa-solid fa-check-square me-1"></i>Bulk Select
                     </button>
                 </div>
@@ -499,7 +499,7 @@
                                 data-bs-target="#editPoolPlan{{ $poolPlan->id }}" title="Edit Pool Plan">
                             <i class="fa-solid fa-edit"></i>
                         </button>
-                        <button class="btn btn-info btn-action" onclick="duplicatePoolPlan({{ $poolPlan->id }})" title="Duplicate Pool Plan">
+                        <button class="btn btn-info btn-action d-none" onclick="duplicatePoolPlan({{ $poolPlan->id }})" title="Duplicate Pool Plan">
                             <i class="fa-solid fa-copy"></i>
                         </button>
                         <!-- <button class="btn btn-delete btn-action" onclick="deletePoolPlan({{ $poolPlan->id }})" title="Delete Pool Plan">
@@ -568,12 +568,12 @@
                             @method('PUT')
                             
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <label for="name{{ $poolPlan->id }}" class="required-field">Pool Plan Name:</label>
                                     <input type="text" class="form-control mb-3" id="name{{ $poolPlan->id }}"
                                         name="name" value="{{ $poolPlan->name }}" required>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 d-none">
                                     <label for="duration{{ $poolPlan->id }}" class="required-field">Duration:</label>
                                     <select class="form-control mb-3" id="duration{{ $poolPlan->id }}"
                                         name="duration" required>
@@ -584,12 +584,12 @@
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <label for="price{{ $poolPlan->id }}" class="required-field">Price ($):</label>
                                     <input type="number" class="form-control mb-3" id="price{{ $poolPlan->id }}"
                                         name="price" value="{{ $poolPlan->price }}" min="0" step="0.01" required>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 d-none">
                                     <label for="currency_code{{ $poolPlan->id }}">Currency Code:</label>
                                     <input type="text" class="form-control mb-3" id="currency_code{{ $poolPlan->id }}"
                                         name="currency_code" value="{{ $poolPlan->currency_code ?? 'USD' }}" maxlength="3">
@@ -724,11 +724,11 @@
                         @csrf
                         
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <label for="name" class="required-field">Pool Plan Name:</label>
                                 <input type="text" class="form-control mb-3" id="name" name="name" required>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 d-none">
                                 <label for="duration" class="required-field">Duration:</label>
                                 <select class="form-control mb-3" id="duration" name="duration" required>
                                     <option value="">Select Duration</option>
@@ -739,14 +739,14 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <label for="price" class="required-field">Price ($):</label>
                                 <input type="number" class="form-control mb-3" id="price" name="price" 
                                        min="0" step="0.01" required>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 d-none">
                                 <label for="currency_code">Currency Code:</label>
-                                <input type="text" class="form-control mb-3" id="currency_code" 
+                                <input type="text" class="form-control mb-3 d-none" id="currency_code" 
                                        name="currency_code" value="USD" maxlength="3">
                             </div>
                         </div>
@@ -815,7 +815,7 @@ let selectedPlans = [];
 let planTemplates = {
     basic: {
         name: 'Basic Pool Plan',
-        price: 29.99,
+        price: 5.00,
         duration: 'monthly',
         currency_code: 'USD',
         description: 'Perfect for small teams and individual users',
@@ -823,7 +823,7 @@ let planTemplates = {
     },
     premium: {
         name: 'Premium Pool Plan',
-        price: 59.99,
+        price: 7.00,
         duration: 'monthly',
         currency_code: 'USD',
         description: 'Ideal for growing businesses with advanced features',
@@ -831,7 +831,7 @@ let planTemplates = {
     },
     enterprise: {
         name: 'Enterprise Pool Plan',
-        price: 99.99,
+        price: 10.00,
         duration: 'monthly',
         currency_code: 'USD',
         description: 'Comprehensive solution for large organizations',
