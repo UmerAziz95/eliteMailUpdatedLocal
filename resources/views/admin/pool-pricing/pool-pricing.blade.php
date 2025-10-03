@@ -35,6 +35,7 @@
 
     .pricing-card {
         background-color: var(--secondary-color);
+        /* box-shadow: rgba(167, 124, 252, 0.529) 0px 5px 10px 0px; */
         border-radius: 10px;
         padding: 30px;
         text-align: center;
@@ -47,11 +48,13 @@
     }
     
     .pricing-card:hover {
+        /* box-shadow: 0px 5px 15px rgba(163, 163, 163, 0.15); */
         transform: translateY(-10px);
     }
 
     .popular {
         position: relative;
+        /* background: var(--second-primary); */
         color: white;
     }
 
@@ -106,6 +109,7 @@
     }
 
     .features-container .feature-item {
+        /* background-color: #f8f9fa; */
         border: 1px solid #9f9f9f83;
     }
 
@@ -138,6 +142,59 @@
             background-color: transparent;
         }
     }
+
+    #refresh-loading {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes planUpdate {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(167, 124, 252, 0.3);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .plans {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 30px;
+    }
+
+    .price {
+        background-color: #000;
+        border: 3px solid #fff;
+        width: fit-content;
+        height: 150px;
+        width: 150px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        bottom: -55px;
+    }
+
+    /* .subscribe-btn, .btn {
+                box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+            } */
 
     .success-message {
         animation: slideInRight 0.5s ease-out;
@@ -218,50 +275,125 @@
     .features-list li:hover {
         opacity: 1;
     }
+
+    .features-container .feature-item:hover {
+        /* background-color: #e9ecef; */
+    }
+
+    .volume-item {
+        border: 1px solid #dee2e6 !important;
+        /* background-color: #f8f9fa; */
+    }
+
+    @media (max-width: 1400px) {
+        .pricing-card {
+            padding: 40px 30px;
+        }
+
+        li {
+            font-size: 12px !important
+        }
+
+        small {
+            font-size: 10px !important
+        }
+    }
+
+    @media (min-width: 1400px) {
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+        }
+    }
+
+    /* Section headers styling */
+    .section-header {
+        border-bottom: 2px solid var(--primary-color);
+        padding-bottom: 10px;
+        margin-bottom: 30px;
+    }
+
+    .section-header h3 {
+        position: relative;
+    }
+
+    /* Discounted plans specific styling */
+    /* .pricing-card[style*="border: 2px solid #28a745"] {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .pricing-card[style*="border: 2px solid #28a745"]::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        z-index: 1;
+    } */
+
+    /* Badge styling for discounted plans */
+    .badge.bg-success {
+        font-size: 11px;
+        padding: 6px 10px;
+        border-radius: 15px;
+        z-index: 2;
+    }
+
+    /* Section divider */
+    .section-divider {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 40px 0;
+    }
 </style>
 
 @endpush
 
 @section('content')
-<div class="container-fluid">
-    <!-- Pool Pricing Plans Section -->
-    <div class="text-center text-white mb-5">
-        <h1 class="display-4 fw-bold mb-3">
-            <i class="fa-solid fa-layer-group me-3"></i>Pool Pricing Plans
-        </h1>
-        <p class="lead">Manage your pool-based pricing plans for flexible inbox management</p>
-    </div>
-
-    <!-- Pool Plans Display -->
-    <div class="row mt-5" id="pool-plans-container">
+<section class="py-3">
+    <!-- Pool Plans Section -->
+    <div class="mt-5">
+        <div class="text-center mb-4 section-header">
+            <h3 class="text-white fw-bold">
+                <i class="fa-solid fa-layer-group me-2 theme-text"></i>
+                Pool Pricing Plans
+            </h3>
+            <p class="text-white">Manage your pool-based pricing plans for flexible inbox management</p>
+        </div>
+        <div class="row" id="pool-plans-container">
         @foreach ($poolPlans as $poolPlan)
         <div class="col-sm-6 col-lg-4 mb-5" id="pool-plan-{{ $poolPlan->id }}">
-            <div class="pricing-card card position-relative">
-                <!-- Plan Actions -->
-                <div class="plan-actions">
-                    <button class="btn btn-edit btn-action" data-bs-toggle="modal" 
-                            data-bs-target="#editPoolPlan{{ $poolPlan->id }}" title="Edit Pool Plan">
-                        <i class="fa-solid fa-edit"></i>
-                    </button>
-                    <button class="btn btn-delete btn-action" onclick="deletePoolPlan({{ $poolPlan->id }})" title="Delete Pool Plan">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+            <div class="pricing-card card">
+                <div class="position-relative">
+                    <!-- Plan Actions -->
+                    <div class="plan-actions">
+                        <button class="btn btn-edit btn-action" data-bs-toggle="modal" 
+                                data-bs-target="#editPoolPlan{{ $poolPlan->id }}" title="Edit Pool Plan">
+                            <i class="fa-solid fa-edit"></i>
+                        </button>
+                        <button class="btn btn-delete btn-action" onclick="deletePoolPlan({{ $poolPlan->id }})" title="Delete Pool Plan">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="inner-content d-flex flex-column justify-content-between">
                     <div>
-                        <div class="text-start">
+                        <div class="text-center">
                             <h4 class="fw-semibold text-white plan-name text-capitalize fs-4">
                                 {{ $poolPlan->name }}</h4>
                             <div class="mb-3">
-                                <span class="range-summary">
+                                <span>
                                     <span class="number">{{ $poolPlan->min_inbox }}
                                         {{ $poolPlan->max_inbox == 0 ? '+' : '- ' . $poolPlan->max_inbox }}</span>
                                     Inboxes
                                 </span>
                             </div>
 
-                            <h2 class="fw-bold plan-price fs-1 theme-text mb-4 d-flex align-items-center gap-1 number">
+                            <h2 class="">
                                 ${{ number_format($poolPlan->price, 2) }}
                                 <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
                                     /{{ $poolPlan->duration == 'monthly' ? 'mo' : $poolPlan->duration }}
@@ -415,6 +547,7 @@
             </div>
         </div>
         @endforeach
+        </div>
     </div>
 
     <!-- Add New Pool Plan Button -->
@@ -531,7 +664,7 @@
             </div>
         </div>
     </div>
-</div>
+</section>
 
 @push('scripts')
 <script>
