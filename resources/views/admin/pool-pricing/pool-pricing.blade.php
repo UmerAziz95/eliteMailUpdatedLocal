@@ -348,6 +348,82 @@
         border-top: 1px solid rgba(255, 255, 255, 0.1);
         margin: 40px 0;
     }
+
+    /* Bulk selection features */
+    .bulk-select-mode .pricing-card {
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .bulk-select-mode .pricing-card.selected {
+        border: 2px solid var(--primary-color);
+        box-shadow: 0 0 20px rgba(167, 124, 252, 0.3);
+    }
+
+    .plan-checkbox {
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        border: 2px solid var(--primary-color) !important;
+    }
+
+    .plan-checkbox:checked {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+
+    .template-btn {
+        height: 70px;
+        font-size: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .template-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .template-btn.active {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+        color: white !important;
+    }
+
+    .bulk-actions-bar {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: none;
+    }
+
+    .bulk-actions-bar.show {
+        display: block;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .quick-create-panel {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        display: none;
+    }
+
+    .quick-create-panel.show {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
 </style>
 
 @endpush
@@ -363,16 +439,46 @@
             </h3>
             <p class="text-white">Manage your pool-based pricing plans for flexible inbox management</p>
         </div>
+        
+        <!-- Bulk Actions Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#createPoolPlanModal">
+                        <i class="fa-solid fa-plus me-1"></i>Add New Plan
+                    </button>
+                    <button class="btn btn-info btn-sm" onclick="duplicateSelectedPlans()" id="duplicateBtn" style="display: none;">
+                        <i class="fa-solid fa-copy me-1"></i>Duplicate Selected
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="toggleBulkMode()" id="bulkModeBtn">
+                        <i class="fa-solid fa-check-square me-1"></i>Bulk Select
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <span class="text-white-50 small" id="planCount">Total Plans: {{ count($poolPlans) }}</span>
+            </div>
+        </div>
         <div class="row" id="pool-plans-container">
         @foreach ($poolPlans as $poolPlan)
         <div class="col-sm-6 col-lg-4 mb-5" id="pool-plan-{{ $poolPlan->id }}">
             <div class="pricing-card card">
                 <div class="position-relative">
+                    <!-- Bulk Selection Checkbox -->
+                    <div class="bulk-select-checkbox" style="display: none;">
+                        <input type="checkbox" class="form-check-input plan-checkbox" 
+                               data-plan-id="{{ $poolPlan->id }}" 
+                               style="position: absolute; top: 10px; left: 10px; z-index: 10; transform: scale(1.2);">
+                    </div>
+                    
                     <!-- Plan Actions -->
                     <div class="plan-actions">
                         <button class="btn btn-edit btn-action" data-bs-toggle="modal" 
                                 data-bs-target="#editPoolPlan{{ $poolPlan->id }}" title="Edit Pool Plan">
                             <i class="fa-solid fa-edit"></i>
+                        </button>
+                        <button class="btn btn-info btn-action" onclick="duplicatePoolPlan({{ $poolPlan->id }})" title="Duplicate Pool Plan">
+                            <i class="fa-solid fa-copy"></i>
                         </button>
                         <!-- <button class="btn btn-delete btn-action" onclick="deletePoolPlan({{ $poolPlan->id }})" title="Delete Pool Plan">
                             <i class="fa-solid fa-trash"></i>
@@ -532,9 +638,14 @@
 
     <!-- Add New Pool Plan Button -->
     <div class="text-center mt-5">
-        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createPoolPlanModal">
-            <i class="fa-solid fa-plus me-2"></i>Create New Pool Plan
-        </button>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createPoolPlanModal">
+                <i class="fa-solid fa-plus me-2"></i>Create New Pool Plan
+            </button>
+            <button class="btn btn-secondary btn-lg" onclick="showQuickTemplates()">
+                <i class="fa-solid fa-magic me-2"></i>Quick Templates
+            </button>
+        </div>
     </div>
 
     <!-- Create Pool Plan Modal -->
@@ -546,7 +657,32 @@
                         data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                     <div class="text-center mb-4">
                         <h4>Create New Pool Plan</h4>
+                        <p class="text-muted small">Create individual plans or use templates for multiple plans</p>
                     </div>
+                    
+                    <!-- Template Selection -->
+                    <div class="mb-4">
+                        <label class="form-label">Quick Start Options:</label>
+                        <div class="row">
+                            <div class="col-4">
+                                <button type="button" class="btn btn-outline-primary btn-sm w-100 template-btn" onclick="loadTemplate('basic')">
+                                    <i class="fa-solid fa-star"></i><br>Basic Plan
+                                </button>
+                            </div>
+                            <div class="col-4">
+                                <button type="button" class="btn btn-outline-primary btn-sm w-100 template-btn" onclick="loadTemplate('premium')">
+                                    <i class="fa-solid fa-crown"></i><br>Premium Plan
+                                </button>
+                            </div>
+                            <div class="col-4">
+                                <button type="button" class="btn btn-outline-primary btn-sm w-100 template-btn" onclick="loadTemplate('enterprise')">
+                                    <i class="fa-solid fa-building"></i><br>Enterprise Plan
+                                </button>
+                            </div>
+                        </div>
+                        <hr class="my-3">
+                    </div>
+                    
                     <form id="createPoolPlanForm">
                         @csrf
                         
@@ -636,9 +772,42 @@
 
 @push('scripts')
 <script>
+// Global variables for bulk operations
+let bulkMode = false;
+let selectedPlans = [];
+let planTemplates = {
+    basic: {
+        name: 'Basic Pool Plan',
+        price: 29.99,
+        duration: 'monthly',
+        currency_code: 'USD',
+        description: 'Perfect for small teams and individual users',
+        features: []
+    },
+    premium: {
+        name: 'Premium Pool Plan',
+        price: 59.99,
+        duration: 'monthly',
+        currency_code: 'USD',
+        description: 'Ideal for growing businesses with advanced features',
+        features: []
+    },
+    enterprise: {
+        name: 'Enterprise Pool Plan',
+        price: 99.99,
+        duration: 'monthly',
+        currency_code: 'USD',
+        description: 'Comprehensive solution for large organizations',
+        features: []
+    }
+};
+
 $(document).ready(function() {
     // Load features on page load
     loadFeatures();
+    
+    // Initialize bulk selection handlers
+    initializeBulkSelection();
 
     // Create Pool Plan Form Submission
     $('#createPoolPlanForm').on('submit', function(e) {
@@ -1070,6 +1239,319 @@ function showErrorToast(message) {
         icon: 'error',
         title: message
     });
+}
+
+// Initialize bulk selection functionality
+function initializeBulkSelection() {
+    // Handle individual checkbox changes
+    $(document).on('change', '.plan-checkbox', function() {
+        const planId = $(this).data('plan-id');
+        const card = $(`#pool-plan-${planId} .pricing-card`);
+        
+        if ($(this).is(':checked')) {
+            selectedPlans.push(planId);
+            card.addClass('selected');
+        } else {
+            selectedPlans = selectedPlans.filter(id => id !== planId);
+            card.removeClass('selected');
+        }
+        
+        updateBulkActions();
+    });
+}
+
+// Toggle bulk selection mode
+function toggleBulkMode() {
+    bulkMode = !bulkMode;
+    const bulkBtn = $('#bulkModeBtn');
+    const duplicateBtn = $('#duplicateBtn');
+    const checkboxes = $('.bulk-select-checkbox');
+    const container = $('#pool-plans-container');
+    
+    if (bulkMode) {
+        // Enable bulk mode
+        bulkBtn.html('<i class="fa-solid fa-times me-1"></i>Exit Bulk Mode').removeClass('btn-warning').addClass('btn-danger');
+        checkboxes.show();
+        container.addClass('bulk-select-mode');
+    } else {
+        // Disable bulk mode
+        bulkBtn.html('<i class="fa-solid fa-check-square me-1"></i>Bulk Select').removeClass('btn-danger').addClass('btn-warning');
+        checkboxes.hide();
+        container.removeClass('bulk-select-mode');
+        duplicateBtn.hide();
+        
+        // Clear selections
+        $('.plan-checkbox').prop('checked', false);
+        $('.pricing-card').removeClass('selected');
+        selectedPlans = [];
+    }
+}
+
+// Update bulk actions visibility
+function updateBulkActions() {
+    const duplicateBtn = $('#duplicateBtn');
+    
+    if (selectedPlans.length > 0) {
+        duplicateBtn.show().html(`<i class="fa-solid fa-copy me-1"></i>Duplicate (${selectedPlans.length})`);
+    } else {
+        duplicateBtn.hide();
+    }
+}
+
+// Duplicate single pool plan
+function duplicatePoolPlan(planId) {
+    Swal.fire({
+        title: 'Duplicate Pool Plan',
+        text: 'This will create a copy of the selected plan. Continue?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, duplicate it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            performDuplication([planId]);
+        }
+    });
+}
+
+// Duplicate selected plans
+function duplicateSelectedPlans() {
+    if (selectedPlans.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Plans Selected',
+            text: 'Please select at least one plan to duplicate.'
+        });
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Duplicate Selected Plans',
+        text: `This will create copies of ${selectedPlans.length} selected plan(s). Continue?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, duplicate them!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            performDuplication(selectedPlans);
+        }
+    });
+}
+
+// Perform the duplication
+function performDuplication(planIds) {
+    Swal.fire({
+        title: 'Duplicating Plans...',
+        text: 'Please wait while we create copies of your plans.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading()
+        }
+    });
+    
+    // Make AJAX call to duplicate plans
+    $.ajax({
+        url: "{{ route('admin.pool-plans.duplicate') }}",
+        method: 'POST',
+        data: {
+            _token: "{{ csrf_token() }}",
+            plan_ids: planIds
+        },
+        success: function(response) {
+            if (response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: `Successfully duplicated ${planIds.length} plan(s)!`,
+                    showConfirmButton: false,
+                    timer: 2000
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response.message || 'Failed to duplicate plans'
+                });
+            }
+        },
+        error: function(xhr) {
+            const response = xhr.responseJSON;
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: response?.message || 'Something went wrong during duplication'
+            });
+        }
+    });
+}
+
+// Load template data into create form
+function loadTemplate(templateType) {
+    const template = planTemplates[templateType];
+    if (!template) return;
+    
+    // Clear active template buttons
+    $('.template-btn').removeClass('active');
+    
+    // Mark current template as active
+    $(`.template-btn[onclick="loadTemplate('${templateType}')"]`).addClass('active');
+    
+    // Fill form with template data
+    $('#name').val(template.name);
+    $('#price').val(template.price);
+    $('#duration').val(template.duration);
+    $('#currency_code').val(template.currency_code);
+    $('#description').val(template.description);
+    
+    // Clear existing features in create form
+    $('#selectedFeaturesCreate').empty();
+    
+    // Show success feedback
+    showSuccessToast(`${template.name} template loaded successfully!`);
+}
+
+// Show quick templates modal
+function showQuickTemplates() {
+    Swal.fire({
+        title: 'Quick Plan Templates',
+        html: `
+            <div class="text-start">
+                <p class="text-muted">Choose a template to quickly create multiple plans:</p>
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">Create Multiple Plans at Once</h6>
+                                <p class="card-text small">Select templates and we'll create multiple plans for you:</p>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="basic" id="templateBasic">
+                                    <label class="form-check-label" for="templateBasic">Basic Plan ($29.99/month)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="premium" id="templatePremium">
+                                    <label class="form-check-label" for="templatePremium">Premium Plan ($59.99/month)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="enterprise" id="templateEnterprise">
+                                    <label class="form-check-label" for="templateEnterprise">Enterprise Plan ($99.99/month)</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Create Selected Plans',
+        cancelButtonText: 'Cancel',
+        width: '500px'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            createMultiplePlansFromTemplates();
+        }
+    });
+}
+
+// Create multiple plans from selected templates
+function createMultiplePlansFromTemplates() {
+    const selectedTemplates = [];
+    
+    // Get selected templates
+    $('input[type="checkbox"][id^="template"]:checked').each(function() {
+        selectedTemplates.push($(this).val());
+    });
+    
+    if (selectedTemplates.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Templates Selected',
+            text: 'Please select at least one template.'
+        });
+        return;
+    }
+    
+    // Show loading
+    Swal.fire({
+        title: 'Creating Multiple Plans...',
+        text: `Creating ${selectedTemplates.length} plan(s) from templates...`,
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading()
+        }
+    });
+    
+    // Create plans sequentially
+    let createdCount = 0;
+    let errors = [];
+    
+    function createNextPlan(index) {
+        if (index >= selectedTemplates.length) {
+            // All done
+            if (errors.length === 0) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: `Successfully created ${createdCount} plan(s)!`,
+                    showConfirmButton: false,
+                    timer: 2000
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Partially Successful',
+                    text: `Created ${createdCount} plan(s). ${errors.length} failed.`,
+                    showConfirmButton: true
+                }).then(() => {
+                    location.reload();
+                });
+            }
+            return;
+        }
+        
+        const templateType = selectedTemplates[index];
+        const template = planTemplates[templateType];
+        
+        const formData = new FormData();
+        formData.append('_token', "{{ csrf_token() }}");
+        formData.append('name', template.name);
+        formData.append('price', template.price);
+        formData.append('duration', template.duration);
+        formData.append('currency_code', template.currency_code);
+        formData.append('description', template.description);
+        
+        $.ajax({
+            url: "{{ route('admin.pool-plans.store') }}",
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    createdCount++;
+                } else {
+                    errors.push(`${template.name}: ${response.message}`);
+                }
+                createNextPlan(index + 1);
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON;
+                errors.push(`${template.name}: ${response?.message || 'Unknown error'}`);
+                createNextPlan(index + 1);
+            }
+        });
+    }
+    
+    // Start creating plans
+    createNextPlan(0);
 }
 </script>
 @endpush

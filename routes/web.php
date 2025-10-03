@@ -234,6 +234,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('pool-pricing', [PoolPlanController::class, 'index'])->name('pool-pricing.index');
         Route::resource('pool-plans', PoolPlanController::class);
         Route::get('pool-plans-with-features', [PoolPlanController::class, 'getPlansWithFeatures'])->name('pool-plans.with.features');
+        Route::post('pool-plans/duplicate', [PoolPlanController::class, 'duplicate'])->name('pool-plans.duplicate');
         Route::post('special-plans/master-plan', [SpecialPlanController::class, 'storeMasterPlan'])->name('special-plans.master-plan.store');
         
         // Special Plans Static Link Generation

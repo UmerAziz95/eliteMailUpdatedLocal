@@ -174,4 +174,57 @@ class PoolPlanController extends Controller
             'poolPlans' => $poolPlans
         ]);
     }
+
+    public function duplicate(Request $request)
+    {
+        try {
+            $request->validate([
+                'plan_ids' => 'required|array',
+                'plan_ids.*' => 'exists:pool_plans,id'
+            ]);
+
+            $duplicatedPlans = [];
+            $originalPlans = PoolPlan::with('features')->whereIn('id', $request->plan_ids)->get();
+
+            foreach ($originalPlans as $originalPlan) {
+                // Create duplicate plan with modified name
+                $duplicatedPlan = PoolPlan::create([
+                    'name' => $originalPlan->name . ' (Copy)',
+                    'price' => $originalPlan->price,
+                    'duration' => $originalPlan->duration,
+                    'description' => $originalPlan->description,
+                    'currency_code' => $originalPlan->currency_code,
+                    'is_active' => true
+                ]);
+
+                // Duplicate features
+                foreach ($originalPlan->features as $feature) {
+                    $duplicatedPlan->features()->attach($feature->id, [
+                        'value' => $feature->pivot->value
+                    ]);
+                }
+
+                $duplicatedPlans[] = $duplicatedPlan;
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Successfully duplicated ' . count($duplicatedPlans) . ' plan(s)',
+                    'duplicated_plans' => $duplicatedPlans
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Successfully duplicated ' . count($duplicatedPlans) . ' plan(s)');
+
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error duplicating plans: ' . $e->getMessage()
+                ], 500);
+            }
+            return redirect()->back()->with('error', 'Error duplicating plans: ' . $e->getMessage());
+        }
+    }
 }
