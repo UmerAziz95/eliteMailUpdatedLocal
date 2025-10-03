@@ -14,11 +14,14 @@ class PoolPlan extends Model
         'price',
         'duration',
         'is_active',
-        'currency_code'
+        'currency_code',
+        'chargebee_plan_id',
+        'is_chargebee_synced'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_chargebee_synced' => 'boolean',
         'price' => 'decimal:2'
     ];
 

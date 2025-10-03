@@ -424,6 +424,28 @@
         display: block;
         animation: fadeIn 0.3s ease;
     }
+
+    /* ChargeBee sync status badges */
+    .badge.bg-success {
+        background-color: #28a745 !important;
+    }
+
+    .badge.bg-secondary {
+        background-color: #6c757d !important;
+    }
+
+    .chargebee-sync-status {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+
+    .pricing-card .badge {
+        font-size: 10px;
+        padding: 4px 8px;
+        font-weight: 500;
+    }
 </style>
 
 @endpush
@@ -490,7 +512,17 @@
                     <div>
                         <div class="text-center">
                             <h4 class="fw-semibold text-white plan-name text-capitalize fs-4">
-                                {{ $poolPlan->name }}</h4>
+                                {{ $poolPlan->name }}
+                                @if($poolPlan->is_chargebee_synced)
+                                    <span class="badge bg-success ms-2" title="Synced with ChargeBee">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> CB
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary ms-2" title="Not synced with ChargeBee">
+                                        <i class="fa-solid fa-cloud-slash"></i> Local
+                                    </span>
+                                @endif
+                            </h4>
 
                             <h2 class="fw-semibold text-white plan-name text-capitalize fs-4">
                                 ${{ number_format($poolPlan->price, 2) }}
@@ -499,6 +531,11 @@
                                     per Pool
                                 </span>
                             </h2>
+                            @if($poolPlan->is_chargebee_synced && $poolPlan->chargebee_plan_id)
+                                <p class="text-white-50 small mb-2">
+                                    <i class="fa-solid fa-id-card"></i> {{ $poolPlan->chargebee_plan_id }}
+                                </p>
+                            @endif
                             <ul class="list-unstyled features-list text-start">
                                 @foreach ($poolPlan->features as $feature)
                                 <li style="font-size: 14px" class="mb-2 d-flex align-items-center gap-2">
@@ -838,7 +875,7 @@ $(document).ready(function() {
                     Swal.fire({
                         icon: 'success',
                         title: 'Success!',
-                        text: 'Pool plan created successfully!',
+                        text: 'Pool plan created successfully and synced with ChargeBee!',
                         showConfirmButton: false,
                         timer: 1500
                     }).then(() => {
@@ -893,7 +930,7 @@ $(document).ready(function() {
                     Swal.fire({
                         icon: 'success',
                         title: 'Success!',
-                        text: 'Pool plan updated successfully!',
+                        text: 'Pool plan updated successfully and synced with ChargeBee!',
                         showConfirmButton: false,
                         timer: 1500
                     }).then(() => {
