@@ -2,7 +2,7 @@
 @section('title', 'Pool Pricing Plans')
 
 @push('styles')
-<!-- remove Selected Feature button  -->
+
 <style>
     .is-invalid {
         border-color: #dc3545 !important;
@@ -372,19 +372,15 @@
 
                             <div class="row mt-3 gy-3">
                                 <div class="col-md-7">
-                                    <select class="form-control feature-dropdown" id="featureDropdown{{ $poolPlan->id }}">
+                                    <select class="form-control feature-dropdown" id="featureDropdown{{ $poolPlan->id }}" data-plan-id="{{ $poolPlan->id }}">
                                         <option value="">Select an existing feature</option>
                                         <!-- Will be populated via AJAX -->
                                     </select>
                                 </div>
                                 <div class="col-md-5" style="text-align: right;">
-                                    <button type="button" class="btn btn-secondary add-selected-feature"
-                                        data-plan-id="{{ $poolPlan->id }}">
-                                        <i class="fa-solid fa-plus"></i> Selected Feature
-                                    </button>
                                     <button type="button" class="btn btn-primary toggle-new-feature-form"
                                         data-plan-id="{{ $poolPlan->id }}">
-                                        <i class="fa-solid fa-plus"></i> New
+                                        <i class="fa-solid fa-plus"></i> New Feature
                                     </button>
                                 </div>
                             </div>
@@ -494,19 +490,15 @@
 
                         <div class="row mt-3 gy-3">
                             <div class="col-md-7">
-                                <select class="form-control feature-dropdown" id="featureDropdownCreate">
+                                <select class="form-control feature-dropdown" id="featureDropdownCreate" data-plan-id="Create">
                                     <option value="">Select an existing feature</option>
                                     <!-- Will be populated via AJAX -->
                                 </select>
                             </div>
                             <div class="col-md-5" style="text-align: right;">
-                                <button type="button" class="btn btn-secondary add-selected-feature"
-                                    data-plan-id="Create">
-                                    <i class="fa-solid fa-plus"></i> Selected Feature
-                                </button>
                                 <button type="button" class="btn btn-primary toggle-new-feature-form"
                                     data-plan-id="Create">
-                                    <i class="fa-solid fa-plus"></i> New
+                                    <i class="fa-solid fa-plus"></i> New Feature
                                 </button>
                             </div>
                         </div>
@@ -724,20 +716,15 @@ function loadFeatures() {
     });
 }
 
-// Add selected feature button handler
-$(document).on('click', '.add-selected-feature', function() {
-    const poolPlanId = $(this).data('plan-id');
-    const dropdown = poolPlanId === 'Create' ? $('#featureDropdownCreate') : $(`#featureDropdown${poolPlanId}`);
+// Auto-add feature when selected from dropdown
+$(document).on('change', '.feature-dropdown', function() {
+    const dropdown = $(this);
+    const poolPlanId = dropdown.data('plan-id');
     const selectedFeatureId = dropdown.val();
     const selectedFeatureTitle = dropdown.find('option:selected').data('title');
     
     if (!selectedFeatureId) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'No Feature Selected',
-            text: 'Please select a feature first'
-        });
-        return;
+        return; // No feature selected or cleared selection
     }
     
     // Check if feature already exists
@@ -749,6 +736,7 @@ $(document).on('click', '.add-selected-feature', function() {
             title: 'Duplicate Feature',
             text: 'This feature is already added to this plan'
         });
+        dropdown.val(''); // Clear selection
         return;
     }
     
