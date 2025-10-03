@@ -14,16 +14,12 @@ class PoolPlan extends Model
         'price',
         'duration',
         'is_active',
-        'min_inbox',
-        'max_inbox',
         'currency_code'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'price' => 'decimal:2',
-        'min_inbox' => 'integer',
-        'max_inbox' => 'integer'
+        'price' => 'decimal:2'
     ];
 
     public function features()

@@ -24,54 +24,11 @@ class PoolPlanController extends Controller
                 'price' => 'required|numeric|min:0',
                 'duration' => 'required|string',
                 'description' => 'required|string',
-                'min_inbox' => 'required|integer|min:0',
-                'max_inbox' => 'required|integer|min:0',
                 'feature_ids' => 'nullable|array',
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
                 'currency_code' => 'nullable|string|size:3'
             ]);
-
-            $min = $request->min_inbox;
-            $max = $request->max_inbox;
-            $newMax = ($max == 0) ? PHP_INT_MAX : $max;
-
-            // ✅ CASE 0: Prevent multiple unlimited plans
-            if ($min == 0 && $max == 0) {
-                $existingInfinite = PoolPlan::where('max_inbox', 0)
-                    ->where('is_active', 1)
-                    ->exists();
-
-                if ($existingInfinite) {
-                    throw new \Exception("A pool plan with unlimited inbox already exists.");
-                }
-            }
-
-            // ✅ CASE 1: Prevent new plan if existing infinite active plan overlaps
-            $infinitePlanConflict = PoolPlan::where('max_inbox', 0)
-                ->where('is_active', 1)
-                ->where('min_inbox', '<=', $min)
-                ->exists();
-
-            if ($infinitePlanConflict) {
-                throw new \Exception("An existing active pool plan allows unlimited inboxes starting from $min or lower.");
-            }
-
-            // ✅ CASE 2: Prevent overlapping ranges with active plans
-            $overlappingPlan = PoolPlan::where('is_active', 1)
-                ->where(function ($query) use ($min, $newMax) {
-                    $query->where(function ($sub) use ($min, $newMax) {
-                        $sub->where('min_inbox', '<=', $newMax)
-                            ->where(function ($q) use ($min) {
-                                $q->where('max_inbox', '>=', $min)
-                                ->orWhere('max_inbox', 0);
-                            });
-                    });
-                })->exists();
-
-            if ($overlappingPlan) {
-                throw new \Exception("An active pool plan overlaps with the range $min - " . ($max == 0 ? '∞' : $max) . ".");
-            }
 
             // Set default currency code if not provided
             $currencyCode = $request->currency_code ?? 'USD';
@@ -82,8 +39,6 @@ class PoolPlanController extends Controller
                 'price' => $request->price,
                 'duration' => $request->duration,
                 'description' => $request->description,
-                'min_inbox' => $min,
-                'max_inbox' => $max,
                 'currency_code' => $currencyCode,
                 'is_active' => true
             ]);
@@ -133,57 +88,11 @@ class PoolPlanController extends Controller
                 'price' => 'required|numeric|min:0',
                 'duration' => 'required|string',
                 'description' => 'required|string',
-                'min_inbox' => 'required|integer|min:0',
-                'max_inbox' => 'required|integer|min:0',
                 'feature_ids' => 'nullable|array',
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
                 'currency_code' => 'nullable|string|size:3'
             ]);
-
-            $min = $request->min_inbox;
-            $max = $request->max_inbox;
-            $newMax = ($max == 0) ? PHP_INT_MAX : $max;
-
-            // ✅ CASE 0: Prevent multiple unlimited plans (excluding the current one)
-            if ($min == 0 && $max == 0) {
-                $existingInfinite = PoolPlan::where('max_inbox', 0)
-                    ->where('is_active', 1)
-                    ->where('id', '!=', $poolPlan->id)
-                    ->exists();
-
-                if ($existingInfinite) {
-                    throw new \Exception("A pool plan with unlimited inbox already exists.");
-                }
-            }
-
-            // ✅ CASE 1: Prevent new plan if existing infinite active plan overlaps
-            $infinitePlanConflict = PoolPlan::where('max_inbox', 0)
-                ->where('is_active', 1)
-                ->where('min_inbox', '<=', $min)
-                ->where('id', '!=', $poolPlan->id)
-                ->exists();
-
-            if ($infinitePlanConflict) {
-                throw new \Exception("An existing active pool plan allows unlimited inboxes starting from $min or lower.");
-            }
-
-            // ✅ CASE 2: Prevent overlapping ranges with active plans (excluding current)
-            $overlappingPlan = PoolPlan::where('is_active', 1)
-                ->where('id', '!=', $poolPlan->id)
-                ->where(function ($query) use ($min, $newMax) {
-                    $query->where(function ($sub) use ($min, $newMax) {
-                        $sub->where('min_inbox', '<=', $newMax)
-                            ->where(function ($q) use ($min) {
-                                $q->where('max_inbox', '>=', $min)
-                                ->orWhere('max_inbox', 0);
-                            });
-                    });
-                })->exists();
-
-            if ($overlappingPlan) {
-                throw new \Exception("An active pool plan overlaps with the range $min - " . ($max == 0 ? '∞' : $max) . ".");
-            }
 
             // Set default currency code if not provided
             $currencyCode = $request->currency_code ?? 'USD';
@@ -194,8 +103,6 @@ class PoolPlanController extends Controller
                 'price' => $request->price,
                 'duration' => $request->duration,
                 'description' => $request->description,
-                'min_inbox' => $min,
-                'max_inbox' => $max,
                 'currency_code' => $currencyCode
             ]);
 

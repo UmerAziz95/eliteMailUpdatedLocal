@@ -221,8 +221,8 @@
 
     .plan-actions {
         position: absolute;
-        top: 10px;
-        right: 10px;
+        top: 0px;
+        right: 0px;
         opacity: 0;
         transition: opacity 0.3s ease;
     }
@@ -374,9 +374,9 @@
                                 data-bs-target="#editPoolPlan{{ $poolPlan->id }}" title="Edit Pool Plan">
                             <i class="fa-solid fa-edit"></i>
                         </button>
-                        <button class="btn btn-delete btn-action" onclick="deletePoolPlan({{ $poolPlan->id }})" title="Delete Pool Plan">
+                        <!-- <button class="btn btn-delete btn-action" onclick="deletePoolPlan({{ $poolPlan->id }})" title="Delete Pool Plan">
                             <i class="fa-solid fa-trash"></i>
-                        </button>
+                        </button> -->
                     </div>
                 </div>
 
@@ -385,15 +385,8 @@
                         <div class="text-center">
                             <h4 class="fw-semibold text-white plan-name text-capitalize fs-4">
                                 {{ $poolPlan->name }}</h4>
-                            <div class="mb-3">
-                                <span>
-                                    <span class="number">{{ $poolPlan->min_inbox }}
-                                        {{ $poolPlan->max_inbox == 0 ? '+' : '- ' . $poolPlan->max_inbox }}</span>
-                                    Inboxes
-                                </span>
-                            </div>
 
-                            <h2 class="">
+                            <h2 class="fw-semibold text-white plan-name text-capitalize fs-4">
                                 ${{ number_format($poolPlan->price, 2) }}
                                 <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
                                     /{{ $poolPlan->duration == 'monthly' ? 'mo' : $poolPlan->duration }}
@@ -460,20 +453,7 @@
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <label for="min_inbox{{ $poolPlan->id }}" class="required-field">Min Inboxes:</label>
-                                    <input type="number" class="form-control mb-3" id="min_inbox{{ $poolPlan->id }}"
-                                        name="min_inbox" value="{{ $poolPlan->min_inbox }}" min="0" step="1" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="max_inbox{{ $poolPlan->id }}" class="required-field">Max Inboxes:</label>
-                                    <input type="number" class="form-control mb-3" id="max_inbox{{ $poolPlan->id }}"
-                                        name="max_inbox" value="{{ $poolPlan->max_inbox }}" min="0" step="1" 
-                                        placeholder="0 for unlimited" required>
-                                    <small class="text-muted">Set to 0 for unlimited inboxes</small>
-                                </div>
-                            </div>
+
 
                             <label for="description{{ $poolPlan->id }}" class="required-field">Description:</label>
                             <textarea class="form-control mb-3" id="description{{ $poolPlan->id }}" name="description"
@@ -598,19 +578,7 @@
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label for="min_inbox" class="required-field">Min Inboxes:</label>
-                                <input type="number" class="form-control mb-3" id="min_inbox" name="min_inbox" 
-                                       min="0" step="1" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="max_inbox" class="required-field">Max Inboxes:</label>
-                                <input type="number" class="form-control mb-3" id="max_inbox" name="max_inbox" 
-                                       min="0" step="1" placeholder="0 for unlimited" required>
-                                <small class="text-muted">Set to 0 for unlimited inboxes</small>
-                            </div>
-                        </div>
+
 
                         <label for="description" class="required-field">Description:</label>
                         <textarea class="form-control mb-3" id="description" name="description" rows="3" required></textarea>
@@ -781,25 +749,7 @@ $(document).ready(function() {
         });
     });
 
-    // Validate min/max inbox range
-    $(document).on('input', 'input[name="min_inbox"], input[name="max_inbox"]', function() {
-        const form = $(this).closest('form');
-        const minInput = form.find('input[name="min_inbox"]');
-        const maxInput = form.find('input[name="max_inbox"]');
-        
-        const minValue = parseInt(minInput.val()) || 0;
-        const maxValue = parseInt(maxInput.val()) || 0;
-        
-        // Clear previous error messages
-        minInput.removeClass('is-invalid');
-        maxInput.removeClass('is-invalid');
-        form.find('.range-error').remove();
-        
-        if (maxValue > 0 && minValue > maxValue) {
-            maxInput.addClass('is-invalid');
-            maxInput.after('<div class="range-error">Max inboxes must be greater than or equal to min inboxes</div>');
-        }
-    });
+
 });
 
 // Load features from database

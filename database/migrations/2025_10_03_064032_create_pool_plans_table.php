@@ -18,8 +18,6 @@ return new class extends Migration
             $table->decimal('price', 10, 2);
             $table->string('duration');
             $table->boolean('is_active')->default(true);
-            $table->integer('min_inbox')->default(0);
-            $table->integer('max_inbox')->default(0);
             $table->string('currency_code', 3)->default('USD');
             $table->timestamps();
         });
