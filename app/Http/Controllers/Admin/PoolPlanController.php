@@ -32,7 +32,7 @@ class PoolPlanController extends Controller
 
             // Set default currency code if not provided
             $currencyCode = $request->currency_code ?? 'USD';
-
+            // dd($request->all());
             // ChargeBee Pool Plan Creation
             $chargeBeePlan = $this->createChargeBeeItem([
                 'name' => $request->name,
@@ -364,12 +364,18 @@ class PoolPlanController extends Controller
     private function createChargeBeeItem($data)
     {
         try {
-            // Generate unique ID for the pool plan item
-            $uniqueId = 'pool_' . strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $data['name'])) . '_' . time() . '-' . strtolower($data['period']);
+            // Generate unique ID for the pool plan item with microseconds and random component
+            $baseName = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $data['name']));
+            $timestamp = microtime(true) * 10000; // Include microseconds
+            $randomSuffix = mt_rand(1000, 9999);
+            $period = strtolower($data['period']);
+            
+            $itemId = 'pool_' . $baseName . '_' . $timestamp . '_' . '_item';
+            $priceId = 'pool_' . $baseName . '_' . $timestamp . '_' . $period . '_price';
 
             // Create an item in ChargeBee
             $result = \ChargeBee\ChargeBee\Models\Item::create([
-                'id' => $uniqueId,
+                'id' => $itemId,
                 'name' => $data['name'],
                 'description' => $data['description'],
                 'type' => 'plan',
@@ -379,6 +385,7 @@ class PoolPlanController extends Controller
                 'customer_facing_description' => $data['description'],
                 'show_description_in_invoices' => true,
                 'show_description_in_quotes' => false,
+                'internal_name' => $data['name'] . time(),
                 'metadata' => [
                     'plan_type' => 'pool_plan',
                     'customer_facing_description' => $data['description'],
@@ -390,7 +397,7 @@ class PoolPlanController extends Controller
             if ($result && $result->item()) {
                 // Create item price for the pool plan
                 $priceParams = [
-                    'id' => $uniqueId,
+                    'id' => $priceId,
                     'name' => $data['name'] . ' ' . ucfirst($data['period']),
                     'item_id' => $result->item()->id,
                     'pricing_model' => 'per_unit',
@@ -436,6 +443,27 @@ class PoolPlanController extends Controller
                 'message' => 'Failed to create pool plan in ChargeBee'
             ];
 
+        } catch (\ChargeBee\ChargeBee\Exceptions\InvalidRequestException $e) {
+            // Handle ChargeBee-specific validation errors
+            $errorDetails = '';
+            if ($e->getApiErrorCode()) {
+                $errorDetails = ' (Code: ' . $e->getApiErrorCode() . ')';
+            }
+            
+            return [
+                'success' => false,
+                'message' => 'ChargeBee validation error: ' . $e->getMessage() . $errorDetails
+            ];
+        } catch (\ChargeBee\ChargeBee\Exceptions\PaymentException $e) {
+            return [
+                'success' => false,
+                'message' => 'ChargeBee payment error: ' . $e->getMessage()
+            ];
+        } catch (\ChargeBee\ChargeBee\Exceptions\OperationFailedException $e) {
+            return [
+                'success' => false,
+                'message' => 'ChargeBee operation failed: ' . $e->getMessage()
+            ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
@@ -482,6 +510,27 @@ class PoolPlanController extends Controller
                 'message' => 'Failed to update pool plan in ChargeBee'
             ];
 
+        } catch (\ChargeBee\ChargeBee\Exceptions\InvalidRequestException $e) {
+            // Handle ChargeBee-specific validation errors
+            $errorDetails = '';
+            if ($e->getApiErrorCode()) {
+                $errorDetails = ' (Code: ' . $e->getApiErrorCode() . ')';
+            }
+            
+            return [
+                'success' => false,
+                'message' => 'ChargeBee validation error: ' . $e->getMessage() . $errorDetails
+            ];
+        } catch (\ChargeBee\ChargeBee\Exceptions\PaymentException $e) {
+            return [
+                'success' => false,
+                'message' => 'ChargeBee payment error: ' . $e->getMessage()
+            ];
+        } catch (\ChargeBee\ChargeBee\Exceptions\OperationFailedException $e) {
+            return [
+                'success' => false,
+                'message' => 'ChargeBee operation failed: ' . $e->getMessage()
+            ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
