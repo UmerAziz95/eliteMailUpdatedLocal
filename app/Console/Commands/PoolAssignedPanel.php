@@ -2,7 +2,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\OrderTracking;
+use App\Models\Pool;
 use App\Models\PoolPanel;
 use App\Models\PoolPanelSplit;
 use App\Models\User;
@@ -136,19 +136,20 @@ class PoolAssignedPanel extends Command
     }
     
     /**
-     * Update order_tracking status to 'completed' for orders that have available space on panels
+     * Update pool status to 'completed' for pools that have available space on panels
      */
     private function updateOrderStatusForAvailableSpace(): void
     {
-        // Get pending orders that can be accommodated with available space
-        $pendingOrders = OrderTracking::where('status', 'pending')
+        // Get pending pools that can be accommodated with available space and are not currently being split
+        $pendingPools = Pool::where('status', 'pending')
+            ->where('is_splitting', 0) // Only get pools that are not currently being split
             ->whereNotNull('total_inboxes')
             ->where('total_inboxes', '>', 0)
-            ->orderBy('created_at', 'asc') // Process older orders first
+            ->orderBy('created_at', 'asc') // Process older pools first
             ->get();
         
-        if ($pendingOrders->isEmpty()) {
-            $this->info('ℹ️  No pending orders to update.');
+        if ($pendingPools->isEmpty()) {
+            $this->info('ℹ️  No pending pools to update.');
             return;
         }
 
@@ -156,113 +157,113 @@ class PoolAssignedPanel extends Command
         $totalProcessed = 0;
         $remainingTotalInboxes = 0;
         
-        $this->info("🔄 Processing pending orders for status updates...");
+        $this->info("🔄 Processing pending pools for status updates...");
         
-        foreach ($pendingOrders as $order) {
+        foreach ($pendingPools as $pool) {
             $totalProcessed++;            
             
-            // Get order-specific available space
-            $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
-            // dd($orderSpecificSpace, $order->total_inboxes, $order->inboxes_per_domain, $this->PANEL_CAPACITY, $this->MAX_SPLIT_CAPACITY);
-            if ($order->total_inboxes <= $orderSpecificSpace) {
+            // Get pool-specific available space
+            $poolSpecificSpace = $this->getAvailablePanelSpaceForOrder($pool->total_inboxes, $pool->inboxes_per_domain);
+            // dd($poolSpecificSpace, $pool->total_inboxes, $pool->inboxes_per_domain, $this->PANEL_CAPACITY, $this->MAX_SPLIT_CAPACITY);
+            if ($pool->total_inboxes <= $poolSpecificSpace) {
                 try {
-                    // Get the actual Order model for panel split creation
-                    $orderModel = Order::find($order->order_id);
+                    // Set is_splitting to 1 to indicate this pool is being processed
+                    $pool->is_splitting = 1;
+                    $pool->save();
                     
-                    if ($orderModel) {
-                        // Create panel splits before updating status
-                        $this->info("   🔄 Creating panel splits for Order ID {$order->order_id}...");
-                          try {
-                            $this->pannelCreationAndOrderSplitOnPannels($orderModel);
-                            $this->info("   ✓ Panel splits created successfully for Order ID {$order->order_id}");
-                            
-                            // Log successful panel split creation
-                            Log::info('Panel splits created for order', [
-                                'order_id' => $order->order_id,
-                                'total_inboxes' => $order->total_inboxes,
-                                'created_at' => Carbon::now()
-                            ]);
-                            
-                        } catch (\Exception $splitException) {
-                            $this->error("   ✗ Failed to create panel splits for Order ID {$order->order_id}: " . $splitException->getMessage());
-                            Log::error('Failed to create panel splits', [
-                                'order_id' => $order->order_id,
-                                'error' => $splitException->getMessage(),
-                                'trace' => $splitException->getTraceAsString()
-                            ]);
-                            // Continue with status update even if split creation fails
-                        }
-                    } else {
-                        $this->warn("   ⚠ Order model not found for Order ID {$order->order_id} - skipping panel split creation");
-                        Log::warning('Order model not found for panel split creation', [
-                            'order_tracking_id' => $order->id,
-                            'order_id' => $order->order_id
+                    // Create panel splits before updating status
+                    $this->info("   🔄 Creating panel splits for Pool ID {$pool->id}...");
+                    try {
+                        $this->pannelCreationAndPoolSplitOnPannels($pool);
+                        $this->info("   ✓ Panel splits created successfully for Pool ID {$pool->id}");
+                        
+                        // Log successful panel split creation
+                        Log::info('Panel splits created for pool', [
+                            'pool_id' => $pool->id,
+                            'total_inboxes' => $pool->total_inboxes,
+                            'created_at' => Carbon::now()
                         ]);
+                        
+                    } catch (\Exception $splitException) {
+                        $this->error("   ✗ Failed to create panel splits for Pool ID {$pool->id}: " . $splitException->getMessage());
+                        Log::error('Failed to create panel splits', [
+                            'pool_id' => $pool->id,
+                            'error' => $splitException->getMessage(),
+                            'trace' => $splitException->getTraceAsString()
+                        ]);
+                        // Continue with status update even if split creation fails
+                        // Reset is_splitting flag on error
+                        $pool->is_splitting = 0;
+                        $pool->save();
                     }
                     
-                    // Update status to completed
-                    $order->status = 'completed';
-                    $order->cron_run_time = Carbon::now();
-                    $order->save();
+                    // Update status to completed and reset is_splitting flag
+                    $pool->status = 'completed';
+                    $pool->completed_at = Carbon::now();
+                    $pool->is_splitting = 0; // Reset splitting flag
+                    $pool->save();
                     
                     $updatedCount++;
                     
-                    $this->info("   ✓ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Status updated to 'completed'");
+                    $this->info("   ✓ Pool ID {$pool->id}: {$pool->total_inboxes} inboxes - Status updated to 'completed'");
                     
                 } catch (\Exception $e) {
-                    $this->error("   ✗ Failed to update Order ID {$order->order_id}: " . $e->getMessage());
-                    Log::error('Failed to update order_tracking status', [
-                        'order_id' => $order->order_id,
+                    $this->error("   ✗ Failed to update Pool ID {$pool->id}: " . $e->getMessage());
+                    Log::error('Failed to update pool status', [
+                        'pool_id' => $pool->id,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]);
+                    // Reset is_splitting flag on error
+                    $pool->is_splitting = 0;
+                    $pool->save();
                     // Add to remaining total if failed to update
-                    $remainingTotalInboxes += $order->total_inboxes;
+                    $remainingTotalInboxes += $pool->total_inboxes;
                 }
             } else {
-                $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
-                $this->warn("   ⚠ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Insufficient space");
-                $this->warn("     Order-specific available space: {$orderSpecificSpace}");
+                $poolSpecificSpace = $this->getAvailablePanelSpaceForOrder($pool->total_inboxes, $pool->inboxes_per_domain);
+                $this->warn("   ⚠ Pool ID {$pool->id}: {$pool->total_inboxes} inboxes - Insufficient space");
+                $this->warn("     Pool-specific available space: {$poolSpecificSpace}");
                 
-                // Calculate panels needed for this order
-                $panelsNeeded = ceil($order->total_inboxes / $this->MAX_SPLIT_CAPACITY);
+                // Calculate panels needed for this pool
+                $panelsNeeded = ceil($pool->total_inboxes / $this->MAX_SPLIT_CAPACITY);
                 
-                // Add to insufficient space orders for email notification
+                // Add to insufficient space pools for email notification
                 $this->insufficientSpaceOrders[] = [
-                    'order_id' => $order->order_id,
-                    'required_space' => $order->total_inboxes,
-                    'available_space' => $orderSpecificSpace,
+                    'pool_id' => $pool->id,
+                    'required_space' => $pool->total_inboxes,
+                    'available_space' => $poolSpecificSpace,
                     'panels_needed' => $panelsNeeded,
                     'status' => 'pending'
                 ];
                 
-                // Add to remaining total for unprocessed orders
-                $remainingTotalInboxes += $order->total_inboxes;
+                // Add to remaining total for unprocessed pools
+                $remainingTotalInboxes += $pool->total_inboxes;
             }
         }        
-        $this->info("📊 Order Status Update Summary:");
-        $this->info("   Total orders processed: {$totalProcessed}");
-        $this->info("   Orders updated to 'completed': {$updatedCount}");
+        $this->info("📊 Pool Status Update Summary:");
+        $this->info("   Total pools processed: {$totalProcessed}");
+        $this->info("   Pools updated to 'completed': {$updatedCount}");
         
         if ($updatedCount > 0) {
-            // Calculate total space used by successful orders
-            $totalSpaceUsed = $pendingOrders->slice(0, $updatedCount)->sum('total_inboxes');
-            // Log the order updates
-            $this->logOrderStatusUpdates($updatedCount, $totalSpaceUsed);
+            // Calculate total space used by successful pools
+            $totalSpaceUsed = $pendingPools->slice(0, $updatedCount)->sum('total_inboxes');
+            // Log the pool updates
+            $this->logPoolStatusUpdates($updatedCount, $totalSpaceUsed);
         }
         
-        // Send email notification if there are orders with insufficient space
+        // Send email notification if there are pools with insufficient space
         if (!empty($this->insufficientSpaceOrders)) {
             $this->sendInsufficientSpaceNotification();
         }
     }
     
     /**
-     * Log order status updates
+     * Log pool status updates
      */
-    private function logOrderStatusUpdates(int $updatedCount, int $spaceUsed): void
+    private function logPoolStatusUpdates(int $updatedCount, int $spaceUsed): void
     {
-        $logFile = storage_path('logs/order-status-updates.log');
+        $logFile = storage_path('logs/pool-status-updates.log');
         $logDir = dirname($logFile);
         
         if (!is_dir($logDir)) {
@@ -270,7 +271,7 @@ class PoolAssignedPanel extends Command
         }
         
         $logEntry = sprintf(
-            "[%s] Order status updates - Orders updated: %d, Space allocated: %d inboxes\n",
+            "[%s] Pool status updates - Pools updated: %d, Space allocated: %d inboxes\n",
             Carbon::now()->format('Y-m-d H:i:s'),
             $updatedCount,
             $spaceUsed
@@ -279,8 +280,8 @@ class PoolAssignedPanel extends Command
         file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
         
         // Also log to Laravel log
-        Log::info('Order tracking status updated', [
-            'orders_updated' => $updatedCount,
+        Log::info('Pool status updated', [
+            'pools_updated' => $updatedCount,
             'space_allocated' => $spaceUsed
         ]);
     }
@@ -379,59 +380,50 @@ class PoolAssignedPanel extends Command
     }
     
     /**
-     * Panel creation and order split on panels - moved from OrderController
+     * Panel creation and pool split on panels
      */
-    private function pannelCreationAndOrderSplitOnPannels($order)
+    private function pannelCreationAndPoolSplitOnPannels($pool)
     {
         try {
             // Wrap everything in a database transaction for consistency
             DB::beginTransaction();
             
-            // Get the reorder info for this orders
-            $reorderInfo = $order->reorderInfo()->first();
-            
-            if (!$reorderInfo) {
-                Log::warning("No reorder info found for order #{$order->id}");
-                DB::rollBack();
-                return;
-            }
-            
-            // Calculate total space needed
-            $domains = array_filter(preg_split('/[\r\n,]+/', $reorderInfo->domains));
+            // Calculate total space needed from pool data
+            $domains = is_array($pool->domains) ? $pool->domains : array_filter(preg_split('/[\r\n,]+/', $pool->domains));
             $domainCount = count($domains);
-            $totalSpaceNeeded = $domainCount * $reorderInfo->inboxes_per_domain;
+            $totalSpaceNeeded = $domainCount * $pool->inboxes_per_domain;
             
-            Log::info("Panel creation started for order #{$order->id}", [
+            Log::info("Panel creation started for pool #{$pool->id}", [
                 'total_space_needed' => $totalSpaceNeeded,
                 'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
                 'panel_capacity' => $this->PANEL_CAPACITY,
                 'domain_count' => $domainCount,
-                'inboxes_per_domain' => $reorderInfo->inboxes_per_domain
+                'inboxes_per_domain' => $pool->inboxes_per_domain
             ]);
             // Only try to use existing panels - no automatic panel creation
             if ($totalSpaceNeeded <= $this->MAX_SPLIT_CAPACITY) {
-                // Try to find existing panel with sufficient space for small orders (<= 358 inboxes)
+                // Try to find existing panel with sufficient space for small pools (<= 358 inboxes)
                 $suitablePanel = $this->findSuitablePanel($totalSpaceNeeded);
                 
                 if ($suitablePanel) {
-                    // Assign entire order to this panel
-                    $this->assignDomainsToPanel($suitablePanel, $order, $reorderInfo, $domains, $totalSpaceNeeded, 1);
-                    Log::info("Order #{$order->id} assigned to existing panel #{$suitablePanel->id}");
+                    // Assign entire pool to this panel
+                    $this->assignDomainsToPanel($suitablePanel, $pool, $domains, $totalSpaceNeeded, 1);
+                    Log::info("Pool #{$pool->id} assigned to existing panel #{$suitablePanel->id}");
                 } else {
                     // No single panel can fit, try intelligent splitting across available panels
-                    $this->handleOrderSplitAcrossAvailablePanels($order, $reorderInfo, $domains, $totalSpaceNeeded);
+                    $this->handlePoolSplitAcrossAvailablePanels($pool, $domains, $totalSpaceNeeded);
                 }
             } else {
-                // Large orders: try intelligent splitting across available panels only
-                $this->handleOrderSplitAcrossAvailablePanels($order, $reorderInfo, $domains, $totalSpaceNeeded);
+                // Large pools: try intelligent splitting across available panels only
+                $this->handlePoolSplitAcrossAvailablePanels($pool, $domains, $totalSpaceNeeded);
             }
             
             DB::commit();
-            Log::info("Panel creation completed successfully for order #{$order->id}");
+            Log::info("Panel creation completed successfully for pool #{$pool->id}");
             
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Panel creation failed for order #{$order->id}", [
+            Log::error("Panel creation failed for pool #{$pool->id}", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -442,7 +434,7 @@ class PoolAssignedPanel extends Command
     /**
      * Handle intelligent splitting across existing available panels
      */
-    private function handleOrderSplitAcrossAvailablePanels($order, $reorderInfo, $domains, $totalSpaceNeeded)
+    private function handlePoolSplitAcrossAvailablePanels($pool, $domains, $totalSpaceNeeded)
     {
         $remainingSpace = $totalSpaceNeeded;
         $domainsProcessed = 0;
@@ -456,14 +448,14 @@ class PoolAssignedPanel extends Command
             $availablePanel = PoolPanel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
                 // ->where('remaining_limit', '>', 0)
-                ->where('remaining_limit', '>=', $reorderInfo->inboxes_per_domain)
+                ->where('remaining_limit', '>=', $pool->inboxes_per_domain)
                 ->whereNotIn('id', $usedPanelIds) // Exclude already used panels
                 ->orderBy('remaining_limit', 'desc')
                 ->first();
             
             if (!$availablePanel) {
-                // No available panels, skip the remaining order
-                Log::warning("No available panels found for order #{$order->id} - remaining domains will be skipped", [
+                // No available panels, skip the remaining pool
+                Log::warning("No available panels found for pool #{$pool->id} - remaining domains will be skipped", [
                     'total_space_needed' => $totalSpaceNeeded,
                     'remaining_space' => $remainingSpace,
                     'domains_processed' => $domainsProcessed,
@@ -480,7 +472,7 @@ class PoolAssignedPanel extends Command
             $spaceToUse = min($availableSpace, $remainingSpace, $this->MAX_SPLIT_CAPACITY);
             
             // Calculate maximum domains that can fit in space without exceeding MAX_SPLIT_CAPACITY
-            $maxDomainsForSpace = floor($spaceToUse / $reorderInfo->inboxes_per_domain);
+            $maxDomainsForSpace = floor($spaceToUse / $pool->inboxes_per_domain);
             
             // Ensure we don't process more domains than remaining
             $remainingDomains = count($domains) - $domainsProcessed;
@@ -488,16 +480,16 @@ class PoolAssignedPanel extends Command
             
             // Extract domains for this panel
             $domainSlice = array_slice($domains, $domainsProcessed, $domainsToAssign);
-            $actualSpaceUsed = count($domainSlice) * $reorderInfo->inboxes_per_domain;
+            $actualSpaceUsed = count($domainSlice) * $pool->inboxes_per_domain;
             
             // Only proceed if we can actually use this panel and respect MAX_SPLIT_CAPACITY
             if ($actualSpaceUsed <= $availableSpace && $actualSpaceUsed <= $this->MAX_SPLIT_CAPACITY && count($domainSlice) > 0) {
-                $this->assignDomainsToPanel($availablePanel, $order, $reorderInfo, $domainSlice, $actualSpaceUsed, $splitNumber);
+                $this->assignDomainsToPanel($availablePanel, $pool, $domainSlice, $actualSpaceUsed, $splitNumber);
                 
-                // Add this panel to the used panels list to prevent reuse for this order
+                // Add this panel to the used panels list to prevent reuse for this pool
                 $usedPanelIds[] = $availablePanel->id;
                 
-                Log::info("Assigned to existing panel #{$availablePanel->id} (split #{$splitNumber}) for order #{$order->id}", [
+                Log::info("Assigned to existing panel #{$availablePanel->id} (split #{$splitNumber}) for pool #{$pool->id}", [
                     'space_used' => $actualSpaceUsed,
                     'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
                     'domains_count' => count($domainSlice),
@@ -511,7 +503,7 @@ class PoolAssignedPanel extends Command
                 $splitNumber++;
             } else {
                 // If we can't use the available panel, break to avoid infinite loop
-                Log::warning("Cannot use available panel #{$availablePanel->id} for order #{$order->id}", [
+                Log::warning("Cannot use available panel #{$availablePanel->id} for pool #{$pool->id}", [
                     'actual_space_used' => $actualSpaceUsed,
                     'available_space' => $availableSpace,
                     'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
@@ -526,10 +518,10 @@ class PoolAssignedPanel extends Command
         $totalDomainsToProcess = count($domains);
         if ($domainsProcessed < $totalDomainsToProcess) {
             $remainingDomains = array_slice($domains, $domainsProcessed);
-            $remainingSpaceNeeded = count($remainingDomains) * $reorderInfo->inboxes_per_domain;
+            $remainingSpaceNeeded = count($remainingDomains) * $pool->inboxes_per_domain;
             
-            Log::warning("Incomplete order processing - rolling back all splits for order #{$order->id}", [
-                'order_id' => $order->id,
+            Log::warning("Incomplete pool processing - rolling back all splits for pool #{$pool->id}", [
+                'pool_id' => $pool->id,
                 'domains_processed' => $domainsProcessed,
                 'total_domains' => $totalDomainsToProcess,
                 'remaining_domains' => count($remainingDomains),
@@ -537,11 +529,11 @@ class PoolAssignedPanel extends Command
                 'reason' => 'insufficient_existing_panel_space'
             ]);
             
-            // Rollback all splits for this order
-            $this->rollbackOrderSplits($order);
+            // Rollback all splits for this pool
+            $this->rollbackPoolSplits($pool);
             
             // Throw exception to rollback the entire transaction
-            throw new \Exception("Order #{$order->id} could not be fully processed - all splits rolled back");
+            throw new \Exception("Pool #{$pool->id} could not be fully processed - all splits rolled back");
         }
     }
     
@@ -571,25 +563,14 @@ class PoolAssignedPanel extends Command
     /**
      * Assign domains to a specific panel and create all necessary records
      */
-    private function assignDomainsToPanel($panel, $order, $reorderInfo, $domainsToAssign, $spaceToAssign, $splitNumber)
+    private function assignDomainsToPanel($panel, $pool, $domainsToAssign, $spaceToAssign, $splitNumber)
     {
         try {
-            // Create order_panel record
-            $orderPanel = OrderPanel::create([
-                'panel_id' => $panel->id,
-                'order_id' => $order->id,
-                'contractor_id' => $order->assigned_to ?? null, // Assign to specific contractor if order has one
-                'space_assigned' => $spaceToAssign,
-                'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
-                'status' => $order->assigned_to ? 'allocated' : 'unallocated', // Default to unallocated if no contractor assigned
-                'note' => "Auto-assigned split #{$splitNumber} - {$spaceToAssign} inboxes across " . count($domainsToAssign) . " domains"
-            ]);
-            
             // Create pool_panel_split record
             PoolPanelSplit::create([
                 'pool_panel_id' => $panel->id,
-                'pool_id' => $order->id, // Using order ID as pool ID for now
-                'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
+                'pool_id' => $pool->id,
+                'inboxes_per_domain' => $pool->inboxes_per_domain,
                 'domains' => $domainsToAssign
             ]);
             
@@ -602,8 +583,7 @@ class PoolAssignedPanel extends Command
             
             Log::info("Successfully assigned domains to panel", [
                 'panel_id' => $panel->id,
-                'order_id' => $order->id,
-                'order_panel_id' => $orderPanel->id,
+                'pool_id' => $pool->id,
                 'space_assigned' => $spaceToAssign,
                 'domains_count' => count($domainsToAssign),
                 'panel_remaining_limit' => $panel->remaining_limit - $spaceToAssign
@@ -612,7 +592,7 @@ class PoolAssignedPanel extends Command
         } catch (\Exception $e) {
             Log::error("Failed to assign domains to panel", [
                 'panel_id' => $panel->id,
-                'order_id' => $order->id,
+                'pool_id' => $pool->id,
                 'error' => $e->getMessage()
             ]);
             throw $e;
@@ -620,49 +600,47 @@ class PoolAssignedPanel extends Command
     }
     
     /**
-     * Rollback all splits for an order - restore panel capacity and delete records
+     * Rollback all splits for a pool - restore panel capacity and delete records
      */
-    private function rollbackOrderSplits($order)
+    private function rollbackPoolSplits($pool)
     {
         try {
-            // Get all order panels for this order
-            $orderPanels = OrderPanel::where('order_id', $order->id)->get();
+            // Get all pool panel splits for this pool
+            $poolPanelSplits = PoolPanelSplit::where('pool_id', $pool->id)->get();
             
-            if ($orderPanels->isEmpty()) {
-                Log::info("No order panels found to rollback for order #{$order->id}");
+            if ($poolPanelSplits->isEmpty()) {
+                Log::info("No pool panel splits found to rollback for pool #{$pool->id}");
                 return;
             }
             
             $rollbackCount = 0;
-            foreach ($orderPanels as $orderPanel) {
+            foreach ($poolPanelSplits as $split) {
                 // Restore panel capacity
-                $panel = PoolPanel::find($orderPanel->panel_id);
+                $panel = PoolPanel::find($split->pool_panel_id);
                 if ($panel) {
-                    $panel->increment('remaining_limit', $orderPanel->space_assigned);
+                    $spaceToRestore = $split->getDomainCount() * $split->inboxes_per_domain;
+                    $panel->increment('remaining_limit', $spaceToRestore);
                     Log::info("Restored panel capacity", [
                         'panel_id' => $panel->id,
-                        'space_restored' => $orderPanel->space_assigned,
+                        'space_restored' => $spaceToRestore,
                         'panel_remaining_limit' => $panel->remaining_limit
                     ]);
                 }
                 
-                // Delete pool panel splits
-                PoolPanelSplit::where('pool_id', $order->id)->delete();
-                
-                // Delete order panel
-                $orderPanel->delete();
+                // Delete pool panel split
+                $split->delete();
                 
                 $rollbackCount++;
             }
             
-            Log::info("Successfully rolled back all splits for order #{$order->id}", [
-                'order_id' => $order->id,
+            Log::info("Successfully rolled back all splits for pool #{$pool->id}", [
+                'pool_id' => $pool->id,
                 'splits_rolled_back' => $rollbackCount
             ]);
             
         } catch (\Exception $e) {
-            Log::error("Failed to rollback splits for order #{$order->id}", [
-                'order_id' => $order->id,
+            Log::error("Failed to rollback splits for pool #{$pool->id}", [
+                'pool_id' => $pool->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

@@ -71,6 +71,7 @@ class Pool extends Model
         'master_inbox_confirmation',
         'additional_info',
         'coupon_code',
+        'is_splitting',
     ];
 
     protected $casts = [
@@ -89,6 +90,7 @@ class Pool extends Model
         'is_internal_order_assignment' => 'boolean',
         'is_shared' => 'boolean',
         'master_inbox_confirmation' => 'boolean',
+        'is_splitting' => 'boolean',
     ];
 
     // Relationships
