@@ -108,7 +108,7 @@ class PoolPanelController extends Controller
             
             // Set default values for limit fields (since we removed them from form)
             $data['limit'] = env('PANEL_CAPACITY', 1790);
-            $data['remaining_limit'] = 0;
+            $data['remaining_limit'] = env('PANEL_CAPACITY', 1790);
             $data['used_limit'] = 0;
 
             // Set creator
