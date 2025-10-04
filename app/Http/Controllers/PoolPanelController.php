@@ -37,7 +37,8 @@ class PoolPanelController extends Controller
 
                 // Handle next ID request
                 if ($request->has('next_id')) {
-                    $nextId = 'PP_' . strtoupper(Str::random(8)) . '_' . time();
+                    // Generate a preview ID similar to what will be created
+                    $nextId = $this->generatePoolPanelId();
                     return response()->json(['next_id' => $nextId]);
                 }
 
@@ -103,7 +104,7 @@ class PoolPanelController extends Controller
             ]);
 
             // Generate auto_generated_id
-            $data['auto_generated_id'] = 'PP_' . strtoupper(Str::random(8)) . '_' . time();
+            $data['auto_generated_id'] = $this->generatePoolPanelId();
             
             // Set default values for limit fields (since we removed them from form)
             $data['limit'] = 0;
@@ -279,5 +280,18 @@ class PoolPanelController extends Controller
             Log::error('PoolPanel Toggle Status Error: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to update status'], 500);
         }
+    }
+
+    /**
+     * Generate a unique pool panel ID
+     */
+    private function generatePoolPanelId()
+    {
+        // Get the next database ID to make it more predictable
+        $lastPoolPanel = PoolPanel::orderBy('id', 'desc')->first();
+        $nextDbId = $lastPoolPanel ? $lastPoolPanel->id + 1 : 1;
+        
+        // Generate ID with format: PP_[NEXT_DB_ID]_[TIMESTAMP]
+        return 'PP_' . str_pad($nextDbId, 6, '0', STR_PAD_LEFT);
     }
 }

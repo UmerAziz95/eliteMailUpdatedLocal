@@ -127,8 +127,9 @@
         <div class="offcanvas-body">
             <form id="poolPanelForm" class="">
                 <div class="mb-3" id="poolPanelIdContainer" style="display: none;">
-                    <label for="pool_panel_id">Pool Panel ID:</label>
+                    <label for="pool_panel_id" id="poolPanelIdLabel">Pool Panel ID:</label>
                     <input type="text" class="form-control" id="pool_panel_id" name="pool_panel_id" value="" readonly>
+                    <small class="text-muted" id="poolPanelIdHint">This ID will be automatically generated</small>
                 </div>
                 
                 <label for="pool_panel_title">Title: <span class="text-danger">*</span></label>
@@ -740,11 +741,35 @@ function openCreateForm() {
     currentPoolPanelId = null;
     $('#poolPanelFormOffcanvasLabel').text('Create Pool Panel');
     $('#submitPoolPanelFormBtn').text('Create Pool Panel');
-    $('#poolPanelIdContainer').hide();
+    $('#poolPanelIdContainer').show(); // Show ID container for create mode too
     
-    // Generate a preview ID for display (optional)
-    const previewId = 'PP_' + Math.random().toString(36).substr(2, 8).toUpperCase() + '_' + Date.now();
-    $('#pool_panel_id').val(previewId);
+    // Show loading state for ID field
+    $('#pool_panel_id').val('Loading next ID...');
+    
+    // Fetch next pool panel ID from server
+    $.ajax({
+        url: '{{ route("admin.pool-panels.index") }}?next_id=1',
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        success: function(response) {
+            $('#pool_panel_id').val(response.next_id);
+            $('#poolPanelIdHint').text('This ID will be automatically assigned to your new pool panel');
+        },
+        error: function(xhr) {
+            console.error('Failed to fetch next pool panel ID:', xhr);
+            // Show error message
+            $('#pool_panel_id').val('Error loading ID');
+            $('#poolPanelIdHint').text('ID will be generated when creating the pool panel');
+            
+            // Show toast notification
+            if (typeof toastr !== 'undefined') {
+                toastr.warning('Could not fetch next Pool Panel ID. A new ID will be generated when you create the panel.');
+            }
+        }
+    });
 }
 
 function openEditForm(id) {
@@ -769,6 +794,8 @@ function openEditForm(id) {
             $('#poolPanelFormOffcanvasLabel').text('Edit Pool Panel');
             $('#submitPoolPanelFormBtn').text('Update Pool Panel');
             $('#poolPanelIdContainer').show();
+            $('#poolPanelIdLabel').text('Current Pool Panel ID:');
+            $('#poolPanelIdHint').text('This is the current ID for this pool panel');
             
             // Show offcanvas
             const offcanvasElement = document.getElementById('poolPanelFormOffcanvas');
@@ -813,6 +840,10 @@ function deletePoolPanel(id) {
 function resetForm() {
     $('#poolPanelForm')[0].reset();
     $('#pool_panel_status').val('1');
+    
+    // Reset ID label and hint for create mode
+    $('#poolPanelIdLabel').text('Next Pool Panel ID:');
+    $('#poolPanelIdHint').text('This ID will be automatically generated');
     
     // Clear validation errors
     $('.is-invalid').removeClass('is-invalid');
