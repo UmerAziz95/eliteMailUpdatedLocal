@@ -230,14 +230,30 @@ class PoolAssignedPanel extends Command
                     }
                     
                     // Update status to completed and set is_splitting flag to 1
-                    // $pool->status = 'completed';
-                    // $pool->completed_at = Carbon::now();
+                    $pool->status = 'completed';
+                    $pool->completed_at = Carbon::now();
                     $pool->is_splitting = 1; // Set splitting flag to 1 when completed
                     $pool->save();
                     
                     $updatedCount++;
                     
+                    // Calculate domain count for display
+                    $domainsRaw = $pool->domains;
+                    $domainCount = 0;
+                    if (is_array($domainsRaw)) {
+                        foreach ($domainsRaw as $domain) {
+                            if (is_array($domain) && isset($domain['name'])) {
+                                $domainCount++;
+                            } elseif (is_string($domain)) {
+                                $domainCount++;
+                            }
+                        }
+                    } elseif (is_string($domainsRaw)) {
+                        $domainCount = count(array_filter(preg_split('/[\r\n,]+/', $domainsRaw)));
+                    }
+                    
                     $this->info("   ✓ Pool ID {$pool->id}: {$pool->total_inboxes} inboxes - Status updated to 'completed'");
+                    $this->info("     Domains processed: {$domainCount} domains");
                     
                 } catch (\Exception $e) {
                     $this->error("   ✗ Failed to update Pool ID {$pool->id}: " . $e->getMessage());
@@ -347,9 +363,9 @@ class PoolAssignedPanel extends Command
             
             $sentCount = 0;
             foreach ($adminUsers as $admin) {
-                if ($this->sendInsufficientSpaceEmail($admin, $isDryRun)) {
-                    $sentCount++;
-                }
+                // if ($this->sendInsufficientSpaceEmail($admin, $isDryRun)) {
+                //     $sentCount++;
+                // }
             }
             
             $this->info("✅ Insufficient space notifications sent: {$sentCount}");
@@ -423,7 +439,28 @@ class PoolAssignedPanel extends Command
             DB::beginTransaction();
             
             // Calculate total space needed from pool data
-            $domains = is_array($pool->domains) ? $pool->domains : array_filter(preg_split('/[\r\n,]+/', $pool->domains));
+            // Handle different domain formats properly
+            $domainsRaw = $pool->domains;
+            $domains = [];
+            
+            if (is_array($domainsRaw)) {
+                // Handle array format (could be array of objects or array of strings)
+                foreach ($domainsRaw as $domain) {
+                    if (is_array($domain) && isset($domain['name'])) {
+                        // New format: array of objects with 'name' property
+                        $domains[] = $domain['name'];
+                    } elseif (is_string($domain)) {
+                        // Old format: array of strings
+                        $domains[] = $domain;
+                    }
+                }
+            } elseif (is_string($domainsRaw)) {
+                // Handle string format (line-break separated)
+                $domains = array_filter(preg_split('/[\r\n,]+/', $domainsRaw));
+            }
+            
+            // Remove empty domains and trim whitespace
+            $domains = array_filter(array_map('trim', $domains));
             $domainCount = count($domains);
             $totalSpaceNeeded = $domainCount * $pool->inboxes_per_domain;
             
@@ -432,7 +469,9 @@ class PoolAssignedPanel extends Command
                 'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
                 'panel_capacity' => $this->PANEL_CAPACITY,
                 'domain_count' => $domainCount,
-                'inboxes_per_domain' => $pool->inboxes_per_domain
+                'inboxes_per_domain' => $pool->inboxes_per_domain,
+                'domains_format' => is_array($pool->domains) ? 'array' : 'string',
+                'sample_domains' => array_slice($domains, 0, 3) // Show first 3 domains for debugging
             ]);
             // Only try to use existing panels - no automatic panel creation
             $splitCapacityLimit = $this->ENABLE_MAX_SPLIT_CAPACITY ? $this->MAX_SPLIT_CAPACITY : $this->PANEL_CAPACITY;
