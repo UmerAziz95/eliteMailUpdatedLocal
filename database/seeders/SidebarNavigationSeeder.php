@@ -87,11 +87,29 @@ class SidebarNavigationSeeder extends Seeder
             ],
             [
                 'name' => 'Pool Pricing',
-                'icon' => 'ti ti-layer-group fs-5',
+                'icon' => 'ti ti-devices-dollar fs-5',
                 'route' => 'admin.pool-pricing.index',
                 'permission' => 'Pool Pricing',
                 'sub_menu' => [],
                 'order' => 8.5
+            ],
+            // pool panels
+            [
+                'name' => 'Pool Panels',
+                'icon' => 'ti ti-file-invoice fs-5',
+                'route' => 'admin.pool-panels.index',
+                'permission' => 'Pool Panels',
+                'sub_menu' => [],
+                'order' => 8.6
+            ],
+            // pools
+            [
+                'name' => 'Pools',
+                'icon' => 'ti ti-pool fs-5',
+                'route' => 'admin.pools.index',
+                'permission' => 'Pools',
+                'sub_menu' => [],
+                'order' => 8.7
             ],
             // [
             //     'name' => 'Special Plans',

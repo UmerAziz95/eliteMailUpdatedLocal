@@ -101,8 +101,11 @@ class PoolAssignedPanel extends Command
         } else {
             $this->info("📏 Using full panel capacity: {$this->PANEL_CAPACITY} inboxes");
         }
-        
-        try {            
+
+        try {
+            // First, fix any inconsistent used_limit values when uncommented then needed
+            // $this->fixPanelUsedLimits();
+            
             // Update order status to completed where space is available
             $this->updateOrderStatusForAvailableSpace();
             
@@ -117,6 +120,55 @@ class PoolAssignedPanel extends Command
         
         return 0;
     }    
+    
+    /**
+     * Fix panel used_limit values based on existing pool_panel_splits
+     */
+    private function fixPanelUsedLimits(): void
+    {
+        $this->info('🔧 Fixing panel used_limit values...');
+        
+        // Get all panels
+        $panels = PoolPanel::all();
+        $fixedCount = 0;
+        
+        foreach ($panels as $panel) {
+            // Calculate actual used space from pool_panel_splits
+            $actualUsedSpace = PoolPanelSplit::where('pool_panel_id', $panel->id)
+                ->get()
+                ->sum(function ($split) {
+                    return $split->getDomainCount() * $split->inboxes_per_domain;
+                });
+            
+            // Calculate what remaining_limit should be
+            $expectedRemainingLimit = $panel->limit - $actualUsedSpace;
+            
+            // Fix if there's a discrepancy
+            if ($panel->used_limit != $actualUsedSpace || $panel->remaining_limit != $expectedRemainingLimit) {
+                $panel->update([
+                    'used_limit' => $actualUsedSpace,
+                    'remaining_limit' => $expectedRemainingLimit
+                ]);
+                
+                $this->info("   ✓ Fixed Panel ID {$panel->id}: used_limit = {$actualUsedSpace}, remaining_limit = {$expectedRemainingLimit}");
+                $fixedCount++;
+                
+                Log::info('Fixed panel capacity values', [
+                    'panel_id' => $panel->id,
+                    'old_used_limit' => $panel->used_limit,
+                    'new_used_limit' => $actualUsedSpace,
+                    'old_remaining_limit' => $panel->remaining_limit,
+                    'new_remaining_limit' => $expectedRemainingLimit
+                ]);
+            }
+        }
+        
+        if ($fixedCount > 0) {
+            $this->info("🔧 Fixed {$fixedCount} panel(s) with incorrect used_limit values");
+        } else {
+            $this->info("✓ All panel used_limit values are correct");
+        }
+    }
     
     /**
      * Get available panel space for specific order size
@@ -653,11 +705,16 @@ class PoolAssignedPanel extends Command
                 'domains' => $domainsToAssign
             ]);
             
-            // Update panel remaining capacity
+            // Update panel remaining capacity and used capacity
             $panel->decrement('remaining_limit', $spaceToAssign);
-            // Ensure remaining_limit never goes below 0
+            $panel->increment('used_limit', $spaceToAssign);
+            
+            // Ensure remaining_limit never goes below 0 and used_limit doesn't exceed limit
             if ($panel->remaining_limit < 0) {
                 $panel->update(['remaining_limit' => 0]);
+            }
+            if ($panel->used_limit > $panel->limit) {
+                $panel->update(['used_limit' => $panel->limit]);
             }
             
             Log::info("Successfully assigned domains to panel", [
@@ -665,7 +722,8 @@ class PoolAssignedPanel extends Command
                 'pool_id' => $pool->id,
                 'space_assigned' => $spaceToAssign,
                 'domains_count' => count($domainsToAssign),
-                'panel_remaining_limit' => $panel->remaining_limit - $spaceToAssign
+                'panel_remaining_limit' => $panel->remaining_limit,
+                'panel_used_limit' => $panel->used_limit
             ]);
             
         } catch (\Exception $e) {
@@ -699,10 +757,18 @@ class PoolAssignedPanel extends Command
                 if ($panel) {
                     $spaceToRestore = $split->getDomainCount() * $split->inboxes_per_domain;
                     $panel->increment('remaining_limit', $spaceToRestore);
+                    $panel->decrement('used_limit', $spaceToRestore);
+                    
+                    // Ensure used_limit never goes below 0
+                    if ($panel->used_limit < 0) {
+                        $panel->update(['used_limit' => 0]);
+                    }
+                    
                     Log::info("Restored panel capacity", [
                         'panel_id' => $panel->id,
                         'space_restored' => $spaceToRestore,
-                        'panel_remaining_limit' => $panel->remaining_limit
+                        'panel_remaining_limit' => $panel->remaining_limit,
+                        'panel_used_limit' => $panel->used_limit
                     ]);
                 }
                 
