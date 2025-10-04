@@ -38,6 +38,11 @@ class PoolPanel extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    public function poolPanelSplits()
+    {
+        return $this->hasMany(PoolPanelSplit::class);
+    }
+
     // Scopes
     public function scopeActive($query)
     {

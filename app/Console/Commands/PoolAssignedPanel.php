@@ -3,11 +3,11 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\OrderTracking;
-use App\Models\Panel;
+use App\Models\PoolPanel;
+use App\Models\PoolPanelSplit;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\OrderPanel;
-use App\Models\OrderPanelSplit;
 use App\Models\ReorderInfo;
 use App\Mail\AdminPanelNotificationMail;
 use Illuminate\Support\Facades\Mail;
@@ -16,16 +16,18 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Spatie\Permission\Models\Permission;
 
-class CheckPanelCapacity extends Command
+class PoolAssignedPanel extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'panels:check-capacity 
+    protected $signature = 'pool:assigned-panel 
                             {--dry-run : Run without sending actual emails}
-                            {--force : Force send even if already sent today}';    /**
+                            {--force : Force send even if already sent today}';
+
+    /**
      * The console command description.
      *
      * @var string
@@ -99,7 +101,7 @@ class CheckPanelCapacity extends Command
     {
         if ($orderSize >= $this->PANEL_CAPACITY) {
             // For large orders, prioritize full capacity panels
-            $fullCapacityPanels = Panel::where('is_active', 1)
+            $fullCapacityPanels = PoolPanel::where('is_active', 1)
                                         ->where('limit', $this->PANEL_CAPACITY)
                                         // ->where('remaining_limit', $this->PANEL_CAPACITY)
                                         ->where('remaining_limit', '>=', $inboxesPerDomain)
@@ -117,7 +119,7 @@ class CheckPanelCapacity extends Command
             
         } else {
             // For smaller orders, use any panel with remaining space that can accommodate at least one domain
-            $availablePanels = Panel::where('is_active', 1)
+            $availablePanels = PoolPanel::where('is_active', 1)
                                     ->where('limit', $this->PANEL_CAPACITY)
                                     ->where('remaining_limit', '>=', $inboxesPerDomain)
                                     ->get();
@@ -349,7 +351,7 @@ class CheckPanelCapacity extends Command
             $totalPanelsNeeded = array_sum(array_column($this->insufficientSpaceOrders, 'panels_needed'));
             $totalSpaceNeeded = array_sum(array_column($this->insufficientSpaceOrders, 'required_space'));
             // get panel greater than max split 
-            $availablePanelCount = Panel::where('is_active', true)
+            $availablePanelCount = PoolPanel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
                 ->where('remaining_limit', '>=', $this->MAX_SPLIT_CAPACITY)
                 ->count();
@@ -451,7 +453,7 @@ class CheckPanelCapacity extends Command
         while ($remainingSpace > 0 && $domainsProcessed < count($domains)) {
             // Re-fetch available panels with updated remaining_limit for each iteration
             // Exclude panels that have already been used for this order
-            $availablePanel = Panel::where('is_active', true)
+            $availablePanel = PoolPanel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
                 // ->where('remaining_limit', '>', 0)
                 ->where('remaining_limit', '>=', $reorderInfo->inboxes_per_domain)
@@ -548,7 +550,7 @@ class CheckPanelCapacity extends Command
      */
     private function findSuitablePanel($spaceNeeded)
     {
-        return Panel::where('is_active', true)
+        return PoolPanel::where('is_active', true)
             ->where('limit', $this->PANEL_CAPACITY)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
@@ -559,7 +561,7 @@ class CheckPanelCapacity extends Command
      */
     private function findExisting1790Panel($spaceNeeded)
     {
-        return Panel::where('is_active', true)
+        return PoolPanel::where('is_active', true)
             ->where('limit', $this->PANEL_CAPACITY)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with most available space first for efficiency
@@ -583,11 +585,10 @@ class CheckPanelCapacity extends Command
                 'note' => "Auto-assigned split #{$splitNumber} - {$spaceToAssign} inboxes across " . count($domainsToAssign) . " domains"
             ]);
             
-            // Create order_panel_split record
-            OrderPanelSplit::create([
-                'panel_id' => $panel->id,
-                'order_panel_id' => $orderPanel->id,
-                'order_id' => $order->id,
+            // Create pool_panel_split record
+            PoolPanelSplit::create([
+                'pool_panel_id' => $panel->id,
+                'pool_id' => $order->id, // Using order ID as pool ID for now
                 'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
                 'domains' => $domainsToAssign
             ]);
@@ -635,7 +636,7 @@ class CheckPanelCapacity extends Command
             $rollbackCount = 0;
             foreach ($orderPanels as $orderPanel) {
                 // Restore panel capacity
-                $panel = Panel::find($orderPanel->panel_id);
+                $panel = PoolPanel::find($orderPanel->panel_id);
                 if ($panel) {
                     $panel->increment('remaining_limit', $orderPanel->space_assigned);
                     Log::info("Restored panel capacity", [
@@ -645,8 +646,8 @@ class CheckPanelCapacity extends Command
                     ]);
                 }
                 
-                // Delete order panel splits
-                OrderPanelSplit::where('order_panel_id', $orderPanel->id)->delete();
+                // Delete pool panel splits
+                PoolPanelSplit::where('pool_id', $order->id)->delete();
                 
                 // Delete order panel
                 $orderPanel->delete();
