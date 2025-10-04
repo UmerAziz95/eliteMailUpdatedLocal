@@ -142,6 +142,12 @@ class Pool extends Model
         $this->attributes['status_manage_by_admin'] = strtolower($value);
     }
 
+    // Relationships
+    public function poolPanelSplits()
+    {
+        return $this->hasMany(\App\Models\PoolPanelSplit::class, 'pool_id');
+    }
+
     // Scopes
     public function scopeActive($query)
     {

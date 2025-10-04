@@ -493,26 +493,31 @@ class PoolAssignedPanel extends Command
             // Calculate total space needed from pool data
             // Handle different domain formats properly
             $domainsRaw = $pool->domains;
-            $domains = [];
+            $domains = []; // Will store domain names for processing
+            $domainIds = []; // Will store domain IDs for database storage
             
             if (is_array($domainsRaw)) {
                 // Handle array format (could be array of objects or array of strings)
                 foreach ($domainsRaw as $domain) {
                     if (is_array($domain) && isset($domain['name'])) {
-                        // New format: array of objects with 'name' property
+                        // New format: array of objects with 'id' and 'name' properties
                         $domains[] = $domain['name'];
+                        $domainIds[] = isset($domain['id']) ? $domain['id'] : $domain['name'];
                     } elseif (is_string($domain)) {
                         // Old format: array of strings
                         $domains[] = $domain;
+                        $domainIds[] = $domain; // Use name as fallback when no ID available
                     }
                 }
             } elseif (is_string($domainsRaw)) {
                 // Handle string format (line-break separated)
                 $domains = array_filter(preg_split('/[\r\n,]+/', $domainsRaw));
+                $domainIds = $domains; // Use names as fallback when no IDs available
             }
             
             // Remove empty domains and trim whitespace
             $domains = array_filter(array_map('trim', $domains));
+            $domainIds = array_filter(array_map('trim', $domainIds));
             $domainCount = count($domains);
             $totalSpaceNeeded = $domainCount * $pool->inboxes_per_domain;
             
@@ -523,7 +528,8 @@ class PoolAssignedPanel extends Command
                 'domain_count' => $domainCount,
                 'inboxes_per_domain' => $pool->inboxes_per_domain,
                 'domains_format' => is_array($pool->domains) ? 'array' : 'string',
-                'sample_domains' => array_slice($domains, 0, 3) // Show first 3 domains for debugging
+                'sample_domains' => array_slice($domains, 0, 3), // Show first 3 domain names for debugging
+                'sample_domain_ids' => array_slice($domainIds, 0, 3) // Show first 3 domain IDs for debugging
             ]);
             // Only try to use existing panels - no automatic panel creation
             $splitCapacityLimit = $this->ENABLE_MAX_SPLIT_CAPACITY ? $this->MAX_SPLIT_CAPACITY : $this->PANEL_CAPACITY;
@@ -533,15 +539,15 @@ class PoolAssignedPanel extends Command
                 
                 if ($suitablePanel) {
                     // Assign entire pool to this panel
-                    $this->assignDomainsToPanel($suitablePanel, $pool, $domains, $totalSpaceNeeded, 1);
+                    $this->assignDomainsToPanel($suitablePanel, $pool, $domains, $domainIds, $totalSpaceNeeded, 1);
                     Log::info("Pool #{$pool->id} assigned to existing panel #{$suitablePanel->id}");
                 } else {
                     // No single panel can fit, try intelligent splitting across available panels
-                    $this->handlePoolSplitAcrossAvailablePanels($pool, $domains, $totalSpaceNeeded);
+                    $this->handlePoolSplitAcrossAvailablePanels($pool, $domains, $domainIds, $totalSpaceNeeded);
                 }
             } else {
                 // Large pools: try intelligent splitting across available panels only
-                $this->handlePoolSplitAcrossAvailablePanels($pool, $domains, $totalSpaceNeeded);
+                $this->handlePoolSplitAcrossAvailablePanels($pool, $domains, $domainIds, $totalSpaceNeeded);
             }
             
             DB::commit();
@@ -560,7 +566,7 @@ class PoolAssignedPanel extends Command
     /**
      * Handle intelligent splitting across existing available panels
      */
-    private function handlePoolSplitAcrossAvailablePanels($pool, $domains, $totalSpaceNeeded)
+    private function handlePoolSplitAcrossAvailablePanels($pool, $domains, $domainIds, $totalSpaceNeeded)
     {
         $remainingSpace = $totalSpaceNeeded;
         $domainsProcessed = 0;
@@ -610,12 +616,13 @@ class PoolAssignedPanel extends Command
             
             // Extract domains for this panel
             $domainSlice = array_slice($domains, $domainsProcessed, $domainsToAssign);
+            $domainIdSlice = array_slice($domainIds, $domainsProcessed, $domainsToAssign);
             $actualSpaceUsed = count($domainSlice) * $pool->inboxes_per_domain;
             
             // Only proceed if we can actually use this panel and respect MAX_SPLIT_CAPACITY if enabled
             $splitCapacityCheck = $this->ENABLE_MAX_SPLIT_CAPACITY ? ($actualSpaceUsed <= $this->MAX_SPLIT_CAPACITY) : true;
             if ($actualSpaceUsed <= $availableSpace && $splitCapacityCheck && count($domainSlice) > 0) {
-                $this->assignDomainsToPanel($availablePanel, $pool, $domainSlice, $actualSpaceUsed, $splitNumber);
+                $this->assignDomainsToPanel($availablePanel, $pool, $domainSlice, $domainIdSlice, $actualSpaceUsed, $splitNumber);
                 
                 // Add this panel to the used panels list to prevent reuse for this pool
                 $usedPanelIds[] = $availablePanel->id;
@@ -694,7 +701,7 @@ class PoolAssignedPanel extends Command
     /**
      * Assign domains to a specific panel and create all necessary records
      */
-    private function assignDomainsToPanel($panel, $pool, $domainsToAssign, $spaceToAssign, $splitNumber)
+    private function assignDomainsToPanel($panel, $pool, $domainsToAssign, $domainIdsToAssign, $spaceToAssign, $splitNumber)
     {
         try {
             // Create pool_panel_split record
@@ -702,7 +709,7 @@ class PoolAssignedPanel extends Command
                 'pool_panel_id' => $panel->id,
                 'pool_id' => $pool->id,
                 'inboxes_per_domain' => $pool->inboxes_per_domain,
-                'domains' => $domainsToAssign
+                'domains' => $domainIdsToAssign // Store domain IDs instead of domain names
             ]);
             
             // Update panel remaining capacity and used capacity
@@ -722,6 +729,8 @@ class PoolAssignedPanel extends Command
                 'pool_id' => $pool->id,
                 'space_assigned' => $spaceToAssign,
                 'domains_count' => count($domainsToAssign),
+                'domain_names' => array_slice($domainsToAssign, 0, 3), // Sample domain names for debugging
+                'domain_ids' => array_slice($domainIdsToAssign, 0, 3), // Sample domain IDs stored in database
                 'panel_remaining_limit' => $panel->remaining_limit,
                 'panel_used_limit' => $panel->used_limit
             ]);
