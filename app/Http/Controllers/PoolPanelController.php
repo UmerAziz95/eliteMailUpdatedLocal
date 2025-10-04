@@ -107,7 +107,7 @@ class PoolPanelController extends Controller
             $data['auto_generated_id'] = $this->generatePoolPanelId();
             
             // Set default values for limit fields (since we removed them from form)
-            $data['limit'] = 0;
+            $data['limit'] = env('PANEL_CAPACITY', 1790);
             $data['remaining_limit'] = 0;
             $data['used_limit'] = 0;
 

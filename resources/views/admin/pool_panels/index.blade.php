@@ -268,9 +268,19 @@
                     </div>
                     <div class="col-12 text-end">
                         <button type="button" id="resetFilters"
-                            class="btn btn-outline-secondary btn-sm me-2 px-3">Reset</button>
+                            class="btn btn-outline-secondary btn-sm me-2 px-3">
+                            <span id="resetText">Reset</span>
+                            <span id="resetSpinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
+                                <span class="visually-hidden">Loading...</span>
+                            </span>
+                        </button>
                         <button type="submit" id="submitBtn"
-                            class="btn btn-primary btn-sm border-0 px-3">Search</button>
+                            class="btn btn-primary btn-sm border-0 px-3">
+                            <span id="searchText">Search</span>
+                            <span id="searchSpinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
+                                <span class="visually-hidden">Loading...</span>
+                            </span>
+                        </button>
                     </div>
                 </div>
             </form>
@@ -339,6 +349,18 @@ $(document).ready(function() {
         const submitBtn = $(this);
         const originalText = submitBtn.text();
         
+        // Show Swal loader
+        Swal.fire({
+            title: isEditMode ? 'Updating Pool Panel...' : 'Creating Pool Panel...',
+            html: 'Please wait while we process your request.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
         // Disable submit button and show loading
         submitBtn.prop('disabled', true).text('Processing...');
         
@@ -356,7 +378,13 @@ $(document).ready(function() {
             method: method,
             data: formData + '&_token={{ csrf_token() }}',
             success: function(response) {
-                toastr.success(response.message || (isEditMode ? 'Pool Panel updated successfully!' : 'Pool Panel created successfully!'));
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: response.message || (isEditMode ? 'Pool Panel updated successfully!' : 'Pool Panel created successfully!'),
+                    timer: 2000,
+                    showConfirmButton: false
+                });
                 
                 // Close offcanvas
                 const offcanvasElement = document.getElementById('poolPanelFormOffcanvas');
@@ -370,20 +398,39 @@ $(document).ready(function() {
                 resetForm();
             },
             error: function(xhr) {
+                Swal.close(); // Close the loading dialog
+                
                 if (xhr.status === 422) {
                     // Validation errors
                     const errors = xhr.responseJSON.errors;
+                    let errorMessages = [];
                     $.each(errors, function(field, messages) {
                         const input = $(`[name="${field}"]`);
                         input.addClass('is-invalid');
                         input.after(`<div class="invalid-feedback">${messages[0]}</div>`);
+                        errorMessages.push(messages[0]);
+                    });
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        html: errorMessages.join('<br>'),
+                        confirmButtonText: 'OK'
                     });
                 } else {
-                    toastr.error(xhr.responseJSON?.message || 'An error occurred while processing your request.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: xhr.responseJSON?.message || 'An error occurred while processing your request.',
+                        confirmButtonText: 'OK'
+                    });
                 }
             },
             complete: function() {
-                // Re-enable submit button
+                // Close Swal loading if still open and re-enable submit button
+                if (Swal.isVisible()) {
+                    Swal.close();
+                }
                 submitBtn.prop('disabled', false).text(originalText);
             }
         });
@@ -392,6 +439,35 @@ $(document).ready(function() {
     // Filter form submission
     $('#filterForm').on('submit', function(e) {
         e.preventDefault();
+        
+        // Prevent multiple submissions if already loading
+        if (isLoading) {
+            return false;
+        }
+        
+        // Show Swal loader for search
+        Swal.fire({
+            title: 'Searching Pool Panels...',
+            html: 'Please wait while we filter the results.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Disable buttons and show loading state
+        const searchBtn = $('#submitBtn');
+        const resetBtn = $('#resetFilters');
+        
+        searchBtn.prop('disabled', true);
+        resetBtn.prop('disabled', true);
+        
+        // Show spinner and update text
+        $('#searchText').text('Searching...');
+        $('#searchSpinner').show();
+        
         const formData = new FormData(this);
         currentFilters = Object.fromEntries(formData.entries());
         resetAndReload();
@@ -399,6 +475,34 @@ $(document).ready(function() {
 
     // Reset filters
     $('#resetFilters').on('click', function() {
+        // Prevent multiple clicks if already loading
+        if (isLoading) {
+            return false;
+        }
+        
+        // Show Swal loader for reset
+        Swal.fire({
+            title: 'Resetting Filters...',
+            html: 'Please wait while we reset the filters.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Disable both buttons during reset
+        const searchBtn = $('#submitBtn');
+        const resetBtn = $('#resetFilters');
+        
+        searchBtn.prop('disabled', true);
+        resetBtn.prop('disabled', true);
+        
+        // Show spinner and update text for reset button
+        $('#resetText').text('Resetting...');
+        $('#resetSpinner').show();
+        
         $('#filterForm')[0].reset();
         currentFilters = {};
         resetAndReload();
@@ -716,14 +820,31 @@ function showErrorState() {
             <button class="btn btn-primary" onclick="resetAndReload()">Retry</button>
         </div>
     `;
+    
+    // Also show Swal error
+    Swal.fire({
+        icon: 'error',
+        title: 'Loading Error',
+        text: 'Failed to load pool panels. Please check your connection and try again.',
+        confirmButtonText: 'OK'
+    });
 }
 
 // Reset and reload data
 function resetAndReload() {
     currentPage = 1;
     hasMorePages = true;
-    loadPoolPanels(true);
-    updateCounters();
+    
+    // Load data and then re-enable filter buttons
+    Promise.all([loadPoolPanels(true), updateCounters()])
+        .finally(() => {
+            // Close Swal loader if open
+            if (Swal.isVisible()) {
+                Swal.close();
+            }
+            // Re-enable filter buttons after operation completes
+            resetFilterButtonStates();
+        });
 }
 
 // Format date helper
@@ -731,6 +852,22 @@ function formatDate(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+// Reset filter button states
+function resetFilterButtonStates() {
+    const searchBtn = $('#submitBtn');
+    const resetBtn = $('#resetFilters');
+    
+    // Reset search button
+    searchBtn.prop('disabled', false);
+    $('#searchText').text('Search');
+    $('#searchSpinner').hide();
+    
+    // Reset reset button
+    resetBtn.prop('disabled', false);
+    $('#resetText').text('Reset');
+    $('#resetSpinner').hide();
 }
 
 // No longer needed - ID generation happens in the backend
@@ -742,6 +879,18 @@ function openCreateForm() {
     $('#poolPanelFormOffcanvasLabel').text('Create Pool Panel');
     $('#submitPoolPanelFormBtn').text('Create Pool Panel');
     $('#poolPanelIdContainer').show(); // Show ID container for create mode too
+    
+    // Show Swal loader for fetching next ID
+    Swal.fire({
+        title: 'Preparing Form...',
+        text: 'Fetching next Pool Panel ID...',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
     
     // Show loading state for ID field
     $('#pool_panel_id').val('Loading next ID...');
@@ -757,6 +906,9 @@ function openCreateForm() {
         success: function(response) {
             $('#pool_panel_id').val(response.next_id);
             $('#poolPanelIdHint').text('This ID will be automatically assigned to your new pool panel');
+            
+            // Close Swal loader
+            Swal.close();
         },
         error: function(xhr) {
             console.error('Failed to fetch next pool panel ID:', xhr);
@@ -764,15 +916,31 @@ function openCreateForm() {
             $('#pool_panel_id').val('Error loading ID');
             $('#poolPanelIdHint').text('ID will be generated when creating the pool panel');
             
-            // Show toast notification
-            if (typeof toastr !== 'undefined') {
-                toastr.warning('Could not fetch next Pool Panel ID. A new ID will be generated when you create the panel.');
-            }
+            // Show Swal warning (this will replace the loading dialog)
+            Swal.fire({
+                icon: 'warning',
+                title: 'ID Generation Warning',
+                text: 'Could not fetch next Pool Panel ID. A new ID will be generated when you create the panel.',
+                timer: 3000,
+                showConfirmButton: false
+            });
         }
     });
 }
 
 function openEditForm(id) {
+    // Show Swal loader for loading edit data
+    Swal.fire({
+        title: 'Loading Pool Panel...',
+        text: 'Please wait while we load the pool panel data.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
     $.ajax({
         url: '{{ route("admin.pool-panels.edit", ":id") }}'.replace(':id', id),
         method: 'GET',
@@ -797,13 +965,21 @@ function openEditForm(id) {
             $('#poolPanelIdLabel').text('Current Pool Panel ID:');
             $('#poolPanelIdHint').text('This is the current ID for this pool panel');
             
+            // Close Swal loader
+            Swal.close();
+            
             // Show offcanvas
             const offcanvasElement = document.getElementById('poolPanelFormOffcanvas');
             const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
             offcanvas.show();
         },
         error: function(xhr) {
-            toastr.error(xhr.responseJSON?.message || 'An error occurred while loading the pool panel data.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Loading Data',
+                text: xhr.responseJSON?.message || 'An error occurred while loading the pool panel data.',
+                confirmButtonText: 'OK'
+            });
         }
     });
 }
@@ -819,6 +995,18 @@ function deletePoolPanel(id) {
         confirmButtonText: 'Yes, delete it!'
     }).then((result) => {
         if (result.isConfirmed) {
+            // Show loading during deletion
+            Swal.fire({
+                title: 'Deleting Pool Panel...',
+                text: 'Please wait while we delete the pool panel.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
             $.ajax({
                 url: '{{ route("admin.pool-panels.destroy", ":id") }}'.replace(':id', id),
                 method: 'DELETE',
@@ -826,11 +1014,22 @@ function deletePoolPanel(id) {
                     _token: '{{ csrf_token() }}'
                 },
                 success: function(response) {
-                    toastr.success(response.message || 'Pool Panel deleted successfully');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Deleted!',
+                        text: response.message || 'Pool Panel deleted successfully',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
                     resetAndReload();
                 },
                 error: function(xhr) {
-                    toastr.error(xhr.responseJSON?.message || 'An error occurred while deleting the pool panel');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Delete Failed',
+                        text: xhr.responseJSON?.message || 'An error occurred while deleting the pool panel',
+                        confirmButtonText: 'OK'
+                    });
                 }
             });
         }

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('auto_generated_id')->unique();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->integer('limit')->default(0);
+            $table->integer('limit')->default(env('PANEL_CAPACITY', 1790));
             $table->integer('remaining_limit')->default(0);
             $table->integer('used_limit')->default(0);
             $table->boolean('is_active')->default(true);
