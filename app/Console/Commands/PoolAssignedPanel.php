@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Spatie\Permission\Models\Permission;
-
+// on this page
 class PoolAssignedPanel extends Command
 {
     /**
@@ -140,7 +140,7 @@ class PoolAssignedPanel extends Command
      */
     private function updateOrderStatusForAvailableSpace(): void
     {
-        // Get pending pools that can be accommodated with available space and are not currently being split
+        // Get pools that can be accommodated with available space and are not currently being split
         $pendingPools = Pool::where('status', 'pending')
             ->where('is_splitting', 0) // Only get pools that are not currently being split
             ->whereNotNull('total_inboxes')
@@ -149,7 +149,7 @@ class PoolAssignedPanel extends Command
             ->get();
         
         if ($pendingPools->isEmpty()) {
-            $this->info('ℹ️  No pending pools to update.');
+            $this->info('ℹ️  No pools to update.');
             return;
         }
 
@@ -157,7 +157,7 @@ class PoolAssignedPanel extends Command
         $totalProcessed = 0;
         $remainingTotalInboxes = 0;
         
-        $this->info("🔄 Processing pending pools for status updates...");
+        $this->info("🔄 Processing pools for status updates...");
         
         foreach ($pendingPools as $pool) {
             $totalProcessed++;            
@@ -197,10 +197,10 @@ class PoolAssignedPanel extends Command
                         $pool->save();
                     }
                     
-                    // Update status to completed and reset is_splitting flag
-                    $pool->status = 'completed';
-                    $pool->completed_at = Carbon::now();
-                    $pool->is_splitting = 0; // Reset splitting flag
+                    // Update status to completed and set is_splitting flag to 1
+                    // $pool->status = 'completed';
+                    // $pool->completed_at = Carbon::now();
+                    $pool->is_splitting = 1; // Set splitting flag to 1 when completed
                     $pool->save();
                     
                     $updatedCount++;
