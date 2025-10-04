@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Spatie\Permission\Models\Permission;
-// on this page
+
 class PoolAssignedPanel extends Command
 {
     /**
@@ -25,7 +25,9 @@ class PoolAssignedPanel extends Command
      */
     protected $signature = 'pool:assigned-panel 
                             {--dry-run : Run without sending actual emails}
-                            {--force : Force send even if already sent today}';
+                            {--force : Force send even if already sent today}
+                            {--disable-split-capacity : Disable MAX_SPLIT_CAPACITY functionality}
+                            {--enable-split-capacity : Enable MAX_SPLIT_CAPACITY functionality}';
 
     /**
      * The console command description.
@@ -54,6 +56,14 @@ class PoolAssignedPanel extends Command
     public $MAX_SPLIT_CAPACITY;
     
     /**
+     * Flag to enable/disable MAX_SPLIT_CAPACITY functionality
+     * 
+     * When enabled (true): Uses MAX_SPLIT_CAPACITY to limit splits
+     * When disabled (false): Uses full panel capacity without split limits
+     */
+    public $ENABLE_MAX_SPLIT_CAPACITY;
+    
+    /**
      * Constructor to initialize dynamic properties
      */
     public function __construct()
@@ -61,6 +71,7 @@ class PoolAssignedPanel extends Command
         parent::__construct();
         $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 1790); // Default to 1790 if not set in config
         $this->MAX_SPLIT_CAPACITY = env('MAX_SPLIT_CAPACITY', 358); // Maximum inboxes per split
+        $this->ENABLE_MAX_SPLIT_CAPACITY = env('ENABLE_MAX_SPLIT_CAPACITY', false); // Enable/disable split capacity functionality
     }
     
     /**
@@ -76,7 +87,20 @@ class PoolAssignedPanel extends Command
         $isDryRun = $this->option('dry-run');
         $isForce = $this->option('force');
         
+        // Handle split capacity flag options
+        if ($this->option('disable-split-capacity')) {
+            $this->ENABLE_MAX_SPLIT_CAPACITY = false;
+        } elseif ($this->option('enable-split-capacity')) {
+            $this->ENABLE_MAX_SPLIT_CAPACITY = true;
+        }
+        
         $this->info('🔍 Starting panel capacity check...');
+        $this->info("⚙️  MAX_SPLIT_CAPACITY functionality: " . ($this->ENABLE_MAX_SPLIT_CAPACITY ? 'ENABLED' : 'DISABLED'));
+        if ($this->ENABLE_MAX_SPLIT_CAPACITY) {
+            $this->info("📏 Max split capacity: {$this->MAX_SPLIT_CAPACITY} inboxes");
+        } else {
+            $this->info("📏 Using full panel capacity: {$this->PANEL_CAPACITY} inboxes");
+        }
         
         try {            
             // Update order status to completed where space is available
@@ -109,7 +133,11 @@ class PoolAssignedPanel extends Command
             
             $fullCapacitySpace = 0;
             foreach ($fullCapacityPanels as $panel) {
-                $fullCapacitySpace += min($panel->remaining_limit, $this->MAX_SPLIT_CAPACITY);
+                if ($this->ENABLE_MAX_SPLIT_CAPACITY) {
+                    $fullCapacitySpace += min($panel->remaining_limit, $this->MAX_SPLIT_CAPACITY);
+                } else {
+                    $fullCapacitySpace += $panel->remaining_limit;
+                }
             }
 
             $this->info("🔍 Available space for large order ({$orderSize} inboxes):");
@@ -126,7 +154,11 @@ class PoolAssignedPanel extends Command
             
             $totalSpace = 0;
             foreach ($availablePanels as $panel) {
-                $totalSpace += min($panel->remaining_limit, $this->MAX_SPLIT_CAPACITY);
+                if ($this->ENABLE_MAX_SPLIT_CAPACITY) {
+                    $totalSpace += min($panel->remaining_limit, $this->MAX_SPLIT_CAPACITY);
+                } else {
+                    $totalSpace += $panel->remaining_limit;
+                }
             }
             
             $this->info("🔍 Available space for small order ({$orderSize} inboxes): {$totalSpace} total space");
@@ -226,7 +258,8 @@ class PoolAssignedPanel extends Command
                 $this->warn("     Pool-specific available space: {$poolSpecificSpace}");
                 
                 // Calculate panels needed for this pool
-                $panelsNeeded = ceil($pool->total_inboxes / $this->MAX_SPLIT_CAPACITY);
+                $capacityPerPanel = $this->ENABLE_MAX_SPLIT_CAPACITY ? $this->MAX_SPLIT_CAPACITY : $this->PANEL_CAPACITY;
+                $panelsNeeded = ceil($pool->total_inboxes / $capacityPerPanel);
                 
                 // Add to insufficient space pools for email notification
                 $this->insufficientSpaceOrders[] = [
@@ -351,10 +384,11 @@ class PoolAssignedPanel extends Command
             // Calculate total panels needed
             $totalPanelsNeeded = array_sum(array_column($this->insufficientSpaceOrders, 'panels_needed'));
             $totalSpaceNeeded = array_sum(array_column($this->insufficientSpaceOrders, 'required_space'));
-            // get panel greater than max split 
+            // get panel greater than max split or minimum capacity based on flag
+            $minCapacityRequired = $this->ENABLE_MAX_SPLIT_CAPACITY ? $this->MAX_SPLIT_CAPACITY : 1;
             $availablePanelCount = PoolPanel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
-                ->where('remaining_limit', '>=', $this->MAX_SPLIT_CAPACITY)
+                ->where('remaining_limit', '>=', $minCapacityRequired)
                 ->count();
             $totalPanelsNeeded -= $availablePanelCount; // Adjust total panels needed based on available panels
             Mail::to($admin->email)->send(
@@ -401,7 +435,8 @@ class PoolAssignedPanel extends Command
                 'inboxes_per_domain' => $pool->inboxes_per_domain
             ]);
             // Only try to use existing panels - no automatic panel creation
-            if ($totalSpaceNeeded <= $this->MAX_SPLIT_CAPACITY) {
+            $splitCapacityLimit = $this->ENABLE_MAX_SPLIT_CAPACITY ? $this->MAX_SPLIT_CAPACITY : $this->PANEL_CAPACITY;
+            if ($totalSpaceNeeded <= $splitCapacityLimit) {
                 // Try to find existing panel with sufficient space for small pools (<= 358 inboxes)
                 $suitablePanel = $this->findSuitablePanel($totalSpaceNeeded);
                 
@@ -468,8 +503,12 @@ class PoolAssignedPanel extends Command
             }
             
             $availableSpace = $availablePanel->remaining_limit;
-            // Limit space to use based on MAX_SPLIT_CAPACITY
-            $spaceToUse = min($availableSpace, $remainingSpace, $this->MAX_SPLIT_CAPACITY);
+            // Limit space to use based on MAX_SPLIT_CAPACITY if enabled
+            if ($this->ENABLE_MAX_SPLIT_CAPACITY) {
+                $spaceToUse = min($availableSpace, $remainingSpace, $this->MAX_SPLIT_CAPACITY);
+            } else {
+                $spaceToUse = min($availableSpace, $remainingSpace);
+            }
             
             // Calculate maximum domains that can fit in space without exceeding MAX_SPLIT_CAPACITY
             $maxDomainsForSpace = floor($spaceToUse / $pool->inboxes_per_domain);
@@ -482,8 +521,9 @@ class PoolAssignedPanel extends Command
             $domainSlice = array_slice($domains, $domainsProcessed, $domainsToAssign);
             $actualSpaceUsed = count($domainSlice) * $pool->inboxes_per_domain;
             
-            // Only proceed if we can actually use this panel and respect MAX_SPLIT_CAPACITY
-            if ($actualSpaceUsed <= $availableSpace && $actualSpaceUsed <= $this->MAX_SPLIT_CAPACITY && count($domainSlice) > 0) {
+            // Only proceed if we can actually use this panel and respect MAX_SPLIT_CAPACITY if enabled
+            $splitCapacityCheck = $this->ENABLE_MAX_SPLIT_CAPACITY ? ($actualSpaceUsed <= $this->MAX_SPLIT_CAPACITY) : true;
+            if ($actualSpaceUsed <= $availableSpace && $splitCapacityCheck && count($domainSlice) > 0) {
                 $this->assignDomainsToPanel($availablePanel, $pool, $domainSlice, $actualSpaceUsed, $splitNumber);
                 
                 // Add this panel to the used panels list to prevent reuse for this pool
