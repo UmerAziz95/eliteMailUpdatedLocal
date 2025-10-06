@@ -30,6 +30,10 @@
                 class="border border-{{ $pool->status == 'cancelled' ? 'warning' : ($pool->status == 'completed' ? 'success' : 'primary') }} rounded-2 py-1 px-2 text-{{ $pool->status == 'cancelled' ? 'warning' : ($pool->status == 'completed' ? 'success' : 'primary') }} bg-transparent">
                 {{ ucfirst(str_replace('_', ' ', $pool->status ?? '')) }}
             </div>
+            <div class="badge {{ ($pool->status_manage_by_admin ?? 'warming') === 'warming' ? 'bg-warning text-dark' : 'bg-success text-white' }} px-2 py-1">
+                <i class="fa {{ ($pool->status_manage_by_admin ?? 'warming') === 'warming' ? 'fa-fire' : 'fa-check-circle' }} me-1"></i>
+                {{ ucfirst($pool->status_manage_by_admin ?? 'warming') }}
+            </div>
             @if($pool->assigned_to)
             <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignHelperModal">
                 <i class="fa fa-user-edit"></i> Reassign Helper

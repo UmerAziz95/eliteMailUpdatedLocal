@@ -136,10 +136,37 @@ class Pool extends Model
     }
 
 
+    // Status management methods
+    public static function getAvailableStatuses()
+    {
+        return [
+            'warming' => 'Warming',
+            'available' => 'Available'
+        ];
+    }
+
+    public function isWarming()
+    {
+        return $this->status_manage_by_admin === 'warming';
+    }
+
+    public function isAvailable()
+    {
+        return $this->status_manage_by_admin === 'available';
+    }
+
+    public function getStatusLabelAttribute()
+    {
+        $statuses = self::getAvailableStatuses();
+        return $statuses[$this->status_manage_by_admin] ?? 'Unknown';
+    }
+
     // Mutator for status_manage_by_admin
     public function setStatusManageByAdminAttribute($value)
     {
-        $this->attributes['status_manage_by_admin'] = strtolower($value);
+        // Ensure only valid statuses are set, default to warming
+        $validStatuses = ['warming', 'available'];
+        $this->attributes['status_manage_by_admin'] = in_array($value, $validStatuses) ? $value : 'warming';
     }
 
     // Relationships
@@ -162,5 +189,20 @@ class Pool extends Model
     public function scopeAssignedTo($query, $userId)
     {
         return $query->where('assigned_to', $userId);
+    }
+
+    public function scopeWarming($query)
+    {
+        return $query->where('status_manage_by_admin', 'warming');
+    }
+
+    public function scopeAvailable($query)
+    {
+        return $query->where('status_manage_by_admin', 'available');
+    }
+
+    public function scopeByAdminStatus($query, $status)
+    {
+        return $query->where('status_manage_by_admin', $status);
     }
 }

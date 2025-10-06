@@ -409,6 +409,18 @@
                     </span>
                 </small>
             </div>
+
+            <!-- Pool Status Management -->
+            <div class="col-md-6 pool-status mb-3 d-none">
+                <label for="status_manage_by_admin">Pool Status *</label>
+                <select id="status_manage_by_admin" name="status_manage_by_admin" class="form-control" required>
+                    <option value="warming" {{ (isset($pool) && $pool->status_manage_by_admin === 'warming') ? 'selected' : '' }}>Warming</option>
+                    <option value="available" {{ (isset($pool) && $pool->status_manage_by_admin === 'available') ? 'selected' : '' }}>Available</option>
+                </select>
+                <div class="invalid-feedback" id="status_manage_by_admin-error"></div>
+                <p class="note mb-0">(Warming: Pool is being prepared. Available: Pool is ready for use.)</p>
+            </div>
+
                 <!-- Remaining Inboxes Progress Bar -->
                 <div class="col-md-12 remaining">
                     <div class="mb-3">

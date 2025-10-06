@@ -116,9 +116,10 @@
                 <thead>
                     <tr>
                         <th>Pool ID</th>
-                        <th>Customer</th>
+                        <th>Created By</th>
                         <th>Name</th>
                         <th>Status</th>
+                        <th>Pool Status</th>
                         <th>Hosting Platform</th>
                         <th>Sending Platform</th>
                         <th>Total Inboxes</th>
@@ -214,10 +215,21 @@ $(document).ready(function() {
             {
                 data: 'status',
                 name: 'status',
+                visible: false,
                 render: function(data, type, row) {
                     const statusClass = 'badge-' + data;
                     const statusText = data.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
                     return `<span class="status-badge ${statusClass}">${statusText}</span>`;
+                }
+            },
+            {
+                data: 'status_manage_by_admin',
+                name: 'status_manage_by_admin',
+                render: function(data, type, row) {
+                    if (!data) data = 'warming'; // Default to warming if null
+                    const statusClass = data === 'warming' ? 'bg-warning text-dark' : 'bg-success text-white';
+                    const statusIcon = data === 'warming' ? 'fa-fire' : 'fa-check-circle';
+                    return `<span class="badge ${statusClass}"><i class="fa ${statusIcon} me-1"></i>${data.charAt(0).toUpperCase() + data.slice(1)}</span>`;
                 }
             },
             {
