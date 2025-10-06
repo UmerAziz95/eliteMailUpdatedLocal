@@ -453,6 +453,55 @@
         padding: 4px 8px;
         font-weight: 500;
     }
+
+    /* Pool Static Link specific styles */
+    .generatePoolStaticLinkBtn {
+        transition: all 0.3s ease;
+    }
+
+    .generatePoolStaticLinkBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .btn-action.btn-success {
+        background-color: rgba(40, 167, 69, 0.8);
+        color: #fff;
+    }
+
+    .btn-action.btn-success:hover {
+        background-color: rgba(40, 167, 69, 1);
+    }
+
+    #poolStaticLinkModal .modal-content {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    #poolStaticLinkModal .modal-header {
+        border-radius: 15px 15px 0 0;
+        border-bottom: none;
+    }
+
+    #poolStaticLinkModal .input-group {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    #poolStaticLinkModal .form-control {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        background-color: #f8f9fa;
+    }
+
+    .static-link-info {
+        background: linear-gradient(135deg, rgba(0,123,255,0.1), rgba(40,167,69,0.1));
+        border: 1px solid rgba(0,123,255,0.2);
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+    }
 </style>
 
 @endpush
@@ -509,6 +558,14 @@
                         <button class="btn btn-info btn-action d-none" onclick="duplicatePoolPlan({{ $poolPlan->id }})" title="Duplicate Pool Plan">
                             <i class="fa-solid fa-copy"></i>
                         </button>
+                        @if($poolPlan->is_chargebee_synced && $poolPlan->chargebee_plan_id)
+                        <button class="btn btn-success btn-action generatePoolStaticLinkBtn" 
+                                data-pool-plan-id="{{ $poolPlan->id }}" 
+                                data-chargebee-plan-id="{{ $poolPlan->chargebee_plan_id }}"
+                                title="Generate Static Link">
+                            <i class="fa-solid fa-link"></i>
+                        </button>
+                        @endif
                         <!-- <button class="btn btn-delete btn-action" onclick="deletePoolPlan({{ $poolPlan->id }})" title="Delete Pool Plan">
                             <i class="fa-solid fa-trash"></i>
                         </button> -->
@@ -554,6 +611,23 @@
                                 </li>
                                 @endforeach
                             </ul>
+                            
+                            <!-- Static Link Button -->
+                            @if($poolPlan->is_chargebee_synced && $poolPlan->chargebee_plan_id)
+                            <div class="mt-3 text-center">
+                                <button class="btn btn-outline-light btn-sm generatePoolStaticLinkBtn" 
+                                        data-pool-plan-id="{{ $poolPlan->id }}" 
+                                        data-chargebee-plan-id="{{ $poolPlan->chargebee_plan_id }}">
+                                    <i class="fa-solid fa-link me-1"></i>Generate Static Link
+                                </button>
+                            </div>
+                            @else
+                            <div class="mt-3 text-center">
+                                <small class="text-white-50">
+                                    <i class="fa-solid fa-info-circle me-1"></i>Sync with ChargeBee to generate static links
+                                </small>
+                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -1598,6 +1672,124 @@ function createMultiplePlansFromTemplates() {
     // Start creating plans
     createNextPlan(0);
 }
+
+// Handle Generate Pool Static Link button click
+$(document).on('click', '.generatePoolStaticLinkBtn', function() {
+    const $btn = $(this);
+    const poolPlanId = $btn.data('pool-plan-id');
+    const chargebeePlanId = $btn.data('chargebee-plan-id');
+    
+    if (!chargebeePlanId) {
+        showErrorToast('ChargeBee Plan ID is required to generate static link. Please sync the plan with ChargeBee first.');
+        return;
+    }
+    
+    // Disable button while processing
+    $btn.prop('disabled', true);
+    const originalText = $btn.html();
+    $btn.html('<i class="fa-solid fa-spinner fa-spin"></i> Generating...');
+    
+    $.ajax({
+        url: '{{ route("admin.pool-plans.generate-static-link") }}',
+        method: 'POST',
+        data: {
+            pool_plan_id: poolPlanId,
+            chargebee_plan_id: chargebeePlanId,
+            _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                showPoolStaticLinkModal(response.link, poolPlanId, chargebeePlanId);
+            } else {
+                showErrorToast(response.message || 'Failed to generate static link');
+            }
+        },
+        error: function(xhr) {
+            let errorMessage = 'Failed to generate static link';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            showErrorToast(errorMessage);
+        },
+        complete: function() {
+            $btn.prop('disabled', false);
+            $btn.html(originalText);
+        }
+    });
+});
+
+// Function to show the generated pool static link in a modal
+function showPoolStaticLinkModal(link, poolPlanId, chargebeePlanId) {
+    const modalHtml = `
+        <div class="modal fade" id="poolStaticLinkModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header text-white">
+                        <h5 class="modal-title">
+                            <i class="fa-solid fa-link me-2"></i>Generated Pool Static Link
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <p><strong>Pool Plan ID:</strong> <span class="badge bg-info">${poolPlanId}</span></p>
+                                <p><strong>ChargeBee Plan ID:</strong> <span class="badge bg-success">${chargebeePlanId}</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="poolStaticLinkInput" value="${link}" readonly>
+                            <button class="btn btn-outline-secondary copy-pool-static-link-btn" type="button">
+                                <i class="fa-solid fa-copy"></i> Copy Link
+                            </button>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <small class="text-muted">
+                                <i class="fa-solid fa-clock me-1"></i>Generated on: ${new Date().toLocaleString()}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-times me-1"></i>Close
+                        </button>
+                        <button type="button" class="btn btn-primary copy-pool-static-link-btn">
+                            <i class="fa-solid fa-copy me-1"></i>Copy Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('#poolStaticLinkModal').remove();
+    $('body').append(modalHtml);
+    $('#poolStaticLinkModal').modal('show');
+}
+
+// Handle copy pool static link button click using event delegation
+$(document).on('click', '.copy-pool-static-link-btn', function() {
+    const linkInput = document.getElementById('poolStaticLinkInput');
+    linkInput.select();
+    linkInput.setSelectionRange(0, 99999);
+    
+    try {
+        document.execCommand('copy');
+        showSuccessToast('Pool static link copied to clipboard!');
+        
+        // Update button text temporarily
+        const $btn = $(this);
+        const originalText = $btn.html();
+        $btn.html('<i class="fa-solid fa-check me-1"></i>Copied!');
+        setTimeout(() => {
+            $btn.html(originalText);
+        }, 2000);
+    } catch (err) {
+        showErrorToast('Failed to copy link. Please copy manually.');
+    }
+});
 </script>
 @endpush
 

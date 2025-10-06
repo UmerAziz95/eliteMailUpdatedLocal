@@ -126,7 +126,7 @@ class AuthController extends Controller
 
             $payload = $userCheck->email . '/' . $verificationCode . '/' . now()->timestamp;
             $encrypted = Crypt::encryptString($payload);
-           if ($userCheck->type == "discounted") {
+            if ($userCheck->type == "discounted") {
                 if (isset($type_id)) {
                     $verificationLink = url("/discounted/user/verify/{$encrypted}/{$type_id}");
                 } 

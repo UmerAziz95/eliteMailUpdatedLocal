@@ -241,6 +241,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('pool-plans-with-features', [PoolPlanController::class, 'getPlansWithFeatures'])->name('pool-plans.with.features');
         Route::post('pool-plans/duplicate', [PoolPlanController::class, 'duplicate'])->name('pool-plans.duplicate');
         Route::post('pool-plans/sync-chargebee', [PoolPlanController::class, 'syncWithChargebee'])->name('pool-plans.sync-chargebee');
+        Route::post('pool-plans/generate-static-link', [StaticLinkController::class, 'generatePoolStaticLink'])->name('pool-plans.generate-static-link');
         Route::post('special-plans/master-plan', [SpecialPlanController::class, 'storeMasterPlan'])->name('special-plans.master-plan.store');
         
         // Special Plans Static Link Generation
@@ -680,20 +681,20 @@ Route::get('/static-link', function (Request $request) {
     
     try {
         $linkData = json_decode(decrypt($encryptedData), true);
-        
-        if (!$linkData || !isset($linkData['type']) || $linkData['type'] !== 'static_plan') {
+        // pool_static_plan also allow
+        if (!$linkData || !isset($linkData['type']) || !in_array($linkData['type'], ['static_plan', 'pool_static_plan'])) {
             return redirect()->route('login')->withErrors(['error' => 'Invalid link format']);
         }
         
         // Set session data for static plan access
         session([
+            'static_type' => $linkData['type'],
             'static_link_hit' => true,
             'static_plan_data' => [
-                'master_plan_id' => $linkData['master_plan_id'],
-                'chargebee_plan_id' => $linkData['chargebee_plan_id']
+                'master_plan_id' => $linkData['master_plan_id'] ?? null,
+                'chargebee_plan_id' => $linkData['chargebee_plan_id'] ?? null
             ]
         ]);
-        
         if (auth()->check()) {
             // User is already logged in, create encrypted data and redirect to static plans page
             $user = auth()->user();
@@ -706,7 +707,7 @@ Route::get('/static-link', function (Request $request) {
         }
         
     } catch (\Exception $e) {
-        return redirect()->route('login')->withErrors(['error' => 'Invalid or expired link']);
+        return redirect()->route('login')->withErrors(['error' => $e->getMessage()]);
     }
 })->name('static-link');
 
