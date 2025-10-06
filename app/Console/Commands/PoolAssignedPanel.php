@@ -283,7 +283,6 @@ class PoolAssignedPanel extends Command
                     
                     // Update status to completed and set is_splitting flag to 1
                     $pool->status = 'completed';
-                    $pool->completed_at = Carbon::now();
                     $pool->is_splitting = 1; // Set splitting flag to 1 when completed
                     $pool->save();
                     

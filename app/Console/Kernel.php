@@ -101,6 +101,13 @@ class Kernel extends ConsoleKernel
                                 // Run tickets:process-imap immediately after emails:fetch finishes
                                 \Artisan::call('tickets:process-imap');
                                 });
+
+                // Update pool status from warming to available every 2 hours
+                $schedule->command('pools:update-status --force')
+                        ->everyTwoHours()
+                        ->withoutOverlapping()
+                        ->runInBackground()
+                        ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
                 }
 
         protected function commands(): void
