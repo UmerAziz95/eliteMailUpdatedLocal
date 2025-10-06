@@ -81,17 +81,26 @@
     }
 
     .card {
-        overflow: hidden
+        overflow: hidden;
+        position: relative;
     }
 
     .button-container {
         pointer-events: none;
-        transition: right 0.4s ease, pointer-events 0.4s ease;
+        transition: opacity 0.4s ease, visibility 0.4s ease;
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        opacity: 0;
+        visibility: hidden;
+        z-index: 10;
     }
 
     .card:hover .button-container {
-        right: 3% !important;
-        pointer-events: all
+        opacity: 1;
+        visibility: visible;
+        pointer-events: all;
     }
 
     /* Offcanvas custom styling */
@@ -681,7 +690,7 @@ function createPoolPanelCard(poolPanel) {
                 <small class="opacity-75">Created by: ${poolPanel.creator ? poolPanel.creator.name : 'Unknown'}</small>
             </div>
             
-            <div class="button-container p-2 rounded-2" style="background-color: var(--filter-color); position: absolute; top: 50%; right: -50px; transform: translate(0%, -50%)">
+            <div class="button-container p-2 rounded-2" style="background-color: var(--filter-color);">
                 ${actionButtons}    
             </div>
         </div>
