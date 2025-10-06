@@ -26,6 +26,7 @@ use App\Http\Controllers\Customer\InvoiceController as CustomerInvoiceController
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Admin\FeatureController;
 use App\Http\Controllers\Customer\SubscriptionController as CustomerSubscriptionController;           
+use App\Http\Controllers\Customer\PoolPlanController as CustomerPoolPlanController;
 
 // Contractor
 use App\Http\Controllers\Contractor\OrderController as ContractorOrderController;
@@ -142,6 +143,10 @@ Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(
 
 Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('customer.subscription.success');
 
+// Pool Plan Routes
+Route::get('/pool-subscription/success', [CustomerPoolPlanController::class, 'subscriptionSuccess'])->name('customer.pool-subscription.success');
+Route::get('/pool-subscription/cancel', [CustomerPoolPlanController::class, 'subscriptionCancel'])->name('customer.pool-subscription.cancel');
+Route::post('/pool-plans/{id}/subscribe/{encrypted?}', [CustomerPoolPlanController::class, 'initiateSubscription'])->name('customer.pool.plans.subscribe');
 
 Route::post('customer/plans/{id}/subscribe/{encrypted?}', [CustomerPlanController::class, 'initiateSubscription'])->name('customer.plans.subscribe');
 Route::post('customer/discounted/plans/{id}/subscribe/{encrypted?}/user_id/{user_id}', [\App\Http\Controllers\DiscountedPlanController::class, 'initiateSubscription'])->name('customer.discounted.plans.subscribe');
@@ -526,6 +531,10 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/invoices/data', [CustomerInvoiceController::class, 'getInvoices'])->name('invoices.data');
     Route::get('/invoices/{invoiceId}/download', [CustomerInvoiceController::class, 'download'])->name('invoices.download');
     Route::get('/invoices/{invoiceId}', [CustomerInvoiceController::class, 'show'])->name('invoices.show');
+
+    // Pool Order routes
+    Route::get('/pool-orders', [CustomerPoolPlanController::class, 'myPoolOrders'])->name('pool-orders.index');
+    Route::get('/pool-orders/{id}', [CustomerPoolPlanController::class, 'showPoolOrder'])->name('pool-orders.show');
 
     // Order Email routes 
     Route::get('/orders/{orderId}/emails', [CustomerOrderEmailController::class, 'getEmails']);
