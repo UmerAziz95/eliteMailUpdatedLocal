@@ -80,6 +80,19 @@ class PoolController extends Controller
         try {
             $query = Pool::with(['user', 'assignedTo']);
 
+            // Handle status filtering for tabs
+            if ($request->has('status_filter')) {
+                $statusFilter = $request->status_filter;
+                if ($statusFilter === 'warming') {
+                    $query->where(function ($q) {
+                        $q->where('status_manage_by_admin', 'warming')
+                          ->orWhereNull('status_manage_by_admin');
+                    });
+                } elseif ($statusFilter === 'available') {
+                    $query->where('status_manage_by_admin', 'available');
+                }
+            }
+
             // Handle DataTable search
             if ($request->has('search') && !empty($request->search['value'])) {
                 $search = $request->search['value'];
@@ -139,7 +152,10 @@ class PoolController extends Controller
 
         // Get total count before pagination
         $totalRecords = Pool::count();
-        $filteredRecords = $query->count();
+        
+        // Clone query for counting filtered records (without pagination)
+        $countQuery = clone $query;
+        $filteredRecords = $countQuery->count();
 
         // Handle pagination
         $start = $request->start ?? 0;
