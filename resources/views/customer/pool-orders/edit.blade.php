@@ -107,13 +107,7 @@
         overflow-y: auto;
     }
     
-    .selected-domains-section {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        color: white;
-    }
+
     
     .pagination-controls {
         display: flex;
@@ -221,13 +215,6 @@
                         
                         <div class="row">
                             <div class="col-lg-8">
-                                
-                                <!-- Selected Domains Section (Top) -->
-                                <div id="selectedDomainsTop" class="selected-domains-section" style="display: none;">
-                                    <h5 class="mb-2"><i class="ti ti-star me-2"></i>Selected Domains</h5>
-                                    <div id="selectedDomainsGrid" class="domain-grid" style="max-height: 200px;"></div>
-                                </div>
-
                                 <!-- Search and Filter Controls -->
                                 <div class="mb-4">
                                     <div class="row g-3">
@@ -336,8 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const searchInput = document.getElementById('domainSearch');
     const domainsContainer = document.getElementById('domainsContainer');
-    const selectedDomainsTop = document.getElementById('selectedDomainsTop');
-    const selectedDomainsGrid = document.getElementById('selectedDomainsGrid');
     const noResults = document.getElementById('noResults');
     const searchResults = document.getElementById('searchResults');
     const loadingSpinner = document.getElementById('loadingSpinner');
@@ -537,36 +522,10 @@ document.addEventListener('DOMContentLoaded', function() {
             domainCard.classList.remove('selected');
         }
         
-        updateSelectedDomainsDisplay();
         updateSummary();
     }
     
-    // Update selected domains display at top
-    function updateSelectedDomainsDisplay() {
-        if (selectedDomains.size === 0) {
-            selectedDomainsTop.style.display = 'none';
-            return;
-        }
-        
-        selectedDomainsTop.style.display = 'block';
-        
-        const selectedArray = Array.from(selectedDomains.values());
-        selectedDomainsGrid.innerHTML = selectedArray.map(domain => `
-            <div class="domain-card p-2 selected">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-0 fw-bold">${domain.name}</h6>
-                    </div>
-                    <div class="text-end">
-                        <strong class="text-success">${domain.inboxes} inboxes</strong>
-                        <button type="button" class="btn btn-sm btn-outline-light ms-2" onclick="deselectDomain('${domain.id}')">
-                            <i class="ti ti-x"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
+
     
     // Deselect domain function (global)
     window.deselectDomain = function(domainId) {
@@ -579,7 +538,6 @@ document.addEventListener('DOMContentLoaded', function() {
             checkbox.closest('.domain-card').classList.remove('selected');
         }
         
-        updateSelectedDomainsDisplay();
         updateSummary();
     };
     
@@ -677,16 +635,24 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             totalInboxesElement.classList.add('bg-white', 'text-success');
         }
-        
+    
         // Update selected domains list in sidebar
         const listContainer = document.getElementById('selectedDomainsList');
         if (selectedArray.length === 0) {
             listContainer.innerHTML = '<small class="opacity-75">No domains selected yet</small>';
         } else {
-            let domainListHTML = selectedArray.map(domain => 
-                `<div class="d-flex justify-content-between align-items-center mb-1">
-                    <small class="text-truncate">${domain.name}</small>
-                    <small class="badge bg-white text-primary">${domain.inboxes}</small>
+            let domainListHTML = selectedArray.map((domain, index) => 
+                `<div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1);">
+                    <div class="flex-grow-1">
+                        <small class="text-truncate d-block fw-medium">${domain.name}</small>
+                        <small class="badge bg-white text-primary">${domain.inboxes} inboxes</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <small class="me-2 opacity-75">#${index + 1}</small>
+                        <button type="button" class="btn btn-sm btn-outline-light" onclick="deselectDomain('${domain.id}')" title="Remove domain">
+                            <i class="ti ti-x"></i>
+                        </button>
+                    </div>
                 </div>`
             ).join('');
             
@@ -728,7 +694,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
             });
-            updateSelectedDomainsDisplay();
             updateSummary();
         @endif
     }
