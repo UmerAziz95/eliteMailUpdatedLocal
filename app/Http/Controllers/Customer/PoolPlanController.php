@@ -156,8 +156,8 @@ class PoolPlanController extends Controller
             'chargebee_invoice_id' => $invoice->id,
             'amount' => $invoice->total / 100, // Convert cents to dollars
             'currency' => $invoice->currencyCode,
-            'status' => 'completed',
-            'status_manage_by_admin' => 'warming', // Default status
+            'status' => PoolOrder::STATUS_COMPLETED,
+            'status_manage_by_admin' => PoolOrder::ADMIN_STATUS_PENDING, // Default status
             'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
             'meta' => json_encode([
                 'subscription_data' => [
@@ -260,13 +260,8 @@ class PoolPlanController extends Controller
      */
     public function myPoolOrders()
     {
-        $user = Auth::user();
-        $poolOrders = PoolOrder::where('user_id', $user->id)
-            ->with(['poolPlan'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
-        return view('customer.pool-orders.index', compact('poolOrders'));
+        // DataTables will handle data loading via AJAX
+        return view('customer.pool-orders.index');
     }
 
     /**
@@ -281,5 +276,41 @@ class PoolPlanController extends Controller
             ->firstOrFail();
 
         return view('customer.pool-orders.show', compact('poolOrder'));
+    }
+
+    /**
+     * AJAX: Get pool orders for DataTables
+     */
+    public function getPoolOrdersData(Request $request)
+    {
+        $user = Auth::user();
+        $query = PoolOrder::with('poolPlan')
+            ->where('user_id', $user->id)
+            ->select('pool_orders.*');
+
+        return \DataTables::eloquent($query)
+            ->addColumn('pool_plan', function($order) {
+                return $order->poolPlan->name ?? 'N/A';
+            })
+            ->addColumn('capacity', function($order) {
+                return $order->poolPlan->capacity ?? 'N/A';
+            })
+            ->addColumn('quantity', function($order) {
+                return $order->quantity ?? 1;
+            })
+            ->addColumn('amount', function($order) {
+                return '$' . number_format($order->amount, 2);
+            })
+            ->addColumn('status', function($order) {
+                return view('customer.pool-orders.partials.status', compact('order'))->render();
+            })
+            ->addColumn('order_date', function($order) {
+                return $order->created_at->format('M d, Y') . '<br><small class="text-muted">' . $order->created_at->format('h:i A') . '</small>';
+            })
+            ->addColumn('actions', function($order) {
+                return '<a href="' . route('customer.pool-orders.show', $order->id) . '" class="btn btn-sm btn-outline-primary"><i class="ti ti-eye me-1"></i>View</a>';
+            })
+            ->rawColumns(['status', 'order_date', 'actions'])
+            ->make(true);
     }
 }

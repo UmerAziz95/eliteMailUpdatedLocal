@@ -10,6 +10,66 @@ class PoolOrder extends Model
 {
     use HasFactory;
 
+    // Status constants
+    const STATUS_PENDING = 'pending';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_CANCELLED = 'cancelled';
+    const STATUS_FAILED = 'failed';
+
+    // Admin status constants
+    const ADMIN_STATUS_PENDING = 'pending';
+    const ADMIN_STATUS_IN_PROGRESS = 'in-progress';
+    const ADMIN_STATUS_COMPLETED = 'completed';
+    const ADMIN_STATUS_CANCELLED = 'cancelled';
+
+    // Status configurations with colors and labels
+    const STATUS_CONFIG = [
+        self::STATUS_PENDING => [
+            'label' => 'Pending',
+            'color' => 'warning',
+            'text_color' => 'text-warning'
+        ],
+        self::STATUS_COMPLETED => [
+            'label' => 'Completed',
+            'color' => 'success',
+            'text_color' => 'text-success'
+        ],
+        self::STATUS_CANCELLED => [
+            'label' => 'Cancelled',
+            'color' => 'danger',
+            'text_color' => 'text-danger'
+        ],
+        self::STATUS_FAILED => [
+            'label' => 'Failed',
+            'color' => 'danger',
+            'text_color' => 'text-danger'
+        ],
+    ];
+
+    // Admin status configurations with colors and labels
+    const ADMIN_STATUS_CONFIG = [
+        self::ADMIN_STATUS_PENDING => [
+            'label' => 'Pending',
+            'color' => 'secondary',
+            'text_color' => 'text-secondary'
+        ],
+        self::ADMIN_STATUS_IN_PROGRESS => [
+            'label' => 'In Progress',
+            'color' => 'primary',
+            'text_color' => 'text-primary'
+        ],
+        self::ADMIN_STATUS_COMPLETED => [
+            'label' => 'Completed',
+            'color' => 'success',
+            'text_color' => 'text-success'
+        ],
+        self::ADMIN_STATUS_CANCELLED => [
+            'label' => 'Cancelled',
+            'color' => 'danger',
+            'text_color' => 'text-danger'
+        ],
+    ];
+
     protected $fillable = [
         'user_id',
         'pool_plan_id',
@@ -109,26 +169,126 @@ class PoolOrder extends Model
     }
 
     /**
-     * Check if order is completed
+     * Check if order has specific status
      */
-    public function isCompleted()
+    public function hasStatus($status)
     {
-        return $this->status === 'completed';
+        return $this->status === $status;
     }
 
     /**
-     * Check if order is in warming status
+     * Check if order has specific admin status
      */
-    public function isWarming()
+    public function hasAdminStatus($adminStatus)
     {
-        return $this->status_manage_by_admin === 'warming';
+        return $this->status_manage_by_admin === $adminStatus;
     }
 
     /**
-     * Check if order is available
+     * Get all available statuses
      */
-    public function isAvailable()
+    public static function getStatuses()
     {
-        return $this->status_manage_by_admin === 'available';
+        return array_map(function($config) {
+            return $config['label'];
+        }, self::STATUS_CONFIG);
+    }
+
+    /**
+     * Get all available admin statuses
+     */
+    public static function getAdminStatuses()
+    {
+        return array_map(function($config) {
+            return $config['label'];
+        }, self::ADMIN_STATUS_CONFIG);
+    }
+
+    /**
+     * Get status label
+     */
+    public function getStatusLabelAttribute()
+    {
+        return self::STATUS_CONFIG[$this->status]['label'] ?? ucfirst($this->status);
+    }
+
+    /**
+     * Get admin status label
+     */
+    public function getAdminStatusLabelAttribute()
+    {
+        return self::ADMIN_STATUS_CONFIG[$this->status_manage_by_admin]['label'] ?? ucfirst(str_replace('-', ' ', $this->status_manage_by_admin));
+    }
+
+    /**
+     * Get status color (for badges)
+     */
+    public function getStatusColorAttribute()
+    {
+        return self::STATUS_CONFIG[$this->status]['color'] ?? 'secondary';
+    }
+
+    /**
+     * Get admin status color (for badges)
+     */
+    public function getAdminStatusColorAttribute()
+    {
+        return self::ADMIN_STATUS_CONFIG[$this->status_manage_by_admin]['color'] ?? 'secondary';
+    }
+
+    /**
+     * Get status text color (for text)
+     */
+    public function getStatusTextColorAttribute()
+    {
+        return self::STATUS_CONFIG[$this->status]['text_color'] ?? 'text-secondary';
+    }
+
+    /**
+     * Get admin status text color (for text)
+     */
+    public function getAdminStatusTextColorAttribute()
+    {
+        return self::ADMIN_STATUS_CONFIG[$this->status_manage_by_admin]['text_color'] ?? 'text-secondary';
+    }
+
+    /**
+     * Get complete status configuration
+     */
+    public function getStatusConfigAttribute()
+    {
+        return self::STATUS_CONFIG[$this->status] ?? [
+            'label' => ucfirst($this->status),
+            'color' => 'secondary',
+            'text_color' => 'text-secondary'
+        ];
+    }
+
+    /**
+     * Get complete admin status configuration
+     */
+    public function getAdminStatusConfigAttribute()
+    {
+        return self::ADMIN_STATUS_CONFIG[$this->status_manage_by_admin] ?? [
+            'label' => ucfirst(str_replace('-', ' ', $this->status_manage_by_admin)),
+            'color' => 'secondary',
+            'text_color' => 'text-secondary'
+        ];
+    }
+
+    /**
+     * Get all status configurations
+     */
+    public static function getStatusConfigurations()
+    {
+        return self::STATUS_CONFIG;
+    }
+
+    /**
+     * Get all admin status configurations
+     */
+    public static function getAdminStatusConfigurations()
+    {
+        return self::ADMIN_STATUS_CONFIG;
     }
 }

@@ -26,8 +26,8 @@
                                     <p><strong>Quantity:</strong> {{ $poolOrder->quantity ?? 1 }}</p>
                                     <p><strong>Amount:</strong> ${{ number_format($poolOrder->amount, 2) }} {{ strtoupper($poolOrder->currency) }}</p>
                                     <p><strong>Order Status:</strong> 
-                                        <span class="badge bg-{{ $poolOrder->status === 'completed' ? 'success' : 'warning' }}">
-                                            {{ ucfirst($poolOrder->status) }}
+                                        <span class="badge bg-{{ $poolOrder->status_color }}">
+                                            {{ $poolOrder->status_label }}
                                         </span>
                                     </p>
                                 </div>
@@ -36,8 +36,8 @@
                                     <p><strong>Customer ID:</strong> {{ $poolOrder->chargebee_customer_id }}</p>
                                     <p><strong>Invoice ID:</strong> {{ $poolOrder->chargebee_invoice_id }}</p>
                                     <p><strong>Admin Status:</strong> 
-                                        <span class="badge bg-secondary">
-                                            {{ ucfirst($poolOrder->status_manage_by_admin) }}
+                                        <span class="badge bg-{{ $poolOrder->admin_status_color }}">
+                                            {{ $poolOrder->admin_status_label }}
                                         </span>
                                     </p>
                                 </div>
@@ -95,7 +95,7 @@
                             <h6 class="mb-0">Actions</h6>
                         </div>
                         <div class="card-body">
-                            @if($poolOrder->status === 'completed' && $poolOrder->status_manage_by_admin === 'available')
+                            @if($poolOrder->status === 'completed' && $poolOrder->status_manage_by_admin === 'completed')
                                 <a href="{{ route('customer.order.create') }}" class="btn btn-success btn-sm mb-2 w-100">
                                     <i class="ti ti-plus me-1"></i>Create New Order
                                 </a>
