@@ -203,12 +203,6 @@
                         </div>
                     </div>
 
-                    <!-- Quantity Limit Notice -->
-                    <div class="alert alert-info mb-4">
-                        <i class="ti ti-info-circle me-2"></i>
-                        <strong>Selection Limit:</strong> You can select up to <strong>{{ $poolOrder->quantity }}</strong> domains and <strong>{{ $poolOrder->quantity }}</strong> total inboxes based on your order quantity. Each domain comes with its pre-configured inbox count.
-                    </div>
-
                     <form id="domainSelectionForm">
                         @csrf
                         @method('PUT')
@@ -274,6 +268,12 @@
                                     <h5 class="mb-3">
                                         <i class="ti ti-list-check me-2"></i>Selection Summary
                                     </h5>
+                                    
+                                    <!-- Selection Limit Notice -->
+                                    <div class="alert alert-info mb-3" style="background-color: rgba(13, 202, 240, 0.1); border: 1px solid rgba(13, 202, 240, 0.3); color: #0dcaf0;">
+                                        <i class="ti ti-info-circle me-2"></i>
+                                        <small><strong>Limit:</strong> Up to <strong>{{ $poolOrder->quantity }}</strong> domains and <strong>{{ $poolOrder->quantity }}</strong> total inboxes.</small>
+                                    </div>
                                     
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
