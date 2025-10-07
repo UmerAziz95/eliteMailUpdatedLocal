@@ -10,36 +10,24 @@ class PoolOrder extends Model
 {
     use HasFactory;
 
-    // Status constants
-    const STATUS_PENDING = 'pending';
-    const STATUS_COMPLETED = 'completed';
-    const STATUS_CANCELLED = 'cancelled';
-    const STATUS_FAILED = 'failed';
-
-    // Admin status constants
-    const ADMIN_STATUS_PENDING = 'pending';
-    const ADMIN_STATUS_IN_PROGRESS = 'in-progress';
-    const ADMIN_STATUS_COMPLETED = 'completed';
-    const ADMIN_STATUS_CANCELLED = 'cancelled';
-
     // Status configurations with colors and labels
     const STATUS_CONFIG = [
-        self::STATUS_PENDING => [
+        'pending' => [
             'label' => 'Pending',
             'color' => 'warning',
             'text_color' => 'text-warning'
         ],
-        self::STATUS_COMPLETED => [
+        'completed' => [
             'label' => 'Completed',
             'color' => 'success',
             'text_color' => 'text-success'
         ],
-        self::STATUS_CANCELLED => [
+        'cancelled' => [
             'label' => 'Cancelled',
             'color' => 'danger',
             'text_color' => 'text-danger'
         ],
-        self::STATUS_FAILED => [
+        'failed' => [
             'label' => 'Failed',
             'color' => 'danger',
             'text_color' => 'text-danger'
@@ -48,22 +36,22 @@ class PoolOrder extends Model
 
     // Admin status configurations with colors and labels
     const ADMIN_STATUS_CONFIG = [
-        self::ADMIN_STATUS_PENDING => [
+        'pending' => [
             'label' => 'Pending',
-            'color' => 'secondary',
-            'text_color' => 'text-secondary'
+            'color' => 'info',
+            'text_color' => 'text-info'
         ],
-        self::ADMIN_STATUS_IN_PROGRESS => [
+        'in-progress' => [
             'label' => 'In Progress',
             'color' => 'primary',
             'text_color' => 'text-primary'
         ],
-        self::ADMIN_STATUS_COMPLETED => [
+        'completed' => [
             'label' => 'Completed',
             'color' => 'success',
             'text_color' => 'text-success'
         ],
-        self::ADMIN_STATUS_CANCELLED => [
+        'cancelled' => [
             'label' => 'Cancelled',
             'color' => 'danger',
             'text_color' => 'text-danger'
@@ -290,5 +278,47 @@ class PoolOrder extends Model
     public static function getAdminStatusConfigurations()
     {
         return self::ADMIN_STATUS_CONFIG;
+    }
+
+    /**
+     * Get all status keys
+     */
+    public static function getStatusKeys()
+    {
+        return array_keys(self::STATUS_CONFIG);
+    }
+
+    /**
+     * Get all admin status keys
+     */
+    public static function getAdminStatusKeys()
+    {
+        return array_keys(self::ADMIN_STATUS_CONFIG);
+    }
+
+    /**
+     * Get status badge HTML for DataTables
+     */
+    public function getStatusBadgeAttribute()
+    {
+        $config = $this->status_config;
+        return '<span class="badge bg-' . $config['color'] . '">' . $config['label'] . '</span>';
+    }
+
+    /**
+     * Get admin status badge HTML for DataTables
+     */
+    public function getAdminStatusBadgeAttribute()
+    {
+        $config = $this->admin_status_config;
+        return '<span class="badge bg-' . $config['color'] . '">' . $config['label'] . '</span>';
+    }
+
+    /**
+     * Get combined status badges HTML for DataTables
+     */
+    public function getStatusBadgesAttribute()
+    {
+        return $this->status_badge . '<br><small class="mt-1">' . $this->admin_status_badge . '</small>';
     }
 }

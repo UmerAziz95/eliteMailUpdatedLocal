@@ -156,8 +156,8 @@ class PoolPlanController extends Controller
             'chargebee_invoice_id' => $invoice->id,
             'amount' => $invoice->total / 100, // Convert cents to dollars
             'currency' => $invoice->currencyCode,
-            'status' => PoolOrder::STATUS_COMPLETED,
-            'status_manage_by_admin' => PoolOrder::ADMIN_STATUS_PENDING, // Default status
+            'status' => 'completed',
+            'status_manage_by_admin' => 'pending', // Default status
             'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
             'meta' => json_encode([
                 'subscription_data' => [
@@ -302,7 +302,7 @@ class PoolPlanController extends Controller
                 return '$' . number_format($order->amount, 2);
             })
             ->addColumn('status', function($order) {
-                return view('customer.pool-orders.partials.status', compact('order'))->render();
+                return $order->status_badges;
             })
             ->addColumn('order_date', function($order) {
                 return $order->created_at->format('M d, Y') . '<br><small class="text-muted">' . $order->created_at->format('h:i A') . '</small>';
