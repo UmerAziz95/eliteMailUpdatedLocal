@@ -181,28 +181,6 @@
                     </div>
                 </div>
                 <div class="card-body p-4">
-                    <!-- Pool Order Info -->
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="border border-2 p-3 rounded">
-                                <h6 class=" mb-1">Pool Plan</h6>
-                                <strong>{{ $poolOrder->poolPlan->name ?? 'N/A' }}</strong>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="border border-2 p-3 rounded">
-                                <h6 class=" mb-1">Capacity</h6>
-                                <strong>{{ $poolOrder->poolPlan->capacity ?? 'N/A' }} inboxes</strong>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="border border-2 p-3 rounded">
-                                <h6 class=" mb-1">Quantity</h6>
-                                <strong>{{ $poolOrder->quantity ?? 1 }}</strong>
-                            </div>
-                        </div>
-                    </div>
-
                     <form id="domainSelectionForm">
                         @csrf
                         @method('PUT')
@@ -268,6 +246,34 @@
                                     <h5 class="mb-3">
                                         <i class="ti ti-list-check me-2"></i>Selection Summary
                                     </h5>
+                                    
+                                    <!-- Pool Order Info -->
+                                    <div class="mb-3">
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-12">
+                                                <div class="p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
+                                                    <small class="opacity-75 d-block">Pool Plan</small>
+                                                    <small class="fw-medium">{{ $poolOrder->poolPlan->name ?? 'N/A' }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <div class="p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
+                                                    <small class="opacity-75 d-block">Capacity</small>
+                                                    <small class="fw-medium">{{ $poolOrder->poolPlan->capacity ?? 'N/A' }}</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
+                                                    <small class="opacity-75 d-block">Quantity</small>
+                                                    <small class="fw-medium">{{ $poolOrder->quantity ?? 1 }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <hr class="border-white-50">
                                     
                                     <!-- Selection Limit Notice -->
                                     <div class="alert alert-info mb-3" style="background-color: rgba(13, 202, 240, 0.1); border: 1px solid rgba(13, 202, 240, 0.3); color: #0dcaf0;">
