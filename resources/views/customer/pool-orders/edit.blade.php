@@ -14,7 +14,7 @@
     .domain-card:hover {
         border-color: #0d6efd;
         box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
-        transform: translateY(-2px);
+        /* transform: translateY(-2px); */
     }
     
     .domain-card.selected {
@@ -113,37 +113,75 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 1rem;
-        margin: 1rem 0;
+        gap: 0.5rem;
+        margin: 2rem 0;
         padding: 1rem;
-        background-color: #f8f9fa;
-        border-radius: 8px;
+        background-color: #2c3e50;
+        border-radius: 15px;
+        border: 2px solid #34495e;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        flex-wrap: wrap;
     }
     
     .page-btn {
-        padding: 0.5rem 1rem;
-        border: 1px solid #dee2e6;
-        background: white;
-        border-radius: 6px;
+        padding: 0.6rem 1rem;
+        border: 2px solid #34495e;
+        background-color: #34495e;
+        color: #ecf0f1;
+        border-radius: 10px;
         cursor: pointer;
         transition: all 0.3s ease;
+        font-weight: 500;
+        min-width: 40px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        font-size: 0.9rem;
     }
     
     .page-btn:hover:not(:disabled) {
-        background-color: #0d6efd;
-        color: white;
-        border-color: #0d6efd;
+        background-color: #1abc9c;
+        color: #ffffff;
+        border-color: #16a085;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(26, 188, 156, 0.3);
     }
     
     .page-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+        background-color: #2c3e50;
+        color: #7f8c8d;
+        border-color: #2c3e50;
     }
     
     .page-btn.active {
-        background-color: #0d6efd;
-        color: white;
-        border-color: #0d6efd;
+        background-color: #e74c3c;
+        color: #ffffff;
+        border-color: #c0392b;
+        box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+        transform: translateY(-1px);
+    }
+    
+    @media (max-width: 576px) {
+        .pagination-controls {
+            padding: 0.8rem;
+            gap: 0.3rem;
+            margin: 1rem 0;
+        }
+        
+        .page-btn {
+            padding: 0.5rem 0.8rem;
+            min-width: 35px;
+            font-size: 0.8rem;
+        }
+        
+        #pageInfo {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            width: 100%;
+            text-align: center;
+            color: #bdc3c7;
+        }
     }
     
 
@@ -165,21 +203,10 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
+<div class="">
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-lg">
-                <div class="card-header bg-primary text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h4 class="mb-0"><i class="ti ti-edit me-2"></i>Edit Pool Order</h4>
-                            <small>Select domains and configure inboxes per domain</small>
-                        </div>
-                        <a href="{{ route('customer.pool-orders.show', $poolOrder->id) }}" class="btn btn-light btn-sm">
-                            <i class="ti ti-arrow-left me-1"></i>Back
-                        </a>
-                    </div>
-                </div>
                 <div class="card-body p-4">
                     <form id="domainSelectionForm">
                         @csrf
@@ -203,7 +230,7 @@
                                             </div>
                                         </div>
                                         <div class="col-md-4">
-                                            <select id="domainsPerPage" class="form-select">
+                                            <select id="domainsPerPage" class="form-select" style="padding: 12px 20px; border-radius: 12px; border: 2px solid #e9ecef; font-size: 1rem; transition: all 0.3s ease;">
                                                 <option value="20">20 per page</option>
                                                 <option value="50" selected>50 per page</option>
                                                 <option value="100">100 per page</option>
@@ -249,19 +276,11 @@
                                     
                                     <!-- Pool Order Info -->
                                     <div class="mb-3">
-                                        <div class="row g-2 mb-2">
-                                            <div class="col-12">
-                                                <div class="p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
-                                                    <small class="opacity-75 d-block">Pool Plan</small>
-                                                    <small class="fw-medium">{{ $poolOrder->poolPlan->name ?? 'N/A' }}</small>
-                                                </div>
-                                            </div>
-                                        </div>
                                         <div class="row g-2">
                                             <div class="col-6">
                                                 <div class="p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
-                                                    <small class="opacity-75 d-block">Capacity</small>
-                                                    <small class="fw-medium">{{ $poolOrder->poolPlan->capacity ?? 'N/A' }}</small>
+                                                    <small class="opacity-75 d-block">Pool Plan</small>
+                                                    <small class="fw-medium">{{ $poolOrder->poolPlan->name ?? 'N/A' }}</small>
                                                 </div>
                                             </div>
                                             <div class="col-6">
