@@ -420,11 +420,14 @@ class PoolOrder extends Model
             if (isset($domainData['domain_id']) && isset($domainData['per_inbox']) && $domainData['per_inbox'] > 0) {
                 $domains[] = [
                     'domain_id' => $domainData['domain_id'],
+                    'pool_id' => $domainData['pool_id'] ?? null,
+                    'domain_name' => $domainData['domain_name'] ?? null,
                     'per_inbox' => (int) $domainData['per_inbox']
                 ];
             }
         }
         
+        \Log::info('Saving domains to pool order:', ['domains' => $domains]);
         $this->domains = $domains;
         return $this;
     }

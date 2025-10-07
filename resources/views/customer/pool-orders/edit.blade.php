@@ -447,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         domainCheckboxes.forEach(checkbox => {
             if (checkbox.checked) {
-                selectedDomains.push(parseInt(checkbox.value));
+                selectedDomains.push(checkbox.value); // Keep as string
                 totalInboxes += parseInt(checkbox.dataset.inboxes) || 0;
             }
         });
@@ -506,6 +506,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
+            console.error('Submission error:', error);
             alert('Error: ' + error.message);
         })
         .finally(() => {

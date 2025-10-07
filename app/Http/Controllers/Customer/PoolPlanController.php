@@ -384,7 +384,7 @@ class PoolPlanController extends Controller
 
         $request->validate([
             'domains' => 'required|array|min:1',
-            'domains.*' => 'required|integer',
+            'domains.*' => 'required|string',
         ]);
 
         // Check if selected domains count exceeds quantity
@@ -395,14 +395,40 @@ class PoolPlanController extends Controller
             ], 422);
         }
 
-        // Calculate total inboxes to validate against quantity limit
-        $selectedPoolIds = $request->domains;
-        $pools = Pool::whereIn('id', $selectedPoolIds)
-            ->where('status_manage_by_admin', 'available')
-            ->select('id', 'domains', 'inboxes_per_domain')
-            ->get();
-
-        $totalInboxes = $pools->sum('inboxes_per_domain');
+        // Get available domains to map selected IDs to actual pool data
+        $availableDomains = $this->getAvailableDomains();
+        $selectedDomainIds = $request->domains;
+        
+        // Map selected domain IDs to their corresponding pool data
+        $selectedDomains = [];
+        $poolIds = [];
+        $totalInboxes = 0;
+        
+        Log::info('Selected domain IDs:', $selectedDomainIds);
+        Log::info('Available domains count:', ['count' => count($availableDomains)]);
+        
+        foreach ($selectedDomainIds as $domainId) {
+            foreach ($availableDomains as $domain) {
+                // Compare as strings since domain IDs are strings like "1000_1"
+                if ((string)$domain['id'] === (string)$domainId) {
+                    $selectedDomains[] = $domain;
+                    $poolIds[] = $domain['pool_id'];
+                    $totalInboxes += $domain['available_inboxes'];
+                    Log::info('Found matching domain:', ['domain_id' => $domainId, 'domain_name' => $domain['name']]);
+                    break;
+                }
+            }
+        }
+        
+        Log::info('Selected domains found:', ['count' => count($selectedDomains)]);
+        
+        // Check if no domains were found
+        if (empty($selectedDomains)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid domains found for the selected IDs. Please refresh the page and try again.'
+            ], 422);
+        }
         
         // Check if total inboxes exceed quantity limit
         if ($totalInboxes > $poolOrder->quantity) {
@@ -413,22 +439,30 @@ class PoolPlanController extends Controller
         }
 
         try {
-            // Pools were already fetched above for validation
-
+            // Prepare domains data for saving
             $domainsData = [];
-            foreach ($pools as $pool) {
+            foreach ($selectedDomains as $domain) {
                 $domainsData[] = [
-                    'domain_id' => $pool->id,
-                    'per_inbox' => $pool->inboxes_per_domain
+                    'domain_id' => $domain['id'], // Use unique domain ID
+                    'pool_id' => $domain['pool_id'], // Store pool reference
+                    'domain_name' => $domain['name'], // Store domain name
+                    'per_inbox' => $domain['available_inboxes']
                 ];
             }
 
+            Log::info('Domains data prepared for saving:', $domainsData);
+
             // Set domains from form data
             $poolOrder->setDomainsFromForm($domainsData);
+            
+            Log::info('Before saving pool order - domains:', ['domains' => $poolOrder->domains]);
+            
             $poolOrder->save();
+            
+            Log::info('After saving pool order - domains:', ['domains' => $poolOrder->fresh()->domains]);
 
-            // Mark selected pools as used by changing status
-            // Pool::whereIn('id', $selectedPoolIds)->update(['status_manage_by_admin' => 'in-progress']);
+            // Mark selected domains as used in their respective pools
+            $this->markDomainsAsUsed($selectedDomains);
 
             return response()->json([
                 'success' => true,
@@ -439,10 +473,11 @@ class PoolPlanController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Failed to update pool order domains: ' . $e->getMessage());
+            Log::error('Exception trace: ' . $e->getTraceAsString());
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update domains'
+                'message' => 'Failed to update domains: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -467,23 +502,33 @@ class PoolPlanController extends Controller
             $domains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
             
             if (is_array($domains)) {
-                foreach ($domains as $domain) {
-                    // Handle both string domains and array domains
-                    $domainName = is_array($domain) ? ($domain['name'] ?? $domain['domain'] ?? $domain) : $domain;
-                    
-                    if (is_string($domainName)) {
-                        $availableDomains[] = [
-                            'id' => $pool->id,
-                            'name' => $domainName,
-                            'status' => 'active',
-                            'available_inboxes' => $pool->inboxes_per_domain
-                        ];
+                foreach ($domains as $domainIndex => $domain) {
+                    // Handle domains as objects with id, name, is_used fields
+                    if (is_array($domain) && isset($domain['id'], $domain['name'])) {
+                        // Use the actual domain ID from database
+                        $domainId = $domain['id'];
+                        $domainName = $domain['name'];
+                        $isUsed = $domain['is_used'] ?? false;
+                        
+                        // Only include domains that are not used
+                        if (!$isUsed) {
+                            $availableDomains[] = [
+                                'id' => $domainId, // Use actual domain ID from database
+                                'pool_id' => $pool->id, // Reference to pool
+                                'domain_index' => $domainIndex, // Index within pool
+                                'name' => $domainName,
+                                'status' => 'active',
+                                'available_inboxes' => $pool->inboxes_per_domain
+                            ];
+                        }
                     }
                 }
             } elseif (is_string($domains)) {
                 // Handle single domain as string
                 $availableDomains[] = [
-                    'id' => $pool->id,
+                    'id' => $domainCounter++, // Unique domain ID
+                    'pool_id' => $pool->id, // Reference to pool
+                    'domain_index' => 0, // Single domain index
                     'name' => $domains,
                     'status' => 'active',
                     'available_inboxes' => $pool->inboxes_per_domain
@@ -501,5 +546,38 @@ class PoolPlanController extends Controller
         }
 
         return array_values($uniqueDomains);
+    }
+
+    /**
+     * Mark selected domains as used in their respective pools
+     */
+    private function markDomainsAsUsed($selectedDomains)
+    {
+        // Group selected domains by pool_id for efficient updating
+        $domainsByPool = [];
+        foreach ($selectedDomains as $domain) {
+            $domainsByPool[$domain['pool_id']][] = $domain['id'];
+        }
+
+        // Update each pool's domains JSON to mark selected domains as used
+        foreach ($domainsByPool as $poolId => $domainIds) {
+            $pool = Pool::find($poolId);
+            if ($pool && $pool->domains) {
+                $domains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+                
+                if (is_array($domains)) {
+                    // Mark domains as used
+                    foreach ($domains as &$domain) {
+                        if (is_array($domain) && isset($domain['id']) && in_array($domain['id'], $domainIds)) {
+                            $domain['is_used'] = true;
+                        }
+                    }
+                    
+                    // Save updated domains back to pool
+                    $pool->domains = json_encode($domains);
+                    $pool->save();
+                }
+            }
+        }
     }
 }
