@@ -358,7 +358,7 @@ class PoolPlanController extends Controller
     /**
      * Show pool order edit form for domain selection
      */
-    public function editPoolOrder($id)
+    public function editPoolOrder($id, Request $request)
     {
         $user = Auth::user();
         $poolOrder = PoolOrder::where('user_id', $user->id)
@@ -366,9 +366,16 @@ class PoolPlanController extends Controller
             ->with(['poolPlan'])
             ->firstOrFail();
 
-        // Get available domains (mock data for now - you can replace with actual domain source)
-        $availableDomains = $this->getAvailableDomains();
-        // dd($availableDomains);
+        // Handle AJAX request for domains
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'domains' => $this->getAvailableDomainsOptimized()
+            ]);
+        }
+
+        // For regular page load, don't load all domains immediately
+        // Pass empty array for initial load to avoid template errors
+        $availableDomains = [];
         return view('customer.pool-orders.edit', compact('poolOrder', 'availableDomains'));
     }
 
@@ -550,6 +557,53 @@ class PoolPlanController extends Controller
         }
 
         return array_values($uniqueDomains);
+    }
+
+    /**
+     * Get available domains optimized for large datasets
+     */
+    private function getAvailableDomainsOptimized()
+    {
+        // Use database query with indexes for better performance
+        $pools = Pool::select('id', 'domains', 'inboxes_per_domain')
+            ->where('status_manage_by_admin', 'available')
+            ->whereNotNull('domains')
+            ->whereNotNull('inboxes_per_domain')
+            ->where('inboxes_per_domain', '>', 0)
+            ->get();
+
+        $availableDomains = [];
+        
+        foreach ($pools as $pool) {
+            // Use direct array access for better performance
+            $domains = $pool->domains;
+            
+            if (is_array($domains)) {
+                foreach ($domains as $domainIndex => $domain) {
+                    if (is_array($domain) && isset($domain['id'], $domain['name'])) {
+                        $isUsed = $domain['is_used'] ?? false;
+                        
+                        // Only include unused domains
+                        if (!$isUsed) {
+                            $availableDomains[] = [
+                                'id' => $domain['id'],
+                                'pool_id' => $pool->id,
+                                'name' => $domain['name'],
+                                'status' => 'active',
+                                'available_inboxes' => $pool->inboxes_per_domain
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort by domain name for consistent ordering
+        usort($availableDomains, function($a, $b) {
+            return strcmp($a['name'], $b['name']);
+        });
+
+        return $availableDomains;
     }
 
     /**

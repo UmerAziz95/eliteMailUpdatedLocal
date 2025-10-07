@@ -103,11 +103,68 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
         gap: 1rem;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    .selected-domains-section {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        color: white;
+    }
+    
+    .pagination-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin: 1rem 0;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .page-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid #dee2e6;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .page-btn:hover:not(:disabled) {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .page-btn.active {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    
+
+    
+    .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 200px;
     }
     
     @media (max-width: 768px) {
         .domain-grid {
             grid-template-columns: 1fr;
+            max-height: 400px;
         }
     }
 </style>
@@ -164,60 +221,63 @@
                         
                         <div class="row">
                             <div class="col-lg-8">
-                                <!-- Search Box -->
+                                
+                                <!-- Selected Domains Section (Top) -->
+                                <div id="selectedDomainsTop" class="selected-domains-section" style="display: none;">
+                                    <h5 class="mb-2"><i class="ti ti-star me-2"></i>Selected Domains</h5>
+                                    <div id="selectedDomainsGrid" class="domain-grid" style="max-height: 200px;"></div>
+                                </div>
+
+                                <!-- Search and Filter Controls -->
                                 <div class="mb-4">
-                                    <div class="position-relative">
-                                        <input type="text" 
-                                               id="domainSearch" 
-                                               class="form-control search-box"
-                                               placeholder="🔍 Search domains by name..."
-                                               autocomplete="off">
-                                        <div class="position-absolute top-50 end-0 translate-middle-y pe-3">
-                                            <small class="" id="searchResults">{{ count($availableDomains) }} domains available</small>
+                                    <div class="row g-3">
+                                        <div class="col-md-8">
+                                            <div class="position-relative">
+                                                <input type="text" 
+                                                       id="domainSearch" 
+                                                       class="form-control search-box"
+                                                       placeholder="🔍 Search domains by name..."
+                                                       autocomplete="off">
+                                                <div class="position-absolute top-50 end-0 translate-middle-y pe-3">
+                                                    <small id="searchResults">Loading domains...</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select id="domainsPerPage" class="form-select">
+                                                <option value="20">20 per page</option>
+                                                <option value="50" selected>50 per page</option>
+                                                <option value="100">100 per page</option>
+                                                <option value="200">200 per page</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Available Domains -->
-                                <div class="domain-grid" id="domainsContainer">
-                                    @foreach($availableDomains as $domain)
-                                        <div class="domain-card p-3" data-domain-id="{{ $domain['id'] }}" data-domain-name="{{ $domain['name'] }}">
-                                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <div>
-                                                    <h6 class="mb-1 fw-bold">{{ $domain['name'] }}</h6>
-                                                    <span class="domain-status bg-success text-white">
-                                                        {{ ucfirst($domain['status']) }}
-                                                    </span>
-                                                </div>
-                                                <div class="text-end">
-                                                    <small class=" d-block">Available</small>
-                                                    <strong class="text-primary">{{ $domain['available_inboxes'] }} inboxes</strong>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="row align-items-center mt-3">
-                                                <div class="col-12">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input domain-checkbox" 
-                                                               type="checkbox" 
-                                                               id="domain_{{ $domain['id'] }}"
-                                                               value="{{ $domain['id'] }}"
-                                                               data-inboxes="{{ $domain['available_inboxes'] }}">
-                                                        <label class="form-check-label fw-medium" for="domain_{{ $domain['id'] }}">
-                                                            Select this domain ({{ $domain['available_inboxes'] }} inboxes included)
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endforeach
+                                <!-- Loading Spinner -->
+                                <div id="loadingSpinner" class="loading-spinner">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading domains...</span>
+                                    </div>
                                 </div>
 
+                                <!-- Available Domains -->
+                                <div class="domain-grid" id="domainsContainer" style="display: none;"></div>
+
+                                <!-- Pagination Controls -->
+                                <div id="paginationControls" class="pagination-controls" style="display: none;">
+                                    <button type="button" class="page-btn" id="prevPage">‹ Previous</button>
+                                    <div id="pageNumbers"></div>
+                                    <button type="button" class="page-btn" id="nextPage">Next ›</button>
+                                    <div class="ms-3">
+                                        <small id="pageInfo">Page 1 of 1</small>
+                                    </div>
+                                </div>
                                 <!-- No results message -->
                                 <div id="noResults" class="text-center py-5" style="display: none;">
-                                    <i class="ti ti-search-off " style="font-size: 3rem;"></i>
-                                    <h5 class=" mt-2">No domains found</h5>
-                                    <p class="">Try adjusting your search terms</p>
+                                    <i class="ti ti-search-off" style="font-size: 3rem;"></i>
+                                    <h5 class="mt-2">No domains found</h5>
+                                    <p>Try adjusting your search terms</p>
                                 </div>
                             </div>
 
@@ -264,105 +324,337 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const domainCheckboxes = document.querySelectorAll('.domain-checkbox');
+    // Configuration
+    const maxQuantity = {{ $poolOrder->quantity }};
+    let allDomains = [];
+    let filteredDomains = [];
+    let selectedDomains = new Map();
+    let currentPage = 1;
+    let domainsPerPage = 50;
+    let searchTerm = '';
+    
+    // DOM Elements
     const searchInput = document.getElementById('domainSearch');
     const domainsContainer = document.getElementById('domainsContainer');
+    const selectedDomainsTop = document.getElementById('selectedDomainsTop');
+    const selectedDomainsGrid = document.getElementById('selectedDomainsGrid');
     const noResults = document.getElementById('noResults');
     const searchResults = document.getElementById('searchResults');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const paginationControls = document.getElementById('paginationControls');
+    const domainsPerPageSelect = document.getElementById('domainsPerPage');
     const form = document.getElementById('domainSelectionForm');
-    const maxQuantity = {{ $poolOrder->quantity }};
     
-    // Load existing selections
-    loadExistingSelections();
+    // Initialize
+    loadDomainsFromServer();
     
-    // Search functionality
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const domainCards = domainsContainer.querySelectorAll('.domain-card');
-        let visibleCount = 0;
-        
-        domainCards.forEach(card => {
-            const domainName = card.dataset.domainName.toLowerCase();
-            if (domainName.includes(searchTerm)) {
-                card.style.display = 'block';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-            }
-        });
-        
-        if (visibleCount === 0) {
-            domainsContainer.style.display = 'none';
-            noResults.style.display = 'block';
-        } else {
-            domainsContainer.style.display = 'grid';
-            noResults.style.display = 'none';
-        }
-        
-        searchResults.textContent = `${visibleCount} domain${visibleCount !== 1 ? 's' : ''} found`;
-    });
-    
-    // Domain selection handling
-    domainCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const selectedCount = document.querySelectorAll('.domain-checkbox:checked').length;
+    // Load domains with AJAX for better performance
+    async function loadDomainsFromServer() {
+        try {
+            loadingSpinner.style.display = 'flex';
             
-            // Calculate total inboxes if this domain is selected
-            let totalInboxes = 0;
-            document.querySelectorAll('.domain-checkbox:checked').forEach(cb => {
-                totalInboxes += parseInt(cb.dataset.inboxes) || 0;
+            const response = await fetch(`{{ route('customer.pool-orders.edit', $poolOrder->id) }}?ajax=1`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
             });
             
-            if (this.checked) {
-                // Check domain count limit
-                if (selectedCount > maxQuantity) {
-                    this.checked = false;
-                    alert(`You can only select up to ${maxQuantity} domains based on your order quantity.`);
-                    return;
-                }
-                
-                // Check total inbox limit
-                if (totalInboxes > maxQuantity) {
-                    this.checked = false;
-                    alert(`Total inboxes (${totalInboxes}) cannot exceed your order quantity (${maxQuantity}). Please select domains with fewer inboxes.`);
-                    return;
-                }
+            if (!response.ok) {
+                throw new Error('Failed to load domains');
             }
             
-            const domainCard = this.closest('.domain-card');
+            const data = await response.json();
+            allDomains = data.domains || [];
+            filteredDomains = [...allDomains];
             
-            if (this.checked) {
-                domainCard.classList.add('selected');
-            } else {
-                domainCard.classList.remove('selected');
-            }
+            loadingSpinner.style.display = 'none';
+            domainsContainer.style.display = 'grid';
+            paginationControls.style.display = 'flex';
             
-            updateSummary();
-        });
+            // Load existing selections
+            loadExistingSelections();
+            
+            // Initial render
+            renderCurrentPage();
+            updateSearchResults();
+            
+        } catch (error) {
+            console.error('Error loading domains:', error);
+            loadingSpinner.innerHTML = `
+                <div class="text-center text-danger">
+                    <i class="ti ti-alert-circle" style="font-size: 2rem;"></i>
+                    <p class="mt-2">Failed to load domains. Please refresh the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Search functionality with debouncing
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchTerm = this.value.toLowerCase();
+            applyFilters();
+        }, 300);
     });
+    
+    // Domains per page change
+    domainsPerPageSelect.addEventListener('change', function() {
+        domainsPerPage = parseInt(this.value);
+        currentPage = 1;
+        renderCurrentPage();
+    });
+    
+    // Apply filters
+    function applyFilters() {
+        if (searchTerm) {
+            filteredDomains = allDomains.filter(domain => 
+                domain.name.toLowerCase().includes(searchTerm)
+            );
+        } else {
+            filteredDomains = [...allDomains];
+        }
+        
+        currentPage = 1;
+        renderCurrentPage();
+        updateSearchResults();
+    }
+    
+    // Render current page
+    function renderCurrentPage() {
+        const startIndex = (currentPage - 1) * domainsPerPage;
+        const endIndex = startIndex + domainsPerPage;
+        const domainsToShow = filteredDomains.slice(startIndex, endIndex);
+        
+        if (domainsToShow.length === 0 && filteredDomains.length === 0) {
+            domainsContainer.style.display = 'none';
+            noResults.style.display = 'block';
+            paginationControls.style.display = 'none';
+            return;
+        }
+        
+        domainsContainer.style.display = 'grid';
+        noResults.style.display = 'none';
+        paginationControls.style.display = 'flex';
+        
+        domainsContainer.innerHTML = domainsToShow.map(domain => 
+            createDomainCard(domain)
+        ).join('');
+        
+        // Add event listeners to new checkboxes
+        addDomainEventListeners();
+        
+        // Update pagination
+        updatePagination();
+    }
+    
+    // Create domain card HTML
+    function createDomainCard(domain) {
+        const isSelected = selectedDomains.has(domain.id);
+        return `
+            <div class="domain-card p-3 ${isSelected ? 'selected' : ''}" data-domain-id="${domain.id}" data-domain-name="${domain.name}">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 class="mb-1 fw-bold">${domain.name}</h6>
+                        <span class="domain-status bg-success text-white">
+                            ${domain.status.charAt(0).toUpperCase() + domain.status.slice(1)}
+                        </span>
+                    </div>
+                    <div class="text-end">
+                        <small class="d-block">Available</small>
+                        <strong class="text-primary">${domain.available_inboxes} inboxes</strong>
+                    </div>
+                </div>
+                
+                <div class="row align-items-center mt-3">
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input domain-checkbox" 
+                                   type="checkbox" 
+                                   id="domain_${domain.id}"
+                                   value="${domain.id}"
+                                   data-inboxes="${domain.available_inboxes}"
+                                   data-name="${domain.name}"
+                                   ${isSelected ? 'checked' : ''}>
+                            <label class="form-check-label fw-medium" for="domain_${domain.id}">
+                                Select this domain (${domain.available_inboxes} inboxes included)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Add event listeners to domain checkboxes
+    function addDomainEventListeners() {
+        const checkboxes = domainsContainer.querySelectorAll('.domain-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', handleDomainSelection);
+        });
+    }
+    
+    // Handle domain selection
+    function handleDomainSelection(event) {
+        const checkbox = event.target;
+        const domainId = checkbox.value;
+        const domainName = checkbox.dataset.name;
+        const inboxes = parseInt(checkbox.dataset.inboxes) || 0;
+        const domainCard = checkbox.closest('.domain-card');
+        
+        if (checkbox.checked) {
+            // Check limits before adding
+            const wouldExceedDomainLimit = selectedDomains.size >= maxQuantity;
+            const currentTotalInboxes = Array.from(selectedDomains.values())
+                .reduce((sum, domain) => sum + domain.inboxes, 0);
+            const wouldExceedInboxLimit = (currentTotalInboxes + inboxes) > maxQuantity;
+            
+            if (wouldExceedDomainLimit) {
+                checkbox.checked = false;
+                alert(`You can only select up to ${maxQuantity} domains based on your order quantity.`);
+                return;
+            }
+            
+            if (wouldExceedInboxLimit) {
+                checkbox.checked = false;
+                alert(`Total inboxes (${currentTotalInboxes + inboxes}) cannot exceed your order quantity (${maxQuantity}). Please select domains with fewer inboxes.`);
+                return;
+            }
+            
+            // Add to selected domains
+            selectedDomains.set(domainId, {
+                id: domainId,
+                name: domainName,
+                inboxes: inboxes
+            });
+            
+            domainCard.classList.add('selected');
+        } else {
+            // Remove from selected domains
+            selectedDomains.delete(domainId);
+            domainCard.classList.remove('selected');
+        }
+        
+        updateSelectedDomainsDisplay();
+        updateSummary();
+    }
+    
+    // Update selected domains display at top
+    function updateSelectedDomainsDisplay() {
+        if (selectedDomains.size === 0) {
+            selectedDomainsTop.style.display = 'none';
+            return;
+        }
+        
+        selectedDomainsTop.style.display = 'block';
+        
+        const selectedArray = Array.from(selectedDomains.values());
+        selectedDomainsGrid.innerHTML = selectedArray.map(domain => `
+            <div class="domain-card p-2 selected">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 fw-bold">${domain.name}</h6>
+                    </div>
+                    <div class="text-end">
+                        <strong class="text-success">${domain.inboxes} inboxes</strong>
+                        <button type="button" class="btn btn-sm btn-outline-light ms-2" onclick="deselectDomain('${domain.id}')">
+                            <i class="ti ti-x"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Deselect domain function (global)
+    window.deselectDomain = function(domainId) {
+        selectedDomains.delete(domainId);
+        
+        // Update any visible checkboxes
+        const checkbox = document.querySelector(`input[value="${domainId}"]`);
+        if (checkbox) {
+            checkbox.checked = false;
+            checkbox.closest('.domain-card').classList.remove('selected');
+        }
+        
+        updateSelectedDomainsDisplay();
+        updateSummary();
+    };
+    
+    // Update pagination
+    function updatePagination() {
+        const totalPages = Math.ceil(filteredDomains.length / domainsPerPage);
+        const prevBtn = document.getElementById('prevPage');
+        const nextBtn = document.getElementById('nextPage');
+        const pageNumbers = document.getElementById('pageNumbers');
+        const pageInfo = document.getElementById('pageInfo');
+        
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+        
+        // Page numbers
+        let pageNumbersHTML = '';
+        const maxPageButtons = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+        let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+        
+        if (endPage - startPage < maxPageButtons - 1) {
+            startPage = Math.max(1, endPage - maxPageButtons + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbersHTML += `
+                <button type="button" class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">
+                    ${i}
+                </button>
+            `;
+        }
+        
+        pageNumbers.innerHTML = pageNumbersHTML;
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
+        
+        // Previous/Next button events
+        prevBtn.onclick = () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderCurrentPage();
+            }
+        };
+        
+        nextBtn.onclick = () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderCurrentPage();
+            }
+        };
+    }
+    
+    // Go to specific page (global function)
+    window.goToPage = function(page) {
+        currentPage = page;
+        renderCurrentPage();
+    };
+    
+    // Update search results
+    function updateSearchResults() {
+        const total = allDomains.length;
+        const filtered = filteredDomains.length;
+        
+        if (searchTerm) {
+            searchResults.textContent = `${filtered} of ${total} domains found`;
+        } else {
+            searchResults.textContent = `${total} domains available`;
+        }
+    }
     
     // Update summary function
     function updateSummary() {
-        const selectedDomains = [];
-        let totalInboxes = 0;
+        const selectedArray = Array.from(selectedDomains.values());
+        const totalInboxes = selectedArray.reduce((sum, domain) => sum + domain.inboxes, 0);
         
-        domainCheckboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                const domainCard = checkbox.closest('.domain-card');
-                const domainName = domainCard.dataset.domainName;
-                const inboxes = parseInt(checkbox.dataset.inboxes) || 0;
-                
-                selectedDomains.push({
-                    id: checkbox.value,
-                    name: domainName,
-                    per_inbox: inboxes
-                });
-                
-                totalInboxes += inboxes;
-            }
-        });
-        
-        document.getElementById('selectedCount').textContent = selectedDomains.length;
+        document.getElementById('selectedCount').textContent = selectedArray.length;
         
         // Update inbox count with visual indicators
         const totalInboxesElement = document.getElementById('totalInboxes');
@@ -386,15 +678,15 @@ document.addEventListener('DOMContentLoaded', function() {
             totalInboxesElement.classList.add('bg-white', 'text-success');
         }
         
-        // Update selected domains list
+        // Update selected domains list in sidebar
         const listContainer = document.getElementById('selectedDomainsList');
-        if (selectedDomains.length === 0) {
+        if (selectedArray.length === 0) {
             listContainer.innerHTML = '<small class="opacity-75">No domains selected yet</small>';
         } else {
-            let domainListHTML = selectedDomains.map(domain => 
+            let domainListHTML = selectedArray.map(domain => 
                 `<div class="d-flex justify-content-between align-items-center mb-1">
                     <small class="text-truncate">${domain.name}</small>
-                    <small class="badge bg-white text-primary">${domain.per_inbox}</small>
+                    <small class="badge bg-white text-primary">${domain.inboxes}</small>
                 </div>`
             ).join('');
             
@@ -410,12 +702,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Enable/disable save button
         const saveBtn = document.getElementById('saveBtn');
-        saveBtn.disabled = selectedDomains.length === 0 || totalInboxes > maxQuantity;
+        saveBtn.disabled = selectedArray.length === 0 || totalInboxes > maxQuantity;
         
         // Update button text based on validation
         if (totalInboxes > maxQuantity) {
             saveBtn.innerHTML = '<i class="ti ti-alert-triangle me-2"></i>Inbox Limit Exceeded';
-        } else if (selectedDomains.length === 0) {
+        } else if (selectedArray.length === 0) {
             saveBtn.innerHTML = '<i class="ti ti-device-floppy me-2"></i>Save Configuration';
         } else {
             saveBtn.innerHTML = '<i class="ti ti-device-floppy me-2"></i>Save Configuration';
@@ -427,12 +719,16 @@ document.addEventListener('DOMContentLoaded', function() {
         @if($poolOrder->domains)
             const existingDomains = @json($poolOrder->domains);
             existingDomains.forEach(domain => {
-                const checkbox = document.querySelector(`input[value="${domain.domain_id}"]`);
-                if (checkbox) {
-                    checkbox.checked = true;
-                    checkbox.dispatchEvent(new Event('change'));
+                const domainData = allDomains.find(d => d.id === domain.domain_id);
+                if (domainData) {
+                    selectedDomains.set(domain.domain_id, {
+                        id: domain.domain_id,
+                        name: domainData.name,
+                        inboxes: domainData.available_inboxes
+                    });
                 }
             });
+            updateSelectedDomainsDisplay();
             updateSummary();
         @endif
     }
@@ -441,22 +737,16 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const selectedDomains = [];
-        let totalInboxes = 0;
+        const selectedArray = Array.from(selectedDomains.keys());
+        const totalInboxes = Array.from(selectedDomains.values())
+            .reduce((sum, domain) => sum + domain.inboxes, 0);
         
-        domainCheckboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                selectedDomains.push(checkbox.value); // Keep as string
-                totalInboxes += parseInt(checkbox.dataset.inboxes) || 0;
-            }
-        });
-        
-        if (selectedDomains.length === 0) {
+        if (selectedArray.length === 0) {
             alert('Please select at least one domain');
             return;
         }
         
-        if (selectedDomains.length > maxQuantity) {
+        if (selectedArray.length > maxQuantity) {
             alert(`You can only select up to ${maxQuantity} domains based on your order quantity.`);
             return;
         }
@@ -478,7 +768,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
-                domains: selectedDomains
+                domains: selectedArray
             })
         })
         .then(response => response.json())
