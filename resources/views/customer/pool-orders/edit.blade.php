@@ -80,6 +80,26 @@
         color: white;
     }
     
+    .inbox-count-warning {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+    }
+    
+    .inbox-count-error {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+    }
+    
+    .summary-warning {
+        border-color: #ffc107 !important;
+        background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%) !important;
+    }
+    
+    .summary-error {
+        border-color: #dc3545 !important;
+        background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%) !important;
+    }
+    
     .domain-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -133,6 +153,12 @@
                         </div>
                     </div>
 
+                    <!-- Quantity Limit Notice -->
+                    <div class="alert alert-info mb-4">
+                        <i class="ti ti-info-circle me-2"></i>
+                        <strong>Selection Limit:</strong> You can select up to <strong>{{ $poolOrder->quantity }}</strong> domains and <strong>{{ $poolOrder->quantity }}</strong> total inboxes based on your order quantity. Each domain comes with its pre-configured inbox count.
+                    </div>
+
                     <form id="domainSelectionForm">
                         @csrf
                         @method('PUT')
@@ -171,27 +197,16 @@
                                             </div>
                                             
                                             <div class="row align-items-center mt-3">
-                                                <div class="col-auto">
+                                                <div class="col-12">
                                                     <div class="form-check">
                                                         <input class="form-check-input domain-checkbox" 
                                                                type="checkbox" 
                                                                id="domain_{{ $domain['id'] }}"
-                                                               value="{{ $domain['id'] }}">
+                                                               value="{{ $domain['id'] }}"
+                                                               data-inboxes="{{ $domain['available_inboxes'] }}">
                                                         <label class="form-check-label fw-medium" for="domain_{{ $domain['id'] }}">
-                                                            Select
+                                                            Select this domain ({{ $domain['available_inboxes'] }} inboxes included)
                                                         </label>
-                                                    </div>
-                                                </div>
-                                                <div class="col">
-                                                    <div class="d-flex align-items-center justify-content-end">
-                                                        <label class="form-label mb-0 me-2 small">Per Inbox:</label>
-                                                        <input type="number" 
-                                                               class="form-control per-inbox-input" 
-                                                               min="1" 
-                                                               max="{{ $domain['available_inboxes'] }}"
-                                                               value="1"
-                                                               disabled
-                                                               data-domain-id="{{ $domain['id'] }}">
                                                     </div>
                                                 </div>
                                             </div>
@@ -251,12 +266,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const domainCheckboxes = document.querySelectorAll('.domain-checkbox');
-    const perInboxInputs = document.querySelectorAll('.per-inbox-input');
     const searchInput = document.getElementById('domainSearch');
     const domainsContainer = document.getElementById('domainsContainer');
     const noResults = document.getElementById('noResults');
     const searchResults = document.getElementById('searchResults');
     const form = document.getElementById('domainSelectionForm');
+    const maxQuantity = {{ $poolOrder->quantity }};
     
     // Load existing selections
     loadExistingSelections();
@@ -291,27 +306,40 @@ document.addEventListener('DOMContentLoaded', function() {
     // Domain selection handling
     domainCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
-            const domainId = this.value;
+            const selectedCount = document.querySelectorAll('.domain-checkbox:checked').length;
+            
+            // Calculate total inboxes if this domain is selected
+            let totalInboxes = 0;
+            document.querySelectorAll('.domain-checkbox:checked').forEach(cb => {
+                totalInboxes += parseInt(cb.dataset.inboxes) || 0;
+            });
+            
+            if (this.checked) {
+                // Check domain count limit
+                if (selectedCount > maxQuantity) {
+                    this.checked = false;
+                    alert(`You can only select up to ${maxQuantity} domains based on your order quantity.`);
+                    return;
+                }
+                
+                // Check total inbox limit
+                if (totalInboxes > maxQuantity) {
+                    this.checked = false;
+                    alert(`Total inboxes (${totalInboxes}) cannot exceed your order quantity (${maxQuantity}). Please select domains with fewer inboxes.`);
+                    return;
+                }
+            }
+            
             const domainCard = this.closest('.domain-card');
-            const perInboxInput = domainCard.querySelector('.per-inbox-input');
             
             if (this.checked) {
                 domainCard.classList.add('selected');
-                perInboxInput.disabled = false;
-                perInboxInput.focus();
             } else {
                 domainCard.classList.remove('selected');
-                perInboxInput.disabled = true;
-                perInboxInput.value = 1;
             }
             
             updateSummary();
         });
-    });
-    
-    // Per inbox input handling
-    perInboxInputs.forEach(input => {
-        input.addEventListener('input', updateSummary);
     });
     
     // Update summary function
@@ -322,38 +350,77 @@ document.addEventListener('DOMContentLoaded', function() {
         domainCheckboxes.forEach(checkbox => {
             if (checkbox.checked) {
                 const domainCard = checkbox.closest('.domain-card');
-                const perInboxInput = domainCard.querySelector('.per-inbox-input');
                 const domainName = domainCard.dataset.domainName;
-                const perInbox = parseInt(perInboxInput.value) || 0;
+                const inboxes = parseInt(checkbox.dataset.inboxes) || 0;
                 
                 selectedDomains.push({
                     id: checkbox.value,
                     name: domainName,
-                    per_inbox: perInbox
+                    per_inbox: inboxes
                 });
                 
-                totalInboxes += perInbox;
+                totalInboxes += inboxes;
             }
         });
         
         document.getElementById('selectedCount').textContent = selectedDomains.length;
-        document.getElementById('totalInboxes').textContent = totalInboxes;
+        
+        // Update inbox count with visual indicators
+        const totalInboxesElement = document.getElementById('totalInboxes');
+        totalInboxesElement.textContent = totalInboxes;
+        
+        // Reset classes
+        totalInboxesElement.className = 'badge px-3 py-2';
+        const summaryCard = document.querySelector('.summary-card');
+        summaryCard.className = 'summary-card';
+        
+        // Add visual indicators based on inbox count
+        if (totalInboxes > maxQuantity) {
+            totalInboxesElement.classList.add('inbox-count-error');
+            summaryCard.classList.add('summary-error');
+        } else if (totalInboxes === maxQuantity) {
+            totalInboxesElement.classList.add('bg-white', 'text-success');
+        } else if (totalInboxes > maxQuantity * 0.8) {
+            totalInboxesElement.classList.add('inbox-count-warning');
+            summaryCard.classList.add('summary-warning');
+        } else {
+            totalInboxesElement.classList.add('bg-white', 'text-success');
+        }
         
         // Update selected domains list
         const listContainer = document.getElementById('selectedDomainsList');
         if (selectedDomains.length === 0) {
             listContainer.innerHTML = '<small class="opacity-75">No domains selected yet</small>';
         } else {
-            listContainer.innerHTML = selectedDomains.map(domain => 
+            let domainListHTML = selectedDomains.map(domain => 
                 `<div class="d-flex justify-content-between align-items-center mb-1">
                     <small class="text-truncate">${domain.name}</small>
                     <small class="badge bg-white text-primary">${domain.per_inbox}</small>
                 </div>`
             ).join('');
+            
+            // Add warning message if over limit
+            if (totalInboxes > maxQuantity) {
+                domainListHTML += `<div class="mt-2 p-2 rounded" style="background-color: rgba(220, 53, 69, 0.1); border: 1px solid rgba(220, 53, 69, 0.3);">
+                    <small class="text-danger"><i class="ti ti-alert-triangle me-1"></i>Exceeds inbox limit by ${totalInboxes - maxQuantity}</small>
+                </div>`;
+            }
+            
+            listContainer.innerHTML = domainListHTML;
         }
         
         // Enable/disable save button
-        document.getElementById('saveBtn').disabled = selectedDomains.length === 0;
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = selectedDomains.length === 0 || totalInboxes > maxQuantity;
+        
+        // Update button text based on validation
+        if (totalInboxes > maxQuantity) {
+            saveBtn.innerHTML = '<i class="ti ti-alert-triangle me-2"></i>Inbox Limit Exceeded';
+        } else if (selectedDomains.length === 0) {
+            saveBtn.innerHTML = '<i class="ti ti-device-floppy me-2"></i>Save Configuration';
+        } else {
+            saveBtn.innerHTML = '<i class="ti ti-device-floppy me-2"></i>Save Configuration';
+        }
     }
     
     // Load existing selections
@@ -365,10 +432,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (checkbox) {
                     checkbox.checked = true;
                     checkbox.dispatchEvent(new Event('change'));
-                    
-                    const domainCard = checkbox.closest('.domain-card');
-                    const perInboxInput = domainCard.querySelector('.per-inbox-input');
-                    perInboxInput.value = domain.per_inbox;
                 }
             });
             updateSummary();
@@ -380,20 +443,27 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         
         const selectedDomains = [];
+        let totalInboxes = 0;
+        
         domainCheckboxes.forEach(checkbox => {
             if (checkbox.checked) {
-                const domainCard = checkbox.closest('.domain-card');
-                const perInboxInput = domainCard.querySelector('.per-inbox-input');
-                
-                selectedDomains.push({
-                    domain_id: parseInt(checkbox.value),
-                    per_inbox: parseInt(perInboxInput.value)
-                });
+                selectedDomains.push(parseInt(checkbox.value));
+                totalInboxes += parseInt(checkbox.dataset.inboxes) || 0;
             }
         });
         
         if (selectedDomains.length === 0) {
             alert('Please select at least one domain');
+            return;
+        }
+        
+        if (selectedDomains.length > maxQuantity) {
+            alert(`You can only select up to ${maxQuantity} domains based on your order quantity.`);
+            return;
+        }
+        
+        if (totalInboxes > maxQuantity) {
+            alert(`Total inboxes (${totalInboxes}) cannot exceed your order quantity (${maxQuantity}). Please adjust your domain selection.`);
             return;
         }
         

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\PoolPlan;
 use App\Models\PoolOrder;
+use App\Models\Pool;
 use App\Models\User;
 use App\Models\Invoice;
 use App\Models\PoolInvoice;
@@ -367,7 +368,7 @@ class PoolPlanController extends Controller
 
         // Get available domains (mock data for now - you can replace with actual domain source)
         $availableDomains = $this->getAvailableDomains();
-
+        // dd($availableDomains);
         return view('customer.pool-orders.edit', compact('poolOrder', 'availableDomains'));
     }
 
@@ -383,14 +384,51 @@ class PoolPlanController extends Controller
 
         $request->validate([
             'domains' => 'required|array|min:1',
-            'domains.*.domain_id' => 'required|integer',
-            'domains.*.per_inbox' => 'required|integer|min:1',
+            'domains.*' => 'required|integer',
         ]);
 
+        // Check if selected domains count exceeds quantity
+        if (count($request->domains) > $poolOrder->quantity) {
+            return response()->json([
+                'success' => false,
+                'message' => "You can only select up to {$poolOrder->quantity} domains (your order quantity)."
+            ], 422);
+        }
+
+        // Calculate total inboxes to validate against quantity limit
+        $selectedPoolIds = $request->domains;
+        $pools = Pool::whereIn('id', $selectedPoolIds)
+            ->where('status_manage_by_admin', 'available')
+            ->select('id', 'domains', 'inboxes_per_domain')
+            ->get();
+
+        $totalInboxes = $pools->sum('inboxes_per_domain');
+        
+        // Check if total inboxes exceed quantity limit
+        if ($totalInboxes > $poolOrder->quantity) {
+            return response()->json([
+                'success' => false,
+                'message' => "Total inboxes ({$totalInboxes}) cannot exceed your order quantity ({$poolOrder->quantity}). Please select domains with fewer inboxes."
+            ], 422);
+        }
+
         try {
+            // Pools were already fetched above for validation
+
+            $domainsData = [];
+            foreach ($pools as $pool) {
+                $domainsData[] = [
+                    'domain_id' => $pool->id,
+                    'per_inbox' => $pool->inboxes_per_domain
+                ];
+            }
+
             // Set domains from form data
-            $poolOrder->setDomainsFromForm($request->domains);
+            $poolOrder->setDomainsFromForm($domainsData);
             $poolOrder->save();
+
+            // Mark selected pools as used by changing status
+            // Pool::whereIn('id', $selectedPoolIds)->update(['status_manage_by_admin' => 'in-progress']);
 
             return response()->json([
                 'success' => true,
@@ -410,22 +448,58 @@ class PoolPlanController extends Controller
     }
 
     /**
-     * Get available domains for pool order selection
-     * This is a mock method - replace with actual domain fetching logic
+     * Get available domains for pool order selection from pools table
      */
-    
     private function getAvailableDomains()
     {
-        // Mock data - replace with actual domain retrieval from your database
-        return [
-            ['id' => 1, 'name' => 'example1.com', 'status' => 'active', 'available_inboxes' => 100],
-            ['id' => 2, 'name' => 'example2.com', 'status' => 'active', 'available_inboxes' => 150],
-            ['id' => 3, 'name' => 'example3.com', 'status' => 'active', 'available_inboxes' => 200],
-            ['id' => 4, 'name' => 'example4.com', 'status' => 'active', 'available_inboxes' => 75],
-            ['id' => 5, 'name' => 'example5.com', 'status' => 'active', 'available_inboxes' => 300],
-            ['id' => 6, 'name' => 'testdomain1.com', 'status' => 'active', 'available_inboxes' => 120],
-            ['id' => 7, 'name' => 'testdomain2.com', 'status' => 'active', 'available_inboxes' => 180],
-            ['id' => 8, 'name' => 'mydomain.com', 'status' => 'active', 'available_inboxes' => 250],
-        ];
+        // Get pools that are available and have domains
+        $pools = Pool::where('status_manage_by_admin', 'available')
+            ->whereNotNull('domains')
+            ->whereNotNull('inboxes_per_domain')
+            ->where('inboxes_per_domain', '>', 0)
+            ->select('id', 'domains', 'inboxes_per_domain')
+            ->get();
+        // dd($pools);
+        $availableDomains = [];
+        
+        foreach ($pools as $pool) {
+            // Decode domains if it's JSON string, otherwise treat as array
+            $domains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+            
+            if (is_array($domains)) {
+                foreach ($domains as $domain) {
+                    // Handle both string domains and array domains
+                    $domainName = is_array($domain) ? ($domain['name'] ?? $domain['domain'] ?? $domain) : $domain;
+                    
+                    if (is_string($domainName)) {
+                        $availableDomains[] = [
+                            'id' => $pool->id,
+                            'name' => $domainName,
+                            'status' => 'active',
+                            'available_inboxes' => $pool->inboxes_per_domain
+                        ];
+                    }
+                }
+            } elseif (is_string($domains)) {
+                // Handle single domain as string
+                $availableDomains[] = [
+                    'id' => $pool->id,
+                    'name' => $domains,
+                    'status' => 'active',
+                    'available_inboxes' => $pool->inboxes_per_domain
+                ];
+            }
+        }
+
+        // Remove duplicates based on domain name and keep the one with highest available inboxes
+        $uniqueDomains = [];
+        foreach ($availableDomains as $domain) {
+            $key = $domain['name'];
+            if (!isset($uniqueDomains[$key]) || $uniqueDomains[$key]['available_inboxes'] < $domain['available_inboxes']) {
+                $uniqueDomains[$key] = $domain;
+            }
+        }
+
+        return array_values($uniqueDomains);
     }
 }
