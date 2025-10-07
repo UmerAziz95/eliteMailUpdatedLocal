@@ -19,7 +19,6 @@
     
     .domain-card.selected {
         border-color: #0d6efd;
-        background-color: #f8f9ff;
         box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
     }
     
