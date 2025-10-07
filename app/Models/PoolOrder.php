@@ -38,8 +38,8 @@ class PoolOrder extends Model
     const ADMIN_STATUS_CONFIG = [
         'pending' => [
             'label' => 'Pending',
-            'color' => 'info',
-            'text_color' => 'text-info'
+            'color' => 'warning',
+            'text_color' => 'text-warning'
         ],
         'in-progress' => [
             'label' => 'In Progress',
@@ -302,7 +302,7 @@ class PoolOrder extends Model
     public function getStatusBadgeAttribute()
     {
         $config = $this->status_config;
-        return '<span class="badge bg-' . $config['color'] . '">' . $config['label'] . '</span>';
+        return '<span class="py-1 px-2 text-' . $config['text_color'] . ' border border-' . $config['color'] . ' rounded-2 bg-' . $config['color'] . ' mt-1">' . $config['label'] . '</span>';
     }
 
     /**
@@ -311,7 +311,7 @@ class PoolOrder extends Model
     public function getAdminStatusBadgeAttribute()
     {
         $config = $this->admin_status_config;
-        return '<span class="badge bg-' . $config['color'] . '">' . $config['label'] . '</span>';
+        return '<span class="py-1 px-2 text-' . $config['color'] . ' border border-' . $config['color'] . ' rounded-2 bg-transparent' . ' mt-1">' . $config['label'] . '</span>';
     }
 
     /**
@@ -319,6 +319,6 @@ class PoolOrder extends Model
      */
     public function getStatusBadgesAttribute()
     {
-        return $this->status_badge . '<br><small class="mt-1">' . $this->admin_status_badge . '</small>';
+        return $this->admin_status_badge;
     }
 }

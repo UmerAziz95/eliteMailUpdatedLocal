@@ -308,7 +308,27 @@ class PoolPlanController extends Controller
                 return $order->created_at->format('M d, Y') . '<br><small class="text-muted">' . $order->created_at->format('h:i A') . '</small>';
             })
             ->addColumn('actions', function($order) {
-                return '<a href="' . route('customer.pool-orders.show', $order->id) . '" class="btn btn-sm btn-outline-primary"><i class="ti ti-eye me-1"></i>View</a>';
+                $viewUrl = route('customer.pool-orders.show', $order->id);
+                return '
+                <div class="dropdown">
+                    <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="' . $viewUrl . '">
+                                <i class="ti ti-eye me-1"></i>View
+                            </a>
+                        </li>
+                        
+                        <li>
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="downloadInvoice(\'' . $order->id . '\')">
+                                <i class="ti ti-download me-1"></i>Download
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                ';
             })
             ->rawColumns(['status', 'order_date', 'actions'])
             ->make(true);
