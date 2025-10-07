@@ -375,6 +375,7 @@ class PoolPlanController extends Controller
     /**
      * Update pool order with selected domains
      */
+    
     public function updatePoolOrder(Request $request, $id)
     {
         $user = Auth::user();
@@ -582,11 +583,24 @@ class PoolPlanController extends Controller
         if (is_array($selectedDomains)) {
             foreach ($selectedDomains as $index => $domain) {
                 Log::info('Processing selected domain:', ['index' => $index, 'domain' => $domain]);
-                if (is_array($domain) && isset($domain['id'])) {
-                    $currentlySelectedDomainIds[] = $domain['id'];
-                    Log::info('Added domain ID:', ['domain_id' => $domain['id']]);
+                
+                // Try multiple ways to extract domain ID
+                $domainId = null;
+                if (is_array($domain)) {
+                    if (isset($domain['id'])) {
+                        $domainId = $domain['id'];
+                    } elseif (isset($domain['domain_id'])) {
+                        $domainId = $domain['domain_id'];
+                    }
+                } elseif (is_string($domain)) {
+                    $domainId = $domain;
+                }
+                
+                if ($domainId !== null) {
+                    $currentlySelectedDomainIds[] = $domainId;
+                    Log::info('Added domain ID:', ['domain_id' => $domainId]);
                 } else {
-                    Log::warning('Domain missing ID field or not array:', ['domain' => $domain]);
+                    Log::warning('Could not extract domain ID:', ['domain' => $domain, 'type' => gettype($domain)]);
                 }
             }
         } else {
@@ -616,37 +630,73 @@ class PoolPlanController extends Controller
             $pools = Pool::whereNotNull('domains')->get();
             
             foreach ($pools as $pool) {
-                $domains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+                Log::info('Processing pool:', ['pool_id' => $pool->id]);
+                
+                // Get the domains array - force fresh decode
+                $domains = $pool->domains;
+                if (is_string($domains)) {
+                    $domains = json_decode($domains, true);
+                }
+                
+                Log::info('Pool domains before update:', ['pool_id' => $pool->id, 'domains_count' => is_array($domains) ? count($domains) : 'not_array']);
+                
                 $hasChanges = false;
+                $updatedDomains = [];
                 
                 if (is_array($domains)) {
-                    foreach ($domains as &$domain) {
+                    // Create a new array instead of using references
+                    foreach ($domains as $index => $domain) {
+                        $updatedDomain = $domain; // Copy the domain
+                        
                         if (is_array($domain) && isset($domain['id'])) {
                             $domainId = $domain['id'];
                             
                             // Mark deselected domains as unused
                             if (in_array($domainId, $deselectedDomainIds)) {
-                                $domain['is_used'] = false;
+                                $updatedDomain['is_used'] = false;
                                 $hasChanges = true;
                                 Log::info('Marking domain as unused:', ['domain_id' => $domainId, 'pool_id' => $pool->id]);
                             }
                             
                             // Mark newly selected domains as used
                             if (in_array($domainId, $newlySelectedDomainIds)) {
-                                $domain['is_used'] = true;
+                                $updatedDomain['is_used'] = true;
                                 $hasChanges = true;
                                 Log::info('Marking domain as used:', ['domain_id' => $domainId, 'pool_id' => $pool->id]);
                             }
                         }
+                        
+                        $updatedDomains[] = $updatedDomain;
                     }
                     
                     // Save pool only if there were changes
                     if ($hasChanges) {
-                        Log::info('Before saving pool:', ['pool_id' => $pool->id, 'original_domains' => $pool->getOriginal('domains'), 'new_domains' => $domains]);
-                        $pool->domains = $domains; // This will be automatically JSON encoded
-                        $saved = $pool->save();
-                        Log::info('Pool save result:', ['pool_id' => $pool->id, 'saved' => $saved, 'updated_domains' => $pool->fresh()->domains]);
+                        Log::info('Before saving pool:', ['pool_id' => $pool->id, 'changes_detected' => true]);
+                        
+                        // Force update using DB query to avoid model casting issues
+                        DB::table('pools')
+                            ->where('id', $pool->id)
+                            ->update([
+                                'domains' => json_encode($updatedDomains),
+                                'updated_at' => now()
+                            ]);
+                        
+                        Log::info('Pool updated via DB query:', ['pool_id' => $pool->id]);
+                        
+                        // Verify the update
+                        $verifyPool = Pool::find($pool->id);
+                        $verifyDomains = $verifyPool->domains;
+                        
+                        Log::info('Pool update verification:', [
+                            'pool_id' => $pool->id,
+                            'domains_updated' => is_array($verifyDomains) ? count($verifyDomains) : 'not_array',
+                            'sample_domain' => is_array($verifyDomains) && !empty($verifyDomains) ? $verifyDomains[0] : 'no_domains'
+                        ]);
+                    } else {
+                        Log::info('No changes needed for pool:', ['pool_id' => $pool->id]);
                     }
+                } else {
+                    Log::warning('Pool domains is not an array:', ['pool_id' => $pool->id, 'domains' => $domains]);
                 }
             }
         }
