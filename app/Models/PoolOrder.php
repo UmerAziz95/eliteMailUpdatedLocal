@@ -69,6 +69,7 @@ class PoolOrder extends Model
         'currency',
         'status',
         'status_manage_by_admin',
+        'domains',
         'paid_at',
         'meta',
         'completed_at',
@@ -78,6 +79,7 @@ class PoolOrder extends Model
 
     protected $casts = [
         'meta' => 'array',
+        'domains' => 'array',
         'paid_at' => 'datetime',
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
@@ -320,5 +322,110 @@ class PoolOrder extends Model
     public function getStatusBadgesAttribute()
     {
         return $this->admin_status_badge;
+    }
+
+    /**
+     * Get selected domains count
+     */
+    public function getSelectedDomainsCountAttribute()
+    {
+        return is_array($this->domains) ? count($this->domains) : 0;
+    }
+
+    /**
+     * Get total inboxes from selected domains
+     */
+    public function getTotalInboxesAttribute()
+    {
+        if (!is_array($this->domains)) {
+            return 0;
+        }
+
+        return array_sum(array_column($this->domains, 'per_inbox'));
+    }
+
+    /**
+     * Check if domains are assigned
+     */
+    public function hasDomains()
+    {
+        return is_array($this->domains) && count($this->domains) > 0;
+    }
+
+    /**
+     * Get domains with their details
+     */
+    public function getDomainsWithDetailsAttribute()
+    {
+        if (!is_array($this->domains)) {
+            return [];
+        }
+
+        // Assuming you have a Domain model - adjust based on your actual domain model
+        $domainIds = array_column($this->domains, 'domain_id');
+        
+        // You'll need to adjust this based on your actual domain model structure
+        // For now, returning the raw domain data
+        return $this->domains;
+    }
+
+    /**
+     * Add domain to pool order
+     */
+    public function addDomain($domainId, $perInbox)
+    {
+        $domains = $this->domains ?? [];
+        
+        // Check if domain already exists
+        $existingIndex = array_search($domainId, array_column($domains, 'domain_id'));
+        
+        if ($existingIndex !== false) {
+            // Update existing domain
+            $domains[$existingIndex]['per_inbox'] = $perInbox;
+        } else {
+            // Add new domain
+            $domains[] = [
+                'domain_id' => $domainId,
+                'per_inbox' => $perInbox
+            ];
+        }
+        
+        $this->domains = $domains;
+        return $this;
+    }
+
+    /**
+     * Remove domain from pool order
+     */
+    public function removeDomain($domainId)
+    {
+        $domains = $this->domains ?? [];
+        
+        $domains = array_filter($domains, function($domain) use ($domainId) {
+            return $domain['domain_id'] != $domainId;
+        });
+        
+        $this->domains = array_values($domains); // Re-index array
+        return $this;
+    }
+
+    /**
+     * Set domains from form data
+     */
+    public function setDomainsFromForm($domainsData)
+    {
+        $domains = [];
+        
+        foreach ($domainsData as $domainData) {
+            if (isset($domainData['domain_id']) && isset($domainData['per_inbox']) && $domainData['per_inbox'] > 0) {
+                $domains[] = [
+                    'domain_id' => $domainData['domain_id'],
+                    'per_inbox' => (int) $domainData['per_inbox']
+                ];
+            }
+        }
+        
+        $this->domains = $domains;
+        return $this;
     }
 }

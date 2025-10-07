@@ -536,6 +536,8 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/pool-orders', [CustomerPoolPlanController::class, 'myPoolOrders'])->name('pool-orders.index');
     Route::get('/pool-orders/data', [CustomerPoolPlanController::class, 'getPoolOrdersData'])->name('pool-orders.data');
     Route::get('/pool-orders/{id}', [CustomerPoolPlanController::class, 'showPoolOrder'])->name('pool-orders.show');
+    Route::get('/pool-orders/{id}/edit', [CustomerPoolPlanController::class, 'editPoolOrder'])->name('pool-orders.edit');
+    Route::put('/pool-orders/{id}', [CustomerPoolPlanController::class, 'updatePoolOrder'])->name('pool-orders.update');
 
     // Order Email routes 
     Route::get('/orders/{orderId}/emails', [CustomerOrderEmailController::class, 'getEmails']);

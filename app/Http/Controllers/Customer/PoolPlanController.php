@@ -298,6 +298,21 @@ class PoolPlanController extends Controller
             ->addColumn('quantity', function($order) {
                 return $order->quantity ?? 1;
             })
+            ->addColumn('domains', function($order) {
+                $domainCount = $order->selected_domains_count;
+                $totalInboxes = $order->total_inboxes;
+                
+                if ($domainCount > 0) {
+                    return '<div class="text-center">
+                        <span class="badge bg-primary">' . $domainCount . ' domains</span>
+                        <br><small class="text-muted">' . $totalInboxes . ' inboxes</small>
+                    </div>';
+                } else {
+                    return '<div class="text-center">
+                        <span class="badge bg-light text-muted">Not configured</span>
+                    </div>';
+                }
+            })
             ->addColumn('amount', function($order) {
                 return '$' . number_format($order->amount, 2);
             })
@@ -309,6 +324,7 @@ class PoolPlanController extends Controller
             })
             ->addColumn('actions', function($order) {
                 $viewUrl = route('customer.pool-orders.show', $order->id);
+                $editUrl = route('customer.pool-orders.edit', $order->id);
                 return '
                 <div class="dropdown">
                     <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -320,7 +336,11 @@ class PoolPlanController extends Controller
                                 <i class="ti ti-eye me-1"></i>View
                             </a>
                         </li>
-                        
+                        <li>
+                            <a class="dropdown-item" href="' . $editUrl . '">
+                                <i class="ti ti-edit me-1"></i>Edit Domains
+                            </a>
+                        </li>
                         <li>
                             <a class="dropdown-item" href="javascript:void(0)" onclick="downloadInvoice(\'' . $order->id . '\')">
                                 <i class="ti ti-download me-1"></i>Download
@@ -330,7 +350,82 @@ class PoolPlanController extends Controller
                 </div>
                 ';
             })
-            ->rawColumns(['status', 'order_date', 'actions'])
+            ->rawColumns(['status', 'domains', 'order_date', 'actions'])
             ->make(true);
+    }
+
+    /**
+     * Show pool order edit form for domain selection
+     */
+    public function editPoolOrder($id)
+    {
+        $user = Auth::user();
+        $poolOrder = PoolOrder::where('user_id', $user->id)
+            ->where('id', $id)
+            ->with(['poolPlan'])
+            ->firstOrFail();
+
+        // Get available domains (mock data for now - you can replace with actual domain source)
+        $availableDomains = $this->getAvailableDomains();
+
+        return view('customer.pool-orders.edit', compact('poolOrder', 'availableDomains'));
+    }
+
+    /**
+     * Update pool order with selected domains
+     */
+    public function updatePoolOrder(Request $request, $id)
+    {
+        $user = Auth::user();
+        $poolOrder = PoolOrder::where('user_id', $user->id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $request->validate([
+            'domains' => 'required|array|min:1',
+            'domains.*.domain_id' => 'required|integer',
+            'domains.*.per_inbox' => 'required|integer|min:1',
+        ]);
+
+        try {
+            // Set domains from form data
+            $poolOrder->setDomainsFromForm($request->domains);
+            $poolOrder->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Domains updated successfully',
+                'total_domains' => $poolOrder->selected_domains_count,
+                'total_inboxes' => $poolOrder->total_inboxes
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to update pool order domains: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update domains'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available domains for pool order selection
+     * This is a mock method - replace with actual domain fetching logic
+     */
+    
+    private function getAvailableDomains()
+    {
+        // Mock data - replace with actual domain retrieval from your database
+        return [
+            ['id' => 1, 'name' => 'example1.com', 'status' => 'active', 'available_inboxes' => 100],
+            ['id' => 2, 'name' => 'example2.com', 'status' => 'active', 'available_inboxes' => 150],
+            ['id' => 3, 'name' => 'example3.com', 'status' => 'active', 'available_inboxes' => 200],
+            ['id' => 4, 'name' => 'example4.com', 'status' => 'active', 'available_inboxes' => 75],
+            ['id' => 5, 'name' => 'example5.com', 'status' => 'active', 'available_inboxes' => 300],
+            ['id' => 6, 'name' => 'testdomain1.com', 'status' => 'active', 'available_inboxes' => 120],
+            ['id' => 7, 'name' => 'testdomain2.com', 'status' => 'active', 'available_inboxes' => 180],
+            ['id' => 8, 'name' => 'mydomain.com', 'status' => 'active', 'available_inboxes' => 250],
+        ];
     }
 }

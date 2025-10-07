@@ -57,6 +57,45 @@
                                 </div>
                                 @endif
                             </div>
+
+                            <!-- Domain Configuration Section -->
+                            @if($poolOrder->hasDomains())
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="mb-3">
+                                        <i class="ti ti-world me-2"></i>Domain Configuration
+                                        <span class="badge bg-primary ms-2">{{ $poolOrder->selected_domains_count }} domains</span>
+                                        <span class="badge bg-success ms-1">{{ $poolOrder->total_inboxes }} total inboxes</span>
+                                    </h6>
+                                    <div class="row">
+                                        @foreach($poolOrder->domains as $domain)
+                                            <div class="col-md-6 col-lg-4 mb-2">
+                                                <div class="p-3 border rounded bg-light">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <small class="text-muted">Domain #{{ $domain['domain_id'] }}</small>
+                                                            <div class="fw-medium">Per Inbox: {{ $domain['per_inbox'] }}</div>
+                                                        </div>
+                                                        <i class="ti ti-world-www text-primary"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            @else
+                            <hr>
+                            <div class="alert alert-info">
+                                <i class="ti ti-info-circle me-2"></i>
+                                <strong>Domain Configuration Required</strong><br>
+                                This pool order hasn't been configured with domains yet. 
+                                <a href="{{ route('customer.pool-orders.edit', $poolOrder->id) }}" class="btn btn-sm btn-primary ms-2">
+                                    <i class="ti ti-edit me-1"></i>Configure Domains
+                                </a>
+                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>

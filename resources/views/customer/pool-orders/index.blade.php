@@ -20,6 +20,7 @@
                                     <th>Order ID</th>
                                     <th>Pool Plan</th>
                                     <th>Qty</th>
+                                    <th>Domains</th>
                                     <th>Amount</th>
                                     <th>Status</th>
                                     <th>Order Date</th>
@@ -79,6 +80,7 @@ $(function() {
                     return '<span class="badge bg-info">'+data+'</span>';
                 }
             },
+            { data: 'domains', name: 'domains', className: 'text-center', orderable: false, searchable: false },
             { data: 'amount', name: 'amount' },
             { data: 'status', name: 'status', orderable: false, searchable: false },
             { data: 'order_date', name: 'created_at', orderable: false, searchable: false },
