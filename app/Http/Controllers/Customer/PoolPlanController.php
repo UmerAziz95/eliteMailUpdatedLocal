@@ -382,6 +382,9 @@ class PoolPlanController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
+        // Store previously selected domains BEFORE any processing
+        $previousDomains = $poolOrder->domains ?? [];
+
         $request->validate([
             'domains' => 'required|array|min:1',
             'domains.*' => 'required|string',
@@ -452,6 +455,9 @@ class PoolPlanController extends Controller
 
             Log::info('Domains data prepared for saving:', $domainsData);
 
+            // Update domain usage in pools using previously stored domain selection
+            $this->updateDomainUsageInPools($previousDomains, $selectedDomains);
+
             // Set domains from form data
             $poolOrder->setDomainsFromForm($domainsData);
             
@@ -460,9 +466,6 @@ class PoolPlanController extends Controller
             $poolOrder->save();
             
             Log::info('After saving pool order - domains:', ['domains' => $poolOrder->fresh()->domains]);
-
-            // Mark selected domains as used in their respective pools
-            $this->markDomainsAsUsed($selectedDomains);
 
             return response()->json([
                 'success' => true,
@@ -549,35 +552,105 @@ class PoolPlanController extends Controller
     }
 
     /**
-     * Mark selected domains as used in their respective pools
+     * Update domain usage in pools - mark new domains as used and unmark deselected domains as unused
      */
-    private function markDomainsAsUsed($selectedDomains)
+    private function updateDomainUsageInPools($previousDomains, $selectedDomains)
     {
-        // Group selected domains by pool_id for efficient updating
-        $domainsByPool = [];
-        foreach ($selectedDomains as $domain) {
-            $domainsByPool[$domain['pool_id']][] = $domain['id'];
-        }
-
-        // Update each pool's domains JSON to mark selected domains as used
-        foreach ($domainsByPool as $poolId => $domainIds) {
-            $pool = Pool::find($poolId);
-            if ($pool && $pool->domains) {
-                $domains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
-                
-                if (is_array($domains)) {
-                    // Mark domains as used
-                    foreach ($domains as &$domain) {
-                        if (is_array($domain) && isset($domain['id']) && in_array($domain['id'], $domainIds)) {
-                            $domain['is_used'] = true;
-                        }
-                    }
-                    
-                    // Save updated domains back to pool
-                    $pool->domains = json_encode($domains);
-                    $pool->save();
+        Log::info('=== updateDomainUsageInPools START ===');
+        Log::info('Input data:', ['previousDomains' => $previousDomains, 'selectedDomains' => $selectedDomains]);
+        
+        // Get previously selected domain IDs from the saved domains
+        $previouslySelectedDomainIds = [];
+        if ($previousDomains && is_array($previousDomains)) {
+            foreach ($previousDomains as $domain) {
+                if (isset($domain['domain_id'])) {
+                    $previouslySelectedDomainIds[] = $domain['domain_id'];
                 }
             }
         }
+
+        // Get currently selected domain IDs from the array of domain objects
+        $currentlySelectedDomainIds = [];
+        
+        Log::info('Selected domains array details:', [
+            'type' => gettype($selectedDomains),
+            'count' => is_array($selectedDomains) ? count($selectedDomains) : 'not_array',
+            'keys' => is_array($selectedDomains) ? array_keys($selectedDomains) : 'not_array',
+            'first_element' => is_array($selectedDomains) && !empty($selectedDomains) ? reset($selectedDomains) : 'empty_or_not_array'
+        ]);
+        
+        if (is_array($selectedDomains)) {
+            foreach ($selectedDomains as $index => $domain) {
+                Log::info('Processing selected domain:', ['index' => $index, 'domain' => $domain]);
+                if (is_array($domain) && isset($domain['id'])) {
+                    $currentlySelectedDomainIds[] = $domain['id'];
+                    Log::info('Added domain ID:', ['domain_id' => $domain['id']]);
+                } else {
+                    Log::warning('Domain missing ID field or not array:', ['domain' => $domain]);
+                }
+            }
+        } else {
+            Log::error('Selected domains is not an array:', ['selectedDomains' => $selectedDomains]);
+        }
+
+        Log::info('Domain usage update:', [
+            'previously_selected' => $previouslySelectedDomainIds,
+            'currently_selected' => $currentlySelectedDomainIds
+        ]);
+
+        // Find domains that were deselected (previously selected but not currently selected)
+        $deselectedDomainIds = array_diff($previouslySelectedDomainIds, $currentlySelectedDomainIds);
+        
+        // Find domains that were newly selected (currently selected but not previously selected)
+        $newlySelectedDomainIds = array_diff($currentlySelectedDomainIds, $previouslySelectedDomainIds);
+
+        Log::info('Domain changes:', [
+            'deselected' => $deselectedDomainIds,
+            'newly_selected' => $newlySelectedDomainIds
+        ]);
+
+        // Get all pools that might contain the domains we need to update
+        $allRelevantDomainIds = array_merge($previouslySelectedDomainIds, $currentlySelectedDomainIds);
+        
+        if (!empty($allRelevantDomainIds)) {
+            $pools = Pool::whereNotNull('domains')->get();
+            
+            foreach ($pools as $pool) {
+                $domains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+                $hasChanges = false;
+                
+                if (is_array($domains)) {
+                    foreach ($domains as &$domain) {
+                        if (is_array($domain) && isset($domain['id'])) {
+                            $domainId = $domain['id'];
+                            
+                            // Mark deselected domains as unused
+                            if (in_array($domainId, $deselectedDomainIds)) {
+                                $domain['is_used'] = false;
+                                $hasChanges = true;
+                                Log::info('Marking domain as unused:', ['domain_id' => $domainId, 'pool_id' => $pool->id]);
+                            }
+                            
+                            // Mark newly selected domains as used
+                            if (in_array($domainId, $newlySelectedDomainIds)) {
+                                $domain['is_used'] = true;
+                                $hasChanges = true;
+                                Log::info('Marking domain as used:', ['domain_id' => $domainId, 'pool_id' => $pool->id]);
+                            }
+                        }
+                    }
+                    
+                    // Save pool only if there were changes
+                    if ($hasChanges) {
+                        Log::info('Before saving pool:', ['pool_id' => $pool->id, 'original_domains' => $pool->getOriginal('domains'), 'new_domains' => $domains]);
+                        $pool->domains = $domains; // This will be automatically JSON encoded
+                        $saved = $pool->save();
+                        Log::info('Pool save result:', ['pool_id' => $pool->id, 'saved' => $saved, 'updated_domains' => $pool->fresh()->domains]);
+                    }
+                }
+            }
+        }
+        
+        Log::info('=== updateDomainUsageInPools END ===');
     }
 }
