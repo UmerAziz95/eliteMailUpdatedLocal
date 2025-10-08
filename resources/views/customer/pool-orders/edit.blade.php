@@ -55,12 +55,13 @@
     }
     
     .summary-card {
-        border: 2px solid #e9ecef;
+        border: 1px solid var(--second-primary);
         color: white;
         border-radius: 15px;
         padding: 1.5rem;
         position: sticky;
         top: 20px;
+        background-color: #4a3aff36;
     }
     
     .btn-save {
@@ -285,7 +286,7 @@
                                             </div>
                                             <div class="col-6">
                                                 <div class="p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
-                                                    <small class="opacity-75 d-block">Quantity</small>
+                                                    <small class="opacity-75 d-block">Total Inboxes</small>
                                                     <small class="fw-medium">{{ $poolOrder->quantity ?? 1 }}</small>
                                                 </div>
                                             </div>
@@ -295,10 +296,10 @@
                                     <hr class="border-white-50">
                                     
                                     <!-- Selection Limit Notice -->
-                                    <div class="alert alert-info mb-3" style="background-color: rgba(13, 202, 240, 0.1); border: 1px solid rgba(13, 202, 240, 0.3); color: #0dcaf0;">
+                                    <!-- <div class="alert alert-info mb-3" style="background-color: rgba(13, 202, 240, 0.1); border: 1px solid rgba(13, 202, 240, 0.3); color: #0dcaf0;">
                                         <i class="ti ti-info-circle me-2"></i>
                                         <small><strong>Limit:</strong> Up to <strong>{{ $poolOrder->quantity }}</strong> domains and <strong>{{ $poolOrder->quantity }}</strong> total inboxes.</small>
-                                    </div>
+                                    </div> -->
                                     
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
