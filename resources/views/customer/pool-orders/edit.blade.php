@@ -489,12 +489,20 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return `
             <div class="domain-card p-3 ${isSelected ? 'selected' : ''}" data-domain-id="${domain.id}" data-domain-name="${domain.name}">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                        <h6 class="mb-1 fw-bold">${domain.name}</h6>
-                        <span class="domain-status bg-success text-white">
-                            ${domain.status.charAt(0).toUpperCase() + domain.status.slice(1)}
-                        </span>
+                <!-- Checkbox at the top -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="form-check d-flex align-items-center">
+                        <input class="form-check-input domain-checkbox me-3" 
+                               type="checkbox" 
+                               id="domain_${domain.id}"
+                               value="${domain.id}"
+                               data-inboxes="${domain.available_inboxes}"
+                               data-name="${domain.name}"
+                               style="width: 20px; height: 20px; transform: scale(1.2);"
+                               ${isSelected ? 'checked' : ''}>
+                        <label class="form-check-label fw-medium mb-0" for="domain_${domain.id}">
+                            Select this domain
+                        </label>
                     </div>
                     <div class="text-end">
                         <small class="d-block">Available</small>
@@ -502,24 +510,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 
-                ${inboxPrefixesHtml}
-                
-                <div class="row align-items-center mt-3">
-                    <div class="col-12">
-                        <div class="form-check">
-                            <input class="form-check-input domain-checkbox" 
-                                   type="checkbox" 
-                                   id="domain_${domain.id}"
-                                   value="${domain.id}"
-                                   data-inboxes="${domain.available_inboxes}"
-                                   data-name="${domain.name}"
-                                   ${isSelected ? 'checked' : ''}>
-                            <label class="form-check-label fw-medium" for="domain_${domain.id}">
-                                Select this domain (${domain.available_inboxes} inboxes included)
-                            </label>
-                        </div>
-                    </div>
+                <!-- Domain info -->
+                <div class="mb-2">
+                    <h6 class="mb-1 fw-bold">${domain.name}</h6>
+                    <span class="domain-status bg-success text-white">
+                        ${domain.status.charAt(0).toUpperCase() + domain.status.slice(1)}
+                    </span>
                 </div>
+                
+                ${inboxPrefixesHtml}
             </div>
         `;
     }
