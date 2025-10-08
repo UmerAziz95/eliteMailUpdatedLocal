@@ -339,12 +339,18 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Configuration
     const maxQuantity = {{ $poolOrder->quantity }};
-    let allDomains = [];
-    let filteredDomains = [];
     let selectedDomains = new Map();
     let currentPage = 1;
     let domainsPerPage = 50;
     let searchTerm = '';
+    let currentPageDomains = [];
+    let paginationData = {
+        currentPage: 1,
+        totalPages: 1,
+        total: 0,
+        from: 0,
+        to: 0
+    };
     
     // DOM Elements
     const searchInput = document.getElementById('domainSearch');
@@ -357,14 +363,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('domainSelectionForm');
     
     // Initialize
-    loadDomainsFromServer();
+    loadDomainsFromServer(currentPage, searchTerm);
     
-    // Load domains with AJAX for better performance
-    async function loadDomainsFromServer() {
+    // Load existing selections first
+    loadExistingSelections();
+    
+    // Load domains with server-side pagination
+    async function loadDomainsFromServer(page = 1, search = '') {
         try {
             loadingSpinner.style.display = 'flex';
+            domainsContainer.style.display = 'none';
+            paginationControls.style.display = 'none';
             
-            const response = await fetch(`{{ route('customer.pool-orders.edit', $poolOrder->id) }}?ajax=1`, {
+            const params = new URLSearchParams({
+                ajax: '1',
+                page: page,
+                per_page: domainsPerPage,
+                search: search
+            });
+            
+            const response = await fetch(`{{ route('customer.pool-orders.edit', $poolOrder->id) }}?${params}`, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
@@ -376,18 +394,36 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const data = await response.json();
-            allDomains = data.domains || [];
-            filteredDomains = [...allDomains];
+            
+            // Update pagination data
+            paginationData = {
+                currentPage: data.current_page || 1,
+                totalPages: data.last_page || 1,
+                total: data.total || 0,
+                from: data.from || 0,
+                to: data.to || 0
+            };
+            
+            // Store current page domains
+            currentPageDomains = data.data || [];
             
             loadingSpinner.style.display = 'none';
-            domainsContainer.style.display = 'grid';
-            paginationControls.style.display = 'flex';
             
-            // Load existing selections
-            loadExistingSelections();
+            if (currentPageDomains.length === 0 && search) {
+                domainsContainer.style.display = 'none';
+                noResults.style.display = 'block';
+                paginationControls.style.display = 'none';
+            } else {
+                domainsContainer.style.display = 'grid';
+                noResults.style.display = 'none';
+                paginationControls.style.display = 'flex';
+                
+                // Render current page domains
+                renderDomainsOnPage();
+                updatePagination();
+            }
             
-            // Initial render
-            renderCurrentPage();
+            // Update search results
             updateSearchResults();
             
         } catch (error) {
@@ -407,58 +443,29 @@ document.addEventListener('DOMContentLoaded', function() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             searchTerm = this.value.toLowerCase();
-            applyFilters();
-        }, 300);
+            currentPage = 1; // Reset to first page on search
+            loadDomainsFromServer(currentPage, searchTerm);
+        }, 500);
     });
     
     // Domains per page change
     domainsPerPageSelect.addEventListener('change', function() {
         domainsPerPage = parseInt(this.value);
-        currentPage = 1;
-        renderCurrentPage();
+        currentPage = 1; // Reset to first page
+        loadDomainsFromServer(currentPage, searchTerm);
     });
     
-    // Apply filters
-    function applyFilters() {
-        if (searchTerm) {
-            filteredDomains = allDomains.filter(domain => 
-                domain.name.toLowerCase().includes(searchTerm)
-            );
-        } else {
-            filteredDomains = [...allDomains];
-        }
-        
-        currentPage = 1;
-        renderCurrentPage();
-        updateSearchResults();
-    }
-    
-    // Render current page
-    function renderCurrentPage() {
-        const startIndex = (currentPage - 1) * domainsPerPage;
-        const endIndex = startIndex + domainsPerPage;
-        const domainsToShow = filteredDomains.slice(startIndex, endIndex);
-        
-        if (domainsToShow.length === 0 && filteredDomains.length === 0) {
-            domainsContainer.style.display = 'none';
-            noResults.style.display = 'block';
-            paginationControls.style.display = 'none';
-            return;
-        }
-        
-        domainsContainer.style.display = 'grid';
-        noResults.style.display = 'none';
-        paginationControls.style.display = 'flex';
-        
-        domainsContainer.innerHTML = domainsToShow.map(domain => 
+    // Render domains on current page
+    function renderDomainsOnPage() {
+        domainsContainer.innerHTML = currentPageDomains.map(domain => 
             createDomainCard(domain)
         ).join('');
         
         // Add event listeners to new checkboxes
         addDomainEventListeners();
         
-        // Update pagination
-        updatePagination();
+        // Apply existing selections to current page
+        applyExistingSelections();
     }
     
     // Create domain card HTML
@@ -558,11 +565,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
+            // Find the full domain data for prefix variants
+            const fullDomainData = currentPageDomains.find(d => d.id == domainId);
+            
             // Add to selected domains
             selectedDomains.set(domainId, {
                 id: domainId,
                 name: domainName,
-                inboxes: inboxes
+                inboxes: inboxes,
+                prefixVariants: fullDomainData ? fullDomainData.prefix_variants : null
             });
             
             domainCard.classList.add('selected');
@@ -593,11 +604,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update pagination
     function updatePagination() {
-        const totalPages = Math.ceil(filteredDomains.length / domainsPerPage);
+        const { currentPage: current, totalPages, from, to, total } = paginationData;
+        
         const prevBtn = document.getElementById('prevPage');
         const nextBtn = document.getElementById('nextPage');
         const pageNumbers = document.getElementById('pageNumbers');
         const pageInfo = document.getElementById('pageInfo');
+        
+        // Update current page reference
+        currentPage = current;
         
         prevBtn.disabled = currentPage === 1;
         nextBtn.disabled = currentPage === totalPages || totalPages === 0;
@@ -621,37 +636,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         pageNumbers.innerHTML = pageNumbersHTML;
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1} (${from}-${to} of ${total})`;
         
         // Previous/Next button events
         prevBtn.onclick = () => {
             if (currentPage > 1) {
-                currentPage--;
-                renderCurrentPage();
+                loadDomainsFromServer(currentPage - 1, searchTerm);
             }
         };
         
         nextBtn.onclick = () => {
             if (currentPage < totalPages) {
-                currentPage++;
-                renderCurrentPage();
+                loadDomainsFromServer(currentPage + 1, searchTerm);
             }
         };
     }
     
     // Go to specific page (global function)
     window.goToPage = function(page) {
-        currentPage = page;
-        renderCurrentPage();
+        if (page !== currentPage) {
+            loadDomainsFromServer(page, searchTerm);
+        }
     };
     
     // Update search results
     function updateSearchResults() {
-        const total = allDomains.length;
-        const filtered = filteredDomains.length;
+        const { total } = paginationData;
         
         if (searchTerm) {
-            searchResults.textContent = `${filtered} of ${total} domains found`;
+            searchResults.textContent = `${total} domains found`;
         } else {
             searchResults.textContent = `${total} domains available`;
         }
@@ -692,15 +705,12 @@ document.addEventListener('DOMContentLoaded', function() {
             listContainer.innerHTML = '<small class="opacity-75">No domains selected yet</small>';
         } else {
             let domainListHTML = selectedArray.map((domain, index) => {
-                // Find the full domain data to get prefix variants
-                const fullDomainData = allDomains.find(d => d.id === domain.id);
-                
-                // Create prefix variants display for summary
+                // Create prefix variants display for summary - use domain's stored prefix data
                 let prefixVariantsHtml = '';
-                if (fullDomainData && domain.inboxes > 1 && fullDomainData.prefix_variants) {
-                    const prefixVariants = typeof fullDomainData.prefix_variants === 'string' 
-                        ? JSON.parse(fullDomainData.prefix_variants) 
-                        : fullDomainData.prefix_variants;
+                if (domain.prefixVariants && domain.inboxes > 1) {
+                    const prefixVariants = typeof domain.prefixVariants === 'string' 
+                        ? JSON.parse(domain.prefixVariants) 
+                        : domain.prefixVariants;
                     
                     if (prefixVariants && Object.keys(prefixVariants).length > 0) {
                         const prefixList = Object.values(prefixVariants)
@@ -755,18 +765,28 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadExistingSelections() {
         @if($poolOrder->domains)
             const existingDomains = @json($poolOrder->domains);
-            existingDomains.forEach(domain => {
-                const domainData = allDomains.find(d => d.id === domain.domain_id);
-                if (domainData) {
+            // We'll load existing selections when we get domain data from server
+            // Store the existing domains for reference
+            window.existingSelections = existingDomains;
+        @endif
+    }
+    
+    // Apply existing selections to current page domains
+    function applyExistingSelections() {
+        if (window.existingSelections) {
+            window.existingSelections.forEach(domain => {
+                const domainData = currentPageDomains.find(d => d.id === domain.domain_id);
+                if (domainData && !selectedDomains.has(domain.domain_id)) {
                     selectedDomains.set(domain.domain_id, {
                         id: domain.domain_id,
                         name: domainData.name,
-                        inboxes: domainData.available_inboxes
+                        inboxes: domainData.available_inboxes,
+                        prefixVariants: domainData.prefix_variants
                     });
                 }
             });
             updateSummary();
-        @endif
+        }
     }
     
     // Form submission

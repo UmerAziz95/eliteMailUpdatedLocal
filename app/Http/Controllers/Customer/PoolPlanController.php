@@ -366,11 +366,13 @@ class PoolPlanController extends Controller
             ->with(['poolPlan'])
             ->firstOrFail();
 
-        // Handle AJAX request for domains
+        // Handle AJAX request for domains with server-side pagination
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'domains' => $this->getAvailableDomainsOptimized()
-            ]);
+            $page = $request->get('page', 1);
+            $perPage = $request->get('per_page', 50);
+            $search = $request->get('search', '');
+
+            return response()->json($this->getAvailableDomainsWithPagination($page, $perPage, $search));
         }
 
         // For regular page load, don't load all domains immediately
@@ -606,6 +608,70 @@ class PoolPlanController extends Controller
         });
 
         return $availableDomains;
+    }
+
+    /**
+     * Get available domains with server-side pagination
+     */
+    private function getAvailableDomainsWithPagination($page = 1, $perPage = 50, $search = '')
+    {
+        $query = Pool::select('id', 'domains', 'inboxes_per_domain', 'prefix_variants')
+            ->where('status_manage_by_admin', 'available')
+            ->whereNotNull('domains')
+            ->whereNotNull('inboxes_per_domain')
+            ->where('inboxes_per_domain', '>', 0);
+
+        // Get all pools first to process domains
+        $pools = $query->get();
+        $availableDomains = [];
+        
+        foreach ($pools as $pool) {
+            $domains = $pool->domains;
+            
+            if (is_array($domains)) {
+                foreach ($domains as $domainIndex => $domain) {
+                    if (is_array($domain) && isset($domain['id'], $domain['name'])) {
+                        $isUsed = $domain['is_used'] ?? false;
+                        
+                        // Only include unused domains
+                        if (!$isUsed) {
+                            // Apply search filter
+                            if (empty($search) || stripos($domain['name'], $search) !== false) {
+                                $availableDomains[] = [
+                                    'id' => $domain['id'],
+                                    'pool_id' => $pool->id,
+                                    'name' => $domain['name'],
+                                    'status' => $domain['status'] ?? 'active',
+                                    'available_inboxes' => $pool->inboxes_per_domain,
+                                    'prefix_variants' => $pool->prefix_variants ?? []
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort by domain name for consistent ordering
+        usort($availableDomains, function($a, $b) {
+            return strcmp($a['name'], $b['name']);
+        });
+
+        // Manual pagination
+        $total = count($availableDomains);
+        $lastPage = ceil($total / $perPage);
+        $offset = ($page - 1) * $perPage;
+        $paginatedData = array_slice($availableDomains, $offset, $perPage);
+        
+        return [
+            'data' => $paginatedData,
+            'current_page' => (int) $page,
+            'last_page' => $lastPage,
+            'per_page' => (int) $perPage,
+            'total' => $total,
+            'from' => $total > 0 ? $offset + 1 : 0,
+            'to' => min($offset + $perPage, $total)
+        ];
     }
 
     /**
