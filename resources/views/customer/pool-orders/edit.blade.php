@@ -464,6 +464,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create domain card HTML
     function createDomainCard(domain) {
         const isSelected = selectedDomains.has(domain.id);
+        
+        // Create inbox prefixes display if domain has multiple inboxes and prefix variants
+        let inboxPrefixesHtml = '';
+        if (domain.available_inboxes > 1 && domain.prefix_variants) {
+            const prefixVariants = typeof domain.prefix_variants === 'string' 
+                ? JSON.parse(domain.prefix_variants) 
+                : domain.prefix_variants;
+            
+            if (prefixVariants && Object.keys(prefixVariants).length > 0) {
+                const prefixList = Object.values(prefixVariants)
+                    .slice(0, domain.available_inboxes)
+                    .map(prefix => `<small class="badge bg-light text-dark me-1">${prefix}@${domain.name}</small>`)
+                    .join('');
+                
+                inboxPrefixesHtml = `
+                    <div class="mt-2">
+                        <div class="text-muted mb-1" style="font-size: 0.8rem;">Available Inboxes:</div>
+                        <div>${prefixList}</div>
+                    </div>
+                `;
+            }
+        }
+        
         return `
             <div class="domain-card p-3 ${isSelected ? 'selected' : ''}" data-domain-id="${domain.id}" data-domain-name="${domain.name}">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -478,6 +501,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <strong class="text-primary">${domain.available_inboxes} inboxes</strong>
                     </div>
                 </div>
+                
+                ${inboxPrefixesHtml}
                 
                 <div class="row align-items-center mt-3">
                     <div class="col-12">

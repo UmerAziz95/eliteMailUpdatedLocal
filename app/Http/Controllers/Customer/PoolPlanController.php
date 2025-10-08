@@ -503,7 +503,7 @@ class PoolPlanController extends Controller
             ->whereNotNull('domains')
             ->whereNotNull('inboxes_per_domain')
             ->where('inboxes_per_domain', '>', 0)
-            ->select('id', 'domains', 'inboxes_per_domain')
+            ->select('id', 'domains', 'inboxes_per_domain', 'prefix_variants')
             ->get();
         // dd($pools);
         $availableDomains = [];
@@ -528,8 +528,9 @@ class PoolPlanController extends Controller
                                 'pool_id' => $pool->id, // Reference to pool
                                 'domain_index' => $domainIndex, // Index within pool
                                 'name' => $domainName,
-                                'status' => 'active',
-                                'available_inboxes' => $pool->inboxes_per_domain
+                                'status' => $domain['status'] ?? 'active',
+                                'available_inboxes' => $pool->inboxes_per_domain,
+                                'prefix_variants' => $pool->prefix_variants ?? []
                             ];
                         }
                     }
@@ -565,7 +566,7 @@ class PoolPlanController extends Controller
     private function getAvailableDomainsOptimized()
     {
         // Use database query with indexes for better performance
-        $pools = Pool::select('id', 'domains', 'inboxes_per_domain')
+        $pools = Pool::select('id', 'domains', 'inboxes_per_domain', 'prefix_variants')
             ->where('status_manage_by_admin', 'available')
             ->whereNotNull('domains')
             ->whereNotNull('inboxes_per_domain')
@@ -589,8 +590,9 @@ class PoolPlanController extends Controller
                                 'id' => $domain['id'],
                                 'pool_id' => $pool->id,
                                 'name' => $domain['name'],
-                                'status' => 'active',
-                                'available_inboxes' => $pool->inboxes_per_domain
+                                'status' => $domain['status'] ?? 'active',
+                                'available_inboxes' => $pool->inboxes_per_domain,
+                                'prefix_variants' => $pool->prefix_variants ?? []
                             ];
                         }
                     }
