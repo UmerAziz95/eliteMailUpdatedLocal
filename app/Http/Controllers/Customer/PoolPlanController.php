@@ -708,6 +708,11 @@ class PoolPlanController extends Controller
                             // Mark deselected domains as unused
                             if (in_array($domainId, $deselectedDomainIds)) {
                                 $updatedDomain['is_used'] = false;
+                                // Set status based on usage - when not used, revert to available (or warming if not set)
+                                $updatedDomain['status'] = $updatedDomain['status'] ?? 'warming';
+                                if ($updatedDomain['status'] === 'subscribed') {
+                                    $updatedDomain['status'] = 'available';
+                                }
                                 $hasChanges = true;
                                 Log::info('Marking domain as unused:', ['domain_id' => $domainId, 'pool_id' => $pool->id]);
                             }
@@ -715,8 +720,10 @@ class PoolPlanController extends Controller
                             // Mark newly selected domains as used
                             if (in_array($domainId, $newlySelectedDomainIds)) {
                                 $updatedDomain['is_used'] = true;
+                                // Set status to subscribed when used
+                                $updatedDomain['status'] = 'subscribed';
                                 $hasChanges = true;
-                                Log::info('Marking domain as used:', ['domain_id' => $domainId, 'pool_id' => $pool->id]);
+                                Log::info('Marking domain as used and subscribed:', ['domain_id' => $domainId, 'pool_id' => $pool->id]);
                             }
                         }
                         

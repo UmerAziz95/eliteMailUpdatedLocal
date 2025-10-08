@@ -278,11 +278,19 @@ class PoolController extends Controller
                             'status' => 'warming'
                         ];
                     } elseif (is_array($domain)) {
+                        $isUsed = $domain['is_used'] ?? false;
+                        $status = $domain['status'] ?? 'warming';
+                        
+                        // If domain is used, set status to subscribed
+                        if ($isUsed) {
+                            $status = 'subscribed';
+                        }
+                        
                         $processedDomains[] = [
                             'id' => $domain['id'] ?? ('new_' . $sequence++),
                             'name' => $domain['name'] ?? '',
-                            'is_used' => $domain['is_used'] ?? false,
-                            'status' => $domain['status'] ?? 'warming'
+                            'is_used' => $isUsed,
+                            'status' => $status
                         ];
                     }
                 }
@@ -455,16 +463,28 @@ class PoolController extends Controller
                             if (!isset($domainData['status'])) {
                                 $domainData['status'] = 'warming';
                             }
+                            // If domain is used, set status to subscribed
+                            if (isset($domainData['is_used']) && $domainData['is_used']) {
+                                $domainData['status'] = 'subscribed';
+                            }
                             $usedProtectedIds[] = $domainData['id'];
                         }
                         // Priority 2: Position-based matching (renamed domain)
                         elseif (isset($existingDomainsByIndex[$domainIndex]) && !in_array($existingDomainsByIndex[$domainIndex]['id'], $usedProtectedIds)) {
                             $existingAtPosition = $existingDomainsByIndex[$domainIndex];
+                            $isUsed = $existingAtPosition['is_used'] ?? false;
+                            $status = $existingAtPosition['status'] ?? 'warming';
+                            
+                            // If domain is used, set status to subscribed
+                            if ($isUsed) {
+                                $status = 'subscribed';
+                            }
+                            
                             $domainData = [
                                 'id' => $existingAtPosition['id'], // FORCE preserve existing ID
                                 'name' => $domainName,
-                                'is_used' => $existingAtPosition['is_used'] ?? false,
-                                'status' => $existingAtPosition['status'] ?? 'warming'
+                                'is_used' => $isUsed,
+                                'status' => $status
                             ];
                             $usedProtectedIds[] = $existingAtPosition['id'];
                             
@@ -492,11 +512,19 @@ class PoolController extends Controller
                         if (isset($domain['id']) && in_array($domain['id'], $protectedDomainIds)) {
                             // This is a protected ID - ABSOLUTELY preserve it
                             $existingDomain = $existingDomainMapById[$domain['id']];
+                            $isUsed = $domain['is_used'] ?? $existingDomain['is_used'] ?? false;
+                            $status = $domain['status'] ?? $existingDomain['status'] ?? 'warming';
+                            
+                            // If domain is used, set status to subscribed
+                            if ($isUsed) {
+                                $status = 'subscribed';
+                            }
+                            
                             $domainData = [
                                 'id' => $domain['id'], // PROTECTED - NEVER change
                                 'name' => $domainName,
-                                'is_used' => $existingDomain['is_used'] ?? false,
-                                'status' => $domain['status'] ?? $existingDomain['status'] ?? 'warming'
+                                'is_used' => $isUsed,
+                                'status' => $status
                             ];
                             $usedProtectedIds[] = $domain['id'];
                             
@@ -509,11 +537,19 @@ class PoolController extends Controller
                         // Check for original_id field (from frontend)
                         elseif (isset($domain['original_id']) && in_array($domain['original_id'], $protectedDomainIds)) {
                             $existingDomain = $existingDomainMapById[$domain['original_id']];
+                            $isUsed = $domain['is_used'] ?? $existingDomain['is_used'] ?? false;
+                            $status = $domain['status'] ?? $existingDomain['status'] ?? 'warming';
+                            
+                            // If domain is used, set status to subscribed
+                            if ($isUsed) {
+                                $status = 'subscribed';
+                            }
+                            
                             $domainData = [
                                 'id' => $domain['original_id'], // PROTECTED - use original ID
                                 'name' => $domainName,
-                                'is_used' => $existingDomain['is_used'] ?? false,
-                                'status' => $domain['status'] ?? $existingDomain['status'] ?? 'warming'
+                                'is_used' => $isUsed,
+                                'status' => $status
                             ];
                             $usedProtectedIds[] = $domain['original_id'];
                         }
@@ -524,26 +560,50 @@ class PoolController extends Controller
                             if (!isset($domainData['status'])) {
                                 $domainData['status'] = 'warming';
                             }
+                            // Update is_used if provided in domain array
+                            if (isset($domain['is_used'])) {
+                                $domainData['is_used'] = $domain['is_used'];
+                            }
+                            // If domain is used, set status to subscribed
+                            if (isset($domainData['is_used']) && $domainData['is_used']) {
+                                $domainData['status'] = 'subscribed';
+                            }
                             $usedProtectedIds[] = $domainData['id'];
                         }
                         // Position-based matching
                         elseif (isset($existingDomainsByIndex[$domainIndex]) && !in_array($existingDomainsByIndex[$domainIndex]['id'], $usedProtectedIds)) {
                             $existingAtPosition = $existingDomainsByIndex[$domainIndex];
+                            $isUsed = $domain['is_used'] ?? $existingAtPosition['is_used'] ?? false;
+                            $status = $domain['status'] ?? $existingAtPosition['status'] ?? 'warming';
+                            
+                            // If domain is used, set status to subscribed
+                            if ($isUsed) {
+                                $status = 'subscribed';
+                            }
+                            
                             $domainData = [
                                 'id' => $existingAtPosition['id'], // FORCE preserve existing ID
                                 'name' => $domainName,
-                                'is_used' => $existingAtPosition['is_used'] ?? false,
-                                'status' => $domain['status'] ?? $existingAtPosition['status'] ?? 'warming'
+                                'is_used' => $isUsed,
+                                'status' => $status
                             ];
                             $usedProtectedIds[] = $existingAtPosition['id'];
                         }
                         // New domain
                         else {
+                            $isUsed = $domain['is_used'] ?? false;
+                            $status = $domain['status'] ?? 'warming';
+                            
+                            // If domain is used, set status to subscribed
+                            if ($isUsed) {
+                                $status = 'subscribed';
+                            }
+                            
                             $domainData = [
                                 'id' => isset($domain['id']) ? $domain['id'] : ($pool->id . '_new_' . $newDomainSequence++),
                                 'name' => $domainName,
-                                'is_used' => $domain['is_used'] ?? false,
-                                'status' => $domain['status'] ?? 'warming'
+                                'is_used' => $isUsed,
+                                'status' => $status
                             ];
                         }
                     }
@@ -560,6 +620,12 @@ class PoolController extends Controller
                     if (isset($existingDomain['is_used']) && $existingDomain['is_used'] === true) {
                         // If this used domain wasn't included in the submitted form, preserve it
                         if (!in_array($existingDomain['id'], $submittedDomainIds)) {
+                            // Ensure status is subscribed for used domains
+                            if (!isset($existingDomain['status'])) {
+                                $existingDomain['status'] = 'subscribed';
+                            } elseif ($existingDomain['status'] !== 'subscribed') {
+                                $existingDomain['status'] = 'subscribed';
+                            }
                             $processedDomains[] = $existingDomain;
                         }
                     }
