@@ -20,7 +20,7 @@ class UpdatePoolStatus extends Command
      *
      * @var string
      */
-    protected $description = 'Update pool status from warming to available after 3 weeks of creation';
+    protected $description = 'Update pool and domain status from warming to available after 3 weeks of creation';
 
     /**
      * Execute the console command.
@@ -53,13 +53,39 @@ class UpdatePoolStatus extends Command
         
         // Display the pools that will be updated
         $this->table(
-            ['Pool ID', 'Created Date', 'Current Status', 'Days Old'],
+            ['Pool ID', 'Created Date', 'Current Status', 'Domains Status', 'Days Old'],
             $poolsToUpdate->map(function ($pool) {
                 $daysOld = $pool->created_at->diffInDays(now());
+                
+                // Check domains status
+                $domainStatusInfo = 'N/A';
+                if ($pool->domains && is_array($pool->domains)) {
+                    $warmingCount = 0;
+                    $availableCount = 0;
+                    $otherCount = 0;
+                    
+                    foreach ($pool->domains as $domain) {
+                        $status = $domain['status'] ?? 'warming';
+                        if ($status === 'warming') {
+                            $warmingCount++;
+                        } elseif ($status === 'available') {
+                            $availableCount++;
+                        } else {
+                            $otherCount++;
+                        }
+                    }
+                    
+                    $domainStatusInfo = "W:{$warmingCount}, A:{$availableCount}";
+                    if ($otherCount > 0) {
+                        $domainStatusInfo .= ", O:{$otherCount}";
+                    }
+                }
+                
                 return [
                     $pool->id,
                     $pool->created_at->format('Y-m-d H:i:s'),
                     $pool->status_manage_by_admin ?? 'warming (null)',
+                    $domainStatusInfo,
                     $daysOld
                 ];
             })
@@ -80,18 +106,41 @@ class UpdatePoolStatus extends Command
         }
 
         // Perform the update
-        $updatedCount = $query->update([
-            'status_manage_by_admin' => 'available',
-            'updated_at' => now()
-        ]);
+        $updatedCount = 0;
+        
+        foreach ($poolsToUpdate as $pool) {
+            // Update the pool status
+            $pool->status_manage_by_admin = 'available';
+            
+            // Update domains status from warming to available
+            if ($pool->domains && is_array($pool->domains)) {
+                $updatedDomains = [];
+                foreach ($pool->domains as $domain) {
+                    if (isset($domain['status']) && $domain['status'] === 'warming') {
+                        $domain['status'] = 'available';
+                    } elseif (!isset($domain['status'])) {
+                        // Add status field if it doesn't exist (backward compatibility)
+                        $domain['status'] = 'available';
+                    }
+                    $updatedDomains[] = $domain;
+                }
+                $pool->domains = $updatedDomains;
+            }
+            
+            $pool->updated_at = now();
+            $pool->save();
+            $updatedCount++;
+        }
 
         $this->info("Successfully updated {$updatedCount} pool(s) status to 'available'.");
+        $this->info("Also updated domain statuses from 'warming' to 'available' where applicable.");
         
         // Log the action
-        \Log::info("Pool status update completed. Updated {$updatedCount} pools to available status.", [
+        \Log::info("Pool status update completed. Updated {$updatedCount} pools and their domains to available status.", [
             'command' => 'pools:update-status',
             'updated_count' => $updatedCount,
-            'cutoff_date' => $threeWeeksAgo->toDateTimeString()
+            'cutoff_date' => $threeWeeksAgo->toDateTimeString(),
+            'updated_domains' => 'Domain statuses also updated from warming to available'
         ]);
 
         return 0;

@@ -263,7 +263,7 @@ class PoolController extends Controller
         try {
             $data = $request->all();
             
-            // Handle domains JSON conversion and ensure unique id, is_used
+            // Handle domains JSON conversion and ensure unique id, is_used, status
             if ($request->has('domains') && is_string($request->domains)) {
                 $domains = json_decode($request->domains, true);
                 $processedDomains = [];
@@ -274,13 +274,15 @@ class PoolController extends Controller
                         $processedDomains[] = [
                             'id' => 'new_' . $sequence++,
                             'name' => $domain,
-                            'is_used' => false
+                            'is_used' => false,
+                            'status' => 'warming'
                         ];
                     } elseif (is_array($domain)) {
                         $processedDomains[] = [
                             'id' => $domain['id'] ?? ('new_' . $sequence++),
                             'name' => $domain['name'] ?? '',
-                            'is_used' => $domain['is_used'] ?? false
+                            'is_used' => $domain['is_used'] ?? false,
+                            'status' => $domain['status'] ?? 'warming'
                         ];
                     }
                 }
@@ -449,6 +451,10 @@ class PoolController extends Controller
                         // Priority 1: Exact name match (no change)
                         if (isset($existingDomainMapByName[$domainName])) {
                             $domainData = $existingDomainMapByName[$domainName];
+                            // Ensure status key exists with default value
+                            if (!isset($domainData['status'])) {
+                                $domainData['status'] = 'warming';
+                            }
                             $usedProtectedIds[] = $domainData['id'];
                         }
                         // Priority 2: Position-based matching (renamed domain)
@@ -457,7 +463,8 @@ class PoolController extends Controller
                             $domainData = [
                                 'id' => $existingAtPosition['id'], // FORCE preserve existing ID
                                 'name' => $domainName,
-                                'is_used' => $existingAtPosition['is_used'] ?? false
+                                'is_used' => $existingAtPosition['is_used'] ?? false,
+                                'status' => $existingAtPosition['status'] ?? 'warming'
                             ];
                             $usedProtectedIds[] = $existingAtPosition['id'];
                             
@@ -473,7 +480,8 @@ class PoolController extends Controller
                             $domainData = [
                                 'id' => $pool->id . '_new_' . $newDomainSequence++,
                                 'name' => $domainName,
-                                'is_used' => false
+                                'is_used' => false,
+                                'status' => 'warming'
                             ];
                         }
                     }
@@ -487,7 +495,8 @@ class PoolController extends Controller
                             $domainData = [
                                 'id' => $domain['id'], // PROTECTED - NEVER change
                                 'name' => $domainName,
-                                'is_used' => $existingDomain['is_used'] ?? false
+                                'is_used' => $existingDomain['is_used'] ?? false,
+                                'status' => $domain['status'] ?? $existingDomain['status'] ?? 'warming'
                             ];
                             $usedProtectedIds[] = $domain['id'];
                             
@@ -503,13 +512,18 @@ class PoolController extends Controller
                             $domainData = [
                                 'id' => $domain['original_id'], // PROTECTED - use original ID
                                 'name' => $domainName,
-                                'is_used' => $existingDomain['is_used'] ?? false
+                                'is_used' => $existingDomain['is_used'] ?? false,
+                                'status' => $domain['status'] ?? $existingDomain['status'] ?? 'warming'
                             ];
                             $usedProtectedIds[] = $domain['original_id'];
                         }
                         // Exact name match
                         elseif (isset($existingDomainMapByName[$domainName])) {
                             $domainData = $existingDomainMapByName[$domainName];
+                            // Ensure status key exists with default value
+                            if (!isset($domainData['status'])) {
+                                $domainData['status'] = 'warming';
+                            }
                             $usedProtectedIds[] = $domainData['id'];
                         }
                         // Position-based matching
@@ -518,7 +532,8 @@ class PoolController extends Controller
                             $domainData = [
                                 'id' => $existingAtPosition['id'], // FORCE preserve existing ID
                                 'name' => $domainName,
-                                'is_used' => $existingAtPosition['is_used'] ?? false
+                                'is_used' => $existingAtPosition['is_used'] ?? false,
+                                'status' => $domain['status'] ?? $existingAtPosition['status'] ?? 'warming'
                             ];
                             $usedProtectedIds[] = $existingAtPosition['id'];
                         }
@@ -527,7 +542,8 @@ class PoolController extends Controller
                             $domainData = [
                                 'id' => isset($domain['id']) ? $domain['id'] : ($pool->id . '_new_' . $newDomainSequence++),
                                 'name' => $domainName,
-                                'is_used' => $domain['is_used'] ?? false
+                                'is_used' => $domain['is_used'] ?? false,
+                                'status' => $domain['status'] ?? 'warming'
                             ];
                         }
                     }
