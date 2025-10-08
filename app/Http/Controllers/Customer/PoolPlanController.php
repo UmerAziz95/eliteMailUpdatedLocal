@@ -409,9 +409,9 @@ class PoolPlanController extends Controller
         }
 
         // Get available domains to map selected IDs to actual pool data
-        $availableDomains = $this->getAvailableDomains();
+        $availableDomains = $this->getAvailableDomainsOptimized();
         $selectedDomainIds = $request->domains;
-        
+        // dd($availableDomains, $selectedDomainIds);
         // Map selected domain IDs to their corresponding pool data
         $selectedDomains = [];
         $poolIds = [];

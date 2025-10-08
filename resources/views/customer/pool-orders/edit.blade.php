@@ -555,13 +555,23 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (wouldExceedDomainLimit) {
                 checkbox.checked = false;
-                alert(`You can only select up to ${maxQuantity} domains based on your order quantity.`);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Domain Limit Exceeded',
+                    text: `You can only select up to ${maxQuantity} domains based on your order quantity.`,
+                    confirmButtonColor: '#0d6efd'
+                });
                 return;
             }
             
             if (wouldExceedInboxLimit) {
                 checkbox.checked = false;
-                alert(`Total inboxes (${currentTotalInboxes + inboxes}) cannot exceed your order quantity (${maxQuantity}). Please select domains with fewer inboxes.`);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Inbox Limit Exceeded',
+                    text: `Total inboxes (${currentTotalInboxes + inboxes}) cannot exceed your order quantity (${maxQuantity}). Please select domains with fewer inboxes.`,
+                    confirmButtonColor: '#0d6efd'
+                });
                 return;
             }
             
@@ -765,28 +775,56 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadExistingSelections() {
         @if($poolOrder->domains)
             const existingDomains = @json($poolOrder->domains);
-            // We'll load existing selections when we get domain data from server
             // Store the existing domains for reference
             window.existingSelections = existingDomains;
+            
+            // Load all existing domain selections into selectedDomains Map
+            if (existingDomains && existingDomains.length > 0) {
+                existingDomains.forEach(domain => {
+                    // Get domain data from the JSON domains field
+                    const poolDomains = @json($poolOrder->pool && $poolOrder->pool->domains ? $poolOrder->pool->domains : []);
+                    const domainInfo = poolDomains.find(d => d.domain_id === domain.domain_id);
+                    
+                    if (domainInfo) {
+                        selectedDomains.set(domain.domain_id, {
+                            id: domain.domain_id,
+                            name: domainInfo.name || `Domain ${domain.domain_id}`,
+                            inboxes: domainInfo.available_inboxes || 1,
+                            prefixVariants: domainInfo.prefix_variants || null
+                        });
+                    }
+                });
+                
+                // Update summary to show existing selections
+                updateSummary();
+            }
         @endif
     }
     
     // Apply existing selections to current page domains
     function applyExistingSelections() {
-        if (window.existingSelections) {
-            window.existingSelections.forEach(domain => {
-                const domainData = currentPageDomains.find(d => d.id === domain.domain_id);
-                if (domainData && !selectedDomains.has(domain.domain_id)) {
-                    selectedDomains.set(domain.domain_id, {
-                        id: domain.domain_id,
-                        name: domainData.name,
-                        inboxes: domainData.available_inboxes,
-                        prefixVariants: domainData.prefix_variants
-                    });
+        // Update checkboxes and styling for domains that are already in selectedDomains Map
+        currentPageDomains.forEach(domain => {
+            if (selectedDomains.has(domain.id)) {
+                const checkbox = document.querySelector(`input[value="${domain.id}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    checkbox.closest('.domain-card').classList.add('selected');
                 }
-            });
-            updateSummary();
-        }
+                
+                // Update domain data with current page information (for prefix variants, etc.)
+                const existingDomain = selectedDomains.get(domain.id);
+                selectedDomains.set(domain.id, {
+                    ...existingDomain,
+                    name: domain.name,
+                    inboxes: domain.available_inboxes,
+                    prefixVariants: domain.prefix_variants
+                });
+            }
+        });
+        
+        // Update summary to reflect any changes
+        updateSummary();
     }
     
     // Form submission
@@ -870,7 +908,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmButtonText: 'Continue'
                 }).then((result) => {
                     // Redirect to pool order details page
-                    window.location.href = '{{ route('customer.pool-orders.show', $poolOrder->id) }}';
+                    // window.location.href = '{{ route('customer.pool-orders.show', $poolOrder->id) }}';
                 });
             } else {
                 throw new Error(data.message || 'Failed to save');
