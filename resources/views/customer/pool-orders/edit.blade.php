@@ -798,19 +798,47 @@ document.addEventListener('DOMContentLoaded', function() {
             .reduce((sum, domain) => sum + domain.inboxes, 0);
         
         if (selectedArray.length === 0) {
-            alert('Please select at least one domain');
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Domains Selected',
+                text: 'Please select at least one domain to continue.',
+                confirmButtonColor: '#0d6efd'
+            });
             return;
         }
         
         if (selectedArray.length > maxQuantity) {
-            alert(`You can only select up to ${maxQuantity} domains based on your order quantity.`);
+            Swal.fire({
+                icon: 'error',
+                title: 'Domain Limit Exceeded',
+                text: `You can only select up to ${maxQuantity} domains based on your order quantity.`,
+                confirmButtonColor: '#0d6efd'
+            });
             return;
         }
         
         if (totalInboxes > maxQuantity) {
-            alert(`Total inboxes (${totalInboxes}) cannot exceed your order quantity (${maxQuantity}). Please adjust your domain selection.`);
+            Swal.fire({
+                icon: 'error',
+                title: 'Inbox Limit Exceeded',
+                text: `Total inboxes (${totalInboxes}) cannot exceed your order quantity (${maxQuantity}). Please adjust your domain selection.`,
+                confirmButtonColor: '#0d6efd'
+            });
             return;
         }
+        
+        // Show loading alert
+        Swal.fire({
+            title: 'Saving Configuration',
+            text: 'Please wait while we save your domain selection...',
+            icon: 'info',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
         
         const saveBtn = document.getElementById('saveBtn');
         const originalText = saveBtn.innerHTML;
@@ -830,29 +858,35 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Show success message
-                const alert = document.createElement('div');
-                alert.className = 'alert alert-success alert-dismissible fade show';
-                alert.innerHTML = `
-                    <i class="ti ti-check-circle me-2"></i>${data.message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                document.querySelector('.card-body').insertBefore(alert, document.querySelector('.row'));
-                
-                // Scroll to top
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                
-                // Redirect after 2 seconds
-                setTimeout(() => {
+                // Show success message with SweetAlert
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Configuration Saved!',
+                    text: data.message || 'Domain selection saved successfully!',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Continue'
+                }).then((result) => {
+                    // Redirect to pool order details page
                     window.location.href = '{{ route('customer.pool-orders.show', $poolOrder->id) }}';
-                }, 2000);
+                });
             } else {
                 throw new Error(data.message || 'Failed to save');
             }
         })
         .catch(error => {
             console.error('Submission error:', error);
-            alert('Error: ' + error.message);
+            
+            // Close loading alert and show error
+            Swal.fire({
+                icon: 'error',
+                title: 'Save Failed',
+                text: error.message || 'An error occurred while saving your configuration. Please try again.',
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'Try Again'
+            });
         })
         .finally(() => {
             saveBtn.innerHTML = originalText;

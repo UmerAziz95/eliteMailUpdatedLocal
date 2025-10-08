@@ -1,5 +1,5 @@
 @extends('customer.layouts.app')
-
+<!-- this view not good -->
 @section('content')
 <div class="container py-5">
     <div class="row">
