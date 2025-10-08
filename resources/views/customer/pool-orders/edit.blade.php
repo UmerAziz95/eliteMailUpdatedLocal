@@ -692,11 +692,32 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedArray.length === 0) {
             listContainer.innerHTML = '<small class="opacity-75">No domains selected yet</small>';
         } else {
-            let domainListHTML = selectedArray.map((domain, index) => 
-                `<div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1);">
+            let domainListHTML = selectedArray.map((domain, index) => {
+                // Find the full domain data to get prefix variants
+                const fullDomainData = allDomains.find(d => d.id === domain.id);
+                
+                // Create prefix variants display for summary
+                let prefixVariantsHtml = '';
+                if (fullDomainData && domain.inboxes > 1 && fullDomainData.prefix_variants) {
+                    const prefixVariants = typeof fullDomainData.prefix_variants === 'string' 
+                        ? JSON.parse(fullDomainData.prefix_variants) 
+                        : fullDomainData.prefix_variants;
+                    
+                    if (prefixVariants && Object.keys(prefixVariants).length > 0) {
+                        const prefixList = Object.values(prefixVariants)
+                            .slice(0, domain.inboxes)
+                            .map(prefix => `<span class="badge bg-light text-dark me-1" style="font-size: 0.6rem;">${prefix}@${domain.name}</span>`)
+                            .join('');
+                        
+                        prefixVariantsHtml = `<div class="mt-1">${prefixList}</div>`;
+                    }
+                }
+                
+                return `<div class="d-flex justify-content-between align-items-start mb-2 p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1);">
                     <div class="flex-grow-1">
                         <small class="text-truncate d-block fw-medium">${domain.name}</small>
                         <small class="badge bg-white text-primary">${domain.inboxes} inboxes</small>
+                        ${prefixVariantsHtml}
                     </div>
                     <div class="d-flex align-items-center">
                         <small class="me-2 opacity-75">#${index + 1}</small>
@@ -704,8 +725,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="ti ti-x"></i>
                         </button>
                     </div>
-                </div>`
-            ).join('');
+                </div>`;
+            }).join('');
             
             // Add warning message if over limit
             if (totalInboxes > maxQuantity) {
