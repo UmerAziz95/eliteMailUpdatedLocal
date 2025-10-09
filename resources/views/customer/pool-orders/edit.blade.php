@@ -4,6 +4,221 @@
 
 @push('styles')
 <style>
+    /* inbox prefix styling - default (unselected) */
+    .inbox-prefix {
+        display: block;
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(226, 232, 240, 0.8);
+        font-size: 0.85rem;
+        margin-bottom: 0.4rem;
+        padding: 0.4rem 0.7rem;
+        border-radius: 8px;
+        word-break: break-word;
+        border-left: 3px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .inbox-prefix:hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateX(2px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        border-color: rgba(255, 255, 255, 0.25);
+    }
+    
+    /* inbox prefix styling when domain is selected - green theme */
+    .domain-card.selected .inbox-prefix {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 78, 59, 0.08));
+        color: #a7f3d0;
+        border-left: 3px solid #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        box-shadow: 0 1px 3px rgba(16, 185, 129, 0.1);
+    }
+    
+    .domain-card.selected .inbox-prefix:hover {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 78, 59, 0.12));
+        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+        border-color: rgba(16, 185, 129, 0.4);
+    }
+    
+    .inbox-prefix-muted {
+        color: rgba(226, 232, 240, 0.65);
+        font-weight: 500;
+        margin-bottom: 0.6rem;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Enhanced domain card styling */
+    .domain-card {
+        background: linear-gradient(145deg, #2d3748, #1a202c) !important;
+        border: 2px solid rgba(99, 102, 241, 0.3) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    .domain-card:hover {
+        border-color: rgba(99, 102, 241, 0.6) !important;
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25) !important;
+        transform: translateY(-2px);
+    }
+    
+    .domain-card.selected {
+        border-color: #10b981 !important;
+        background: linear-gradient(145deg, #065f46, #064e3b) !important;
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3) !important;
+    }
+    
+    /* Summary section inbox prefixes */
+    .summary-inbox-prefix {
+        display: block;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(67, 56, 202, 0.1));
+        color: #c7d2fe;
+        font-size: 0.72rem;
+        margin-bottom: 0.3rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        border-left: 2px solid #6366f1;
+        word-break: break-word;
+        transition: all 0.2s ease;
+    }
+    
+    /* Enhanced form buttons and controls */
+    #saveBtn {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    #saveBtn:hover {
+        background: linear-gradient(135deg, #059669, #047857) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
+    }
+    
+    #saveBtn:disabled {
+        background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Enhanced search and filter controls */
+    .form-control:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25) !important;
+    }
+    
+    /* Enhanced pagination */
+    .page-link {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+        color: #e2e8f0 !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .page-link:hover {
+        background-color: rgba(99, 102, 241, 0.2) !important;
+        border-color: #6366f1 !important;
+        color: #ffffff !important;
+    }
+    
+    .page-item.active .page-link {
+        background-color: #6366f1 !important;
+        border-color: #6366f1 !important;
+    }
+    
+    /* Enhanced sidebar summary card */
+    .card.summary-card {
+        background: linear-gradient(145deg, #2d3748, #1a202c) !important;
+        border: 1px solid rgba(99, 102, 241, 0.3) !important;
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .card.summary-card:hover {
+        border-color: rgba(99, 102, 241, 0.5) !important;
+        box-shadow: 0 12px 35px rgba(99, 102, 241, 0.2) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    /* Enhanced summary section styling */
+    .summary-section {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(67, 56, 202, 0.05));
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+    
+    .summary-title {
+        color: #6366f1 !important;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.75rem;
+        border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+        padding-bottom: 0.5rem;
+    }
+    
+    .summary-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(99, 102, 241, 0.15);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .summary-item:hover {
+        background: rgba(99, 102, 241, 0.05);
+        border-color: rgba(99, 102, 241, 0.3);
+        transform: translateX(2px);
+    }
+    
+    .domain-name {
+        color: #e2e8f0 !important;
+        font-weight: 500;
+    }
+    
+    .inbox-count-badge {
+        background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+        color: white !important;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+    
+    /* Enhanced delete button styling */
+    .delete-domain-btn {
+        background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+        border: 1px solid rgba(239, 68, 68, 0.3) !important;
+        color: white !important;
+        padding: 0.25rem 0.5rem !important;
+        border-radius: 6px !important;
+        font-size: 0.75rem !important;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2) !important;
+    }
+    
+    .delete-domain-btn:hover {
+        background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+        border-color: rgba(239, 68, 68, 0.6) !important;
+        transform: scale(1.05) !important;
+        box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3) !important;
+        color: white !important;
+    }
+    
+    .delete-domain-btn:active {
+        transform: scale(0.95) !important;
+    }
+    
+    .delete-domain-btn i {
+        font-size: 0.8rem;
+    }
     .domain-card {
         border: 2px solid #e9ecef;
         border-radius: 12px;
@@ -270,28 +485,29 @@
 
                             <div class="col-lg-4">
                                 <!-- Selection Summary -->
-                                <div class="summary-card">
-                                    <h5 class="mb-3">
-                                        <i class="ti ti-list-check me-2"></i>Selection Summary
-                                    </h5>
+                                <div class="card summary-card">
+                                    <div class="card-body">
+                                        <h5 class="summary-title mb-3">
+                                            <i class="ti ti-list-check me-2"></i>Selection Summary
+                                        </h5>
                                     
-                                    <!-- Pool Order Info -->
-                                    <div class="mb-3">
-                                        <div class="row g-2">
-                                            <div class="col-6">
-                                                <div class="p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
-                                                    <small class="opacity-75 d-block">Pool Plan</small>
-                                                    <small class="fw-medium">{{ $poolOrder->poolPlan->name ?? 'N/A' }}</small>
+                                        <!-- Pool Order Info -->
+                                        <div class="summary-section mb-3">
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <div class="summary-item">
+                                                        <small class="opacity-75 d-block">Pool Plan</small>
+                                                        <small class="domain-name">{{ $poolOrder->poolPlan->name ?? 'N/A' }}</small>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
-                                                    <small class="opacity-75 d-block">Total Inboxes</small>
-                                                    <small class="fw-medium">{{ $poolOrder->quantity ?? 1 }}</small>
+                                                <div class="col-6">
+                                                    <div class="summary-item">
+                                                        <small class="opacity-75 d-block">Total Inboxes</small>
+                                                        <small class="domain-name">{{ $poolOrder->quantity ?? 1 }}</small>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
                                     
                                     <hr class="border-white-50">
                                     
@@ -301,28 +517,32 @@
                                         <small><strong>Limit:</strong> Up to <strong>{{ $poolOrder->quantity }}</strong> domains and <strong>{{ $poolOrder->quantity }}</strong> total inboxes.</small>
                                     </div> -->
                                     
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <span>Selected Domains:</span>
-                                            <span class="badge bg-white text-primary px-3 py-2" id="selectedCount">0</span>
+                                        <div class="summary-section mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="domain-name">Selected Domains:</span>
+                                                <span class="inbox-count-badge" id="selectedCount">0</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="domain-name">Total Inboxes:</span>
+                                                <span class="inbox-count-badge" id="totalInboxes">0</span>
+                                            </div>
                                         </div>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span>Total Inboxes:</span>
-                                            <span class="badge bg-white text-success px-3 py-2" id="totalInboxes">0</span>
-                                        </div>
-                                    </div>
 
                                     <hr class="border-white-50">
 
-                                    <!-- Selected Domains List -->
-                                    <div id="selectedDomainsList" class="mb-3">
-                                        <small class="opacity-75">No domains selected yet</small>
-                                    </div>
+                                        <!-- Selected Domains List -->
+                                        <div class="summary-section">
+                                            <div class="summary-title">Selected Domains</div>
+                                            <div id="selectedDomainsList">
+                                                <small class="opacity-75">No domains selected yet</small>
+                                            </div>
+                                        </div>
 
-                                    <!-- Save Button -->
-                                    <button type="submit" class="btn btn-save w-100" id="saveBtn" disabled>
-                                        <i class="ti ti-device-floppy me-2"></i>Save Configuration
-                                    </button>
+                                        <!-- Save Button -->
+                                        <button type="submit" class="btn btn-save w-100 mt-3" id="saveBtn" disabled>
+                                            <i class="ti ti-device-floppy me-2"></i>Save Configuration
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -471,7 +691,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create domain card HTML
     function createDomainCard(domain) {
         const isSelected = selectedDomains.has(domain.id);
-        
         // Create inbox prefixes display if domain has multiple inboxes and prefix variants
         let inboxPrefixesHtml = '';
         if (domain.available_inboxes > 1 && domain.prefix_variants) {
@@ -479,19 +698,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? JSON.parse(domain.prefix_variants) 
                 : domain.prefix_variants;
             
-            if (prefixVariants && Object.keys(prefixVariants).length > 0) {
-                const prefixList = Object.values(prefixVariants)
-                    .slice(0, domain.available_inboxes)
-                    .map(prefix => `<small class="badge bg-light text-dark me-1">${prefix}@${domain.name}</small>`)
-                    .join('');
-                
-                inboxPrefixesHtml = `
+                if (prefixVariants && Object.keys(prefixVariants).length > 0) {
+                    // show up to 3 prefixes as block lines for better layout
+                    const prefixList = Object.values(prefixVariants)
+                        .slice(0, Math.min(domain.available_inboxes, 3))
+                        .map(prefix => `<div class="inbox-prefix">${prefix}@${domain.name}</div>`)
+                        .join('');
+
+                    inboxPrefixesHtml = `
                     <div class="mt-2">
-                        <div class="text-muted mb-1" style="font-size: 0.8rem;">Available Inboxes:</div>
+                        <div class="inbox-prefix inbox-prefix-muted" style="font-size:0.78rem;">Available Inboxes:</div>
                         <div>${prefixList}</div>
                     </div>
                 `;
-            }
+                }
         }
         
         return `
@@ -512,7 +732,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         </label>
                     </div>
                     <div class="text-end">
-                        <small class="d-block">Available</small>
                         <strong class="text-primary">${domain.available_inboxes} inboxes</strong>
                     </div>
                 </div>
@@ -520,9 +739,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <!-- Domain info -->
                 <div class="mb-2">
                     <h6 class="mb-1 fw-bold">${domain.name}</h6>
-                    <span class="domain-status bg-success text-white">
-                        ${domain.status.charAt(0).toUpperCase() + domain.status.slice(1)}
-                    </span>
                 </div>
                 
                 ${inboxPrefixesHtml}
@@ -724,24 +940,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (prefixVariants && Object.keys(prefixVariants).length > 0) {
                         const prefixList = Object.values(prefixVariants)
-                            .slice(0, domain.inboxes)
-                            .map(prefix => `<span class="badge bg-light text-dark me-1" style="font-size: 0.6rem;">${prefix}@${domain.name}</span>`)
+                            .slice(0, Math.min(domain.inboxes, 3))
+                            .map(prefix => `<div class="summary-inbox-prefix">${prefix}@${domain.name}</div>`)
                             .join('');
-                        
+
                         prefixVariantsHtml = `<div class="mt-1">${prefixList}</div>`;
                     }
                 }
                 
-                return `<div class="d-flex justify-content-between align-items-start mb-2 p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1);">
+                return `<div class="summary-item d-flex justify-content-between align-items-start mb-2">
                     <div class="flex-grow-1">
-                        <small class="text-truncate d-block fw-medium">${domain.name}</small>
-                        <small class="badge bg-white text-primary">${domain.inboxes} inboxes</small>
+                        <small class="domain-name text-truncate d-block fw-medium">${domain.name}</small>
+                        <small class="inbox-count-badge">${domain.inboxes} inboxes</small>
                         ${prefixVariantsHtml}
                     </div>
                     <div class="d-flex align-items-center">
                         <small class="me-2 opacity-75">#${index + 1}</small>
-                        <button type="button" class="btn btn-sm btn-outline-light" onclick="deselectDomain('${domain.id}')" title="Remove domain">
-                            <i class="ti ti-x"></i>
+                        <button type="button" class="btn btn-sm btn-outline-danger delete-domain-btn" onclick="deselectDomain('${domain.id}')" title="Remove domain">
+                            <i class="ti ti-trash"></i>
                         </button>
                     </div>
                 </div>`;
