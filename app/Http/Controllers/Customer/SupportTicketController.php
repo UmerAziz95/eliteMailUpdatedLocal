@@ -178,18 +178,32 @@ class SupportTicketController extends Controller
                     'ip_address' => request()->ip()
                 ]
             ]);
-
-            // Send email to assigned staff member
-            $assignedStaff = \App\Models\User::find($ticket->assigned_to);
-            if ($assignedStaff) {
-                Mail::to($assignedStaff->email)
-                    ->queue(new \App\Mail\TicketReplyMail(
-                        $ticket,
-                        $reply,
-                        Auth::user(),
-                        $assignedStaff
-                    ));
+        }
+        // Send email notification to staff using secondary mailer
+        try {
+            // Get the staff member (either assigned staff or fallback to a default admin)
+            $staffMember = null;
+            if ($ticket->assigned_to) {
+                $staffMember = \App\Models\User::find($ticket->assigned_to);
             }
+            
+            // If no specific staff assigned, create a generic staff object for email template
+            if (!$staffMember) {
+                $staffMember = new \App\Models\User();
+                $staffMember->name = 'Support Team';
+                $staffMember->email = env('MAIL2_USERNAME');
+            }
+            
+            Mail::mailer('smtp2')->to(env('MAIL2_USERNAME'))
+                ->queue(new \App\Mail\TicketReplyMail(
+                    $ticket,
+                    $reply,
+                    Auth::user(), // Customer who replied
+                    $staffMember, // Staff member receiving notification
+                    true // This is a customer reply
+                ));
+        } catch (\Exception $e) {
+            \Log::error('Failed to queue ticket reply email: ' . $e->getMessage());
         }
 
         return response()->json([
