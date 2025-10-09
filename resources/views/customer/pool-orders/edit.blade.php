@@ -16,13 +16,11 @@
         word-break: break-word;
         border-left: 3px solid rgba(255, 255, 255, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        transition: all 0.2s ease;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
     .inbox-prefix:hover {
         background: rgba(255, 255, 255, 0.08);
-        transform: translateX(2px);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         border-color: rgba(255, 255, 255, 0.25);
     }
@@ -61,7 +59,6 @@
     .domain-card:hover {
         border-color: rgba(99, 102, 241, 0.6) !important;
         box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25) !important;
-        transform: translateY(-2px);
     }
     
     .domain-card.selected {
@@ -81,7 +78,6 @@
         border-radius: 6px;
         border-left: 2px solid #6366f1;
         word-break: break-word;
-        transition: all 0.2s ease;
     }
     
     /* Enhanced form buttons and controls */
@@ -89,18 +85,15 @@
         background: linear-gradient(135deg, #10b981, #059669) !important;
         border: none !important;
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
-        transition: all 0.3s ease !important;
     }
     
     #saveBtn:hover {
         background: linear-gradient(135deg, #059669, #047857) !important;
-        transform: translateY(-1px) !important;
         box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
     }
     
     #saveBtn:disabled {
         background: linear-gradient(135deg, #6b7280, #4b5563) !important;
-        transform: none !important;
         box-shadow: none !important;
     }
     
@@ -134,13 +127,11 @@
         background: linear-gradient(145deg, #2d3748, #1a202c) !important;
         border: 1px solid rgba(99, 102, 241, 0.3) !important;
         box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15) !important;
-        transition: all 0.3s ease !important;
     }
     
     .card.summary-card:hover {
         border-color: rgba(99, 102, 241, 0.5) !important;
         box-shadow: 0 12px 35px rgba(99, 102, 241, 0.2) !important;
-        transform: translateY(-2px) !important;
     }
     
     /* Enhanced summary section styling */
@@ -169,13 +160,11 @@
         border-radius: 8px;
         padding: 0.75rem;
         margin-bottom: 0.5rem;
-        transition: all 0.2s ease;
     }
     
     .summary-item:hover {
         background: rgba(99, 102, 241, 0.05);
         border-color: rgba(99, 102, 241, 0.3);
-        transform: translateX(2px);
     }
     
     .domain-name {
@@ -200,20 +189,14 @@
         padding: 0.25rem 0.5rem !important;
         border-radius: 6px !important;
         font-size: 0.75rem !important;
-        transition: all 0.2s ease !important;
         box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2) !important;
     }
     
     .delete-domain-btn:hover {
         background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
         border-color: rgba(239, 68, 68, 0.6) !important;
-        transform: scale(1.05) !important;
         box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3) !important;
         color: white !important;
-    }
-    
-    .delete-domain-btn:active {
-        transform: scale(0.95) !important;
     }
     
     .delete-domain-btn i {
@@ -222,14 +205,12 @@
     .domain-card {
         border: 2px solid #e9ecef;
         border-radius: 12px;
-        transition: all 0.3s ease;
         cursor: pointer;
     }
     
     .domain-card:hover {
         border-color: #0d6efd;
         box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
-        /* transform: translateY(-2px); */
     }
     
     .domain-card.selected {
@@ -248,7 +229,6 @@
         border: 2px solid #e9ecef;
         padding: 12px 20px;
         font-size: 1rem;
-        transition: all 0.3s ease;
     }
     
     .search-box:focus {
@@ -286,11 +266,9 @@
         padding: 12px 30px;
         font-weight: 600;
         color: white;
-        transition: all 0.3s ease;
     }
     
     .btn-save:hover {
-        transform: translateY(-2px);
         box-shadow: 0 8px 15px rgba(40, 167, 69, 0.3);
         color: white;
     }
@@ -346,7 +324,6 @@
         color: #ecf0f1;
         border-radius: 10px;
         cursor: pointer;
-        transition: all 0.3s ease;
         font-weight: 500;
         min-width: 40px;
         text-align: center;
@@ -358,7 +335,6 @@
         background-color: #1abc9c;
         color: #ffffff;
         border-color: #16a085;
-        transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(26, 188, 156, 0.3);
     }
     
@@ -375,7 +351,6 @@
         color: #ffffff;
         border-color: #c0392b;
         box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
-        transform: translateY(-1px);
     }
     
     @media (max-width: 576px) {
