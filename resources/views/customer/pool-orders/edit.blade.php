@@ -285,7 +285,7 @@
     
     .summary-warning {
         border-color: #ffc107 !important;
-        background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%) !important;
+        /* background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%) !important; */
     }
     
     .summary-error {
