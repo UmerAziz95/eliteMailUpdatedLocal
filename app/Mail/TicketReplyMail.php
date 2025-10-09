@@ -17,18 +17,21 @@ class TicketReplyMail extends Mailable
     public $reply;
     public $repliedBy;
     public $assignedStaff;
+    public $isCustomerReply;
 
-    public function __construct(SupportTicket $ticket, TicketReply $reply, User $repliedBy, User $assignedStaff)
+    public function __construct(SupportTicket $ticket, TicketReply $reply, User $repliedBy, User $assignedStaff, $isCustomerReply = false)
     {
         $this->ticket = $ticket;
         $this->reply = $reply;
         $this->repliedBy = $repliedBy;
         $this->assignedStaff = $assignedStaff;
+        $this->isCustomerReply = $isCustomerReply;
     }
 
     public function build()
     {
-        return $this->subject("New Reply on Ticket #{$this->ticket->ticket_number}")
+        $subjectPrefix = $this->isCustomerReply ? 'Customer Reply' : 'New Reply';
+        return $this->subject("{$subjectPrefix} on Ticket #{$this->ticket->ticket_number}")
             ->markdown('emails.tickets.reply');
     }
 }

@@ -373,8 +373,13 @@
             </div> -->
 
             <div class="card-section">
-                <p>Dear {{ $assignedStaff->name }},</p>
-                <p>{{ $repliedBy->name }} has replied to ticket #{{ $ticket->ticket_number }}.</p>
+                @if($isCustomerReply)
+                    <p>Dear {{ $assignedStaff->name }},</p>
+                    <p>The customer <strong>{{ $repliedBy->name }}</strong> has responded to support ticket #{{ $ticket->ticket_number }}. Please review their message and provide assistance.</p>
+                @else
+                    <p>Dear {{ $assignedStaff->name }},</p>
+                    <p>{{ $repliedBy->name }} has replied to ticket #{{ $ticket->ticket_number }}.</p>
+                @endif
             </div>
 
             <div class="highlight-box">
@@ -410,11 +415,18 @@
             <div class="card-section">
                 <div class="section-title">
                     <i class="fa-solid fa-reply"></i>
-                    New Reply
+                    @if($isCustomerReply)
+                        Customer Response
+                    @else
+                        New Reply
+                    @endif
                 </div>
                 <div class="reply-meta">
                     <i class="fa-solid fa-user"></i>
                     {{ $repliedBy->name }}
+                    @if($isCustomerReply)
+                        <span style="color: var(--second-primary); font-weight: 500;">(Customer)</span>
+                    @endif
                 </div>
                 <div class="message-box">
                     {!! $reply->message !!}
