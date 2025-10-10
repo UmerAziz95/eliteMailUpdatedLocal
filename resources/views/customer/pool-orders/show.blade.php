@@ -164,45 +164,24 @@
                             <span class="opacity-50">Domain Details</span>
                             @foreach($poolOrder->domains as $index => $domain)
                                 @php
-                                    // Get domain information from pool domains if available
-                                    $domainInfo = null;
-                                    if ($poolOrder->pool && $poolOrder->pool->domains) {
-                                        $poolDomains = is_string($poolOrder->pool->domains) ? 
-                                            json_decode($poolOrder->pool->domains, true) : 
-                                            $poolOrder->pool->domains;
-                                        if (is_array($poolDomains)) {
-                                            $domainInfo = collect($poolDomains)->firstWhere('domain_id', $domain['domain_id']);
-                                        }
-                                    }
+                                    // The domain_name should already be stored in the domain array from PoolOrder
+                                    $domainName = $domain['domain_name'] ?? 'Unknown Domain';
+                                    $availableInboxes = $domain['per_inbox'] ?? 1;
+                                    $domainId = $domain['domain_id'] ?? 'N/A';
+                                    $poolId = $domain['pool_id'] ?? 'N/A';
                                 @endphp
                                 <div class="mt-2 p-2 border rounded">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <strong>{{ $domainInfo['name'] ?? "Domain #{$domain['domain_id']}" }}</strong>
+                                            <strong>{{ $domainName }}</strong>
                                             <br>
-                                            <small class="text-muted">Inboxes: {{ $domainInfo['available_inboxes'] ?? $domain['per_inbox'] ?? 1 }}</small>
+                                            
+                                            <small class="">Inboxes per domain: {{ $availableInboxes }}</small>
+                                            <!-- <br><small class="">Domain ID: {{ $domainId }}</small> -->
+                                            <!-- <br><small class="">Pool ID: {{ $poolId }}</small> -->
                                         </div>
                                         <i class="fa-solid fa-globe text-primary"></i>
                                     </div>
-                                    
-                                    @if(isset($domainInfo['prefix_variants']))
-                                        @php
-                                            $prefixVariants = is_string($domainInfo['prefix_variants']) ? 
-                                                json_decode($domainInfo['prefix_variants'], true) : 
-                                                $domainInfo['prefix_variants'];
-                                        @endphp
-                                        @if(is_array($prefixVariants) && !empty($prefixVariants))
-                                            <div class="mt-2">
-                                                <small class="opacity-50">Available Prefixes:</small>
-                                                @foreach(array_slice($prefixVariants, 0, 3) as $prefix)
-                                                    <div class="small text-muted">{{ $prefix }}@{{ $domainInfo['name'] ?? 'domain' }}</div>
-                                                @endforeach
-                                                @if(count($prefixVariants) > 3)
-                                                    <small class="text-muted">... and {{ count($prefixVariants) - 3 }} more</small>
-                                                @endif
-                                            </div>
-                                        @endif
-                                    @endif
                                 </div>
                             @endforeach
                         </div>
@@ -339,7 +318,7 @@
                 <h6 class="mb-0">Technical Details (Admin Only)</h6>
             </div>
             <div class="card-body">
-                <pre class="small text-muted">{{ json_encode(json_decode($poolOrder->meta), JSON_PRETTY_PRINT) }}</pre>
+                <pre class="small ">{{ json_encode(json_decode($poolOrder->meta), JSON_PRETTY_PRINT) }}</pre>
             </div>
         </div>
     @endif
