@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PoolOrder extends Model
 {
     use HasFactory;
-
+    // append ready_domains_prefix
+    protected $appends = ['ready_domains_prefix'];
     // Status configurations with colors and labels
     const STATUS_CONFIG = [
         'pending' => [
@@ -367,6 +368,97 @@ class PoolOrder extends Model
         // You'll need to adjust this based on your actual domain model structure
         // For now, returning the raw domain data
         return $this->domains;
+    }
+
+    /**
+     * Get ready domains with prefix variants from pools table
+     */
+    public function getReadyDomainsPrefixAttribute()
+    {
+        if (!is_array($this->domains) || empty($this->domains)) {
+            return [];
+        }
+
+        $readyDomains = [];
+
+        foreach ($this->domains as $orderDomain) {
+            $domainId = $orderDomain['domain_id'] ?? null;
+            $poolId = $orderDomain['pool_id'] ?? null;
+
+            if (!$domainId || !$poolId) {
+                continue;
+            }
+
+            try {
+                // Get the pool that contains this domain
+                $pool = \App\Models\Pool::find($poolId);
+                
+                if ($pool && $pool->domains) {
+                    $poolDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+                    
+                    if (is_array($poolDomains)) {
+                        // Find matching domain in pool's domains array
+                        $matchingDomain = collect($poolDomains)->firstWhere('id', $domainId) 
+                                       ?? collect($poolDomains)->firstWhere('domain_id', $domainId);
+                        
+                        if ($matchingDomain) {
+                            $domainData = [
+                                'domain_id' => $domainId,
+                                'pool_id' => $poolId,
+                                'domain_name' => $matchingDomain['name'] ?? $matchingDomain['domain_name'] ?? 'Unknown Domain',
+                                'per_inbox' => $orderDomain['per_inbox'] ?? 1,
+                                'available_inboxes' => $matchingDomain['available_inboxes'] ?? 0,
+                                'status' => $matchingDomain['status'] ?? 'unknown',
+                                'is_used' => $matchingDomain['is_used'] ?? false,
+                            ];
+                            
+                            // Get prefix variants from pool level (not per domain)
+                            $poolPrefixVariants = $pool->prefix_variants ?? [];
+                            $poolPrefixDetails = $pool->prefix_variants_details ?? [];
+                            
+                            $domainData['prefix_variants'] = [];
+                            $domainData['prefix_variants_details'] = [];
+                            $domainData['formatted_prefixes'] = [];
+                            
+                            if (is_array($poolPrefixVariants) && !empty($poolPrefixVariants)) {
+                                foreach ($poolPrefixVariants as $key => $prefix) {
+                                    if (!empty($prefix)) {
+                                        $domainData['prefix_variants'][$key] = $prefix;
+                                        
+                                        // Add corresponding details if they exist
+                                        if (isset($poolPrefixDetails[$key])) {
+                                            $domainData['prefix_variants_details'][$key] = $poolPrefixDetails[$key];
+                                        }
+                                        
+                                        // Format as email
+                                        $domainData['formatted_prefixes'][$key] = $prefix . '@' . $domainData['domain_name'];
+                                    }
+                                }
+                            }
+                            
+                            // Add pool-level information
+                            $domainData['pool_info'] = [
+                                'first_name' => $pool->first_name ?? '',
+                                'last_name' => $pool->last_name ?? '',
+                                'total_inboxes' => $pool->total_inboxes ?? 0,
+                                'inboxes_per_domain' => $pool->inboxes_per_domain ?? 0,
+                            ];
+                            
+                            $readyDomains[] = $domainData;
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // Log error but continue processing other domains
+                \Log::warning('Error fetching pool domain data', [
+                    'domain_id' => $domainId,
+                    'pool_id' => $poolId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return $readyDomains;
     }
 
     /**

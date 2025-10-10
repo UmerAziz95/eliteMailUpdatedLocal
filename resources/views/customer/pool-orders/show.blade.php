@@ -162,25 +162,51 @@
 
                         <div class="d-flex flex-column">
                             <span class="opacity-50">Domain Details</span>
-                            @foreach($poolOrder->domains as $index => $domain)
-                                @php
-                                    // The domain_name should already be stored in the domain array from PoolOrder
-                                    $domainName = $domain['domain_name'] ?? 'Unknown Domain';
-                                    $availableInboxes = $domain['per_inbox'] ?? 1;
-                                    $domainId = $domain['domain_id'] ?? 'N/A';
-                                    $poolId = $domain['pool_id'] ?? 'N/A';
-                                @endphp
+                            @foreach($poolOrder->ready_domains_prefix as $index => $domain)
                                 <div class="mt-2 p-2 border rounded">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong>{{ $domainName }}</strong>
-                                            <br>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <strong>{{ $domain['domain_name'] ?? 'Unknown Domain' }}</strong>
+                                                <span class="badge bg-{{ $domain['status'] === 'available' ? 'success' : 'primary' }} small">
+                                                    {{ ucfirst($domain['status'] ?? 'Unknown') }}
+                                                </span>
+                                            </div>
                                             
-                                            <small class="">Inboxes per domain: {{ $availableInboxes }}</small>
-                                            <!-- <br><small class="">Domain ID: {{ $domainId }}</small> -->
-                                            <!-- <br><small class="">Pool ID: {{ $poolId }}</small> -->
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <small class="text-muted">Inboxes per domain: {{ $domain['per_inbox'] ?? 1 }}</small>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">Available: {{ $domain['available_inboxes'] ?? 0 }}</small>
+                                                </div>
+                                            </div>
+
+                                            @if(!empty($domain['formatted_prefixes']))
+                                                <div class="mt-2">
+                                                    <small class="text-muted d-block">Available Email Prefixes:</small>
+                                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                                        @foreach(array_slice($domain['formatted_prefixes'], 0, 3) as $email)
+                                                            <span class="badge bg-light text-dark small">{{ $email }}</span>
+                                                        @endforeach
+                                                        @if(count($domain['formatted_prefixes']) > 3)
+                                                            <span class="small text-muted">+{{ count($domain['formatted_prefixes']) - 3 }} more</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            @if(!empty($domain['pool_info']['first_name']) || !empty($domain['pool_info']['last_name']))
+                                                <div class="mt-2">
+                                                    <small class="text-muted">
+                                                        Profile: {{ trim(($domain['pool_info']['first_name'] ?? '') . ' ' . ($domain['pool_info']['last_name'] ?? '')) }}
+                                                    </small>
+                                                </div>
+                                            @endif
                                         </div>
-                                        <i class="fa-solid fa-globe text-primary"></i>
+                                        <div class="d-flex align-items-start">
+                                            <i class="fa-solid fa-globe text-primary"></i>
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach
