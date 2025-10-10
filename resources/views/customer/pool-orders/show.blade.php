@@ -1,202 +1,347 @@
 @extends('customer.layouts.app')
 
+@section('title', 'Pool Order Details')
+
+@push('styles')
+<style>
+    .w-fit {
+        width: fit-content !important;
+    }
+    .subscribe-btn {
+        background: linear-gradient(135deg, #7367ef 0%, #8f84ff 100%);
+        color: white !important;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .subscribe-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(115, 103, 239, 0.3);
+        color: white !important;
+    }
+</style>
+@endpush
+
 @section('content')
-<div class="container py-5">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="text-white mb-0">Pool Order Details</h2>
-                <a href="{{ route('customer.pool-orders.index') }}" class="btn btn-outline-primary">
-                    <i class="ti ti-arrow-left me-2"></i>Back to Orders
-                </a>
+<section class="py-3 overflow-hidden">
+    <div class="d-flex align-items-center justify-content-between">
+        <a href="{{ route('customer.pool-orders.index') }}" class="d-flex align-items-center justify-content-center"
+            style="height: 30px; width: 30px; border-radius: 50px; background-color: #525252c6;">
+            <i class="fa-solid fa-chevron-left"></i>
+        </a>
+        @if($poolOrder->status === 'completed' && $poolOrder->status_manage_by_admin === 'completed')
+        <button class="c-btn text-decoration-none subscribe-btn" onclick="window.location.href='{{ route('customer.order.create') }}'">
+            <i class="fa-solid fa-cart-plus"></i>
+            New Order
+        </button>
+        @endif
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between mt-3">
+        <div>
+            <h5 class="mb-3">Pool Order #{{ $poolOrder->id ?? 'N/A' }}</h5>
+            <h6><span class="opacity-50 fs-6">Order Date:</span> {{ $poolOrder->created_at ? $poolOrder->created_at->format('M d, Y') : 'N/A' }}</h6>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="border border-{{ $poolOrder->status_color }} rounded-2 py-1 px-2 text-{{ $poolOrder->status_color }} bg-transparent">
+                {{ $poolOrder->status_label }}
             </div>
+        </div>
+    </div>
 
+    <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
+                data-bs-target="#configuration-tab-pane" type="button" role="tab"
+                aria-controls="configuration-tab-pane" aria-selected="true">Configuration</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fs-6 px-5" id="subscription-tab" data-bs-toggle="tab"
+                data-bs-target="#subscription-tab-pane" type="button" role="tab"
+                aria-controls="subscription-tab-pane" aria-selected="false">Subscription</button>
+        </li>
+        <li class="nav-item d-none" role="presentation">
+            <button class="nav-link fs-6 px-5" id="tickets-tab" data-bs-toggle="tab"
+                data-bs-target="#tickets-tab-pane" type="button" role="tab"
+                aria-controls="tickets-tab-pane" aria-selected="false">Tickets</button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3" id="myTabContent">
+        <div class="tab-pane fade show active" id="configuration-tab-pane" role="tabpanel"
+            aria-labelledby="configuration-tab" tabindex="0">
             <div class="row">
-                <!-- Order Summary -->
-                <div class="col-md-8">
-                    <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-header text-white">
-                            <h5 class="mb-0">Order Summary</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-sm-6">
-                                    <p><strong>Order ID:</strong> #{{ $poolOrder->id }}</p>
-                                    <p><strong>Pool Plan:</strong> {{ $poolOrder->poolPlan->name ?? 'N/A' }}</p>
-                                    <p><strong>Quantity:</strong> {{ $poolOrder->quantity ?? 1 }}</p>
-                                    <p><strong>Amount:</strong> ${{ number_format($poolOrder->amount, 2) }} {{ strtoupper($poolOrder->currency) }}</p>
-                                    <p><strong>Order Status:</strong> 
-                                        <span class="badge bg-{{ $poolOrder->status_color }}">
-                                            {{ $poolOrder->status_label }}
-                                        </span>
-                                    </p>
-                                </div>
-                                <div class="col-sm-6">
-                                    <p><strong>Subscription ID:</strong> {{ $poolOrder->chargebee_subscription_id }}</p>
-                                    <p><strong>Customer ID:</strong> {{ $poolOrder->chargebee_customer_id }}</p>
-                                    <p><strong>Invoice ID:</strong> {{ $poolOrder->chargebee_invoice_id }}</p>
-                                    <p><strong>Admin Status:</strong> 
-                                        <span class="badge bg-{{ $poolOrder->admin_status_color }}">
-                                            {{ $poolOrder->admin_status_label }}
-                                        </span>
-                                    </p>
-                                </div>
+                <div class="col-md-6">
+                    <div class="card p-3 mb-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-box"></i>
                             </div>
-                            
-                            <hr>
-                            
-                            <div class="row">
-                                <div class="col-sm-6">
-                                    <p><strong>Order Date:</strong> {{ $poolOrder->created_at->format('M d, Y h:i A') }}</p>
-                                    <p><strong>Paid At:</strong> {{ $poolOrder->paid_at ? \Carbon\Carbon::parse($poolOrder->paid_at)->format('M d, Y h:i A') : 'N/A' }}</p>
-                                </div>
-                                @if($poolOrder->poolPlan)
-                                <div class="col-sm-6">
-                                    <p><strong>Pool Capacity:</strong> {{ $poolOrder->poolPlan->capacity ?? 'N/A' }} orders</p>
-                                    <p><strong>Pool Type:</strong> {{ $poolOrder->poolPlan->type ?? 'Standard' }}</p>
-                                </div>
-                                @endif
-                            </div>
+                            Pool Order Details
+                        </h6>
 
-                            <!-- Domain Configuration Section -->
-                            @if($poolOrder->hasDomains())
-                            <hr>
-                            <div class="row">
-                                <div class="col-12">
-                                    <h6 class="mb-3">
-                                        <i class="ti ti-world me-2"></i>Domain Configuration
-                                        <span class="badge bg-primary ms-2">{{ $poolOrder->selected_domains_count }} domains</span>
-                                        <span class="badge bg-success ms-1">{{ $poolOrder->total_inboxes }} total inboxes</span>
-                                    </h6>
-                                    <div class="row">
-                                        @foreach($poolOrder->domains as $domain)
-                                            <div class="col-md-6 col-lg-4 mb-2">
-                                                <div class="p-3 border rounded">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <small class="text-muted">Domain #{{ $domain['domain_id'] }}</small>
-                                                            <div class="fw-medium">Per Inbox: {{ $domain['per_inbox'] }}</div>
-                                                        </div>
-                                                        <i class="ti ti-world-www text-primary"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endforeach
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span>Pool Plan <br> {{ $poolOrder->poolPlan->name ?? 'N/A' }}</span>
+                            <span>Quantity <br> {{ $poolOrder->quantity ?? 1 }}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex flex-column">
+                            <span class="opacity-50">Amount</span>
+                            <span>${{ number_format($poolOrder->amount, 2) }} {{ strtoupper($poolOrder->currency) }}</span>
+                        </div>
+                        
+                        <!-- <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50">Order Status</span>
+                            <span class="badge bg-{{ $poolOrder->status_color }} w-fit">{{ $poolOrder->status_label }}</span>
+                        </div> -->
+
+                        <!-- <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50">Admin Status</span>
+                            <span class="badge bg-{{ $poolOrder->admin_status_color }} w-fit">{{ $poolOrder->admin_status_label }}</span>
+                        </div> -->
+
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50">Order Date</span>
+                            <span>{{ $poolOrder->created_at->format('M d, Y h:i A') }}</span>
+                        </div>
+                    </div>
+
+                    <div class="card p-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-cart-plus"></i>
+                            </div>
+                            Products
+                        </h6>
+
+                        <div class="price-display-section">
+                            @if($poolOrder->poolPlan)
+                                <div class="d-flex align-items-center gap-3">
+                                    <div>
+                                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="Product Icon">
+                                    </div>
+                                    <div>
+                                        <span class="opacity-50">{{ $poolOrder->poolPlan->name }}</span>
+                                        <br>
+                                        <span>({{ $poolOrder->quantity }} x ${{ number_format($poolOrder->poolPlan->price ?? 0, 2) }})</span>
                                     </div>
                                 </div>
-                            </div>
+                                <h6><span class="theme-text small">Total:</span> ${{ number_format($poolOrder->amount, 2) }}</h6>
                             @else
-                            <hr>
-                            <div class="alert alert-info">
-                                <i class="ti ti-info-circle me-2"></i>
-                                <strong>Domain Configuration Required</strong><br>
-                                This pool order hasn't been configured with domains yet. 
-                                <a href="{{ route('customer.pool-orders.edit', $poolOrder->id) }}" class="btn btn-sm btn-primary ms-2">
-                                    <i class="ti ti-edit me-1"></i>Configure Domains
-                                </a>
-                            </div>
+                                <h6><span class="theme-text small">Total:</span> <small>Plan information not available</small></h6>
                             @endif
                         </div>
                     </div>
                 </div>
 
-                <!-- Pool Plan Details -->
-                <div class="col-md-4">
-                    @if($poolOrder->poolPlan)
-                    <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0">Pool Plan Details</h6>
+                <div class="col-md-6">
+                    <div class="card p-3 overflow-y-auto" style="max-height: 45rem">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-earth-europe"></i>
+                            </div>
+                            Domain Configuration
+                        </h6>
+
+                        @if($poolOrder->hasDomains())
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Selected Domains</span>
+                            <span>{{ $poolOrder->selected_domains_count }} domains</span>
                         </div>
-                        <div class="card-body">
-                            <h6>{{ $poolOrder->poolPlan->name }}</h6>
-                            @if($poolOrder->poolPlan->description)
-                                <p class="text-muted small">{{ $poolOrder->poolPlan->description }}</p>
-                            @endif
-                            
-                            <ul class="list-unstyled small">
-                                <li><strong>Capacity:</strong> {{ $poolOrder->poolPlan->capacity ?? 'Unlimited' }} orders</li>
-                                @if($poolOrder->poolPlan->features)
-                                    <li><strong>Features:</strong></li>
-                                    <ul class="small text-muted">
-                                        @foreach(json_decode($poolOrder->poolPlan->features, true) ?? [] as $feature)
-                                            <li>{{ $feature }}</li>
-                                        @endforeach
-                                    </ul>
-                                @endif
-                            </ul>
+
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Total Inboxes</span>
+                            <span>{{ $poolOrder->total_inboxes }}</span>
                         </div>
+
+                        <div class="d-flex flex-column">
+                            <span class="opacity-50">Domain Details</span>
+                            @foreach($poolOrder->domains as $index => $domain)
+                                @php
+                                    // Get domain information from pool domains if available
+                                    $domainInfo = null;
+                                    if ($poolOrder->pool && $poolOrder->pool->domains) {
+                                        $poolDomains = is_string($poolOrder->pool->domains) ? 
+                                            json_decode($poolOrder->pool->domains, true) : 
+                                            $poolOrder->pool->domains;
+                                        if (is_array($poolDomains)) {
+                                            $domainInfo = collect($poolDomains)->firstWhere('domain_id', $domain['domain_id']);
+                                        }
+                                    }
+                                @endphp
+                                <div class="mt-2 p-2 border rounded">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ $domainInfo['name'] ?? "Domain #{$domain['domain_id']}" }}</strong>
+                                            <br>
+                                            <small class="text-muted">Inboxes: {{ $domainInfo['available_inboxes'] ?? $domain['per_inbox'] ?? 1 }}</small>
+                                        </div>
+                                        <i class="fa-solid fa-globe text-primary"></i>
+                                    </div>
+                                    
+                                    @if(isset($domainInfo['prefix_variants']))
+                                        @php
+                                            $prefixVariants = is_string($domainInfo['prefix_variants']) ? 
+                                                json_decode($domainInfo['prefix_variants'], true) : 
+                                                $domainInfo['prefix_variants'];
+                                        @endphp
+                                        @if(is_array($prefixVariants) && !empty($prefixVariants))
+                                            <div class="mt-2">
+                                                <small class="opacity-50">Available Prefixes:</small>
+                                                @foreach(array_slice($prefixVariants, 0, 3) as $prefix)
+                                                    <div class="small text-muted">{{ $prefix }}@{{ $domainInfo['name'] ?? 'domain' }}</div>
+                                                @endforeach
+                                                @if(count($prefixVariants) > 3)
+                                                    <small class="text-muted">... and {{ count($prefixVariants) - 3 }} more</small>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                        @else
+                        <div class="alert alert-info">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            <strong>Domain Configuration Required</strong><br>
+                            This pool order hasn't been configured with domains yet. 
+                            <a href="{{ route('customer.pool-orders.edit', $poolOrder->id) }}" class="btn btn-sm btn-primary ms-2">
+                                <i class="fa-solid fa-edit me-1"></i>Configure Domains
+                            </a>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="subscription-tab-pane" role="tabpanel" aria-labelledby="subscription-tab"
+            tabindex="0">
+            <div class="col-12">
+                <div class="card p-3">
+                    <h6 class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center justify-content-center"
+                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                            <i class="fa-solid fa-credit-card"></i>
+                        </div>
+                        Subscription Details
+                    </h6>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Subscription ID</span>
+                                <span>{{ $poolOrder->chargebee_subscription_id ?? 'N/A' }}</span>
+                            </div>
+
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Customer ID</span>
+                                <span>{{ $poolOrder->chargebee_customer_id ?? 'N/A' }}</span>
+                            </div>
+
+                            <!-- <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Invoice ID</span>
+                                <span>{{ $poolOrder->chargebee_invoice_id ?? 'N/A' }}</span>
+                            </div> -->
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Paid At</span>
+                                <span>{{ $poolOrder->paid_at ? \Carbon\Carbon::parse($poolOrder->paid_at)->format('M d, Y h:i A') : 'N/A' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if($poolOrder->poolInvoices && $poolOrder->poolInvoices->count() > 0)
+                    <hr>
+                    <h6 class="mb-3">Pool Invoices</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Invoice ID</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Paid At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($poolOrder->poolInvoices as $poolInvoice)
+                                    <tr>
+                                        <td>{{ $poolInvoice->chargebee_invoice_id }}</td>
+                                        <td>${{ number_format($poolInvoice->amount, 2) }} {{ strtoupper($poolInvoice->currency) }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ $poolInvoice->status === 'paid' ? 'success' : 'warning' }}">
+                                                {{ ucfirst($poolInvoice->status) }}
+                                            </span>
+                                        </td>
+                                        <td>{{ $poolInvoice->paid_at ? $poolInvoice->paid_at->format('M d, Y h:i A') : 'N/A' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                     @endif
 
-                    <!-- Actions -->
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-secondary text-white">
-                            <h6 class="mb-0">Actions</h6>
+                    <!-- @if($poolOrder->poolPlan && $poolOrder->poolPlan->features)
+                    <hr>
+                    <h6 class="mb-3">Plan Features</h6>
+                    <ul class="list-unstyled">
+                        @foreach(json_decode($poolOrder->poolPlan->features, true) ?? [] as $feature)
+                            <li class="mb-1"><i class="fa-solid fa-check text-success me-2"></i>{{ $feature }}</li>
+                        @endforeach
+                    </ul>
+                    @endif -->
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tickets-tab-pane" role="tabpanel" aria-labelledby="tickets-tab"
+            tabindex="0">
+            <div class="col-12">
+                <div class="card p-3">
+                    <h6 class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center justify-content-center"
+                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                            <i class="fa-solid fa-ticket"></i>
                         </div>
-                        <div class="card-body">
-                            @if($poolOrder->status === 'completed' && $poolOrder->status_manage_by_admin === 'completed')
-                                <a href="{{ route('customer.order.create') }}" class="btn btn-success btn-sm mb-2 w-100">
-                                    <i class="ti ti-plus me-1"></i>Create New Order
-                                </a>
-                            @endif
-                            
-                            <a href="{{ route('customer.dashboard') }}" class="btn btn-outline-primary btn-sm w-100">
-                                <i class="ti ti-dashboard me-1"></i>Go to Dashboard
-                            </a>
-                        </div>
+                        Support Tickets
+                    </h6>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <p class="mb-0">Need help with this pool order?</p>
+                        <a href="" class="btn btn-primary btn-sm">
+                            <i class="fa-solid fa-plus me-1"></i>Create Ticket
+                        </a>
+                    </div>
+
+                    <!-- You can add ticket listing here if needed -->
+                    <div class="text-center py-4">
+                        <i class="fa-solid fa-ticket" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-2 opacity-50">No tickets found for this order</p>
+                        <p class="small opacity-50">Create a support ticket if you need assistance with your pool order</p>
                     </div>
                 </div>
             </div>
-
-            <!-- Pool Invoices -->
-            @if($poolOrder->poolInvoices && $poolOrder->poolInvoices->count() > 0)
-                <div class="card border-0 shadow-sm mt-4">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="mb-0">Pool Invoices</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-sm mb-0">
-                                <thead class="">
-                                    <tr>
-                                        <th>Invoice ID</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Paid At</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($poolOrder->poolInvoices as $poolInvoice)
-                                        <tr>
-                                            <td>{{ $poolInvoice->chargebee_invoice_id }}</td>
-                                            <td>${{ number_format($poolInvoice->amount, 2) }} {{ strtoupper($poolInvoice->currency) }}</td>
-                                            <td>
-                                                <span class="badge bg-{{ $poolInvoice->status === 'paid' ? 'success' : 'warning' }}">
-                                                    {{ ucfirst($poolInvoice->status) }}
-                                                </span>
-                                            </td>
-                                            <td>{{ $poolInvoice->paid_at ? $poolInvoice->paid_at->format('M d, Y h:i A') : 'N/A' }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <!-- Order Metadata (for debugging/admin purposes) -->
-            @if(auth()->user()->hasRole('admin') && $poolOrder->meta)
-                <div class="card border-0 shadow-sm mt-4">
-                    <div class="card-header bg-dark text-white">
-                        <h6 class="mb-0">Technical Details (Admin Only)</h6>
-                    </div>
-                    <div class="card-body">
-                        <pre class="small text-muted">{{ json_encode(json_decode($poolOrder->meta), JSON_PRETTY_PRINT) }}</pre>
-                    </div>
-                </div>
-            @endif
         </div>
     </div>
-</div>
+
+    <!-- Order Metadata (for debugging/admin purposes) -->
+    @if(auth()->user()->hasRole('admin') && $poolOrder->meta)
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-dark text-white">
+                <h6 class="mb-0">Technical Details (Admin Only)</h6>
+            </div>
+            <div class="card-body">
+                <pre class="small text-muted">{{ json_encode(json_decode($poolOrder->meta), JSON_PRETTY_PRINT) }}</pre>
+            </div>
+        </div>
+    @endif
+</section>
 @endsection
