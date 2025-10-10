@@ -142,6 +142,29 @@
         margin-bottom: 1rem;
         border: 1px solid rgba(99, 102, 241, 0.2);
     }
+
+    /* Selected domains list: fixed area with scroll when many items selected.
+       Ensures at least two selected domains are visible by default. */
+    .summary-section.selected-domains {
+        min-height: 180px; /* enough room so two items are visible */
+        display: flex;
+        flex-direction: column;
+    }
+
+    #selectedDomainsList {
+        max-height: 170px; /* show ~2 items, then scroll */
+        overflow-y: auto;
+        padding-right: 8px; /* space for scrollbar */
+    }
+
+    /* Improve appearance of scrollbar for webkit browsers */
+    #selectedDomainsList::-webkit-scrollbar {
+        width: 8px;
+    }
+    #selectedDomainsList::-webkit-scrollbar-thumb {
+        background: rgba(99,102,241,0.25);
+        border-radius: 6px;
+    }
     
     .summary-title {
         color: #6366f1 !important;
@@ -464,25 +487,25 @@
                                     <div class="card-body">
                                         <h5 class="summary-title mb-3">
                                             <i class="ti ti-list-check me-2"></i>Selection Summary
+                                            <small class="opacity-75 d-block"> <span class="badge px-3 py-2 bg-white text-success" style="position: absolute;right: 40px;top: 36px;">Inboxes {{ $poolOrder->quantity ?? 1 }}</span></small>
                                         </h5>
                                     
                                         <!-- Pool Order Info -->
-                                        <div class="summary-section mb-3">
+                                        <!-- <div class="summary-section mb-3">
                                             <div class="row g-2">
                                                 <div class="col-6">
                                                     <div class="summary-item">
                                                         <small class="opacity-75 d-block">Pool Plan</small>
                                                         <small class="domain-name">{{ $poolOrder->poolPlan->name ?? 'N/A' }}</small>
                                                     </div>
-                                                </div>
-                                                <div class="col-6">
+                                                </div> 
+                                                <div class="col-12">
                                                     <div class="summary-item">
-                                                        <small class="opacity-75 d-block">Total Inboxes</small>
-                                                        <small class="domain-name">{{ $poolOrder->quantity ?? 1 }}</small>
+                                                        
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </div> -->
                                     
                                     <hr class="border-white-50">
                                     
@@ -495,7 +518,7 @@
                                         <div class="summary-section mb-3">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <span class="domain-name">Selected Domains:</span>
-                                                <span class="inbox-count-badge" id="selectedCount">0</span>
+                                                <span class="inbox-count-badge badge px-3 py-2 bg-white text-success" id="selectedCount">0</span>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span class="domain-name">Total Inboxes:</span>
@@ -506,7 +529,7 @@
                                     <hr class="border-white-50">
 
                                         <!-- Selected Domains List -->
-                                        <div class="summary-section">
+                                        <div class="summary-section selected-domains">
                                             <div class="summary-title">Selected Domains</div>
                                             <div id="selectedDomainsList">
                                                 <small class="opacity-75">No domains selected yet</small>
@@ -905,7 +928,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedArray.length === 0) {
             listContainer.innerHTML = '<small class="opacity-75">No domains selected yet</small>';
         } else {
-            let domainListHTML = selectedArray.map((domain, index) => {
+            // Show most recent selections first so they're immediately visible
+            const recentFirst = selectedArray.slice().reverse();
+            let domainListHTML = recentFirst.map((domain, index) => {
                 // Create prefix variants display for summary - use domain's stored prefix data
                 let prefixVariantsHtml = '';
                 if (domain.prefixVariants && domain.inboxes > 1) {
@@ -946,6 +971,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             listContainer.innerHTML = domainListHTML;
+
+            // Auto-scroll selected list to top so most recent selections are visible
+            try {
+                listContainer.scrollTop = 0;
+            } catch (e) {
+                // ignore scrolling errors on very old browsers
+            }
         }
         
         // Enable/disable save button

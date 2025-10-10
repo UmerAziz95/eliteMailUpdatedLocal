@@ -1,5 +1,5 @@
 @extends('customer.layouts.app')
-<!-- this view not good -->
+
 @section('content')
 <div class="container py-5">
     <div class="row">
@@ -15,7 +15,7 @@
                 <!-- Order Summary -->
                 <div class="col-md-8">
                     <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-header bg-primary text-white">
+                        <div class="card-header text-white">
                             <h5 class="mb-0">Order Summary</h5>
                         </div>
                         <div class="card-body">
@@ -71,7 +71,7 @@
                                     <div class="row">
                                         @foreach($poolOrder->domains as $domain)
                                             <div class="col-md-6 col-lg-4 mb-2">
-                                                <div class="p-3 border rounded bg-light">
+                                                <div class="p-3 border rounded">
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <div>
                                                             <small class="text-muted">Domain #{{ $domain['domain_id'] }}</small>
@@ -157,7 +157,7 @@
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-sm mb-0">
-                                <thead class="table-light">
+                                <thead class="">
                                     <tr>
                                         <th>Invoice ID</th>
                                         <th>Amount</th>
