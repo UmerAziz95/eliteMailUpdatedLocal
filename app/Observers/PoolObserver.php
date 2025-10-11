@@ -3,9 +3,16 @@
 namespace App\Observers;
 
 use App\Models\Pool;
+use App\Services\PoolDomainService;
 
 class PoolObserver
 {
+    protected $poolDomainService;
+
+    public function __construct(PoolDomainService $poolDomainService)
+    {
+        $this->poolDomainService = $poolDomainService;
+    }
     /**
      * Handle the Pool "created" event.
      * Update domain IDs from timestamp-based temporary IDs to actual pool ID.
@@ -54,6 +61,9 @@ class PoolObserver
                 }
             }
         }
+
+        // Clear related caches when pool is created
+        $this->clearRelatedCaches($pool);
     }
 
     /**
@@ -102,5 +112,25 @@ class PoolObserver
     {
         // Handle any domain ID updates during pool updates if necessary
         // This could be useful for handling domain additions/modifications
+        
+        // Clear related caches when pool is updated
+        $this->clearRelatedCaches($pool);
+    }
+
+    /**
+     * Handle the Pool "deleted" event.
+     */
+    public function deleted(Pool $pool): void
+    {
+        // Clear related caches when pool is deleted
+        $this->clearRelatedCaches($pool);
+    }
+
+    /**
+     * Clear related caches when pool changes
+     */
+    private function clearRelatedCaches(Pool $pool): void
+    {
+        $this->poolDomainService->clearRelatedCache($pool->id, $pool->user_id);
     }
 }

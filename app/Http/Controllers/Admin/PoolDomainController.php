@@ -23,9 +23,13 @@ class PoolDomainController extends Controller
     {
         if ($request->ajax()) {
             $data = $this->poolDomainService->getPoolDomainsForDataTable($request);
+            $totalRecords = $this->poolDomainService->getTotalCount();
+            $filteredRecords = $this->poolDomainService->getTotalCount($request->get('search')['value'] ?? '');
             
             return DataTables::of($data)
                 ->addIndexColumn()
+                ->setTotalRecords($totalRecords)
+                ->setFilteredRecords($filteredRecords)
                 ->addColumn('prefixes_formatted', function ($row) {
                     return $this->poolDomainService->formatPrefixes($row['prefixes'], $row['domain_name']);
                 })
@@ -75,13 +79,35 @@ class PoolDomainController extends Controller
      */
     public function refreshCache(Request $request)
     {
-        $this->poolDomainService->refreshCache();
+        $userId = $request->get('user_id');
+        $poolId = $request->get('pool_id');
+        
+        $this->poolDomainService->refreshCache($userId, $poolId);
         
         if ($request->ajax()) {
-            return response()->json(['success' => true, 'message' => 'Cache refreshed successfully']);
+            return response()->json([
+                'success' => true, 
+                'message' => 'Cache refreshed successfully',
+                'filters' => compact('userId', 'poolId')
+            ]);
         }
         
         return redirect()->route('admin.pool-domains.index')
             ->with('success', 'Pool domains cache has been refreshed');
+    }
+
+    /**
+     * Clear all pool domains cache
+     */
+    public function clearCache(Request $request)
+    {
+        $this->poolDomainService->clearCache();
+        
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'All cache cleared successfully']);
+        }
+        
+        return redirect()->route('admin.pool-domains.index')
+            ->with('success', 'All pool domains cache has been cleared');
     }
 }
