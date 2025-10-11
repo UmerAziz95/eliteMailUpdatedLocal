@@ -248,11 +248,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('pool-plans/sync-chargebee', [PoolPlanController::class, 'syncWithChargebee'])->name('pool-plans.sync-chargebee');
         Route::post('pool-plans/generate-static-link', [StaticLinkController::class, 'generatePoolStaticLink'])->name('pool-plans.generate-static-link');
         
-    // Admin Pool Domains listing
-    Route::get('pool-domains', [\App\Http\Controllers\Admin\PoolDomainController::class, 'index'])->name('pool-domains.index');
-        Route::post('special-plans/master-plan', [SpecialPlanController::class, 'storeMasterPlan'])->name('special-plans.master-plan.store');
         
-        // Special Plans Static Link Generation
+        // Admin Pool Domains listing
+        Route::get('pool-domains', [\App\Http\Controllers\Admin\PoolDomainController::class, 'index'])->name('pool-domains.index');
+        Route::post('pool-domains/refresh-cache', [\App\Http\Controllers\Admin\PoolDomainController::class, 'refreshCache'])->name('pool-domains.refresh-cache');
+        Route::post('special-plans/master-plan', [SpecialPlanController::class, 'storeMasterPlan'])->name('special-plans.master-plan.store');        // Special Plans Static Link Generation
         Route::post('special-plans/generate-static-link', [StaticLinkController::class, 'generateStaticLink'])->name('special-plans.generate-static-link');
         
         // Master Plan routes

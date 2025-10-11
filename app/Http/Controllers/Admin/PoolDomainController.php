@@ -22,7 +22,7 @@ class PoolDomainController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = $this->poolDomainService->getPoolDomainsData();
+            $data = $this->poolDomainService->getPoolDomainsForDataTable($request);
             
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -68,5 +68,20 @@ class PoolDomainController extends Controller
         }
 
         return view('admin.pool_domains.index');
+    }
+
+    /**
+     * Refresh the pool domains cache
+     */
+    public function refreshCache(Request $request)
+    {
+        $this->poolDomainService->refreshCache();
+        
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Cache refreshed successfully']);
+        }
+        
+        return redirect()->route('admin.pool-domains.index')
+            ->with('success', 'Pool domains cache has been refreshed');
     }
 }
