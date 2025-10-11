@@ -2320,6 +2320,7 @@
                         {
                             data: 'contractor_name',
                             name: 'orders.contractor_name',
+                            searchable:false,
                             render: function(data, type, row) {
                                 return `
                                 <div class="d-flex align-items-center gap-1">
