@@ -22,14 +22,11 @@ class PoolDomainController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = $this->poolDomainService->getPoolDomainsForDataTable($request);
-            $totalRecords = $this->poolDomainService->getTotalCount();
-            $filteredRecords = $this->poolDomainService->getTotalCount($request->get('search')['value'] ?? '');
+            // Get all pool domains without our custom pagination
+            $allData = $this->poolDomainService->getPoolDomainsData(true); // Use cache
             
-            return DataTables::of($data)
+            return DataTables::of($allData)
                 ->addIndexColumn()
-                ->setTotalRecords($totalRecords)
-                ->setFilteredRecords($filteredRecords)
                 ->addColumn('prefixes_formatted', function ($row) {
                     return $this->poolDomainService->formatPrefixes($row['prefixes'], $row['domain_name']);
                 })
@@ -109,5 +106,39 @@ class PoolDomainController extends Controller
         
         return redirect()->route('admin.pool-domains.index')
             ->with('success', 'All pool domains cache has been cleared');
+    }
+
+    /**
+     * Debug method to check pool domains data
+     */
+    public function debug()
+    {
+        $debug = $this->poolDomainService->debugPoolDomains();
+        return response()->json($debug);
+    }
+
+    /**
+     * Simple test to check basic pool data
+     */
+    public function test()
+    {
+        $poolsCount = \App\Models\Pool::whereNotNull('domains')->count();
+        $poolOrdersCount = \App\Models\PoolOrder::whereNotNull('domains')->count();
+        
+        $samplePool = \App\Models\Pool::whereNotNull('domains')->first();
+        
+        $data = [
+            'pools_with_domains' => $poolsCount,
+            'pool_orders_with_domains' => $poolOrdersCount,
+            'sample_pool' => $samplePool ? [
+                'id' => $samplePool->id,
+                'user_id' => $samplePool->user_id,
+                'domains_count' => is_array($samplePool->domains) ? count($samplePool->domains) : 0,
+                'domains_sample' => is_array($samplePool->domains) ? array_slice($samplePool->domains, 0, 2) : null
+            ] : null,
+            'service_data_count' => count($this->poolDomainService->getPoolDomainsData(false))
+        ];
+        
+        return response()->json($data);
     }
 }
