@@ -175,22 +175,22 @@
                                             
                                             <div class="row">
                                                 <div class="col-6">
-                                                    <small class="text-muted">Inboxes per domain: {{ $domain['per_inbox'] ?? 1 }}</small>
+                                                    <small class="">Inboxes per domain: {{ $domain['per_inbox'] ?? 1 }}</small>
                                                 </div>
-                                                <div class="col-6">
-                                                    <small class="text-muted">Available: {{ $domain['available_inboxes'] ?? 0 }}</small>
-                                                </div>
+                                                <!-- <div class="col-6">
+                                                    <small class="">Available: {{ $domain['available_inboxes'] ?? 0 }}</small>
+                                                </div> -->
                                             </div>
 
                                             @if(!empty($domain['formatted_prefixes']))
                                                 <div class="mt-2">
-                                                    <small class="text-muted d-block">Available Email Prefixes:</small>
+                                                    <small class=" d-block">Available Email Prefixes:</small>
                                                     <div class="d-flex flex-wrap gap-1 mt-1">
                                                         @foreach(array_slice($domain['formatted_prefixes'], 0, 3) as $email)
                                                             <span class="badge bg-light text-dark small">{{ $email }}</span>
                                                         @endforeach
                                                         @if(count($domain['formatted_prefixes']) > 3)
-                                                            <span class="small text-muted">+{{ count($domain['formatted_prefixes']) - 3 }} more</span>
+                                                            <span class="small ">+{{ count($domain['formatted_prefixes']) - 3 }} more</span>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -198,7 +198,7 @@
 
                                             @if(!empty($domain['pool_info']['first_name']) || !empty($domain['pool_info']['last_name']))
                                                 <div class="mt-2">
-                                                    <small class="text-muted">
+                                                    <small class="">
                                                         Profile: {{ trim(($domain['pool_info']['first_name'] ?? '') . ' ' . ($domain['pool_info']['last_name'] ?? '')) }}
                                                     </small>
                                                 </div>
