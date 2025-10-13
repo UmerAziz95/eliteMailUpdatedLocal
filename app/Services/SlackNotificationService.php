@@ -430,13 +430,40 @@ class SlackNotificationService
      */
     public static function sendOrderCancellationNotification($order, $reason = null)
     {
+        // Get cancellation type and domain removal task date from subscription
+        $cancellationType = 'N/A';
+        $removalTaskDate = 'N/A';
+        
+        if ($order->subscription) {
+            // Determine cancellation type based on is_cancelled_force flag
+            $cancellationType = $order->subscription->is_cancelled_force ? 'Force' : 'EOBC';
+            
+            // Get domain removal task date if exists
+            $domainRemovalTask = \App\Models\DomainRemovalTask::where('order_id', $order->id)
+                ->where('chargebee_subscription_id', $order->chargebee_subscription_id)
+                ->first();
+                
+            if ($domainRemovalTask && $domainRemovalTask->started_queue_date) {
+                $removalTaskDate = $domainRemovalTask->started_queue_date->format('Y-m-d H:i:s T');
+            }
+        }
+        // fallback removalTaskDate if still N/A
+        if ($removalTaskDate === 'N/A' ) {
+            if($cancellationType === 'Force')
+                $removalTaskDate = 'Removal task starts immediately';
+            else{
+                $removalTaskDate = 'Removal task shows at end of billing cycle';
+            }
+        }
         $data = [
             'inbox_id' => $order->id,
             'order_id' => $order->id, // Keep for backward compatibility
             'customer_name' => $order->user ? $order->user->name : 'Unknown',
             'customer_email' => $order->user ? $order->user->email : 'Unknown',
             'reason' => $reason ?: 'No reason provided',
-            'cancelled_by' => auth()->user() ? auth()->user()->name : 'System'
+            'cancelled_by' => auth()->user() ? auth()->user()->name : 'System',
+            'cancellation_type' => $cancellationType,
+            'removal_domains_task_date' => $removalTaskDate
         ];
         // Prepare the message based on type
         $message = self::formatMessage('order-cancellation', $data);
@@ -1576,15 +1603,20 @@ class SlackNotificationService
                                     'value' => $data['customer_name'] ?? 'N/A',
                                     'short' => true
                                 ],
-                                // [
-                                //     'title' => 'Customer Email',
-                                //     'value' => $data['customer_email'] ?? 'N/A',
-                                //     'short' => true
-                                // ],
                                 [
                                     'title' => 'Cancelled By',
                                     'value' => $data['cancelled_by'] ?? 'System',
                                     'short' => true
+                                ],
+                                [
+                                    'title' => 'Cancellation Type',
+                                    'value' => $data['cancellation_type'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Removal Task Date',
+                                    'value' => $data['removal_domains_task_date'] ?? 'N/A',
+                                    'short' => false
                                 ],
                                 [
                                     'title' => 'Reason',
