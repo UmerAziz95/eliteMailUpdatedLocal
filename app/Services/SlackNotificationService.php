@@ -1614,13 +1614,13 @@ class SlackNotificationService
                                     'short' => true
                                 ],
                                 [
-                                    'title' => 'Removal Task Date',
-                                    'value' => $data['removal_domains_task_date'] ?? 'N/A',
+                                    'title' => 'Reason',
+                                    'value' => $data['reason'] ?? 'No reason provided',
                                     'short' => false
                                 ],
                                 [
-                                    'title' => 'Reason',
-                                    'value' => $data['reason'] ?? 'No reason provided',
+                                    'title' => 'Note',
+                                    'value' => $data['removal_domains_task_date'] ?? 'N/A',
                                     'short' => false
                                 ],
                                 [
