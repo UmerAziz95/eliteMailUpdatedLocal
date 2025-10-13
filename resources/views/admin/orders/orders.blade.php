@@ -2169,7 +2169,7 @@
                 </span>
             `;
         }
-
+        
         function initDataTable(planId = '') {
             var tableId = planId ? `#myTable-${planId}` : '#myTable';
             var $table = $(tableId);
@@ -2296,7 +2296,7 @@
 
                         {
                             data: 'name',
-                            name: 'name',
+                            name: 'users.name',
                             render: function(data, type, row) {
                                 const avatar = createAvatar(row.customer_image, data, 25);
                                 return `
@@ -2309,7 +2309,7 @@
                         },
                         {
                             data: 'email',
-                            name: 'email',
+                            name: 'users.email',
                             render: function(data, type, row) {
                                 return `
                                     <div class="d-flex align-items-center gap-1">
@@ -2336,7 +2336,7 @@
                         // add contractor_name
                         {
                             data: 'contractor_name',
-                            name: 'orders.contractor_name',
+                            name: 'contractor_name',
                             searchable:false,
                             render: function(data, type, row) {
                                 return `
@@ -2413,7 +2413,7 @@
                         },
                         {
                             data: 'status',
-                            name: 'orders.status'
+                            name: 'orders.status_manage_by_admin'
                         },
                         {
                             data: 'action',
