@@ -6,7 +6,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 <!-- Select2 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+    rel="stylesheet" />
 <style>
     .avatar {
         position: relative;
@@ -961,8 +962,8 @@
     .dataTable tbody tr:hover {
         background-color: var(--filter-color) !important;
         border: 1px solid #4A3AFF !important
-        /* White background */
-        cursor: pointer;
+            /* White background */
+            cursor: pointer;
         /* Optional: makes it feel clickable */
         /* transition: background-color 0.5s ease-in-out; */
     }
@@ -1007,7 +1008,7 @@
     .swal-over-canvas {
         z-index: 1060 !important;
     }
-    
+
     .swal2-container.swal-over-canvas {
         z-index: 1060 !important;
     }
@@ -1080,8 +1081,13 @@
     }
 
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
     }
 
     /* Helper badge styles */
@@ -1116,6 +1122,7 @@
         0% {
             box-shadow: 0 1px 3px rgba(13, 110, 253, 0.2);
         }
+
         100% {
             box-shadow: 0 2px 6px rgba(13, 110, 253, 0.4);
         }
@@ -1145,38 +1152,38 @@
         border: 1px solid #444 !important;
         color: #fff !important;
     }
-    
+
     .select2-container .select2-selection--multiple .select2-selection__choice {
         background-color: #495057 !important;
         border: 1px solid #6c757d !important;
         color: #fff !important;
     }
-    
+
     .select2-container .select2-selection--multiple .select2-selection__choice__remove {
         color: #fff !important;
     }
-    
+
     .select2-dropdown {
         background-color: #2f3349 !important;
         border: 1px solid #444 !important;
     }
-    
+
     .select2-results__option {
         background-color: #2f3349 !important;
         color: #fff !important;
     }
-    
+
     .select2-results__option--highlighted {
         background-color: #495057 !important;
         color: #fff !important;
     }
-    
+
     .select2-search--dropdown .select2-search__field {
         background-color: #495057 !important;
         border: 1px solid #6c757d !important;
         color: #fff !important;
     }
-    
+
     .select2-container .select2-search--inline .select2-search__field {
         background-color: transparent !important;
         color: #fff !important;
@@ -1186,7 +1193,7 @@
     .swal-over-canvas {
         z-index: 1060 !important;
     }
-    
+
     .swal2-container.swal-over-canvas {
         z-index: 1060 !important;
     }
@@ -1218,7 +1225,8 @@
             <div class="row gy-3 mb-4 mt-3">
                 <div class="counters col-lg-12"
                     style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important">
-                    <div class=" card p-3 counter_1 text-white StatusFilters_tab" style="border-bottom: 4px solid #535353; cursor: pointer !important" data-status="total" >
+                    <div class=" card p-3 counter_1 text-white StatusFilters_tab"
+                        style="border-bottom: 4px solid #535353; cursor: pointer !important" data-status="total">
                         <div class="d-flex align-items-center justify-content-between">
                             <!-- <div class="d-flex align-items-center justify-content-center status-icon">
                                 <i class="fa-solid fa-list-ul fs-5"></i>
@@ -1230,7 +1238,8 @@
                         </div>
                     </div>
 
-                    <div class="card p-3 bg-warning counter_2 text-white StatusFilters_tab" data-status="pending" style="cursor: pointer !important">
+                    <div class="card p-3 bg-warning counter_2 text-white StatusFilters_tab" data-status="pending"
+                        style="cursor: pointer !important">
                         <div class="d-flex align-items-center justify-content-between">
                             <!-- <div class="d-flex align-items-center justify-content-center status-icon">
                                 <i class="fa-solid fa-clock fs-5"></i>
@@ -1245,7 +1254,8 @@
                         </div>
                     </div>
 
-                    <div class="card p-3 bg-success counter_1 StatusFilters_tab" data-status="completed" style="cursor: pointer !important">
+                    <div class="card p-3 bg-success counter_1 StatusFilters_tab" data-status="completed"
+                        style="cursor: pointer !important">
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
@@ -1263,7 +1273,8 @@
                         </div>
                     </div>
 
-                    <div class="card bg-primary p-3 counter_2 StatusFilters_tab" data-status="in-progress" style="cursor: pointer !important">
+                    <div class="card bg-primary p-3 counter_2 StatusFilters_tab" data-status="in-progress"
+                        style="cursor: pointer !important">
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
@@ -1281,7 +1292,8 @@
                         </div>
                     </div>
 
-                    <div class="card p-3 bg-danger counter_1 StatusFilters_tab" data-status="cancelled" style="cursor: pointer !important">
+                    <div class="card p-3 bg-danger counter_1 StatusFilters_tab" data-status="cancelled"
+                        style="cursor: pointer !important">
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex  align-items-center justify-content-between">
@@ -1299,7 +1311,8 @@
                         </div>
                     </div>
 
-                    {{-- <div class="card bg-secondary p-3 counter_1 StatusFilters_tab" data-status="reject" style="cursor: pointer !important">
+                    {{-- <div class="card bg-secondary p-3 counter_1 StatusFilters_tab" data-status="reject"
+                        style="cursor: pointer !important">
                         <div>
                             <div class="d-flex align-items-center justify-content-between">
                                 <h6 class="text-heading">Rejected</h6>
@@ -1311,7 +1324,8 @@
                         </div>
                     </div> --}}
 
-                    <div class="card p-3 bg-info counter_2 StatusFilters_tab" data-status="draft" style="cursor: pointer !important">
+                    <div class="card p-3 bg-info counter_2 StatusFilters_tab" data-status="draft"
+                        style="cursor: pointer !important">
                         <div>
                             <!-- {{-- //card body --}} -->
                             <div class="d-flex align-items-center justify-content-between">
@@ -1328,7 +1342,7 @@
                         </div>
                     </div>
                     <div class="card p-3 text-white counter_2 StatusFilters_tab" data-status="removed"
-                        style="background-color: rgba(220, 20, 60, 0.222); cursor:pointer; border-bottom: 4px solid #ff073c;" >
+                        style="background-color: rgba(220, 20, 60, 0.222); cursor:pointer; border-bottom: 4px solid #ff073c;">
                         <div>
                             <div class="d-flex align-items-center justify-content-between">
                                 <!-- <div class="d-flex align-items-center justify-content-center status-icon">
@@ -1805,7 +1819,8 @@
 
 
 <!-- Assign Contractors Modal -->
-<div class="modal fade" id="assignContractorsModal" tabindex="-1" aria-labelledby="assignContractorsModalLabel" aria-hidden="true">
+<div class="modal fade" id="assignContractorsModal" tabindex="-1" aria-labelledby="assignContractorsModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -1821,18 +1836,19 @@
                         <label for="contractorSelect" class="form-label">Select Contractors</label>
                         <select class="form-select" id="contractorSelect" multiple required>
                             @php
-                                $contractors = \App\Models\User::where('role_id', 4)->get();
+                            $contractors = \App\Models\User::where('role_id', 4)->get();
                             @endphp
                             @if($contractors->count() > 0)
-                                @foreach($contractors as $contractor)
-                                    <option value="{{ $contractor->id }}">{{ $contractor->name }} ({{ $contractor->email }})</option>
-                                @endforeach
+                            @foreach($contractors as $contractor)
+                            <option value="{{ $contractor->id }}">{{ $contractor->name }} ({{ $contractor->email }})
+                            </option>
+                            @endforeach
                             @else
-                                <option disabled>No contractors found with role_id = 4</option>
+                            <option disabled>No contractors found with role_id = 4</option>
                             @endif
                         </select>
                         <small class="form-text text-white d-none">
-                            Search and select multiple contractors. 
+                            Search and select multiple contractors.
                             <span class="text-info">({{ $contractors->count() }} contractors available)</span>
                         </small>
                     </div>
@@ -1850,7 +1866,8 @@
 </div>
 
 <!-- Reassign Contractor Modal -->
-<div class="modal fade" id="reassignContractorModal" tabindex="-1" aria-labelledby="reassignContractorModalLabel" aria-hidden="true">
+<div class="modal fade" id="reassignContractorModal" tabindex="-1" aria-labelledby="reassignContractorModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -1867,26 +1884,26 @@
                         <select class="form-select" id="reassignContractorSelect" name="contractor_id" required>
                             <option value="">-- Select Contractor --</option>
                             @php
-                                $roleNames = ['Teams Leader', 'contractor'];
-                                $reassignContractors = App\Models\User::whereHas('role', function($q) use ($roleNames) {
-                                        $q->whereIn('name', $roleNames);
-                                    })
-                                    ->orWhereHas('roles', function($q) use ($roleNames) {
-                                        $q->whereIn('name', $roleNames);
-                                    })
-                                    ->get();
+                            $roleNames = ['Teams Leader', 'contractor'];
+                            $reassignContractors = App\Models\User::whereHas('role', function($q) use ($roleNames) {
+                            $q->whereIn('name', $roleNames);
+                            })
+                            ->orWhereHas('roles', function($q) use ($roleNames) {
+                            $q->whereIn('name', $roleNames);
+                            })
+                            ->get();
                             @endphp
                             @foreach($reassignContractors as $contractor)
-                                <option value="{{ $contractor->id }}">
-                                    {{ $contractor->name }} ({{ $contractor->email }})
-                                </option>
+                            <option value="{{ $contractor->id }}">
+                                {{ $contractor->name }} ({{ $contractor->email }})
+                            </option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
                         <label for="reassignmentNote" class="form-label">Reason for Reassignment</label>
-                        <input type="text" name="reassignment_note" id="reassignmentNote" class="form-control" 
-                               placeholder="Enter reason for reassignment..." required>
+                        <input type="text" name="reassignment_note" id="reassignmentNote" class="form-control"
+                            placeholder="Enter reason for reassignment..." required>
                     </div>
                 </div>
                 <div class="modal-footer">
