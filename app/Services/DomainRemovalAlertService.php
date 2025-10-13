@@ -223,16 +223,16 @@ class DomainRemovalAlertService
                         //     'value' => $taskData['customer_email'],
                         //     'short' => true
                         // ],
-                        [
-                            'title' => 'Contractor',
-                            'value' => $taskData['contractor_name'],
-                            'short' => true
-                        ],
-                        [
-                            'title' => 'Contractor Email',
-                            'value' => $taskData['contractor_email'],
-                            'short' => true
-                        ],
+                        // [
+                        //     'title' => 'Contractor',
+                        //     'value' => $taskData['contractor_name'],
+                        //     'short' => true
+                        // ],
+                        // [
+                        //     'title' => 'Contractor Email',
+                        //     'value' => $taskData['contractor_email'],
+                        //     'short' => true
+                        // ],
                         [
                             'title' => 'Total Inboxes',
                             'value' => number_format($taskData['total_inboxes']),
