@@ -241,6 +241,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('cancelled_subscriptions',[SubscriptionController::class,'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
         Route::get('subscriptions_detail',[SubscriptionController::class,'index'])->name('subs.detail.view');
         Route::get('/subscription/cancel', [SubscriptionController::class, 'subscriptionCancel'])->name('subscription.cancel');
+        // Reactivate a cancelled subscription (revert to active and remove domain removal task)
+        Route::get('/subscription/reactivate/{id}', [\App\Http\Controllers\SubscriptionController::class, 'reactivate'])->name('subscription.reactivate');
         //customer
         Route::get('/customer', [CustomerController::class, 'customerList'])->name('customerList');
         Route::post('/customer/toggle-status', [CustomerController::class, 'toggleStatus'])->name('customer.toggleStatus');
