@@ -2187,111 +2187,111 @@ class PlanController extends Controller
         }
     }
 
+    // invoice id 
+    public function handleCancelSubscriptionByCron(Request $request)
+    {
+        $cutoffTime = Carbon::now()->subHours(72);
 
-   public function handleCancelSubscriptionByCron(Request $request)
-{
-    $cutoffTime = Carbon::now()->subHours(72);
+        // Get payment failures older than 72 hours
+        $paymentFailures = PaymentFailure::where("type", "invoice")
+            ->where("status", "!=", "cancelled")
+            ->where("created_at", "<=", $cutoffTime)
+            ->get();
 
-    // Get payment failures older than 72 hours
-   $paymentFailures = PaymentFailure::where("type", "invoice")
-    ->where("status", "!=", "cancelled")
-    ->where("created_at", "<=", $cutoffTime)
-    ->get();
+        $subscriptionService = new \App\Services\OrderCancelledService();
+        foreach ($paymentFailures as $failure) {
+            // Make sure user_id and subscription_id exist
+            if ($failure->chargebee_subscription_id && $failure->user_id) {
+            $result= $subscriptionService->cancelSubscription(
+                    $failure->chargebee_subscription_id,
+                    $failure->user_id,
+                    'Auto-cancel due to repeated failure after 72 hours',
+                    true // or false depending on your logic for removing accounts
+                );
+                if ($result['success']) {
+                    // Mark the payment failure as processed
+                    $failure->update(['status' => 'cancelled']);
+                } else {
+                    Log::error('Failed to cancel subscription via cron', [
+                        'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                        'user_id' => $failure->user_id,
+                        'error' => $result['message']
+                    ]);
+                }
 
-    $subscriptionService = new \App\Services\OrderCancelledService();
-    foreach ($paymentFailures as $failure) {
-        // Make sure user_id and subscription_id exist
-        if ($failure->chargebee_subscription_id && $failure->user_id) {
-           $result= $subscriptionService->cancelSubscription(
-                $failure->chargebee_subscription_id,
-                $failure->user_id,
-                'Auto-cancel due to repeated failure after 72 hours',
-                true // or false depending on your logic for removing accounts
-            );
-            if ($result['success']) {
-                // Mark the payment failure as processed
-                $failure->update(['status' => 'cancelled']);
-            } else {
-                Log::error('Failed to cancel subscription via cron', [
-                    'chargebee_subscription_id' => $failure->chargebee_subscription_id,
-                    'user_id' => $failure->user_id,
-                    'error' => $result['message']
-                ]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Checked and processed expired failed payments.',
+            'cancelled_count' => $paymentFailures->count(),
+        ]);
+    }
+
+
+
+    public function sendMailsTo72HoursFailedPayments(Request $request)
+    {
+        $now = Carbon::now();
+
+        // Get payment failures where it's within 72 hours from created_at
+        $paymentFailures = PaymentFailure::where("type", "invoice")
+            ->where("status", "!=", "cancelled")
+            ->where("created_at", ">=", $now->copy()->subHours(72))
+            ->get();
+
+        $sentCount = 0;
+
+        foreach ($paymentFailures as $failure) {
+            if (!$failure->user_id || !$failure->chargebee_subscription_id) {
+                continue;
             }
 
+            $user = User::find($failure->user_id);
+            if (!$user) continue;
+
+            $createdAt = Carbon::parse($failure->created_at);
+            $hoursSinceFailure = $createdAt->diffInHours($now);
+
+            if ($hoursSinceFailure > 72) {
+                continue; // Outside the 72-hour window
+            }
+
+            // Only send one email per calendar day
+            $alreadySentToday = \DB::table('payment_failure_email_logs')
+                ->where('payment_failure_id', $failure->id)
+                ->whereDate('sent_date', $now->toDateString())
+                ->exists();
+
+            if ($alreadySentToday) {
+                continue;
+            }
+
+            try {
+                Mail::to($user->email)->queue(new FailedPaymentNotificationMail($user, $failure));
+
+                \DB::table('payment_failure_email_logs')->insert([
+                    'payment_failure_id' => $failure->id,
+                    'sent_date' => $now->toDateString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                $sentCount++;
+            } catch (\Exception $e) {
+                Log::error('Failed to send failed payment email', [
+                    'user_id' => $user->id,
+                    'failure_id' => $failure->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
+
+        return response()->json([
+            'message' => 'Emails sent for failed payments within 72 hours of creation.',
+            'sent_count' => $sentCount,
+        ]);
     }
-
-    return response()->json([
-        'message' => 'Checked and processed expired failed payments.',
-        'cancelled_count' => $paymentFailures->count(),
-    ]);
-}
-
-
-
-public function sendMailsTo72HoursFailedPayments(Request $request)
-{
-    $now = Carbon::now();
-
-    // Get payment failures where it's within 72 hours from created_at
-    $paymentFailures = PaymentFailure::where("type", "invoice")
-        ->where("status", "!=", "cancelled")
-        ->where("created_at", ">=", $now->copy()->subHours(72))
-        ->get();
-
-    $sentCount = 0;
-
-    foreach ($paymentFailures as $failure) {
-        if (!$failure->user_id || !$failure->chargebee_subscription_id) {
-            continue;
-        }
-
-        $user = User::find($failure->user_id);
-        if (!$user) continue;
-
-        $createdAt = Carbon::parse($failure->created_at);
-        $hoursSinceFailure = $createdAt->diffInHours($now);
-
-        if ($hoursSinceFailure > 72) {
-            continue; // Outside the 72-hour window
-        }
-
-        // Only send one email per calendar day
-        $alreadySentToday = \DB::table('payment_failure_email_logs')
-            ->where('payment_failure_id', $failure->id)
-            ->whereDate('sent_date', $now->toDateString())
-            ->exists();
-
-        if ($alreadySentToday) {
-            continue;
-        }
-
-        try {
-            Mail::to($user->email)->queue(new FailedPaymentNotificationMail($user, $failure));
-
-            \DB::table('payment_failure_email_logs')->insert([
-                'payment_failure_id' => $failure->id,
-                'sent_date' => $now->toDateString(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $sentCount++;
-        } catch (\Exception $e) {
-            Log::error('Failed to send failed payment email', [
-                'user_id' => $user->id,
-                'failure_id' => $failure->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    return response()->json([
-        'message' => 'Emails sent for failed payments within 72 hours of creation.',
-        'sent_count' => $sentCount,
-    ]);
-}
 
 
 
