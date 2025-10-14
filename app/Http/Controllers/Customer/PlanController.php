@@ -2187,7 +2187,7 @@ class PlanController extends Controller
         }
     }
 
-    // invoice id 
+
     public function handleCancelSubscriptionByCron(Request $request)
     {
         $cutoffTime = Carbon::now()->subHours(72);
@@ -2199,18 +2199,116 @@ class PlanController extends Controller
             ->get();
 
         $subscriptionService = new \App\Services\OrderCancelledService();
+        $cancelledCount = 0;
+        $skippedCount = 0;
+        
         foreach ($paymentFailures as $failure) {
             // Make sure user_id and subscription_id exist
             if ($failure->chargebee_subscription_id && $failure->user_id) {
-            $result= $subscriptionService->cancelSubscription(
+                // Extract invoice ID from invoice_data JSON with multiple fallbacks
+                $invoiceId = null;
+                if ($failure->invoice_data) {
+                    $invoiceData = json_decode($failure->invoice_data, true);
+                    
+                    // Primary: Try chargebee_invoice_id field
+                    $invoiceId = $invoiceData['chargebee_invoice_id'] ?? null;
+                    
+                    // Fallback 1: Try direct id field
+                    if (!$invoiceId) {
+                        $invoiceId = $invoiceData['id'] ?? null;
+                    }
+                    
+                    // Fallback 2: Try to get from metadata.invoice.id
+                    if (!$invoiceId && isset($invoiceData['metadata'])) {
+                        $metadata = is_string($invoiceData['metadata']) 
+                            ? json_decode($invoiceData['metadata'], true) 
+                            : $invoiceData['metadata'];
+                        $invoiceId = $metadata['invoice']['id'] ?? null;
+                    }
+                }
+
+                Log::info('Processing payment failure for cancellation', [
+                    'failure_id' => $failure->id,
+                    'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                    'invoice_id' => $invoiceId,
+                    'user_id' => $failure->user_id
+                ]);
+
+                // Check invoice status on ChargeBee if invoice ID exists
+                if ($invoiceId) {
+                    try {
+                        $chargebeeInvoice = \ChargeBee\ChargeBee\Models\Invoice::retrieve($invoiceId);
+                        $chargebeeInvoiceData = $chargebeeInvoice->invoice()->getValues();
+                        $chargebeeStatus = $chargebeeInvoiceData['status'] ?? 'unknown';
+
+                        Log::info('ChargeBee invoice status check', [
+                            'invoice_id' => $invoiceId,
+                            'chargebee_status' => $chargebeeStatus,
+                            'chargebee_subscription_id' => $failure->chargebee_subscription_id
+                        ]);
+
+                        // If invoice is paid on ChargeBee, skip cancellation and mark as resolved
+                        if ($chargebeeStatus === 'paid') {
+                            $failure->update(['status' => 'resolved']);
+                            
+                            // Also update local invoice record if exists
+                            $localInvoice = Invoice::where('chargebee_invoice_id', $invoiceId)->first();
+                            if ($localInvoice && $localInvoice->status !== 'paid') {
+                                $localInvoice->update([
+                                    'status' => 'paid',
+                                    'paid_at' => isset($chargebeeInvoiceData['paid_at']) 
+                                        ? Carbon::createFromTimestamp($chargebeeInvoiceData['paid_at'])->toDateTimeString() 
+                                        : now(),
+                                    'amount' => isset($chargebeeInvoiceData['amount_paid']) ? ($chargebeeInvoiceData['amount_paid'] / 100) : $localInvoice->amount,
+                                ]);
+                            }
+
+                            Log::info('Skipped subscription cancellation - invoice is paid on ChargeBee', [
+                                'invoice_id' => $invoiceId,
+                                'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                                'user_id' => $failure->user_id
+                            ]);
+                            
+                            $skippedCount++;
+                            continue;
+                        }
+                        
+                        // If invoice is still failed/unpaid, proceed with cancellation
+                        if (in_array($chargebeeStatus, ['payment_due', 'not_paid', 'failed'])) {
+                            // Update local invoice to failed status
+                            $localInvoice = Invoice::where('chargebee_invoice_id', $invoiceId)->first();
+                            if ($localInvoice && $localInvoice->status !== 'failed') {
+                                $localInvoice->update(['status' => 'failed']);
+                            }
+                        }
+                        
+                    } catch (\Exception $e) {
+                        Log::error('Failed to check invoice status on ChargeBee', [
+                            'invoice_id' => $invoiceId,
+                            'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                            'error' => $e->getMessage()
+                        ]);
+                        // Continue with cancellation if ChargeBee check fails
+                    }
+                }
+
+                // Proceed with subscription cancellation
+                $result = $subscriptionService->cancelSubscription(
                     $failure->chargebee_subscription_id,
                     $failure->user_id,
                     'Auto-cancel due to repeated failure after 72 hours',
                     true // or false depending on your logic for removing accounts
                 );
+                
                 if ($result['success']) {
                     // Mark the payment failure as processed
                     $failure->update(['status' => 'cancelled']);
+                    $cancelledCount++;
+                    
+                    Log::info('Successfully cancelled subscription via cron', [
+                        'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                        'user_id' => $failure->user_id
+                    ]);
                 } else {
                     Log::error('Failed to cancel subscription via cron', [
                         'chargebee_subscription_id' => $failure->chargebee_subscription_id,
@@ -2218,13 +2316,14 @@ class PlanController extends Controller
                         'error' => $result['message']
                     ]);
                 }
-
             }
         }
 
         return response()->json([
             'message' => 'Checked and processed expired failed payments.',
-            'cancelled_count' => $paymentFailures->count(),
+            'total_processed' => $paymentFailures->count(),
+            'cancelled_count' => $cancelledCount,
+            'skipped_count' => $skippedCount,
         ]);
     }
 
