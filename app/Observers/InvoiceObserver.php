@@ -95,9 +95,11 @@ class InvoiceObserver
         if ($invoice->isDirty('status') && strtolower($newStatus) === 'failed') {
             // Status changed to 'failed' from any other status
             if (strtolower($oldStatus) !== 'failed') {
-                // First time failing - set to 1 if not already set
+                // First time failing - set to 1 if not already set and persist
                 if ($currentAttemptNumber <= 1) {
                     $invoice->attempt_number = 1;
+                    // Persist the initial attempt_number without firing observers
+                    $invoice->saveQuietly();
                 }
             } else {
                 // Status remained 'failed' but was updated (retry) - increment
@@ -114,6 +116,8 @@ class InvoiceObserver
         if ($needsAttemptIncrement && !$invoice->isDirty('attempt_number')) {
             // Only increment if attempt_number wasn't manually changed
             $invoice->attempt_number = $currentAttemptNumber + 1;
+            // Persist the increment without firing observers
+            $invoice->saveQuietly();
             
             Log::info('InvoiceObserver: Auto-incremented attempt number', [
                 'invoice_id' => $invoice->id,
