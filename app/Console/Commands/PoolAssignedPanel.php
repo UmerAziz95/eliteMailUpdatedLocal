@@ -708,7 +708,8 @@ class PoolAssignedPanel extends Command
                 'pool_panel_id' => $panel->id,
                 'pool_id' => $pool->id,
                 'inboxes_per_domain' => $pool->inboxes_per_domain,
-                'domains' => $domainIdsToAssign // Store domain IDs instead of domain names
+                'domains' => $domainIdsToAssign, // Store domain IDs instead of domain names
+                'assigned_space' => $spaceToAssign // Track the space assigned from this split
             ]);
             
             // Update panel remaining capacity and used capacity

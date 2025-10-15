@@ -15,6 +15,7 @@ class PoolPanelSplit extends Model
         'inboxes_per_domain',
         'domains',
         'uploaded_file_path',
+        'assigned_space',
     ];
 
     protected $casts = [
@@ -47,6 +48,40 @@ class PoolPanelSplit extends Model
     public function getTotalInboxes()
     {
         return $this->getDomainCount() * $this->inboxes_per_domain;
+    }
+
+    /**
+     * Get the remaining available space (total inboxes - assigned space)
+     */
+    public function getAvailableSpace()
+    {
+        return $this->getTotalInboxes() - ($this->assigned_space ?? 0);
+    }
+
+    /**
+     * Check if there's enough available space
+     */
+    public function hasAvailableSpace($requestedSpace)
+    {
+        return $this->getAvailableSpace() >= $requestedSpace;
+    }
+
+    /**
+     * Assign space and update the assigned_space column
+     */
+    public function assignSpace($space)
+    {
+        $this->increment('assigned_space', $space);
+        return $this;
+    }
+
+    /**
+     * Release space and update the assigned_space column
+     */
+    public function releaseSpace($space)
+    {
+        $this->decrement('assigned_space', $space);
+        return $this;
     }
 
     /**

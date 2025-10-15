@@ -277,10 +277,10 @@
         <div class="card p-3">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h5 class="mb-0">Domains & hosting platform</h5>
-                <button type="button" class="m-btn py-1 px-3 rounded-2 border-0 import-btn" id="orderImportBtn">
+                <!-- <button type="button" class="m-btn py-1 px-3 rounded-2 border-0 import-btn" id="orderImportBtn">
                     <i class="fa-solid fa-file-import"></i>
                     Import Order
-                </button>
+                </button> -->
             </div>
 
             <div class="domain-forwarding mb-3">

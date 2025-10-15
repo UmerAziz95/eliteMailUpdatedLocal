@@ -648,7 +648,7 @@ function appendPoolPanels(poolPanels) {
 function createPoolPanelCard(poolPanel) {
     const total = poolPanel.limit || 1790;
     const used = poolPanel.used_limit || 0;
-    const remaining = poolPanel.remaining_limit || total;
+    const remaining = poolPanel.remaining_limit || 0;
     const totalOrders = 0; // Pool panels don't have orders like regular panels
     
     const statusBadge = poolPanel.is_active 

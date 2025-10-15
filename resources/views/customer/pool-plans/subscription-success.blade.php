@@ -32,10 +32,10 @@
                             </div>
                         </div>
                         
-                        <div class="mb-4 p-3 rounded-2" style="background-color: #17a2b82e; border: 1px solid #17a2b8;">
+                        <!-- <div class="mb-4 p-3 rounded-2" style="background-color: #17a2b82e; border: 1px solid #17a2b8;">
                             <h6 class="text-info mb-2 text-uppercase fw-bold">What's Next?</h6>
                             <p class="text-info opacity-75 mb-0">Your pool plan is now active. You can start placing orders and enjoy the benefits of our premium pool service.</p>
-                        </div>
+                        </div> -->
 
                         <div class="d-flex gap-3 justify-content-center">
                             <a href="{{ route('customer.dashboard') }}" class="btn btn-outline-primary d-flex align-items-center">

@@ -231,8 +231,8 @@ $(document).ready(function() {
             emptyTable: `
                 <div class="text-center py-4">
                     <i class="fa fa-fire fs-1 text-warning mb-3"></i>
-                    <h5 class="text-muted">No warming pools found</h5>
-                    <p class="text-muted">All pools in warming status will appear here.</p>
+                    <h5 class="">No warming pools found</h5>
+                    <p class="">All pools in warming status will appear here.</p>
                 </div>
             `
         },
@@ -263,8 +263,8 @@ $(document).ready(function() {
             emptyTable: `
                 <div class="text-center py-4">
                     <i class="fa fa-check-circle fs-1 text-success mb-3"></i>
-                    <h5 class="text-muted">No available pools found</h5>
-                    <p class="text-muted">All pools ready for use will appear here.</p>
+                    <h5 class="">No available pools found</h5>
+                    <p class="">All pools ready for use will appear here.</p>
                 </div>
             `
         },
