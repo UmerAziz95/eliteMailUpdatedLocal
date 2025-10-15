@@ -13,6 +13,7 @@ class PaymentFailure extends Model
     'chargebee_customer_id',
     'chargebee_subscription_id',
     'type',
+    'status',
     'user_id',
     'plan_id',
     'failed_at',

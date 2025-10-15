@@ -156,4 +156,118 @@ class OrderCancelledService
             ];
         }
     }
+
+    public function reactivateSubscription($chargebee_subscription_id, $user_id)
+    {
+        $subscription = UserSubscription::where('chargebee_subscription_id', $chargebee_subscription_id)
+            ->where('user_id', $user_id)
+            ->first();
+
+        if (!$subscription || $subscription->status !== 'cancelled') {
+            return [
+                'success' => false,
+                'message' => 'No cancelled subscription found'
+            ];
+        }
+
+        DB::beginTransaction();
+        try {
+            // First, reactivate the subscription on ChargeBee
+            $chargebeeResult = \ChargeBee\ChargeBee\Models\Subscription::reactivate($chargebee_subscription_id);
+            
+            if ($chargebeeResult->subscription()->status !== 'active') {
+                throw new Exception('Failed to reactivate subscription on ChargeBee: status is ' . $chargebeeResult->subscription()->status);
+            }
+
+            // Delete any pending domain removal tasks for this subscription
+            DomainRemovalTask::where('chargebee_subscription_id', $chargebee_subscription_id)->delete();
+
+            // Get updated billing info from ChargeBee response
+            $chargebeeSubscription = $chargebeeResult->subscription();
+            $nextBillingAt = $chargebeeSubscription->nextBillingAt ?? null;
+
+            // Reactivate the subscription record
+            $subscription->update([
+                'status' => 'active',
+                'cancellation_at' => null,
+                'reason' => null,
+                'end_date' => null,
+                'next_billing_date' => $nextBillingAt ? Carbon::createFromTimestamp($nextBillingAt) : null,
+                'is_cancelled_force' => false,
+            ]);
+
+            // Restore user subscription pointers where possible
+            $user = User::find($user_id);
+            if ($user) {
+                $user->update([
+                    'subscription_status' => 'active',
+                    'subscription_id' => $subscription->id,
+                    'plan_id' => $subscription->plan_id ?? $user->plan_id,
+                ]);
+            }
+
+            // Update order status if exists
+            $order = Order::where('chargebee_subscription_id', $chargebee_subscription_id)->first();
+            if ($order) {
+                $statusToRestore = 'completed'; // Better default fallback
+                
+                // First, try to find the cancellation log to get the previous status
+                $cancellationLog = \App\Models\Log::where('performed_on_type', 'App\Models\Order')
+                    ->where('performed_on_id', $order->id)
+                    ->whereIn('action_type', ['order_status_updated', 'contractor-order-status-update', 'admin-order-status-update'])
+                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.new_status')) IN ('cancelled', 'cancelled_force')")
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($cancellationLog && isset($cancellationLog->data['old_status'])) {
+                    // Get the status that was active before cancellation
+                    $statusToRestore = $cancellationLog->data['old_status'];
+                } else {
+                    // Fallback: Find the last non-cancelled status from logs
+                    $lastOrderLog = \App\Models\Log::where('performed_on_type', 'App\Models\Order')
+                        ->where('performed_on_id', $order->id)
+                        ->whereIn('action_type', ['order_status_updated', 'contractor-order-status-update', 'admin-order-status-update'])
+                        ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.new_status')) NOT IN ('cancelled', 'cancelled_force')")
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+
+                    if ($lastOrderLog && isset($lastOrderLog->data['new_status'])) {
+                        $statusToRestore = $lastOrderLog->data['new_status'];
+                    } elseif ($lastOrderLog && isset($lastOrderLog->data['previous_status'])) {
+                        $statusToRestore = $lastOrderLog->data['previous_status'];
+                    }
+                }
+
+                $order->update([
+                    'status_manage_by_admin' => $statusToRestore,
+                ]);
+            }
+
+            ActivityLogService::log(
+                'customer-subscription-reactivated',
+                'Subscription reactivated successfully: ' . $subscription->id,
+                $subscription,
+                [
+                    'user_id' => $user_id,
+                    'subscription_id' => $subscription->id,
+                    'status' => $subscription->status,
+                ]
+            );
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => 'Subscription reactivated successfully',
+                'subscription_id' => $subscription->id,
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Error reactivating subscription: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Failed to reactivate subscription: ' . $e->getMessage(),
+            ];
+        }
+    }
 }

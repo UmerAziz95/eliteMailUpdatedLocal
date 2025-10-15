@@ -23,6 +23,7 @@ class Invoice extends Model
         'paid_at',
         'metadata',
         'cancellation_notification_sent_at',
+        'attempt_number',
     ];
     public function user()
     {

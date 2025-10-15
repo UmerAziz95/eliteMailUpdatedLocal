@@ -1350,11 +1350,12 @@ class PlanController extends Controller
                     if (!$invoiceData) {
                         throw new \Exception('No invoice data in webhook content');
                     }
-                    // $invoiceData['id'] = 2461;
+                    // For testing purposes, simulate an invoice update
+                    // $invoiceData['id'] = 2971;
                     // $invoiceData['status'] = 'failed';
                     // $invoiceData['paid_at'] = null;
                     // $invoiceData['amount_paid'] = 5000; // Amount in cents
-                    // $subscriptionId = "AzZrUUUyA05aV4f8";
+                    // $subscriptionId = "16BWsKUzVR6BpQ5V";
                     // For invoice updates, only update the status and basic fields
                     $existingInvoice = Invoice::where('chargebee_invoice_id', $invoiceData['id'])->first();
                     
@@ -2188,110 +2189,209 @@ class PlanController extends Controller
     }
 
 
-   public function handleCancelSubscriptionByCron(Request $request)
-{
-    $cutoffTime = Carbon::now()->subHours(72);
+    public function handleCancelSubscriptionByCron(Request $request)
+    {
+        $cutoffTime = Carbon::now()->subHours(72);
 
-    // Get payment failures older than 72 hours
-   $paymentFailures = PaymentFailure::where("type", "invoice")
-    ->where("status", "!=", "cancelled")
-    ->where("created_at", "<=", $cutoffTime)
-    ->get();
+        // Get payment failures older than 72 hours
+        $paymentFailures = PaymentFailure::where("type", "invoice")
+            ->where("status", "!=", "cancelled")
+            ->where("created_at", "<=", $cutoffTime)
+            ->get();
 
-    $subscriptionService = new \App\Services\OrderCancelledService();
-    foreach ($paymentFailures as $failure) {
-        // Make sure user_id and subscription_id exist
-        if ($failure->chargebee_subscription_id && $failure->user_id) {
-           $result= $subscriptionService->cancelSubscription(
-                $failure->chargebee_subscription_id,
-                $failure->user_id,
-                'Auto-cancel due to repeated failure after 72 hours',
-                true // or false depending on your logic for removing accounts
-            );
-            if ($result['success']) {
-                // Mark the payment failure as processed
-                $failure->update(['status' => 'cancelled']);
-            } else {
-                Log::error('Failed to cancel subscription via cron', [
+        $subscriptionService = new \App\Services\OrderCancelledService();
+        $cancelledCount = 0;
+        $skippedCount = 0;
+        
+        foreach ($paymentFailures as $failure) {
+            // Make sure user_id and subscription_id exist
+            if ($failure->chargebee_subscription_id && $failure->user_id) {
+                // Extract invoice ID from invoice_data JSON with multiple fallbacks
+                $invoiceId = null;
+                if ($failure->invoice_data) {
+                    $invoiceData = json_decode($failure->invoice_data, true);
+                    
+                    // Primary: Try chargebee_invoice_id field
+                    $invoiceId = $invoiceData['chargebee_invoice_id'] ?? null;
+                    
+                    // Fallback 1: Try direct id field
+                    if (!$invoiceId) {
+                        $invoiceId = $invoiceData['id'] ?? null;
+                    }
+                    
+                    // Fallback 2: Try to get from metadata.invoice.id
+                    if (!$invoiceId && isset($invoiceData['metadata'])) {
+                        $metadata = is_string($invoiceData['metadata']) 
+                            ? json_decode($invoiceData['metadata'], true) 
+                            : $invoiceData['metadata'];
+                        $invoiceId = $metadata['invoice']['id'] ?? null;
+                    }
+                }
+
+                Log::info('Processing payment failure for cancellation', [
+                    'failure_id' => $failure->id,
                     'chargebee_subscription_id' => $failure->chargebee_subscription_id,
-                    'user_id' => $failure->user_id,
-                    'error' => $result['message']
+                    'invoice_id' => $invoiceId,
+                    'user_id' => $failure->user_id
                 ]);
+
+                // Check invoice status on ChargeBee if invoice ID exists
+                if ($invoiceId) {
+                    try {
+                        $chargebeeInvoice = \ChargeBee\ChargeBee\Models\Invoice::retrieve($invoiceId);
+                        $chargebeeInvoiceData = $chargebeeInvoice->invoice()->getValues();
+                        $chargebeeStatus = $chargebeeInvoiceData['status'] ?? 'unknown';
+
+                        Log::info('ChargeBee invoice status check', [
+                            'invoice_id' => $invoiceId,
+                            'chargebee_status' => $chargebeeStatus,
+                            'chargebee_subscription_id' => $failure->chargebee_subscription_id
+                        ]);
+
+                        // If invoice is paid on ChargeBee, skip cancellation and mark as resolved
+                        if ($chargebeeStatus === 'paid') {
+                            $failure->update(['status' => 'resolved']);
+                            
+                            // Also update local invoice record if exists
+                            $localInvoice = Invoice::where('chargebee_invoice_id', $invoiceId)->first();
+                            if ($localInvoice && $localInvoice->status !== 'paid') {
+                                $localInvoice->update([
+                                    'status' => 'paid',
+                                    'paid_at' => isset($chargebeeInvoiceData['paid_at']) 
+                                        ? Carbon::createFromTimestamp($chargebeeInvoiceData['paid_at'])->toDateTimeString() 
+                                        : now(),
+                                    'amount' => isset($chargebeeInvoiceData['amount_paid']) ? ($chargebeeInvoiceData['amount_paid'] / 100) : $localInvoice->amount,
+                                ]);
+                            }
+
+                            Log::info('Skipped subscription cancellation - invoice is paid on ChargeBee', [
+                                'invoice_id' => $invoiceId,
+                                'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                                'user_id' => $failure->user_id
+                            ]);
+                            
+                            $skippedCount++;
+                            continue;
+                        }
+                        
+                        // If invoice is still failed/unpaid, proceed with cancellation
+                        if (in_array($chargebeeStatus, ['payment_due', 'not_paid', 'failed'])) {
+                            // Update local invoice to failed status
+                            $localInvoice = Invoice::where('chargebee_invoice_id', $invoiceId)->first();
+                            if ($localInvoice && $localInvoice->status !== 'failed') {
+                                $localInvoice->update(['status' => 'failed']);
+                            }
+                        }
+                        
+                    } catch (\Exception $e) {
+                        Log::error('Failed to check invoice status on ChargeBee', [
+                            'invoice_id' => $invoiceId,
+                            'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                            'error' => $e->getMessage()
+                        ]);
+                        // Continue with cancellation if ChargeBee check fails
+                    }
+                }
+
+                // Proceed with subscription cancellation
+                $result = $subscriptionService->cancelSubscription(
+                    $failure->chargebee_subscription_id,
+                    $failure->user_id,
+                    'Auto-cancel due to repeated failure after 72 hours',
+                    true // or false depending on your logic for removing accounts
+                );
+                
+                if ($result['success']) {
+                    // Mark the payment failure as processed
+                    $failure->update(['status' => 'cancelled']);
+                    $cancelledCount++;
+                    
+                    Log::info('Successfully cancelled subscription via cron', [
+                        'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                        'user_id' => $failure->user_id
+                    ]);
+                } else {
+                    Log::error('Failed to cancel subscription via cron', [
+                        'chargebee_subscription_id' => $failure->chargebee_subscription_id,
+                        'user_id' => $failure->user_id,
+                        'error' => $result['message']
+                    ]);
+                }
+            }
+        }
+
+        return response()->json([
+            'message' => 'Checked and processed expired failed payments.',
+            'total_processed' => $paymentFailures->count(),
+            'cancelled_count' => $cancelledCount,
+            'skipped_count' => $skippedCount,
+        ]);
+    }
+
+
+
+    public function sendMailsTo72HoursFailedPayments(Request $request)
+    {
+        $now = Carbon::now();
+
+        // Get payment failures where it's within 72 hours from created_at
+        $paymentFailures = PaymentFailure::where("type", "invoice")
+            ->where("status", "!=", "cancelled")
+            ->where("created_at", ">=", $now->copy()->subHours(72))
+            ->get();
+
+        $sentCount = 0;
+
+        foreach ($paymentFailures as $failure) {
+            if (!$failure->user_id || !$failure->chargebee_subscription_id) {
+                continue;
             }
 
+            $user = User::find($failure->user_id);
+            if (!$user) continue;
+
+            $createdAt = Carbon::parse($failure->created_at);
+            $hoursSinceFailure = $createdAt->diffInHours($now);
+
+            if ($hoursSinceFailure > 72) {
+                continue; // Outside the 72-hour window
+            }
+
+            // Only send one email per calendar day
+            $alreadySentToday = \DB::table('payment_failure_email_logs')
+                ->where('payment_failure_id', $failure->id)
+                ->whereDate('sent_date', $now->toDateString())
+                ->exists();
+
+            if ($alreadySentToday) {
+                continue;
+            }
+
+            try {
+                Mail::to($user->email)->queue(new FailedPaymentNotificationMail($user, $failure));
+
+                \DB::table('payment_failure_email_logs')->insert([
+                    'payment_failure_id' => $failure->id,
+                    'sent_date' => $now->toDateString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                $sentCount++;
+            } catch (\Exception $e) {
+                Log::error('Failed to send failed payment email', [
+                    'user_id' => $user->id,
+                    'failure_id' => $failure->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
+
+        return response()->json([
+            'message' => 'Emails sent for failed payments within 72 hours of creation.',
+            'sent_count' => $sentCount,
+        ]);
     }
-
-    return response()->json([
-        'message' => 'Checked and processed expired failed payments.',
-        'cancelled_count' => $paymentFailures->count(),
-    ]);
-}
-
-
-
-public function sendMailsTo72HoursFailedPayments(Request $request)
-{
-    $now = Carbon::now();
-
-    // Get payment failures where it's within 72 hours from created_at
-    $paymentFailures = PaymentFailure::where("type", "invoice")
-        ->where("status", "!=", "cancelled")
-        ->where("created_at", ">=", $now->copy()->subHours(72))
-        ->get();
-
-    $sentCount = 0;
-
-    foreach ($paymentFailures as $failure) {
-        if (!$failure->user_id || !$failure->chargebee_subscription_id) {
-            continue;
-        }
-
-        $user = User::find($failure->user_id);
-        if (!$user) continue;
-
-        $createdAt = Carbon::parse($failure->created_at);
-        $hoursSinceFailure = $createdAt->diffInHours($now);
-
-        if ($hoursSinceFailure > 72) {
-            continue; // Outside the 72-hour window
-        }
-
-        // Only send one email per calendar day
-        $alreadySentToday = \DB::table('payment_failure_email_logs')
-            ->where('payment_failure_id', $failure->id)
-            ->whereDate('sent_date', $now->toDateString())
-            ->exists();
-
-        if ($alreadySentToday) {
-            continue;
-        }
-
-        try {
-            Mail::to($user->email)->queue(new FailedPaymentNotificationMail($user, $failure));
-
-            \DB::table('payment_failure_email_logs')->insert([
-                'payment_failure_id' => $failure->id,
-                'sent_date' => $now->toDateString(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $sentCount++;
-        } catch (\Exception $e) {
-            Log::error('Failed to send failed payment email', [
-                'user_id' => $user->id,
-                'failure_id' => $failure->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    return response()->json([
-        'message' => 'Emails sent for failed payments within 72 hours of creation.',
-        'sent_count' => $sentCount,
-    ]);
-}
 
 
 

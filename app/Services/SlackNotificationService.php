@@ -90,6 +90,34 @@ class SlackNotificationService
     }
 
     /**
+     * Format number with ordinal suffix (1st, 2nd, 3rd, etc.)
+     *
+     * @param int $number
+     * @return string
+     */
+    private static function getOrdinal($number)
+    {
+        $number = (int) $number;
+        
+        // Handle special cases for 11th, 12th, 13th
+        if (in_array(($number % 100), [11, 12, 13])) {
+            return $number . 'th';
+        }
+        
+        // Handle regular cases
+        switch ($number % 10) {
+            case 1:
+                return $number . 'st';
+            case 2:
+                return $number . 'nd';
+            case 3:
+                return $number . 'rd';
+            default:
+                return $number . 'th';
+        }
+    }
+
+    /**
      * Send order created notification to Slack
      *
      * @param \App\Models\Order $order
@@ -430,13 +458,40 @@ class SlackNotificationService
      */
     public static function sendOrderCancellationNotification($order, $reason = null)
     {
+        // Get cancellation type and domain removal task date from subscription
+        $cancellationType = 'N/A';
+        $removalTaskDate = 'N/A';
+        
+        if ($order->subscription) {
+            // Determine cancellation type based on is_cancelled_force flag
+            $cancellationType = $order->subscription->is_cancelled_force ? 'Force' : 'EOBC';
+            
+            // Get domain removal task date if exists
+            $domainRemovalTask = \App\Models\DomainRemovalTask::where('order_id', $order->id)
+                ->where('chargebee_subscription_id', $order->chargebee_subscription_id)
+                ->first();
+                
+            if ($domainRemovalTask && $domainRemovalTask->started_queue_date) {
+                $removalTaskDate = $domainRemovalTask->started_queue_date->format('Y-m-d H:i:s T');
+            }
+        }
+        // fallback removalTaskDate if still N/A
+        if ($removalTaskDate === 'N/A' ) {
+            if($cancellationType === 'Force')
+                $removalTaskDate = 'Removal task starts immediately';
+            else{
+                $removalTaskDate = 'Removal task shows at end of billing cycle';
+            }
+        }
         $data = [
             'inbox_id' => $order->id,
             'order_id' => $order->id, // Keep for backward compatibility
             'customer_name' => $order->user ? $order->user->name : 'Unknown',
             'customer_email' => $order->user ? $order->user->email : 'Unknown',
             'reason' => $reason ?: 'No reason provided',
-            'cancelled_by' => auth()->user() ? auth()->user()->name : 'System'
+            'cancelled_by' => auth()->user() ? auth()->user()->name : 'System',
+            'cancellation_type' => $cancellationType,
+            'removal_domains_task_date' => $removalTaskDate
         ];
         // Prepare the message based on type
         $message = self::formatMessage('order-cancellation', $data);
@@ -449,9 +504,10 @@ class SlackNotificationService
      * @param \App\Models\Invoice $invoice
      * @param \App\Models\User $user
      * @param bool $isPaymentFailed
+     * @param int $attemptNumber
      * @return bool
      */
-    public static function sendInvoiceGeneratedNotification($invoice, $user, $isPaymentFailed = false)
+    public static function sendInvoiceGeneratedNotification($invoice, $user, $isPaymentFailed = false, $attemptNumber = 1)
     {
         // Check if this is the first invoice for this user (new payment) or recurring
         $previousInvoices = \App\Models\Invoice::where('user_id', $user->id)
@@ -476,7 +532,8 @@ class SlackNotificationService
             'is_payment_failed' => $isPaymentFailed,
             'paid_at' => $invoice->paid_at ? \Carbon\Carbon::parse($invoice->paid_at)->format('Y-m-d H:i:s T') : 'N/A',
             'plan_name' => $order && $order->plan ? $order->plan->name : 'N/A',
-            'currency' => $order ? $order->currency : 'USD'
+            'currency' => $order ? $order->currency : 'USD',
+            'attempt_number' => $attemptNumber
         ];
 
         // Determine message type based on payment failure and type
@@ -497,10 +554,21 @@ class SlackNotificationService
      * @param \App\Models\Invoice $invoice
      * @param \App\Models\User $user
      * @param bool $isPaymentFailed
+     * @param int $attemptNumber
      * @return bool
      */
-    public static function sendInvoiceUpdatedNotification($invoice, $user, $isPaymentFailed = false)
+    
+    public static function sendInvoiceUpdatedNotification($invoice, $user, $isPaymentFailed = false, $attemptNumber = 1)
     {
+        // Check if this is the first invoice for this user (new payment) or recurring
+        $previousInvoices = \App\Models\Invoice::where('user_id', $user->id)
+            ->where('chargebee_invoice_id', '!=', $invoice->chargebee_invoice_id)
+            ->where('order_id', $invoice->order_id)
+            ->count();
+        
+        $isNewPayment = $previousInvoices === 0;
+        $paymentType = $isNewPayment ? 'new' : 'recurring';
+        
         // Get order information
         $order = \App\Models\Order::find($invoice->order_id);
         
@@ -516,12 +584,14 @@ class SlackNotificationService
             'paid_at' => $invoice->paid_at ? \Carbon\Carbon::parse($invoice->paid_at)->format('Y-m-d H:i:s T') : 'N/A',
             'plan_name' => $order && $order->plan ? $order->plan->name : 'N/A',
             'currency' => $order ? $order->currency : 'USD',
-            'updated_at' => $invoice->updated_at ? $invoice->updated_at->format('Y-m-d H:i:s T') : 'N/A'
+            'updated_at' => $invoice->updated_at ? $invoice->updated_at->format('Y-m-d H:i:s T') : 'N/A',
+            'attempt_number' => $attemptNumber,
+            'payment_type' => $paymentType
         ];
 
-        // Determine message type based on status change
+        // Determine message type based on status change and payment type
         if ($isPaymentFailed) {
-            $messageType = 'invoice-payment-failed-updated';
+            $messageType = $isNewPayment ? 'invoice-payment-failed-updated-new' : 'invoice-payment-failed-updated-recurring';
         } else {
             $messageType = 'invoice-status-updated';
         }
@@ -712,6 +782,11 @@ class SlackNotificationService
                                     'value' => 'New Customer Payment',
                                     'short' => true
                                 ],
+                                // [
+                                //     'title' => 'Attempt Number',
+                                //     'value' => $data['attempt_number'] ?? 1,
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Generated At',
                                     'value' => now()->format('Y-m-d H:i:s T'),
@@ -771,6 +846,11 @@ class SlackNotificationService
                                     'value' => 'Recurring Payment',
                                     'short' => true
                                 ],
+                                // [
+                                //     'title' => 'Attempt Number',
+                                //     'value' => $data['attempt_number'] ?? 1,
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Generated At',
                                     'value' => now()->format('Y-m-d H:i:s T'),
@@ -784,11 +864,16 @@ class SlackNotificationService
                 ];
 
             case 'invoice-payment-failed-new':
+                // Use purple color for failed attempts after the first attempt
+                $color = ($data['attempt_number'] ?? 1) > 1 ? '#6f42c1' : '#dc3545';
+                $attemptText = isset($data['attempt_number']) && $data['attempt_number'] > 1 
+                    ? ' - ' . self::getOrdinal($data['attempt_number']) . ' Attempt' 
+                    : '';
                 return [
-                    'text' => "❌ *New Payment Failed*",
+                    'text' => "❌ *New Payment Failed{$attemptText}*",
                     'attachments' => [
                         [
-                            'color' => '#dc3545',
+                            'color' => $color,
                             'fields' => [
                                 [
                                     'title' => 'Invoice ID',
@@ -823,6 +908,11 @@ class SlackNotificationService
                                 [
                                     'title' => 'Status',
                                     'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Attempt Number',
+                                    'value' => self::getOrdinal($data['attempt_number'] ?? 1),
                                     'short' => true
                                 ],
                                 [
@@ -843,11 +933,16 @@ class SlackNotificationService
                 ];
 
             case 'invoice-payment-failed-recurring':
+                // Use purple color for failed attempts after the first attempt
+                $color = '#ffc107';
+                $attemptText = isset($data['attempt_number']) && $data['attempt_number'] > 1 
+                    ? ' - ' . self::getOrdinal($data['attempt_number']) . ' Attempt' 
+                    : '';
                 return [
-                    'text' => "⚠️ *Recurring Payment Failed*",
+                    'text' => "⚠️ *Recurring Payment Failed {$attemptText}*",
                     'attachments' => [
                         [
-                            'color' => '#ffc107',
+                            'color' => $color,
                             'fields' => [
                                 [
                                     'title' => 'Invoice ID',
@@ -882,6 +977,11 @@ class SlackNotificationService
                                 [
                                     'title' => 'Status',
                                     'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Attempt Number',
+                                    'value' => self::getOrdinal($data['attempt_number'] ?? 1),
                                     'short' => true
                                 ],
                                 [
@@ -960,12 +1060,17 @@ class SlackNotificationService
                     ]
                 ];
 
-            case 'invoice-payment-failed-updated':
+            case 'invoice-payment-failed-updated-new':
+                // New payment failed (updated status)
+                $color = '#dc3545';
+                $attemptText = isset($data['attempt_number']) && $data['attempt_number'] > 1 
+                    ? ' - ' . self::getOrdinal($data['attempt_number']) . ' Attempt' 
+                    : '';
                 return [
-                    'text' => "❌ *Invoice Payment Failed (Updated)*",
+                    'text' => "❌ *New Payment Failed (Updated){$attemptText}*",
                     'attachments' => [
                         [
-                            'color' => '#dc3545',
+                            'color' => $color,
                             'fields' => [
                                 [
                                     'title' => 'Invoice ID',
@@ -1005,6 +1110,90 @@ class SlackNotificationService
                                 [
                                     'title' => 'Current Status',
                                     'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Attempt Number',
+                                    'value' => self::getOrdinal($data['attempt_number'] ?? 1),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Payment Type',
+                                    'value' => 'New Customer Payment',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Updated At',
+                                    'value' => $data['updated_at'] ?? now()->format('Y-m-d H:i:s T'),
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - Payment Failed Alert',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'invoice-payment-failed-updated-recurring':
+                // Recurring payment failed (updated status)
+                $color = '#ffc107';
+                $attemptText = isset($data['attempt_number']) && $data['attempt_number'] > 1 
+                    ? ' - ' . self::getOrdinal($data['attempt_number']) . ' Attempt' 
+                    : '';
+                return [
+                    'text' => "⚠️ *Recurring Payment Failed{$attemptText}*",
+                    'attachments' => [
+                        [
+                            'color' => $color,
+                            'fields' => [
+                                [
+                                    'title' => 'Invoice ID',
+                                    'value' => $data['invoice_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Plan',
+                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Amount',
+                                    'value' => ($data['currency'] ?? 'USD') . ' ' . number_format(floatval($data['amount'] ?? 0), 2, '.', ','),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Previous Status',
+                                    'value' => ucfirst($data['old_status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Current Status',
+                                    'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Attempt Number',
+                                    'value' => self::getOrdinal($data['attempt_number'] ?? 1),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Payment Type',
+                                    'value' => 'Recurring Payment',
                                     'short' => true
                                 ],
                                 [
@@ -1576,19 +1765,24 @@ class SlackNotificationService
                                     'value' => $data['customer_name'] ?? 'N/A',
                                     'short' => true
                                 ],
-                                // [
-                                //     'title' => 'Customer Email',
-                                //     'value' => $data['customer_email'] ?? 'N/A',
-                                //     'short' => true
-                                // ],
                                 [
                                     'title' => 'Cancelled By',
                                     'value' => $data['cancelled_by'] ?? 'System',
                                     'short' => true
                                 ],
                                 [
+                                    'title' => 'Cancellation Type',
+                                    'value' => $data['cancellation_type'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
                                     'title' => 'Reason',
                                     'value' => $data['reason'] ?? 'No reason provided',
+                                    'short' => false
+                                ],
+                                [
+                                    'title' => 'Note',
+                                    'value' => $data['removal_domains_task_date'] ?? 'N/A',
                                     'short' => false
                                 ],
                                 [

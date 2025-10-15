@@ -212,7 +212,7 @@ class OrderController extends Controller
     {
         try {
             $orders = Order::query()
-                ->with(['user', 'plan', 'reorderInfo', 'orderPanels.orderPanelSplits'])
+                ->with(['user', 'plan', 'reorderInfo', 'orderPanels.orderPanelSplits', 'assignedTo'])
                 ->select('orders.*')
                 ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
                 ->leftJoin('users', 'orders.user_id', '=', 'users.id');
