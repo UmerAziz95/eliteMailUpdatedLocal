@@ -691,7 +691,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const isSelected = selectedDomains.has(domain.id);
         // Create inbox prefixes display if domain has multiple inboxes and prefix variants
         let inboxPrefixesHtml = '';
-        if (domain.available_inboxes > 1 && domain.prefix_variants) {
+        if (domain.available_inboxes > 0 && domain.prefix_variants) {
             const prefixVariants = typeof domain.prefix_variants === 'string' 
                 ? JSON.parse(domain.prefix_variants) 
                 : domain.prefix_variants;
