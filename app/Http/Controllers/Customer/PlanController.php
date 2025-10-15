@@ -1350,11 +1350,12 @@ class PlanController extends Controller
                     if (!$invoiceData) {
                         throw new \Exception('No invoice data in webhook content');
                     }
-                    // $invoiceData['id'] = 2461;
+                    // For testing purposes, simulate an invoice update
+                    // $invoiceData['id'] = 2971;
                     // $invoiceData['status'] = 'failed';
                     // $invoiceData['paid_at'] = null;
                     // $invoiceData['amount_paid'] = 5000; // Amount in cents
-                    // $subscriptionId = "AzZrUUUyA05aV4f8";
+                    // $subscriptionId = "16BWsKUzVR6BpQ5V";
                     // For invoice updates, only update the status and basic fields
                     $existingInvoice = Invoice::where('chargebee_invoice_id', $invoiceData['id'])->first();
                     
