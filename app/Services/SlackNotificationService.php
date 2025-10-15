@@ -476,9 +476,10 @@ class SlackNotificationService
      * @param \App\Models\Invoice $invoice
      * @param \App\Models\User $user
      * @param bool $isPaymentFailed
+     * @param int $attemptNumber
      * @return bool
      */
-    public static function sendInvoiceGeneratedNotification($invoice, $user, $isPaymentFailed = false)
+    public static function sendInvoiceGeneratedNotification($invoice, $user, $isPaymentFailed = false, $attemptNumber = 1)
     {
         // Check if this is the first invoice for this user (new payment) or recurring
         $previousInvoices = \App\Models\Invoice::where('user_id', $user->id)
@@ -503,7 +504,8 @@ class SlackNotificationService
             'is_payment_failed' => $isPaymentFailed,
             'paid_at' => $invoice->paid_at ? \Carbon\Carbon::parse($invoice->paid_at)->format('Y-m-d H:i:s T') : 'N/A',
             'plan_name' => $order && $order->plan ? $order->plan->name : 'N/A',
-            'currency' => $order ? $order->currency : 'USD'
+            'currency' => $order ? $order->currency : 'USD',
+            'attempt_number' => $attemptNumber
         ];
 
         // Determine message type based on payment failure and type
@@ -524,9 +526,10 @@ class SlackNotificationService
      * @param \App\Models\Invoice $invoice
      * @param \App\Models\User $user
      * @param bool $isPaymentFailed
+     * @param int $attemptNumber
      * @return bool
      */
-    public static function sendInvoiceUpdatedNotification($invoice, $user, $isPaymentFailed = false)
+    public static function sendInvoiceUpdatedNotification($invoice, $user, $isPaymentFailed = false, $attemptNumber = 1)
     {
         // Get order information
         $order = \App\Models\Order::find($invoice->order_id);
@@ -543,7 +546,8 @@ class SlackNotificationService
             'paid_at' => $invoice->paid_at ? \Carbon\Carbon::parse($invoice->paid_at)->format('Y-m-d H:i:s T') : 'N/A',
             'plan_name' => $order && $order->plan ? $order->plan->name : 'N/A',
             'currency' => $order ? $order->currency : 'USD',
-            'updated_at' => $invoice->updated_at ? $invoice->updated_at->format('Y-m-d H:i:s T') : 'N/A'
+            'updated_at' => $invoice->updated_at ? $invoice->updated_at->format('Y-m-d H:i:s T') : 'N/A',
+            'attempt_number' => $attemptNumber
         ];
 
         // Determine message type based on status change
@@ -739,6 +743,11 @@ class SlackNotificationService
                                     'value' => 'New Customer Payment',
                                     'short' => true
                                 ],
+                                // [
+                                //     'title' => 'Attempt Number',
+                                //     'value' => $data['attempt_number'] ?? 1,
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Generated At',
                                     'value' => now()->format('Y-m-d H:i:s T'),
@@ -798,6 +807,11 @@ class SlackNotificationService
                                     'value' => 'Recurring Payment',
                                     'short' => true
                                 ],
+                                // [
+                                //     'title' => 'Attempt Number',
+                                //     'value' => $data['attempt_number'] ?? 1,
+                                //     'short' => true
+                                // ],
                                 [
                                     'title' => 'Generated At',
                                     'value' => now()->format('Y-m-d H:i:s T'),
@@ -811,11 +825,13 @@ class SlackNotificationService
                 ];
 
             case 'invoice-payment-failed-new':
+                // Use purple color for failed attempts after the first attempt
+                $color = ($data['attempt_number'] ?? 1) > 1 ? '#6f42c1' : '#dc3545';
                 return [
                     'text' => "❌ *New Payment Failed*",
                     'attachments' => [
                         [
-                            'color' => '#dc3545',
+                            'color' => $color,
                             'fields' => [
                                 [
                                     'title' => 'Invoice ID',
@@ -850,6 +866,11 @@ class SlackNotificationService
                                 [
                                     'title' => 'Status',
                                     'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Attempt Number',
+                                    'value' => $data['attempt_number'] ?? 1,
                                     'short' => true
                                 ],
                                 [
@@ -870,11 +891,13 @@ class SlackNotificationService
                 ];
 
             case 'invoice-payment-failed-recurring':
+                // Use purple color for failed attempts after the first attempt
+                $color = ($data['attempt_number'] ?? 1) > 1 ? '#6f42c1' : '#ffc107';
                 return [
                     'text' => "⚠️ *Recurring Payment Failed*",
                     'attachments' => [
                         [
-                            'color' => '#ffc107',
+                            'color' => $color,
                             'fields' => [
                                 [
                                     'title' => 'Invoice ID',
@@ -909,6 +932,11 @@ class SlackNotificationService
                                 [
                                     'title' => 'Status',
                                     'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Invoice Attempt Retry Number',
+                                    'value' => $data['attempt_number'] ?? 1,
                                     'short' => true
                                 ],
                                 [
@@ -988,11 +1016,13 @@ class SlackNotificationService
                 ];
 
             case 'invoice-payment-failed-updated':
+                // Use purple color for failed attempts after the first attempt
+                $color = ($data['attempt_number'] ?? 1) > 1 ? '#6f42c1' : '#dc3545';
                 return [
                     'text' => "❌ *Invoice Payment Failed (Updated)*",
                     'attachments' => [
                         [
-                            'color' => '#dc3545',
+                            'color' => $color,
                             'fields' => [
                                 [
                                     'title' => 'Invoice ID',
@@ -1027,6 +1057,11 @@ class SlackNotificationService
                                 [
                                     'title' => 'Previous Status',
                                     'value' => ucfirst($data['old_status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Attempt Number',
+                                    'value' => $data['attempt_number'] ?? 1,
                                     'short' => true
                                 ],
                                 [
