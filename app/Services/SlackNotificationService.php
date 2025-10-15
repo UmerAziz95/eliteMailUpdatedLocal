@@ -1006,7 +1006,7 @@ class SlackNotificationService
                     'text' => "🔄 *Invoice Status Updated*",
                     'attachments' => [
                         [
-                            'color' => '#007bff',
+                            'color' => '#fb00ffff',
                             'fields' => [
                                 [
                                     'title' => 'Invoice ID',
