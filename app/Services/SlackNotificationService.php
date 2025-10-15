@@ -838,7 +838,7 @@ class SlackNotificationService
                                 ],
                                 [
                                     'title' => 'Status',
-                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'value' => '✅ ' . ucfirst($data['status'] ?? 'N/A'),
                                     'short' => true
                                 ],
                                 [
@@ -1006,7 +1006,7 @@ class SlackNotificationService
                     'text' => "🔄 *Invoice Status Updated*",
                     'attachments' => [
                         [
-                            'color' => '#007bff',
+                            'color' => '#6f42c1',
                             'fields' => [
                                 [
                                     'title' => 'Invoice ID',
@@ -1045,7 +1045,7 @@ class SlackNotificationService
                                 ],
                                 [
                                     'title' => 'New Status',
-                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'value' => '✅ ' . ucfirst($data['status'] ?? 'N/A'),
                                     'short' => true
                                 ],
                                 [
