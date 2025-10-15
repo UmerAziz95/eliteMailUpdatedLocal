@@ -90,6 +90,34 @@ class SlackNotificationService
     }
 
     /**
+     * Format number with ordinal suffix (1st, 2nd, 3rd, etc.)
+     *
+     * @param int $number
+     * @return string
+     */
+    private static function getOrdinal($number)
+    {
+        $number = (int) $number;
+        
+        // Handle special cases for 11th, 12th, 13th
+        if (in_array(($number % 100), [11, 12, 13])) {
+            return $number . 'th';
+        }
+        
+        // Handle regular cases
+        switch ($number % 10) {
+            case 1:
+                return $number . 'st';
+            case 2:
+                return $number . 'nd';
+            case 3:
+                return $number . 'rd';
+            default:
+                return $number . 'th';
+        }
+    }
+
+    /**
      * Send order created notification to Slack
      *
      * @param \App\Models\Order $order
@@ -838,8 +866,11 @@ class SlackNotificationService
             case 'invoice-payment-failed-new':
                 // Use purple color for failed attempts after the first attempt
                 $color = ($data['attempt_number'] ?? 1) > 1 ? '#6f42c1' : '#dc3545';
+                $attemptText = isset($data['attempt_number']) && $data['attempt_number'] > 1 
+                    ? ' - ' . self::getOrdinal($data['attempt_number']) . ' Attempt' 
+                    : '';
                 return [
-                    'text' => "❌ *New Payment Failed*",
+                    'text' => "❌ *New Payment Failed{$attemptText}*",
                     'attachments' => [
                         [
                             'color' => $color,
@@ -881,7 +912,7 @@ class SlackNotificationService
                                 ],
                                 [
                                     'title' => 'Attempt Number',
-                                    'value' => $data['attempt_number'] ?? 1,
+                                    'value' => self::getOrdinal($data['attempt_number'] ?? 1),
                                     'short' => true
                                 ],
                                 [
@@ -904,8 +935,11 @@ class SlackNotificationService
             case 'invoice-payment-failed-recurring':
                 // Use purple color for failed attempts after the first attempt
                 $color = '#ffc107';
+                $attemptText = isset($data['attempt_number']) && $data['attempt_number'] > 1 
+                    ? ' - ' . self::getOrdinal($data['attempt_number']) . ' Attempt' 
+                    : '';
                 return [
-                    'text' => "⚠️ *Recurring Payment Failed" . (isset($data['attempt_number']) && $data['attempt_number'] > 1 ? " - #{$data['attempt_number']} Attempt" : "") . "*",
+                    'text' => "⚠️ *Recurring Payment Failed {$attemptText}*",
                     'attachments' => [
                         [
                             'color' => $color,
@@ -945,11 +979,11 @@ class SlackNotificationService
                                     'value' => 'PAYMENT FAILED',
                                     'short' => true
                                 ],
-                                // [
-                                //     'title' => 'Invoice Attempt Retry Number',
-                                //     'value' => $data['attempt_number'] ?? 1,
-                                //     'short' => true
-                                // ],
+                                [
+                                    'title' => 'Attempt Number',
+                                    'value' => self::getOrdinal($data['attempt_number'] ?? 1),
+                                    'short' => true
+                                ],
                                 [
                                     'title' => 'Payment Type',
                                     'value' => 'Recurring Payment',
@@ -1029,8 +1063,11 @@ class SlackNotificationService
             case 'invoice-payment-failed-updated-new':
                 // New payment failed (updated status)
                 $color = '#dc3545';
+                $attemptText = isset($data['attempt_number']) && $data['attempt_number'] > 1 
+                    ? ' - ' . self::getOrdinal($data['attempt_number']) . ' Attempt' 
+                    : '';
                 return [
-                    'text' => "❌ *New Payment Failed (Updated)" . (isset($data['attempt_number']) && $data['attempt_number'] > 1 ? " - Attempt #{$data['attempt_number']}" : "") . "*",
+                    'text' => "❌ *New Payment Failed (Updated){$attemptText}*",
                     'attachments' => [
                         [
                             'color' => $color,
@@ -1073,6 +1110,11 @@ class SlackNotificationService
                                 [
                                     'title' => 'Current Status',
                                     'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Attempt Number',
+                                    'value' => self::getOrdinal($data['attempt_number'] ?? 1),
                                     'short' => true
                                 ],
                                 [
@@ -1095,8 +1137,11 @@ class SlackNotificationService
             case 'invoice-payment-failed-updated-recurring':
                 // Recurring payment failed (updated status)
                 $color = '#ffc107';
+                $attemptText = isset($data['attempt_number']) && $data['attempt_number'] > 1 
+                    ? ' - ' . self::getOrdinal($data['attempt_number']) . ' Attempt' 
+                    : '';
                 return [
-                    'text' => "⚠️ *Recurring Payment Failed (Updated)" . (isset($data['attempt_number']) && $data['attempt_number'] > 1 ? " - Attempt #{$data['attempt_number']}" : "") . "*",
+                    'text' => "⚠️ *Recurring Payment Failed{$attemptText}*",
                     'attachments' => [
                         [
                             'color' => $color,
@@ -1139,6 +1184,11 @@ class SlackNotificationService
                                 [
                                     'title' => 'Current Status',
                                     'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Attempt Number',
+                                    'value' => self::getOrdinal($data['attempt_number'] ?? 1),
                                     'short' => true
                                 ],
                                 [
