@@ -838,7 +838,7 @@ class SlackNotificationService
                                 ],
                                 [
                                     'title' => 'Status',
-                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'value' => '✅ ' . ucfirst($data['status'] ?? 'N/A'),
                                     'short' => true
                                 ],
                                 [
@@ -1045,7 +1045,7 @@ class SlackNotificationService
                                 ],
                                 [
                                     'title' => 'New Status',
-                                    'value' => ucfirst($data['status'] ?? 'N/A'),
+                                    'value' => '✅ ' . ucfirst($data['status'] ?? 'N/A'),
                                     'short' => true
                                 ],
                                 [
