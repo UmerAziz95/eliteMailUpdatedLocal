@@ -529,8 +529,18 @@ class SlackNotificationService
      * @param int $attemptNumber
      * @return bool
      */
+    
     public static function sendInvoiceUpdatedNotification($invoice, $user, $isPaymentFailed = false, $attemptNumber = 1)
     {
+        // Check if this is the first invoice for this user (new payment) or recurring
+        $previousInvoices = \App\Models\Invoice::where('user_id', $user->id)
+            ->where('chargebee_invoice_id', '!=', $invoice->chargebee_invoice_id)
+            ->where('order_id', $invoice->order_id)
+            ->count();
+        
+        $isNewPayment = $previousInvoices === 0;
+        $paymentType = $isNewPayment ? 'new' : 'recurring';
+        
         // Get order information
         $order = \App\Models\Order::find($invoice->order_id);
         
@@ -547,12 +557,13 @@ class SlackNotificationService
             'plan_name' => $order && $order->plan ? $order->plan->name : 'N/A',
             'currency' => $order ? $order->currency : 'USD',
             'updated_at' => $invoice->updated_at ? $invoice->updated_at->format('Y-m-d H:i:s T') : 'N/A',
-            'attempt_number' => $attemptNumber
+            'attempt_number' => $attemptNumber,
+            'payment_type' => $paymentType
         ];
 
-        // Determine message type based on status change
+        // Determine message type based on status change and payment type
         if ($isPaymentFailed) {
-            $messageType = 'invoice-payment-failed-updated';
+            $messageType = $isNewPayment ? 'invoice-payment-failed-updated-new' : 'invoice-payment-failed-updated-recurring';
         } else {
             $messageType = 'invoice-status-updated';
         }
@@ -1015,11 +1026,11 @@ class SlackNotificationService
                     ]
                 ];
 
-            case 'invoice-payment-failed-updated':
-                // Use purple color for failed attempts after the first attempt
+            case 'invoice-payment-failed-updated-new':
+                // New payment failed (updated status)
                 $color = '#dc3545';
                 return [
-                    'text' => "❌ *Invoice Payment Failed" . (isset($data['attempt_number']) && $data['attempt_number'] > 1 ? " - #{$data['attempt_number']} Attempt" : "") . "*",
+                    'text' => "❌ *New Payment Failed (Updated)" . (isset($data['attempt_number']) && $data['attempt_number'] > 1 ? " - Attempt #{$data['attempt_number']}" : "") . "*",
                     'attachments' => [
                         [
                             'color' => $color,
@@ -1059,14 +1070,80 @@ class SlackNotificationService
                                     'value' => ucfirst($data['old_status'] ?? 'N/A'),
                                     'short' => true
                                 ],
-                                // [
-                                //     'title' => 'Attempt Number',
-                                //     'value' => $data['attempt_number'] ?? 1,
-                                //     'short' => true
-                                // ],
                                 [
                                     'title' => 'Current Status',
                                     'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Payment Type',
+                                    'value' => 'New Customer Payment',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Updated At',
+                                    'value' => $data['updated_at'] ?? now()->format('Y-m-d H:i:s T'),
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - Payment Failed Alert',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'invoice-payment-failed-updated-recurring':
+                // Recurring payment failed (updated status)
+                $color = '#ffc107';
+                return [
+                    'text' => "⚠️ *Recurring Payment Failed (Updated)" . (isset($data['attempt_number']) && $data['attempt_number'] > 1 ? " - Attempt #{$data['attempt_number']}" : "") . "*",
+                    'attachments' => [
+                        [
+                            'color' => $color,
+                            'fields' => [
+                                [
+                                    'title' => 'Invoice ID',
+                                    'value' => $data['invoice_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Name',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer Email',
+                                    'value' => $data['customer_email'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Plan',
+                                    'value' => $data['plan_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Amount',
+                                    'value' => ($data['currency'] ?? 'USD') . ' ' . number_format(floatval($data['amount'] ?? 0), 2, '.', ','),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Previous Status',
+                                    'value' => ucfirst($data['old_status'] ?? 'N/A'),
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Current Status',
+                                    'value' => 'PAYMENT FAILED',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Payment Type',
+                                    'value' => 'Recurring Payment',
                                     'short' => true
                                 ],
                                 [
