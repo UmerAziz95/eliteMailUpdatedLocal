@@ -2275,13 +2275,13 @@ class PlanController extends Controller
                         }
                         
                         // If invoice is still failed/unpaid, proceed with cancellation
-                        if (in_array($chargebeeStatus, ['payment_due', 'not_paid', 'failed'])) {
-                            // Update local invoice to failed status
-                            $localInvoice = Invoice::where('chargebee_invoice_id', $invoiceId)->first();
-                            if ($localInvoice && $localInvoice->status !== 'failed') {
-                                $localInvoice->update(['status' => 'failed']);
-                            }
-                        }
+                        // if (in_array($chargebeeStatus, ['payment_due', 'not_paid', 'failed'])) {
+                        //     // Update local invoice to failed status
+                        //     $localInvoice = Invoice::where('chargebee_invoice_id', $invoiceId)->first();
+                        //     if ($localInvoice && $localInvoice->status !== 'failed') {
+                        //         $localInvoice->update(['status' => 'failed']);
+                        //     }
+                        // }
                         
                     } catch (\Exception $e) {
                         Log::error('Failed to check invoice status on ChargeBee', [
