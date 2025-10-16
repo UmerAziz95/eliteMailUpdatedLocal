@@ -19,24 +19,39 @@ class OrderCancelledService
 {
     public function cancelSubscription($chargebee_subscription_id, $user_id, $reason, $remove_accounts = false, $force_cancel = false)
     {
+        Log::info("Initiating cancellation for ChargeBee ID {$chargebee_subscription_id}, User ID {$user_id}, Force Cancel: " . ($force_cancel ? 'Yes' : 'No'));
         $subscription = UserSubscription::where('chargebee_subscription_id', $chargebee_subscription_id)
             ->where('user_id', $user_id)
             ->first();
 
         if (!$subscription || $subscription->status !== 'active') {
+            Log::warning("No active subscription found for cancellation: ChargeBee ID {$chargebee_subscription_id}, User ID {$user_id}");
             return [
                 'success' => false,
                 'message' => 'No active subscription found'
             ];
         }
-
+        
+        Log::info("Found active subscription for cancellation: Subscription ID {$subscription->id}, ChargeBee ID {$chargebee_subscription_id}, User ID {$user_id}");
         try {
-            $result = \ChargeBee\ChargeBee\Models\Subscription::cancelForItems($chargebee_subscription_id, [
-                "end_of_term" => false,
-                "credit_option" => "none",
-                "unbilled_charges_option" => "delete",
-                "account_receivables_handling" => "no_action"
-            ]);
+            // First, check if subscription is already cancelled in Chargebee
+            $chargebeeSubscription = \ChargeBee\ChargeBee\Models\Subscription::retrieve($chargebee_subscription_id);
+            $isAlreadyCancelled = $chargebeeSubscription->subscription()->status === 'cancelled';
+            
+            // Only call cancel API if not already cancelled
+            if (!$isAlreadyCancelled) {
+                $result = \ChargeBee\ChargeBee\Models\Subscription::cancelForItems($chargebee_subscription_id, [
+                    "end_of_term" => false,
+                    "credit_option" => "none",
+                    "unbilled_charges_option" => "delete",
+                    "account_receivables_handling" => "no_action"
+                ]);
+                Log::info("Subscription cancelled in ChargeBee: {$chargebee_subscription_id}");
+            } else {
+                Log::info("Subscription already cancelled in ChargeBee: {$chargebee_subscription_id}");
+                // Use the retrieved subscription data
+                $result = $chargebeeSubscription;
+            }
 
             if ($result->subscription()->status === 'cancelled') {
                 $user = User::find($user_id);
@@ -71,13 +86,14 @@ class OrderCancelledService
                     'next_billing_date' => null,
                     'is_cancelled_force' => $force_cancel,
                 ]);
-
+                Log::info("Updated local subscription record to cancelled: Subscription ID {$subscription->id}, User ID {$user_id}");
                 if ($user) {
                     $user->update([
                         'subscription_status' => 'cancelled',
                         'subscription_id' => null,
                         'plan_id' => null
                     ]);
+                    Log::info("Updated user record to cancelled: User ID {$user_id}");
                 }
 
                 $order = Order::where('chargebee_subscription_id', $chargebee_subscription_id)->first();
@@ -85,6 +101,7 @@ class OrderCancelledService
                     $order->update([
                         'status_manage_by_admin' => 'cancelled',
                     ]);
+                    Log::info("Updated order record to cancelled: Order ID {$order->id}, User ID {$user_id}");
                 }
 
                 ActivityLogService::log(
@@ -135,7 +152,7 @@ class OrderCancelledService
                 } catch (\Exception $e) {
                     // Log or ignore email errors
                 }
-
+                Log::info("Subscription cancellation process completed for ChargeBee ID {$chargebee_subscription_id}, User ID {$user_id}");
                 return [
                     'success' => true,
                     'message' => 'Subscription cancelled successfully',
@@ -143,7 +160,7 @@ class OrderCancelledService
                     'cancellation_reason' => $reason,
                 ];
             }
-
+            Log::error("Failed to cancel subscription in ChargeBee: {$chargebee_subscription_id}, Status: " . $result->subscription()->status);
             return [
                 'success' => false,
                 'message' => 'Failed to cancel subscription in payment gateway'
