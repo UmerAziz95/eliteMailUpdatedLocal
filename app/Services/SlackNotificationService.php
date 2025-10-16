@@ -1749,6 +1749,9 @@ class SlackNotificationService
                 ];
 
             case 'order-cancellation':
+                if ($data['reason'] != 'Auto-cancel due to repeated failure after 72 hours') {
+                    $data['reason'] .= '. ' . $data['removal_domains_task_date'];
+                }
                 return [
                     'text' => "❌ *Order Cancellation Notification*",
                     'attachments' => [
@@ -1780,11 +1783,11 @@ class SlackNotificationService
                                     'value' => $data['reason'] ?? 'No reason provided',
                                     'short' => false
                                 ],
-                                [
-                                    'title' => 'Note',
-                                    'value' => $data['removal_domains_task_date'] ?? 'N/A',
-                                    'short' => false
-                                ],
+                                // [
+                                //     'title' => 'Note',
+                                //     'value' => $data['removal_domains_task_date'] ?? 'N/A',
+                                //     'short' => false
+                                // ],
                                 [
                                     'title' => 'Timestamp',
                                     'value' => now()->format('Y-m-d H:i:s T'),
