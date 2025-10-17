@@ -71,6 +71,8 @@ class PoolOrder extends Model
         'status',
         'status_manage_by_admin',
         'domains',
+        'hosting_platform',
+        'hosting_platform_data',
         'paid_at',
         'meta',
         'completed_at',
@@ -81,6 +83,7 @@ class PoolOrder extends Model
     protected $casts = [
         'meta' => 'array',
         'domains' => 'array',
+        'hosting_platform_data' => 'array',
         'paid_at' => 'datetime',
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',

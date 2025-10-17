@@ -400,10 +400,15 @@ class PoolPlanController extends Controller
         // Store previously selected domains BEFORE any processing
         $previousDomains = $poolOrder->domains ?? [];
 
-        $request->validate([
+        // Validation rules
+        $rules = [
             'domains' => 'required|array|min:1',
             'domains.*' => 'required|string',
-        ]);
+            'hosting_platform' => 'nullable|string|max:255',
+        ];
+
+        // Validate
+        $validated = $request->validate($rules);
 
         // Check if selected domains count exceeds quantity
         if (count($request->domains) > $poolOrder->quantity) {
@@ -476,6 +481,44 @@ class PoolPlanController extends Controller
             // Set domains from form data
             $poolOrder->setDomainsFromForm($domainsData);
             
+            // Save hosting platform data
+            if ($request->has('hosting_platform')) {
+                $poolOrder->hosting_platform = $request->hosting_platform;
+                
+                // Collect all dynamic hosting platform fields
+                $hostingPlatformData = [];
+                
+                // Get the hosting platform configuration
+                $hostingPlatform = \App\Models\HostingPlatform::where('value', $request->hosting_platform)->first();
+                
+                if ($hostingPlatform && $hostingPlatform->fields) {
+                    // Iterate through defined fields and collect their values
+                    foreach ($hostingPlatform->fields as $fieldName => $fieldConfig) {
+                        if ($request->has($fieldName)) {
+                            $value = $request->input($fieldName);
+                            
+                            // Special handling for Namecheap backup codes - save as comma-separated array
+                            if ($fieldName === 'backup_codes' && $request->hosting_platform === 'namecheap') {
+                                // Split by newlines and filter empty values
+                                $codes = array_filter(array_map('trim', explode("\n", $value)));
+                                // Join with comma and space
+                                $value = implode(', ', $codes);
+                            }
+                            
+                            $hostingPlatformData[$fieldName] = $value;
+                        }
+                    }
+                }
+                
+                // Store all collected data as JSON
+                $poolOrder->hosting_platform_data = $hostingPlatformData;
+                
+                Log::info('Hosting platform data saved:', [
+                    'platform' => $poolOrder->hosting_platform,
+                    'data' => $hostingPlatformData
+                ]);
+            }
+            
             Log::info('Before saving pool order - domains:', ['domains' => $poolOrder->domains]);
             
             $poolOrder->save();
@@ -484,9 +527,10 @@ class PoolPlanController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Domains updated successfully',
+                'message' => 'Configuration saved successfully',
                 'total_domains' => $poolOrder->selected_domains_count,
-                'total_inboxes' => $poolOrder->total_inboxes
+                'total_inboxes' => $poolOrder->total_inboxes,
+                'hosting_platform' => $poolOrder->hosting_platform
             ]);
 
         } catch (\Exception $e) {

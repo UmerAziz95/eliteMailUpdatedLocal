@@ -447,6 +447,7 @@
                         
                         <div class="row">
                             <div class="col-lg-8">
+                                
                                 <!-- Domain Hosting Platform Section -->
                                 <div class="card mb-4" style="background: linear-gradient(145deg, #2d3748, #1a202c); border: 2px solid rgba(99, 102, 241, 0.3);">
                                     <div class="card-body">
@@ -1198,7 +1199,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (fieldsData) {
             try {
                 const fields = JSON.parse(fieldsData);
-                const existingValues = @json($poolOrder ?? null);
+                const poolOrder = @json($poolOrder ?? null);
+                const existingValues = poolOrder && poolOrder.hosting_platform_data ? poolOrder.hosting_platform_data : {};
+                
+                // Convert comma-separated backup codes back to newlines for Namecheap
+                if (platformValue === 'namecheap' && existingValues.backup_codes) {
+                    existingValues.backup_codes = existingValues.backup_codes.split(',').map(code => code.trim()).join('\n');
+                }
+                
                 container.innerHTML = generatePairedFields(fields, existingValues);
                 initializePasswordToggles();
             } catch (e) {
