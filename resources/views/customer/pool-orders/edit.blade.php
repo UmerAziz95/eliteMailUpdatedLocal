@@ -143,6 +143,25 @@
         border: 1px solid rgba(99, 102, 241, 0.2);
     }
 
+    /* Password field wrapper */
+    .password-wrapper {
+        position: relative;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6c757d;
+        z-index: 10;
+    }
+
+    .password-toggle:hover {
+        color: #495057;
+    }
+
     /* Selected domains list: fixed area with scroll when many items selected.
        Ensures at least two selected domains are visible by default. */
     .summary-section.selected-domains {
@@ -428,6 +447,46 @@
                         
                         <div class="row">
                             <div class="col-lg-8">
+                                <!-- Domain Hosting Platform Section -->
+                                <div class="card mb-4" style="background: linear-gradient(145deg, #2d3748, #1a202c); border: 2px solid rgba(99, 102, 241, 0.3);">
+                                    <div class="card-body">
+                                        <h5 class="mb-4" style="color: #6366f1;">
+                                            <i class="ti ti-server me-2"></i>Domain Hosting Platform
+                                        </h5>
+                                        
+                                        <div class="domain-hosting mb-3">
+                                            <label for="hosting" class="form-label text-white">Domain Hosting Platform *</label>
+                                            <select id="hosting" name="hosting_platform" class="form-control" required>
+                                                <option value="">Select Platform</option>
+                                                @foreach($hostingPlatforms ?? [] as $platform)
+                                                <option value="{{ $platform->value }}" 
+                                                        data-fields='@json($platform->fields)'
+                                                        data-requires-tutorial="{{ $platform->requires_tutorial }}"
+                                                        data-tutorial-link="{{ $platform->tutorial_link }}"
+                                                        data-import-note="{{ $platform->import_note ?? '' }}"
+                                                        {{ ($poolOrder->hosting_platform === $platform->value) ? 'selected' : '' }}>
+                                                    {{ $platform->name }}
+                                                </option>
+                                                @endforeach
+                                            </select>
+                                            <div class="invalid-feedback" id="hosting-error"></div>
+                                            <small class="text-muted d-block mt-1">Where your domains are hosted and can be accessed to modify DNS settings</small>
+                                        </div>
+
+                                        <div id="tutorial_section" class="mb-3" style="display: none;">
+                                            <div class="">
+                                                <p class="mb-0" id="hosting-platform-import-note">
+                                                    <a href="#" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div class="platform" id="platform-fields-container">
+                                            <!-- Dynamic platform fields will be inserted here -->
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Search and Filter Controls -->
                                 <div class="mb-4">
                                     <div class="row g-3">
@@ -1050,6 +1109,188 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSummary();
     }
     
+    // ===== HOSTING PLATFORM FUNCTIONS =====
+    
+    // Generate a single field
+    function generateField(name, field, existingValue = '', colClass = 'mb-3') {
+        const fieldId = `${name}`;
+        let html = `<div class="${colClass}">
+            <label for="${fieldId}" class="form-label text-white">${field.label}${field.required ? ' *' : ''}</label>`;
+            
+        if (field.type === 'select' && field.options) {
+            html += `<select id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''}>`;
+            Object.entries(field.options).forEach(([value, label]) => {
+                const selected = value === existingValue ? ' selected' : '';
+                html += `<option value="${value}"${selected}>${label}</option>`;
+            });
+            html += '</select>';
+        } else if (field.type === 'textarea') {
+            html += `<textarea id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} rows="8">${existingValue}</textarea>`;
+        } else if (field.type === 'password' || name.toLowerCase().includes('password')) {
+            html += `
+            <div class="password-wrapper">
+                <input type="password" id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} value="${existingValue}">
+                <i class="fa-regular fa-eye password-toggle"></i>
+            </div>`;
+        } else {
+            html += `<input type="${field.type || 'text'}" id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} value="${existingValue}">`;
+        }
+        
+        if (field.note) {
+            html += `<p class="note mb-0 text-muted" style="font-size: 0.875rem; margin-top: 0.25rem;">${field.note}</p>`;
+        }
+        
+        html += `<div class="invalid-feedback" id="${fieldId}-error"></div></div>`;
+        return html;
+    }
+    
+    // Generate paired login/password fields
+    function generatePairedFields(fieldsData, existingValues) {
+        let html = '';
+        const processedFields = new Set();
+        
+        Object.entries(fieldsData).forEach(([name, field]) => {
+            if (processedFields.has(name)) return;
+            
+            // Check for login/password pairs
+            const isLoginField = name.includes('login') || name.includes('Login');
+            const passwordFieldKey = name.replace(/login/gi, 'password').replace(/Login/gi, 'Password');
+            const hasPasswordPair = fieldsData[passwordFieldKey];
+            
+            if (isLoginField && hasPasswordPair) {
+                // Generate paired login/password fields
+                const loginValue = existingValues && existingValues[name] ? existingValues[name] : '';
+                const passwordValue = existingValues && existingValues[passwordFieldKey] ? existingValues[passwordFieldKey] : '';
+                
+                html += '<div class="row gx-3 mb-3">';
+                html += generateField(name, field, loginValue, 'col-md-6');
+                html += generateField(passwordFieldKey, fieldsData[passwordFieldKey], passwordValue, 'col-md-6');
+                html += '</div>';
+                
+                processedFields.add(name);
+                processedFields.add(passwordFieldKey);
+            } else if (!processedFields.has(name)) {
+                // Generate single field
+                const existingValue = existingValues && existingValues[name] ? existingValues[name] : '';
+                html += generateField(name, field, existingValue);
+                processedFields.add(name);
+            }
+        });
+        
+        return html;
+    }
+    
+    // Update platform fields when hosting platform changes
+    function updatePlatformFields() {
+        const hostingSelect = document.getElementById('hosting');
+        if (!hostingSelect) return;
+        
+        const selectedOption = hostingSelect.options[hostingSelect.selectedIndex];
+        const fieldsData = selectedOption.getAttribute('data-fields');
+        const requiresTutorial = selectedOption.getAttribute('data-requires-tutorial') === '1';
+        const tutorialLink = selectedOption.getAttribute('data-tutorial-link');
+        const importNote = selectedOption.getAttribute('data-import-note');
+        const platformValue = selectedOption.value;
+        
+        const container = document.getElementById('platform-fields-container');
+        container.innerHTML = '';
+        
+        if (fieldsData) {
+            try {
+                const fields = JSON.parse(fieldsData);
+                const existingValues = @json($poolOrder ?? null);
+                container.innerHTML = generatePairedFields(fields, existingValues);
+                initializePasswordToggles();
+            } catch (e) {
+                console.error('Error parsing fields data:', e);
+            }
+        }
+
+        // Handle other platform section (if needed in future)
+        // Currently not implemented in pool orders but keeping for consistency
+        const otherPlatformSection = document.getElementById('other-platform-section');
+        if (otherPlatformSection) {
+            if (platformValue === 'other') {
+                otherPlatformSection.style.display = 'block';
+                const otherPlatformInput = document.getElementById('other_platform');
+                if (otherPlatformInput) {
+                    otherPlatformInput.required = true;
+                }
+            } else {
+                otherPlatformSection.style.display = 'none';
+                const otherPlatformInput = document.getElementById('other_platform');
+                if (otherPlatformInput) {
+                    otherPlatformInput.required = false;
+                    otherPlatformInput.classList.remove('is-invalid');
+                }
+                const errorElement = document.getElementById('other-platform-error');
+                if (errorElement) {
+                    errorElement.textContent = '';
+                }
+            }
+        }
+        
+        // Handle tutorial section visibility with import note
+        const tutorialSection = document.getElementById('tutorial_section');
+        const importNoteElement = document.getElementById('hosting-platform-import-note');
+        
+        if (requiresTutorial && tutorialLink) {
+            tutorialSection.style.display = 'block';
+            
+            // Update import note dynamically
+            console.log('Import Note from Seeder:', importNote);
+            if (importNote && importNote.trim() !== '') {
+                // Show the import note from seeder with tutorial link if it's not just '#'
+                if (tutorialLink && tutorialLink !== '#') {
+                    importNoteElement.innerHTML = importNote + ' <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>';
+                } else {
+                    // Show just the import note without tutorial link if tutorialLink is '#'
+                    importNoteElement.innerHTML = importNote;
+                }
+            } else {
+                // Fallback to default message if no import note is set
+                importNoteElement.innerHTML = '<strong>IMPORTANT</strong> - please follow the steps from this document to grant us access to your hosting account: <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>';
+            }
+        } else if (importNote && importNote.trim() !== '') {
+            // Show tutorial section with import note even when no tutorial link is provided
+            tutorialSection.style.display = 'block';
+            console.log('Import Note from Seeder (no tutorial):', importNote);
+            // Show just the import note without tutorial link
+            importNoteElement.innerHTML = importNote;
+        } else {
+            tutorialSection.style.display = 'none';
+        }
+    }
+    
+    // Initialize password toggle functionality
+    function initializePasswordToggles() {
+        document.querySelectorAll('.password-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const wrapper = this.closest('.password-wrapper');
+                const input = wrapper.querySelector('input');
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    this.classList.remove('fa-eye');
+                    this.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    this.classList.remove('fa-eye-slash');
+                    this.classList.add('fa-eye');
+                }
+            });
+        });
+    }
+    
+    // Initialize hosting platform on page load
+    const hostingSelect = document.getElementById('hosting');
+    if (hostingSelect) {
+        updatePlatformFields();
+        hostingSelect.addEventListener('change', updatePlatformFields);
+    }
+    
+    // ===== END HOSTING PLATFORM FUNCTIONS =====
+    
     // Form submission
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1106,6 +1347,22 @@ document.addEventListener('DOMContentLoaded', function() {
         saveBtn.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Saving...';
         saveBtn.disabled = true;
         
+        // Collect hosting platform data
+        const formData = new FormData(form);
+        const hostingPlatformData = {
+            hosting_platform: formData.get('hosting_platform')
+        };
+        
+        // Collect all platform-specific fields
+        const platformFieldsContainer = document.getElementById('platform-fields-container');
+        if (platformFieldsContainer) {
+            platformFieldsContainer.querySelectorAll('input, select, textarea').forEach(field => {
+                if (field.name) {
+                    hostingPlatformData[field.name] = field.value;
+                }
+            });
+        }
+        
         fetch(`{{ route('customer.pool-orders.update', $poolOrder->id) }}`, {
             method: 'PUT',
             headers: {
@@ -1113,7 +1370,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
-                domains: selectedArray
+                domains: selectedArray,
+                ...hostingPlatformData
             })
         })
         .then(response => response.json())

@@ -375,10 +375,15 @@ class PoolPlanController extends Controller
             return response()->json($this->getAvailableDomainsWithPagination($page, $perPage, $search));
         }
 
+        // Get hosting platforms for the dropdown
+        $hostingPlatforms = \App\Models\HostingPlatform::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
         // For regular page load, don't load all domains immediately
         // Pass empty array for initial load to avoid template errors
         $availableDomains = [];
-        return view('customer.pool-orders.edit', compact('poolOrder', 'availableDomains'));
+        return view('customer.pool-orders.edit', compact('poolOrder', 'availableDomains', 'hostingPlatforms'));
     }
 
     /**
