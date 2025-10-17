@@ -380,10 +380,72 @@ class PoolPlanController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        // Get full domain details for existing selections (with prefix_variants)
+        $existingDomainDetails = [];
+        
+        Log::info('Pool Order Domains:', ['domains' => $poolOrder->domains]);
+        
+        if ($poolOrder->domains && is_array($poolOrder->domains)) {
+            Log::info('Processing existing domains', ['count' => count($poolOrder->domains)]);
+            
+            foreach ($poolOrder->domains as $savedDomain) {
+                $poolId = $savedDomain['pool_id'] ?? null;
+                $domainId = $savedDomain['domain_id'] ?? null;
+                
+                Log::info('Processing domain:', ['pool_id' => $poolId, 'domain_id' => $domainId]);
+                
+                if ($poolId && $domainId) {
+                    $pool = \App\Models\Pool::find($poolId);
+                    if ($pool && $pool->domains) {
+                        $poolDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+                        
+                        Log::info('Pool domains:', ['pool_id' => $poolId, 'domains_count' => count($poolDomains)]);
+                        
+                        // Find the specific domain in pool's domains
+                        // Pool domains use 'id' field, not 'domain_id'
+                        foreach ($poolDomains as $poolDomain) {
+                            $poolDomainId = $poolDomain['id'] ?? $poolDomain['domain_id'] ?? null;
+                            
+                            if ($poolDomainId && $poolDomainId == $domainId) {
+                                // Get prefix_variants - check in pool_plan or generate from name
+                                $prefixVariants = $poolDomain['prefix_variants'] ?? null;
+                                
+                                // If no prefix_variants, try to generate from common patterns
+                                if (!$prefixVariants && isset($poolDomain['name'])) {
+                                    $prefixVariants = ['info', 'support', 'hello', 'contact', 'sales'];
+                                }
+                                
+                                $domainDetail = [
+                                    'id' => $domainId,
+                                    'domain_id' => $domainId,
+                                    'pool_id' => $poolId,
+                                    'name' => $poolDomain['name'] ?? $savedDomain['domain_name'],
+                                    'available_inboxes' => $savedDomain['per_inbox'],
+                                    'prefix_variants' => $prefixVariants
+                                ];
+                                
+                                $existingDomainDetails[] = $domainDetail;
+                                Log::info('Added domain to existing details:', $domainDetail);
+                                break;
+                            }
+                        }
+                    } else {
+                        Log::warning('Pool not found or has no domains', ['pool_id' => $poolId]);
+                    }
+                } else {
+                    Log::warning('Missing pool_id or domain_id in saved domain', $savedDomain);
+                }
+            }
+        } else {
+            Log::info('No domains in pool order or not an array');
+        }
+        
+        Log::info('Final existing domain details:', ['count' => count($existingDomainDetails), 'details' => $existingDomainDetails]);
+
         // For regular page load, don't load all domains immediately
         // Pass empty array for initial load to avoid template errors
         $availableDomains = [];
-        return view('customer.pool-orders.edit', compact('poolOrder', 'availableDomains', 'hostingPlatforms'));
+        return view('customer.pool-orders.edit', compact('poolOrder', 'availableDomains', 'hostingPlatforms', 'existingDomainDetails'));
     }
 
     /**

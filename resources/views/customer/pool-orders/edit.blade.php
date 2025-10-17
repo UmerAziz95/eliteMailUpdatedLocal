@@ -444,7 +444,6 @@
                     <form id="domainSelectionForm">
                         @csrf
                         @method('PUT')
-                        
                         <div class="row">
                             <div class="col-lg-8">
                                 
@@ -756,9 +755,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? JSON.parse(domain.prefix_variants) 
                 : domain.prefix_variants;
             
-                if (prefixVariants && Object.keys(prefixVariants).length > 0) {
+            // Handle both array and object formats
+            if (prefixVariants) {
+                let prefixArray = [];
+                
+                if (Array.isArray(prefixVariants)) {
+                    prefixArray = prefixVariants;
+                } else if (typeof prefixVariants === 'object' && prefixVariants !== null) {
+                    prefixArray = Object.values(prefixVariants);
+                }
+                
+                if (prefixArray.length > 0) {
                     // show up to 3 prefixes as block lines for better layout
-                    const prefixList = Object.values(prefixVariants)
+                    const prefixList = prefixArray
                         .slice(0, Math.min(domain.available_inboxes, 3))
                         .map(prefix => `<div class="inbox-prefix">${prefix}@${domain.name}</div>`)
                         .join('');
@@ -770,6 +779,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 }
+            }
         }
         
         return `
@@ -993,18 +1003,31 @@ document.addEventListener('DOMContentLoaded', function() {
             let domainListHTML = recentFirst.map((domain, index) => {
                 // Create prefix variants display for summary - use domain's stored prefix data
                 let prefixVariantsHtml = '';
-                if (domain.prefixVariants && domain.inboxes > 1) {
+                if (domain.prefixVariants) {
                     const prefixVariants = typeof domain.prefixVariants === 'string' 
                         ? JSON.parse(domain.prefixVariants) 
                         : domain.prefixVariants;
                     
-                    if (prefixVariants && Object.keys(prefixVariants).length > 0) {
-                        const prefixList = Object.values(prefixVariants)
-                            .slice(0, Math.min(domain.inboxes, 3))
-                            .map(prefix => `<div class="summary-inbox-prefix">${prefix}@${domain.name}</div>`)
-                            .join('');
+                    console.log('Domain prefix variants:', domain.name, prefixVariants);
+                    
+                    // Handle both array and object formats
+                    if (prefixVariants) {
+                        let prefixArray = [];
+                        
+                        if (Array.isArray(prefixVariants)) {
+                            prefixArray = prefixVariants;
+                        } else if (typeof prefixVariants === 'object' && prefixVariants !== null) {
+                            prefixArray = Object.values(prefixVariants);
+                        }
+                        
+                        if (prefixArray.length > 0) {
+                            const prefixList = prefixArray
+                                .slice(0, Math.min(domain.inboxes, 3))
+                                .map(prefix => `<div class="summary-inbox-prefix">${prefix}@${domain.name}</div>`)
+                                .join('');
 
-                        prefixVariantsHtml = `<div class="mt-1">${prefixList}</div>`;
+                            prefixVariantsHtml = `<div class="mt-1">${prefixList}</div>`;
+                        }
                     }
                 }
                 
@@ -1056,31 +1079,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load existing selections
     function loadExistingSelections() {
-        @if($poolOrder->domains)
-            const existingDomains = @json($poolOrder->domains);
-            // Store the existing domains for reference
-            window.existingSelections = existingDomains;
+        @if(isset($existingDomainDetails) && !empty($existingDomainDetails))
+            const existingDomainDetails = @json($existingDomainDetails);
+            
+            console.log('Loading existing domain selections:', existingDomainDetails);
             
             // Load all existing domain selections into selectedDomains Map
-            if (existingDomains && existingDomains.length > 0) {
-                existingDomains.forEach(domain => {
-                    // Get domain data from the JSON domains field
-                    const poolDomains = @json($poolOrder->pool && $poolOrder->pool->domains ? $poolOrder->pool->domains : []);
-                    const domainInfo = poolDomains.find(d => d.domain_id === domain.domain_id);
-                    
-                    if (domainInfo) {
-                        selectedDomains.set(domain.domain_id, {
-                            id: domain.domain_id,
-                            name: domainInfo.name || `Domain ${domain.domain_id}`,
-                            inboxes: domainInfo.available_inboxes || 1,
-                            prefixVariants: domainInfo.prefix_variants || null
-                        });
-                    }
+            if (existingDomainDetails && existingDomainDetails.length > 0) {
+                console.log(`Found ${existingDomainDetails.length} existing domains to load`);
+                
+                existingDomainDetails.forEach(domain => {
+                    console.log('Loading domain:', domain);
+                    selectedDomains.set(domain.domain_id, {
+                        id: domain.domain_id,
+                        name: domain.name,
+                        inboxes: domain.available_inboxes,
+                        prefixVariants: domain.prefix_variants
+                    });
                 });
+                
+                console.log('Selected domains after loading:', selectedDomains);
                 
                 // Update summary to show existing selections
                 updateSummary();
+            } else {
+                console.log('No existing domain details found or array is empty');
             }
+        @else
+            console.log('$existingDomainDetails is not set or is empty in PHP');
         @endif
     }
     
