@@ -1512,11 +1512,15 @@
                     `}
                 </div>
             `;
+            
+            // Add archived styling for inactive panels
+            const archivedStyle = !panel.is_active ? 'background-color: #334761;' : '';
+            
             return `
-                <div class="card p-3 d-flex flex-column gap-1">                    
+                <div class="card p-3 d-flex flex-column gap-1" style="${archivedStyle}">                    
                     <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
                         <small class="mb-0 opacity-75">${'PNL-' + panel.id || panel.auto_generated_id}</small>
-                        <h6>Title: ${panel.title || 'N/A'}</h6>
+                        <h6>Title: ${panel.title || 'N/A'} ${!panel.is_active ? '<span class="badge bg-secondary ms-2">Archived</span>' : ''}</h6>
                     </div>
 
                     <div class="d-flex gap-3 justify-content-between">
