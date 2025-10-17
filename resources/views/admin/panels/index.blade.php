@@ -795,7 +795,7 @@
         </div>
     </div>
 
-
+    
     {{-- Tabs for Active and Archived Panels --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <ul class="nav nav-pills" id="panelTabs" role="tablist">
@@ -1466,19 +1466,7 @@
                                 <i class="fas fa-edit"></i>
                             </button>
                         ` : ''}
-                        ${panel.is_active ? `
-                            <button class="btn btn-sm btn-outline-secondary px-2 py-1" 
-                                    onclick="archivePanel(${panel.id})" 
-                                    title="Archive Panel">
-                                <i class="fas fa-archive"></i>
-                            </button>
-                        ` : `
-                            <button class="btn btn-sm btn-outline-success px-2 py-1" 
-                                    onclick="unarchivePanel(${panel.id})" 
-                                    title="Unarchive Panel">
-                                <i class="fas fa-undo"></i>
-                            </button>
-                        `}
+                        
                         ${panel.can_delete ? `
                             <button class="btn btn-sm btn-outline-danger px-2 py-1" 
                                     onclick="deletePanel(${panel.id})" 
@@ -1489,7 +1477,41 @@
                     </div>
                 `;
             }
-            
+            actionButtons = `
+                <div class="d-flex flex-column gap-2">
+                    ${panel.show_edit_delete_buttons ? `
+                        ${panel.can_edit ? `
+                            <button class="btn btn-sm btn-outline-warning px-2 py-1" 
+                                    onclick="editPanel(${panel.id})" 
+                                    title="Edit Panel">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        ` : ''}
+                        
+                        ${panel.can_delete ? `
+                            <button class="btn btn-sm btn-outline-danger px-2 py-1" 
+                                    onclick="deletePanel(${panel.id})" 
+                                    title="Delete Panel">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    ` : ''}
+                    
+                    ${panel.is_active ? `
+                        <button class="btn btn-sm btn-outline-secondary px-2 py-1" 
+                                onclick="archivePanel(${panel.id})" 
+                                title="Archive Panel">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                    ` : `
+                        <button class="btn btn-sm btn-outline-success px-2 py-1" 
+                                onclick="unarchivePanel(${panel.id})" 
+                                title="Unarchive Panel">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    `}
+                </div>
+            `;
             return `
                 <div class="card p-3 d-flex flex-column gap-1">                    
                     <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
@@ -3616,19 +3638,23 @@ async function unarchivePanel(panelId) {
 
 // Tab switching function
 function switchTab(tab) {
-    // Show loading state immediately
+    // Clear existing panels and show loading state immediately
+    panels = [];
     showLoading();
     
     // Update current filters based on tab
     if (tab === 'active') {
         currentFilters.is_active = 1;
+        delete currentFilters.is_archived; // Remove any archived filter
     } else if (tab === 'archived') {
         currentFilters.is_active = 0;
+        delete currentFilters.is_archived; // Remove any conflicting filters
     }
     
     // Reset pagination
     currentPage = 1;
     hasMorePages = false;
+    totalPanels = 0;
     
     // Reload panels with new filter
     loadPanels(currentFilters, 1, false);
