@@ -417,9 +417,9 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
 
         // Pool Migration Task Routes
         Route::get('taskInQueue/pool-migration-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolMigrationTasks'])->name("taskInQueue.pool-migration-tasks");
-        Route::get('taskInQueue/pool-migration/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolMigrationTaskDetails'])->name("taskInQueue.pool-migration.details");
-        Route::post('taskInQueue/pool-migration/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignPoolMigrationTaskToMe'])->name("taskInQueue.pool-migration.assign");
-        Route::put('taskInQueue/pool-migration/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updatePoolMigrationTaskStatus'])->name("taskInQueue.pool-migration.updateStatus");
+        Route::get('taskInQueue/pool-migration/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolMigrationTaskDetails'])->name("taskInQueue.pool-migration-details");
+        Route::post('taskInQueue/pool-migration/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignPoolMigrationTaskToMe'])->name("taskInQueue.pool-migration-assign");
+        Route::put('taskInQueue/pool-migration/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updatePoolMigrationTaskStatus'])->name("taskInQueue.pool-migration-status");
 
         // My Task Routes
         Route::get('myTask', [App\Http\Controllers\Admin\MyTaskController::class, 'index'])->name("myTask.index");
@@ -427,6 +427,9 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('myTask/{taskId}/details', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
         Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
         Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Admin\MyTaskController::class, 'completeTask'])->name("myTask.complete");
+        
+        // Pool Migration Tasks (My Tasks)
+        Route::get('myTask/pool-migration-tasks', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyPoolMigrationTasks'])->name("myTask.pool-migration-tasks");
 
 
        //profile settings

@@ -834,6 +834,19 @@ class TaskQueueController extends Controller
                 'assignedTo'
             ]);
             
+            // For Task Queue page: Show only unassigned tasks by default
+            // This can be overridden by passing assigned_status parameter
+            if (!$request->filled('assigned_status')) {
+                $query->whereNull('assigned_to');
+            } else {
+                // Filter by assigned status if explicitly provided
+                if ($request->assigned_status === 'unassigned') {
+                    $query->whereNull('assigned_to');
+                } elseif ($request->assigned_status === 'assigned') {
+                    $query->whereNotNull('assigned_to');
+                }
+            }
+            
             // Filter by status if provided (default: all statuses)
             if ($request->filled('status')) {
                 $query->where('status', $request->status);
@@ -842,15 +855,6 @@ class TaskQueueController extends Controller
             // Filter by task type if provided
             if ($request->filled('task_type')) {
                 $query->where('task_type', $request->task_type);
-            }
-
-            // Filter by assigned status
-            if ($request->filled('assigned_status')) {
-                if ($request->assigned_status === 'unassigned') {
-                    $query->whereNull('assigned_to');
-                } elseif ($request->assigned_status === 'assigned') {
-                    $query->whereNotNull('assigned_to');
-                }
             }
 
             // Filter by date range

@@ -1235,30 +1235,60 @@
 
     // Update tab counts
     function updateTabCounts() {
-        // For demonstration, let's fetch actual counts
+        // Update pending tasks count
         fetch(`{{ route('admin.taskInQueue.data') }}?type=pending&per_page=1000`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById('pending-count').textContent = data.pagination.total;
+                    const countEl = document.getElementById('pending-count');
+                    if (countEl) countEl.textContent = data.pagination.total;
                 }
-            });
+            })
+            .catch(error => console.error('Error fetching pending count:', error));
             
+        // Update in-progress tasks count
         fetch(`{{ route('admin.taskInQueue.data') }}?type=in-progress&per_page=1000`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById('progress-count').textContent = data.pagination.total;
+                    const countEl = document.getElementById('progress-count');
+                    if (countEl) countEl.textContent = data.pagination.total;
                 }
-            });
+            })
+            .catch(error => console.error('Error fetching in-progress count:', error));
             
+        // Update completed tasks count
         fetch(`{{ route('admin.taskInQueue.data') }}?type=completed&per_page=1000`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById('completed-count').textContent = data.pagination.total;
+                    const countEl = document.getElementById('completed-count');
+                    if (countEl) countEl.textContent = data.pagination.total;
                 }
-            });
+            })
+            .catch(error => console.error('Error fetching completed count:', error));
+            
+        // Update shifted pending tasks count
+        fetch(`{{ route('admin.taskInQueue.data') }}?type=shifted-pending&per_page=1000`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const countEl = document.getElementById('shifted-pending-count');
+                    if (countEl) countEl.textContent = data.pagination.total;
+                }
+            })
+            .catch(error => console.error('Error fetching shifted-pending count:', error));
+            
+        // Update pool migration tasks count
+        fetch(`{{ route('admin.taskInQueue.pool-migration-tasks') }}?per_page=1000`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const countEl = document.getElementById('pool-migration-count');
+                    if (countEl) countEl.textContent = data.pagination.total;
+                }
+            })
+            .catch(error => console.error('Error fetching pool-migration count:', error));
     }
 
     function updateLoadMoreButton(status) {
