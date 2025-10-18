@@ -493,8 +493,6 @@
                 <button class="btn btn-sm border-0"
                         style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
                         onclick="viewPoolMigrationTaskDetails(${task.task_id})"
-                        data-bs-toggle="offcanvas" 
-                        data-bs-target="#task-details-view"
                         title="View Task Details">
                     <i class="fas fa-eye text-white"></i>
                 </button>
@@ -574,7 +572,25 @@
     // View pool migration task details (reuse existing offcanvas)
     async function viewPoolMigrationTaskDetails(taskId) {
         try {
-            const response = await fetch(`{{ route('admin.taskInQueue.pool-migration-details', '') }}/${taskId}`);
+            // Show loading in offcanvas
+            const container = document.getElementById('taskDetailsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div id="taskLoadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading task details...</span>
+                        </div>
+                        <p class="mt-2">Loading task details...</p>
+                    </div>
+                `;
+            }
+            
+            // Show offcanvas
+            const offcanvasElement = document.getElementById('task-details-view');
+            const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+            offcanvas.show();
+            
+            const response = await fetch(`/admin/taskInQueue/pool-migration/${taskId}/details`);
             const data = await response.json();
             
             if (!data.success) {
@@ -683,7 +699,7 @@
             
             if (newStatus === 'completed' && notes === null) return;
             
-            const response = await fetch(`{{ route('admin.taskInQueue.pool-migration-status', '') }}/${taskId}`, {
+            const response = await fetch(`/admin/taskInQueue/pool-migration/${taskId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
