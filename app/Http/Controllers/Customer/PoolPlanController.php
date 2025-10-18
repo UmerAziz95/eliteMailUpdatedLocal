@@ -331,11 +331,23 @@ class PoolPlanController extends Controller
                 // Check if order can be cancelled (not already cancelled)
                 $canCancel = $order->status !== 'cancelled' && $order->status_manage_by_admin !== 'cancelled';
                 
+                // Check if order can be edited (only pending orders)
+                $canEdit = $order->status_manage_by_admin === 'pending';
+                
                 $cancelButton = '';
                 if ($canCancel) {
                     $cancelButton = '<li>
                             <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="cancelPoolSubscription(\'' . $order->id . '\')">
                                 <i class="ti ti-x me-1"></i>Cancel Subscription
+                            </a>
+                        </li>';
+                }
+                
+                $editButton = '';
+                if ($canEdit) {
+                    $editButton = '<li>
+                            <a class="dropdown-item" href="' . $editUrl . '">
+                                <i class="ti ti-edit me-1"></i>Edit Domains
                             </a>
                         </li>';
                 }
@@ -351,11 +363,7 @@ class PoolPlanController extends Controller
                                 <i class="ti ti-eye me-1"></i>View
                             </a>
                         </li>
-                        <li>
-                            <a class="dropdown-item" href="' . $editUrl . '">
-                                <i class="ti ti-edit me-1"></i>Edit Domains
-                            </a>
-                        </li>
+                        ' . $editButton . '
                         <li>
                             <a class="dropdown-item" href="javascript:void(0)" onclick="downloadInvoice(\'' . $order->id . '\')">
                                 <i class="ti ti-download me-1"></i>Download
@@ -380,6 +388,20 @@ class PoolPlanController extends Controller
             ->where('id', $id)
             ->with(['poolPlan'])
             ->firstOrFail();
+
+        // Check if order status is pending - only pending orders can be edited
+        if ($poolOrder->status_manage_by_admin !== 'pending') {
+            Log::warning('Attempt to edit non-pending pool order', [
+                'pool_order_id' => $poolOrder->id,
+                'status' => $poolOrder->status,
+                'status_manage_by_admin' => $poolOrder->status_manage_by_admin,
+                'user_id' => $user->id
+            ]);
+
+            return redirect()
+                ->route('customer.pool-orders.show', $poolOrder->id)
+                ->with('error', 'This order cannot be edited. Only pending orders are editable.');
+        }
 
         // Handle AJAX request for domains with server-side pagination
         if ($request->ajax() || $request->wantsJson()) {
@@ -470,6 +492,21 @@ class PoolPlanController extends Controller
         $poolOrder = PoolOrder::where('user_id', $user->id)
             ->where('id', $id)
             ->firstOrFail();
+
+        // Check if order status is pending - only pending orders can be updated
+        if ($poolOrder->status_manage_by_admin !== 'pending') {
+            Log::warning('Attempt to update non-pending pool order', [
+                'pool_order_id' => $poolOrder->id,
+                'status' => $poolOrder->status,
+                'status_manage_by_admin' => $poolOrder->status_manage_by_admin,
+                'user_id' => $user->id
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'This order cannot be updated. Only pending orders are editable.'
+            ], 403);
+        }
 
         // Store previously selected domains BEFORE any processing
         $previousDomains = $poolOrder->domains ?? [];
