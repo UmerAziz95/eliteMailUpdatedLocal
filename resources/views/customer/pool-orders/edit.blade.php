@@ -928,7 +928,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             `;
         }
-        
+
         pageNumbers.innerHTML = pageNumbersHTML;
         pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1} (${from}-${to} of ${total})`;
         
@@ -1121,14 +1121,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     checkbox.closest('.domain-card').classList.add('selected');
                 }
                 
-                // Update domain data with current page information (for prefix variants, etc.)
+                // Only update domain data if prefix variants are missing or need refresh
                 const existingDomain = selectedDomains.get(domain.id);
-                selectedDomains.set(domain.id, {
-                    ...existingDomain,
-                    name: domain.name,
-                    inboxes: domain.available_inboxes,
-                    prefixVariants: domain.prefix_variants
-                });
+                // Preserve existing prefix variants if they exist, otherwise use current page data
+                if (!existingDomain.prefixVariants && domain.prefix_variants) {
+                    selectedDomains.set(domain.id, {
+                        ...existingDomain,
+                        name: domain.name,
+                        inboxes: domain.available_inboxes,
+                        prefixVariants: domain.prefix_variants
+                    });
+                }
             }
         });
         

@@ -278,7 +278,7 @@ class PoolPlanController extends Controller
 
         return view('customer.pool-orders.show', compact('poolOrder'));
     }
-
+     
     /**
      * AJAX: Get pool orders for DataTables
      */
@@ -403,17 +403,14 @@ class PoolPlanController extends Controller
                         
                         // Find the specific domain in pool's domains
                         // Pool domains use 'id' field, not 'domain_id'
+                        
                         foreach ($poolDomains as $poolDomain) {
                             $poolDomainId = $poolDomain['id'] ?? $poolDomain['domain_id'] ?? null;
                             
                             if ($poolDomainId && $poolDomainId == $domainId) {
-                                // Get prefix_variants - check in pool_plan or generate from name
-                                $prefixVariants = $poolDomain['prefix_variants'] ?? null;
                                 
-                                // If no prefix_variants, try to generate from common patterns
-                                if (!$prefixVariants && isset($poolDomain['name'])) {
-                                    $prefixVariants = ['info', 'support', 'hello', 'contact', 'sales'];
-                                }
+                                // Get prefix_variants from Pool level (not individual domain)
+                                $prefixVariants = $pool->prefix_variants ?? [];
                                 
                                 $domainDetail = [
                                     'id' => $domainId,
