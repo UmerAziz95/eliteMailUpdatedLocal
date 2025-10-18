@@ -181,7 +181,7 @@ class PoolOrderCancelledService
             $meta['cancellation'] = [
                 'cancelled_at' => now()->toDateTimeString(),
                 'cancelled_by' => $userId,
-                'cancelled_by_name' => $user ? ($user->first_name . ' ' . $user->last_name) : 'Unknown',
+                'cancelled_by_name' => $user ? $user->name : 'Unknown',
                 'reason' => $poolOrder->reason,
                 'chargebee_status' => $subscription->status ?? 'cancelled'
             ];

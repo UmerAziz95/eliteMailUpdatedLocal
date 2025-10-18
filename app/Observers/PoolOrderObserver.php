@@ -237,6 +237,15 @@ class PoolOrderObserver
             } elseif ($poolOrder->reason) {
                 $reason = $poolOrder->reason;
             }
+            
+            // Fallback: If cancelled_by is still Unknown, try to get from auth user or pool order user
+            if ($cancelledBy === 'Unknown') {
+                if (auth()->check()) {
+                    $cancelledBy = auth()->user()->name;
+                } elseif ($user) {
+                    $cancelledBy = $user->name;
+                }
+            }
 
             // Prepare domain list
             $domainsList = 'N/A';
