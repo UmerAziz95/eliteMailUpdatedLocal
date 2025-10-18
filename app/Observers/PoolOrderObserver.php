@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\PoolOrder;
+use App\Models\PoolOrderMigrationTask;
 use App\Services\PoolDomainService;
 use App\Services\SlackNotificationService;
 use Illuminate\Support\Facades\Log;
@@ -43,6 +44,9 @@ class PoolOrderObserver
             ]);
             
             $this->sendConfigurationNotification($poolOrder);
+            
+            // Create migration task for configuration
+            $this->createMigrationTask($poolOrder, 'configuration', $poolOrder->getOriginal('status_manage_by_admin'));
         }
         
         // Check if status or status_manage_by_admin changed to 'cancelled'
@@ -58,6 +62,12 @@ class PoolOrderObserver
             ]);
             
             $this->sendCancellationNotification($poolOrder);
+            
+            // Create migration task for cancellation
+            $previousStatus = $poolOrder->isDirty('status') 
+                ? $poolOrder->getOriginal('status') 
+                : $poolOrder->getOriginal('status_manage_by_admin');
+            $this->createMigrationTask($poolOrder, 'cancellation', $previousStatus);
         }
     }
 
@@ -364,6 +374,77 @@ class PoolOrderObserver
             Log::error('Exception sending Slack cancellation notification', [
                 'error' => $e->getMessage(),
                 'pool_order_id' => $poolOrder->id,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Create a migration task for pool order status change
+     * 
+     * @param \App\Models\PoolOrder $poolOrder
+     * @param string $taskType
+     * @param string|null $previousStatus
+     * @return void
+     */
+    private function createMigrationTask(PoolOrder $poolOrder, string $taskType, ?string $previousStatus = null): void
+    {
+        try {
+            // Prepare metadata based on task type
+            $metadata = [
+                'order_id' => $poolOrder->id,
+                'plan_name' => $poolOrder->poolPlan->name ?? 'N/A',
+                'amount' => $poolOrder->amount,
+                'quantity' => $poolOrder->quantity,
+                'selected_domains_count' => $poolOrder->selected_domains_count ?? 0,
+                'total_inboxes' => $poolOrder->total_inboxes ?? 0,
+                'hosting_platform' => $poolOrder->hosting_platform ?? 'N/A',
+            ];
+
+            // Add task-specific metadata
+            if ($taskType === 'cancellation') {
+                $metadata['cancellation_reason'] = $poolOrder->reason ?? 'No reason provided';
+                $metadata['chargebee_subscription_id'] = $poolOrder->chargebee_subscription_id;
+                
+                if ($poolOrder->meta && is_array($poolOrder->meta) && isset($poolOrder->meta['cancellation'])) {
+                    $metadata['cancelled_by'] = $poolOrder->meta['cancellation']['cancelled_by_name'] ?? 'Unknown';
+                    $metadata['cancelled_at'] = $poolOrder->meta['cancellation']['cancelled_at'] ?? now()->toDateTimeString();
+                }
+            } elseif ($taskType === 'configuration') {
+                $metadata['domains_selected'] = $poolOrder->domains ?? [];
+                $metadata['hosting_platform_data'] = $poolOrder->hosting_platform_data ?? [];
+            }
+
+            // Create the migration task
+            $task = PoolOrderMigrationTask::create([
+                'pool_order_id' => $poolOrder->id,
+                'user_id' => $poolOrder->user_id,
+                'assigned_to' => null, // Can be assigned later by admin
+                'task_type' => $taskType,
+                'status' => 'pending',
+                'previous_status' => $previousStatus,
+                'new_status' => $taskType === 'configuration' ? 'in-progress' : 'cancelled',
+                'notes' => null,
+                'metadata' => $metadata,
+                'started_at' => null,
+                'completed_at' => null,
+            ]);
+
+            Log::info('Migration task created successfully', [
+                'task_id' => $task->id,
+                'pool_order_id' => $poolOrder->id,
+                'task_type' => $taskType,
+                'status' => 'pending'
+            ]);
+
+        } catch (\Exception $e) {
+            // Non-critical, just log the error
+            Log::error('Exception creating migration task', [
+                'error' => $e->getMessage(),
+                'pool_order_id' => $poolOrder->id,
+                'task_type' => $taskType,
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
