@@ -381,6 +381,7 @@ class PoolPlanController extends Controller
     /**
      * Show pool order edit form for domain selection
      */
+    
     public function editPoolOrder($id, Request $request)
     {
         $user = Auth::user();
@@ -632,9 +633,16 @@ class PoolPlanController extends Controller
             
             Log::info('Before saving pool order - domains:', ['domains' => $poolOrder->domains]);
             
+            // Update status to in-progress when configuration is saved
+            // Observer will handle Slack notification automatically
+            $poolOrder->status_manage_by_admin = 'in-progress';
+            
             $poolOrder->save();
             
-            Log::info('After saving pool order - domains:', ['domains' => $poolOrder->fresh()->domains]);
+            Log::info('After saving pool order - domains and status:', [
+                'domains' => $poolOrder->fresh()->domains,
+                'status_manage_by_admin' => $poolOrder->status_manage_by_admin
+            ]);
 
             return response()->json([
                 'success' => true,
