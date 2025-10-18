@@ -3,6 +3,13 @@
 @push('styles')
 
 <style>
+    .glass-box {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 0.55rem .5rem;
+    }
+
     .nav-link {
         color: #fff;
         font-size: 13px
@@ -568,7 +575,7 @@
         
         return div;
     }
-
+    
     // View pool migration task details (reuse existing offcanvas)
     async function viewPoolMigrationTaskDetails(taskId) {
         try {
@@ -603,72 +610,74 @@
             const taskDetailsContainer = document.getElementById('taskDetailsContainer');
             taskDetailsContainer.innerHTML = `
                 <div class="task-details-content">
-                    <h4 class="mb-3">${task.task_type_icon} ${task.task_type_label}</h4>
+                    <h4 class="text-white mb-3">${task.task_type_icon} ${task.task_type_label}</h4>
                     
                     <div class="mb-4">
-                        <h6 class="text-muted">Task Information</h6>
-                        <div class="bg-light rounded p-2 mb-2">
+                        <h6 class="text-white-50">Task Information</h6>
+                        <div class="glass-box mb-2">
                             <div class="d-flex justify-content-between">
-                                <span class="text-muted">Task ID</span>
-                                <span class="fw-bold">#${task.id}</span>
+                                <span class="text-white-50">Task ID</span>
+                                <span class="text-white fw-bold">#${task.id}</span>
                             </div>
                         </div>
-                        <div class="bg-light rounded p-2 mb-2">
+                        <div class="glass-box mb-2">
                             <div class="d-flex justify-content-between">
-                                <span class="text-muted">Status</span>
-                                <span class="badge ${task.status === 'pending' ? 'bg-warning' : task.status === 'in-progress' ? 'bg-info' : task.status === 'completed' ? 'bg-success' : 'bg-danger'}">${task.status}</span>
+                                <span class="text-white-50">Status</span>
+                                <span class="badge ${getStatusClass(task.status)}">${task.status}</span>
                             </div>
                         </div>
-                        <div class="bg-light rounded p-2 mb-2">
+                        <div class="glass-box mb-2">
                             <div class="d-flex justify-content-between">
-                                <span class="text-muted">Assigned To</span>
-                                <span>${task.assigned_to_name}</span>
+                                <span class="text-white-50">Assigned To</span>
+                                <span class="text-white">${task.assigned_to_name}</span>
                             </div>
                         </div>
                     </div>
                     
                     <div class="mb-4">
-                        <h6 class="text-muted">Pool Order Details</h6>
-                        <div class="bg-light rounded p-2 mb-2">
+                        <h6 class="text-white-50">Pool Order Details</h6>
+                        <div class="glass-box mb-2">
                             <div class="d-flex justify-content-between">
-                                <span class="text-muted">Order ID</span>
-                                <span class="fw-bold">#${order.order_id}</span>
+                                <span class="text-white-50">Order ID</span>
+                                <span class="text-white fw-bold">#${order.order_id}</span>
                             </div>
                         </div>
-                        <div class="bg-light rounded p-2 mb-2">
+                        <div class="glass-box mb-2">
                             <div class="d-flex justify-content-between">
-                                <span class="text-muted">Plan</span>
-                                <span>${order.plan_name}</span>
+                                <span class="text-white-50">Plan</span>
+                                <span class="text-white">${order.plan_name}</span>
                             </div>
                         </div>
-                        <div class="bg-light rounded p-2 mb-2">
+                        <div class="glass-box mb-2">
                             <div class="d-flex justify-content-between">
-                                <span class="text-muted">Domains / Inboxes</span>
-                                <span>${order.selected_domains_count} / ${order.total_inboxes}</span>
+                                <span class="text-white-50">Domains / Inboxes</span>
+                                <span class="text-white">${order.selected_domains_count} / ${order.total_inboxes}</span>
                             </div>
                         </div>
-                        <div class="bg-light rounded p-2 mb-2">
+                        <div class="glass-box mb-2">
                             <div class="d-flex justify-content-between">
-                                <span class="text-muted">Platform</span>
-                                <span>${order.hosting_platform}</span>
+                                <span class="text-white-50">Platform</span>
+                                <span class="text-white">${order.hosting_platform}</span>
                             </div>
                         </div>
                     </div>
                     
                     ${task.notes ? `
                         <div class="mb-4">
-                            <h6 class="text-muted">Notes</h6>
-                            <div class="bg-light rounded p-3">
-                                <p class="mb-0">${task.notes}</p>
+                            <h6 class="text-white-50">Notes</h6>
+                            <div class="glass-box">
+                                <p class="text-white mb-0">${task.notes}</p>
                             </div>
                         </div>
                     ` : ''}
                     
-                    ${task.status === 'in-progress' ? `
+                    ${task.status === 'pending' || task.status === 'in-progress' ? `
                         <div class="d-grid gap-2">
-                            <button class="btn btn-success" onclick="updatePoolMigrationTaskStatus(${task.id}, 'completed')">
-                                <i class="fas fa-check me-2"></i>Mark as Completed
-                            </button>
+                            ${task.status === 'in-progress' ? `
+                                <button class="btn btn-success" onclick="updatePoolMigrationTaskStatus(${task.id}, 'completed')">
+                                    <i class="fas fa-check me-2"></i>Mark as Completed
+                                </button>
+                            ` : ''}
                         </div>
                     ` : ''}
                 </div>
