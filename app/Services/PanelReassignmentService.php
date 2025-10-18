@@ -128,7 +128,9 @@ class PanelReassignmentService
                 ->findOrFail($fromOrderPanelId);
 
             // Validate destination panel
-            $toPanel = Panel::findOrFail($toPanelId);
+            $toPanel = Panel::where('id', $toPanelId)
+                ->where('is_active', true)
+                ->firstOrFail();
 
             // Get splits to move
             $splitsQuery = OrderPanelSplit::where('order_panel_id', $fromOrderPanelId);

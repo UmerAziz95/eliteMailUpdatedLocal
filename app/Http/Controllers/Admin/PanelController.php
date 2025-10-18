@@ -41,6 +41,11 @@ class PanelController extends Controller
             $query = Panel::with(['order_panels.order', 'order_panels.orderPanelSplits'])
                 ->withCount('order_panels as total_orders');
 
+            // Apply is_active filter (default to active panels)
+            if ($request->filled('is_active')) {
+                $query->where('is_active', $request->is_active);
+            }
+
             // Apply filters if provided
             if ($request->filled('panel_id')) {
                 // PNL-00 remove string PNL
@@ -640,6 +645,75 @@ class PanelController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete panel: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Archive or unarchive a panel
+     * 
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function archive(Request $request, $id)
+    {
+        try {
+            $panel = Panel::findOrFail($id);
+            
+            // Validate the request - accept both boolean and string values
+            $validated = $request->validate([
+                'is_active' => 'required|in:0,1,true,false'
+            ]);
+            
+            // Convert to boolean
+            $isActive = filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            
+            // If conversion failed, try to convert from string/int
+            if ($isActive === null) {
+                $isActive = in_array($request->input('is_active'), [1, '1', 'true', true], true);
+            }
+            
+            $action = $isActive ? 'unarchived' : 'archived';
+            
+            // Update panel status
+            $panel->is_active = $isActive ? 1 : 0;
+            $panel->save();
+            
+            Log::info("Panel {$action} successfully", [
+                'panel_id' => $id,
+                'is_active' => $panel->is_active,
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Panel {$action} successfully",
+                'panel' => $panel
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error: ' . collect($e->errors())->flatten()->implode(', ')
+            ], 422);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Panel not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to archive/unarchive panel: ' . $e->getMessage(), [
+                'panel_id' => $id,
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update panel: ' . $e->getMessage()
             ], 500);
         }
     }

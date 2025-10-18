@@ -383,6 +383,27 @@
         right: 3% !important;
         pointer-events: all
     }
+    /*  */
+    /* Tab styles */
+    .nav-pills .nav-link {
+        background-color: transparent;
+        color: var(--light-color);
+        border: 1px solid var(--second-primary);
+        margin-right: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .nav-pills .nav-link:hover {
+        background-color: rgba(90, 73, 205, 0.3);
+        border-color: var(--second-primary);
+    }
+    
+    .nav-pills .nav-link.active {
+        background-color: var(--second-primary);
+        color: var(--light-color);
+        border-color: var(--second-primary);
+    }
+    
 </style>
 @endpush
 
@@ -774,9 +795,27 @@
         </div>
     </div>
 
-
-    {{-- create panel button --}}
-    <div class="col-12 text-end mb-4">
+    
+    {{-- Tabs for Active and Archived Panels --}}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <ul class="nav nav-pills" id="panelTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="active-tab" data-bs-toggle="pill" data-bs-target="#active-panels" 
+                        type="button" role="tab" aria-controls="active-panels" aria-selected="true"
+                        onclick="switchTab('active')">
+                    <i class="fa-solid fa-check-circle me-1"></i> Active Panels
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="archived-tab" data-bs-toggle="pill" data-bs-target="#archived-panels" 
+                        type="button" role="tab" aria-controls="archived-panels" aria-selected="false"
+                        onclick="switchTab('archived')">
+                    <i class="fa-solid fa-archive me-1"></i> Archived Panels
+                </button>
+            </li>
+        </ul>
+        
+        {{-- create panel button --}}
         <button type="button" class="btn btn-primary btn-sm border-0 px-3" 
                 onclick="createNewPanel()">
             <i class="fa-solid fa-plus me-2"></i>
@@ -1427,6 +1466,7 @@
                                 <i class="fas fa-edit"></i>
                             </button>
                         ` : ''}
+                        
                         ${panel.can_delete ? `
                             <button class="btn btn-sm btn-outline-danger px-2 py-1" 
                                     onclick="deletePanel(${panel.id})" 
@@ -1437,12 +1477,50 @@
                     </div>
                 `;
             }
+            actionButtons = `
+                <div class="d-flex flex-column gap-2">
+                    ${panel.show_edit_delete_buttons ? `
+                        ${panel.can_edit ? `
+                            <button class="btn btn-sm btn-outline-warning px-2 py-1" 
+                                    onclick="editPanel(${panel.id})" 
+                                    title="Edit Panel">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        ` : ''}
+                        
+                        ${panel.can_delete ? `
+                            <button class="btn btn-sm btn-outline-danger px-2 py-1" 
+                                    onclick="deletePanel(${panel.id})" 
+                                    title="Delete Panel">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    ` : ''}
+                    
+                    ${panel.is_active ? `
+                        <button class="btn btn-sm btn-outline-secondary px-2 py-1" 
+                                onclick="archivePanel(${panel.id})" 
+                                title="Archive Panel">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                    ` : `
+                        <button class="btn btn-sm btn-outline-success px-2 py-1" 
+                                onclick="unarchivePanel(${panel.id})" 
+                                title="Unarchive Panel">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    `}
+                </div>
+            `;
+            
+            // Add archived styling for inactive panels
+            const archivedStyle = !panel.is_active ? 'background-color: #334761;' : '';
             
             return `
-                <div class="card p-3 d-flex flex-column gap-1">                    
+                <div class="card p-3 d-flex flex-column gap-1" style="${archivedStyle}">                    
                     <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
                         <small class="mb-0 opacity-75">${'PNL-' + panel.id || panel.auto_generated_id}</small>
-                        <h6>Title: ${panel.title || 'N/A'}</h6>
+                        <h6>Title: ${panel.title || 'N/A'} ${!panel.is_active ? '<span class="badge bg-secondary ms-2">Archived</span>' : ''}</h6>
                     </div>
 
                     <div class="d-flex gap-3 justify-content-between">
@@ -2923,6 +3001,9 @@
             // Clean up any existing backdrop issues on page load
             cleanupOffcanvasBackdrop();
             
+            // Initialize active tab filter (default to active panels)
+            currentFilters.is_active = 1;
+            
             // Add Load More button event handler
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             if (loadMoreBtn) {
@@ -2932,10 +3013,10 @@
             if (typeof ApexCharts === 'undefined') {
                 console.error('ApexCharts not loaded, waiting...');
                 setTimeout(() => {
-                    loadPanels();
+                    loadPanels(currentFilters);
                 }, 500);
             } else {
-                loadPanels();
+                loadPanels(currentFilters);
             }
             
             // Initialize chevron states on page load
@@ -3379,6 +3460,208 @@ async function deletePanel(panelId) {
             confirmButtonText: 'OK'
         });
     }
+}
+
+// Archive panel function
+async function archivePanel(panelId) {
+    try {
+        // Show SweetAlert confirmation dialog
+        const confirmResult = await Swal.fire({
+            title: 'Archive Panel?',
+            text: `Are you sure you want to archive panel PNL-${panelId}? Archived panels will not be used for new orders.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Archive',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#6c757d',
+            cancelButtonColor: '#3085d6',
+            reverseButtons: true
+        });
+
+        // If user cancels, exit the function
+        if (!confirmResult.isConfirmed) {
+            return;
+        }
+        
+        // Show loading dialog with SweetAlert
+        Swal.fire({
+            title: 'Archiving Panel',
+            text: 'Please wait while we archive the panel...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Send archive request (set is_active to false)
+        const response = await $.ajax({
+            url: `/admin/panels/${panelId}/archive`,
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            },
+            data: {
+                is_active: false
+            }
+        });
+
+        if (response.success) {
+            // Close loading dialog and show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Archived!',
+                text: response.message || 'Panel archived successfully!',
+                confirmButtonText: 'OK'
+            });
+            
+            // Reload panels to reflect changes
+            loadPanels(currentFilters, 1, false);
+            
+            // Update panel counters after archive
+            updatePanelCounters();
+            
+            refreshPanelCapacityAlert();
+        } else {
+            // Show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: response.message || 'Failed to archive panel',
+                confirmButtonText: 'OK'
+            });
+        }
+    } catch (xhr) {
+        console.log('Error response:', xhr.responseJSON);
+        
+        let errorMessage = 'Failed to archive panel. Please try again.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            errorMessage = xhr.responseJSON.message;
+        }
+        
+        // Show error message
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: errorMessage,
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// Unarchive panel function
+async function unarchivePanel(panelId) {
+    try {
+        // Show SweetAlert confirmation dialog
+        const confirmResult = await Swal.fire({
+            title: 'Unarchive Panel?',
+            text: `Are you sure you want to unarchive panel PNL-${panelId}? This will make it available for new orders.`,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Unarchive',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#3085d6',
+            reverseButtons: true
+        });
+
+        // If user cancels, exit the function
+        if (!confirmResult.isConfirmed) {
+            return;
+        }
+        
+        // Show loading dialog with SweetAlert
+        Swal.fire({
+            title: 'Unarchiving Panel',
+            text: 'Please wait while we unarchive the panel...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Send unarchive request (set is_active to true)
+        const response = await $.ajax({
+            url: `/admin/panels/${panelId}/archive`,
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            },
+            data: {
+                is_active: true
+            }
+        });
+
+        if (response.success) {
+            // Close loading dialog and show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Unarchived!',
+                text: response.message || 'Panel unarchived successfully!',
+                confirmButtonText: 'OK'
+            });
+            
+            // Reload panels to reflect changes
+            loadPanels(currentFilters, 1, false);
+            
+            // Update panel counters after unarchive
+            updatePanelCounters();
+            
+            refreshPanelCapacityAlert();
+        } else {
+            // Show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: response.message || 'Failed to unarchive panel',
+                confirmButtonText: 'OK'
+            });
+        }
+    } catch (xhr) {
+        console.log('Error response:', xhr.responseJSON);
+        
+        let errorMessage = 'Failed to unarchive panel. Please try again.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            errorMessage = xhr.responseJSON.message;
+        }
+        
+        // Show error message
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: errorMessage,
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// Tab switching function
+function switchTab(tab) {
+    // Clear existing panels and show loading state immediately
+    panels = [];
+    showLoading();
+    
+    // Update current filters based on tab
+    if (tab === 'active') {
+        currentFilters.is_active = 1;
+        delete currentFilters.is_archived; // Remove any archived filter
+    } else if (tab === 'archived') {
+        currentFilters.is_active = 0;
+        delete currentFilters.is_archived; // Remove any conflicting filters
+    }
+    
+    // Reset pagination
+    currentPage = 1;
+    hasMorePages = false;
+    totalPanels = 0;
+    
+    // Reload panels with new filter
+    loadPanels(currentFilters, 1, false);
 }
 
 // Function to create new panel

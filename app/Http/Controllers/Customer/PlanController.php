@@ -1364,7 +1364,7 @@ class PlanController extends Controller
                         $oldStatus = $existingInvoice->status;
                         
                         $existingInvoice->update([
-                            'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
+                            'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'failed', $eventType),
                             'paid_at' => isset($invoiceData['paid_at']) 
                                 ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
                                 : null,
@@ -1564,7 +1564,14 @@ class PlanController extends Controller
 
                     // Calculate amount in dollars (Chargebee sends amount in cents)
                     $amount = isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : 0;
-                    
+                    // fallback to total if amount_paid is zero
+                    if($amount <= 0){
+                        $amount = isset($invoiceData['total']) ? ($invoiceData['total'] / 100) : 0;
+                    }
+                    // fallback to amount_due if total is also zero
+                    if($amount <= 0){
+                        $amount = isset($invoiceData['amount_due']) ? ($invoiceData['amount_due'] / 100) : 0;
+                    }
                     // Get tax information
                     $tax = isset($invoiceData['tax']) ? ($invoiceData['tax'] / 100) : 0;
 
@@ -1607,7 +1614,7 @@ class PlanController extends Controller
                             'plan_id' => $plan_id,
                             'order_id' => $order_id,
                             'amount' => $amount,
-                            'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'pending', $eventType),
+                            'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'failed', $eventType),
                             'paid_at' => isset($invoiceData['paid_at']) 
                                 ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
                                 : null,
@@ -1766,9 +1773,9 @@ class PlanController extends Controller
             case 'voided':
                 return 'voided';
             case 'not_paid':
-                return $eventType === 'invoice_payment_failed' ? 'failed' : 'pending';
+                return 'failed';
             default:
-                return 'pending';
+                return 'failed';
         }
     }
     // handlePaymentWebhook 
@@ -2192,10 +2199,9 @@ class PlanController extends Controller
     public function handleCancelSubscriptionByCron(Request $request)
     {
         $cutoffTime = Carbon::now()->subHours(72);
-
         // Get payment failures older than 72 hours
         $paymentFailures = PaymentFailure::where("type", "invoice")
-            ->where("status", "!=", "cancelled")
+            ->whereNotIn("status", ["cancelled", "resolved"])
             ->where("created_at", "<=", $cutoffTime)
             ->get();
 
@@ -2275,13 +2281,13 @@ class PlanController extends Controller
                         }
                         
                         // If invoice is still failed/unpaid, proceed with cancellation
-                        if (in_array($chargebeeStatus, ['payment_due', 'not_paid', 'failed'])) {
-                            // Update local invoice to failed status
-                            $localInvoice = Invoice::where('chargebee_invoice_id', $invoiceId)->first();
-                            if ($localInvoice && $localInvoice->status !== 'failed') {
-                                $localInvoice->update(['status' => 'failed']);
-                            }
-                        }
+                        // if (in_array($chargebeeStatus, ['payment_due', 'not_paid', 'failed'])) {
+                        //     // Update local invoice to failed status
+                        //     $localInvoice = Invoice::where('chargebee_invoice_id', $invoiceId)->first();
+                        //     if ($localInvoice && $localInvoice->status !== 'failed') {
+                        //         $localInvoice->update(['status' => 'failed']);
+                        //     }
+                        // }
                         
                     } catch (\Exception $e) {
                         Log::error('Failed to check invoice status on ChargeBee', [
@@ -2336,7 +2342,7 @@ class PlanController extends Controller
 
         // Get payment failures where it's within 72 hours from created_at
         $paymentFailures = PaymentFailure::where("type", "invoice")
-            ->where("status", "!=", "cancelled")
+            ->whereNotIn("status", ["cancelled", "resolved"])
             ->where("created_at", ">=", $now->copy()->subHours(72))
             ->get();
 
