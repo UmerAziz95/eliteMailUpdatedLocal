@@ -793,4 +793,137 @@ class TaskQueueController extends Controller
             ], 404);
         }
     }
+
+    // Pool Migration Tasks Methods
+    public function getPoolMigrationTasks(Request $request)
+    {
+        try {
+            $tasks = \App\Models\PoolOrderMigrationTask::with(['poolOrder', 'user', 'assignedTo'])
+                ->whereNull('assigned_to') // Only unassigned tasks for queue
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($task) {
+                    $order = $task->poolOrder;
+                    return [
+                        'id' => $task->id,
+                        'task_type' => $task->task_type,
+                        'task_type_label' => ucfirst(str_replace('_', ' ', $task->task_type)),
+                        'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
+                        'status' => $task->status,
+                        'order_id' => $order->order_id ?? null,
+                        'plan_name' => $order->plan->name ?? 'N/A',
+                        'selected_domains_count' => $order->selected_domains_count ?? 0,
+                        'total_inboxes' => $order->total_inboxes ?? 0,
+                        'hosting_platform' => $order->hosting_platform ?? 'N/A',
+                        'assigned_to_name' => $task->assignedTo?->name ?? 'Unassigned',
+                        'created_at' => $task->created_at->format('Y-m-d H:i:s'),
+                        'notes' => $task->notes,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'tasks' => $tasks
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching pool migration tasks (Contractor): ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch pool migration tasks'
+            ], 500);
+        }
+    }
+
+    public function getPoolMigrationTaskDetails($taskId)
+    {
+        try {
+            $task = \App\Models\PoolOrderMigrationTask::with(['poolOrder.plan', 'user', 'assignedTo'])
+                ->findOrFail($taskId);
+
+            $order = $task->poolOrder;
+
+            return response()->json([
+                'success' => true,
+                'task' => [
+                    'id' => $task->id,
+                    'task_type' => $task->task_type,
+                    'task_type_label' => ucfirst(str_replace('_', ' ', $task->task_type)),
+                    'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
+                    'status' => $task->status,
+                    'assigned_to_name' => $task->assignedTo?->name ?? 'Unassigned',
+                    'created_at' => $task->created_at->format('Y-m-d H:i:s'),
+                    'notes' => $task->notes,
+                ],
+                'order' => [
+                    'order_id' => $order->order_id,
+                    'plan_name' => $order->plan->name ?? 'N/A',
+                    'selected_domains_count' => $order->selected_domains_count,
+                    'total_inboxes' => $order->total_inboxes,
+                    'hosting_platform' => $order->hosting_platform,
+                ],
+                'metadata' => $task->metadata
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching pool migration task details (Contractor): ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Task not found'
+            ], 404);
+        }
+    }
+
+    public function assignPoolMigrationTaskToMe($taskId)
+    {
+        try {
+            $task = \App\Models\PoolOrderMigrationTask::findOrFail($taskId);
+
+            if ($task->assigned_to) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This task is already assigned to someone'
+                ], 400);
+            }
+
+            $task->update([
+                'assigned_to' => auth()->id(),
+                'status' => 'in-progress'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Task assigned successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error assigning pool migration task (Contractor): ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign task'
+            ], 500);
+        }
+    }
+
+    public function updatePoolMigrationTaskStatus(Request $request, $taskId)
+    {
+        try {
+            $task = \App\Models\PoolOrderMigrationTask::findOrFail($taskId);
+
+            $validated = $request->validate([
+                'status' => 'required|in:pending,in-progress,completed,cancelled',
+                'notes' => 'nullable|string'
+            ]);
+
+            $task->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Task status updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error updating pool migration task status (Contractor): ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update task status'
+            ], 500);
+        }
+    }
 }

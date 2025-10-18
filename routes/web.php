@@ -680,6 +680,12 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
     Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
+    // Pool Migration Tasks Routes
+    Route::get('taskInQueue/pool-migration-tasks', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getPoolMigrationTasks'])->name("taskInQueue.pool-migration-tasks");
+    Route::get('taskInQueue/pool-migration/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getPoolMigrationTaskDetails'])->name("taskInQueue.pool-migration-details");
+    Route::post('taskInQueue/pool-migration/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignPoolMigrationTaskToMe'])->name("taskInQueue.pool-migration-assign");
+    Route::put('taskInQueue/pool-migration/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updatePoolMigrationTaskStatus'])->name("taskInQueue.pool-migration-status");
+
     // My Task Routes
     Route::get('myTask', [App\Http\Controllers\Contractor\MyTaskController::class, 'index'])->name("myTask.index");
     Route::get('myTask/data', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");
@@ -687,6 +693,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('myTask/shifted/{id}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getShiftedTaskDetails'])->name("myTask.shifted.details");
     Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
     Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Contractor\MyTaskController::class, 'completeTask'])->name("myTask.complete");
+    Route::get('myTask/pool-migration-tasks', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyPoolMigrationTasks'])->name("myTask.pool-migration-tasks");
 
     // Domains Removal Tasks
     Route::post('/orders/{order}/check-contractor-helpers', [AdminOrderController::class, 'checkContractorInHelpers'])->name('orders.check-contractor-helpers');

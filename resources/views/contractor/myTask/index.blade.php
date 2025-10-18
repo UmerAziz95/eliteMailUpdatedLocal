@@ -93,6 +93,13 @@
                 <button class="nav-link" id="pills-shifted-tasks-tab" data-bs-toggle="pill" data-bs-target="#pills-shifted-tasks"
                     type="button" role="tab" aria-controls="pills-shifted-tasks" aria-selected="false">Migration Tasks</button>
             </li>
+
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pills-pool-migration-tab" data-bs-toggle="pill" data-bs-target="#pills-pool-migration"
+                    type="button" role="tab" aria-controls="pills-pool-migration" aria-selected="false">
+                    <i class="ti ti-swimming me-1"></i>Pool Migration
+                </button>
+            </li>
         </ul>
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane fade show active" id="pills-mytask" role="tabpanel" aria-labelledby="pills-mytask-tab"
@@ -121,6 +128,20 @@
                 <div id="shifted-tasks-container"
                     style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
                     <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pills-pool-migration" role="tabpanel" aria-labelledby="pills-pool-migration-tab"
+                tabindex="0">
+                <div id="pool-migration-tasks-container"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Loading state -->
+                    <div class="loading-state text-center" style="grid-column: 1 / -1;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-white">Loading pool migration tasks...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -271,6 +292,10 @@
             if (tasks['shifted-tasks'].length === 0) {
                 loadTasks('shifted-tasks');
             }
+        });
+
+        document.getElementById('pills-pool-migration-tab').addEventListener('click', function() {
+            loadPoolMigrationTasks();
         });
     });
 
@@ -1951,6 +1976,262 @@
         });
         
         return links.length > 0 ? links.join('<br>') : 'N/A';
+    }
+
+    // Pool Migration Tasks Functions
+    async function loadPoolMigrationTasks() {
+        const container = document.getElementById('pool-migration-tasks-container');
+        
+        try {
+            container.innerHTML = `
+                <div class="loading-state text-center" style="grid-column: 1 / -1;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-white">Loading pool migration tasks...</p>
+                </div>
+            `;
+
+            const response = await fetch('/contractor/myTask/pool-migration-tasks');
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load pool migration tasks');
+            }
+
+            renderPoolMigrationTasks(data.tasks);
+
+        } catch (error) {
+            console.error('Error loading pool migration tasks:', error);
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    <div class="mt-3">
+                        <h5>Error Loading Pool Migration Tasks</h5>
+                        <p class="text-white-50">${error.message}</p>
+                        <button class="btn btn-outline-light btn-sm mt-2" onclick="loadPoolMigrationTasks()">
+                            <i class="fas fa-redo me-1"></i> Retry
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function renderPoolMigrationTasks(tasks) {
+        const container = document.getElementById('pool-migration-tasks-container');
+        
+        if (!tasks || tasks.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="ti ti-swimming" style="font-size: 4rem;"></i>
+                    <h5>No Pool Migration Tasks</h5>
+                    <p class="text-white-50">You don't have any assigned pool migration tasks</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = tasks.map(task => createPoolMigrationCard(task)).join('');
+    }
+
+    function createPoolMigrationCard(task) {
+        const statusClass = getStatusClass(task.status);
+        
+        return `
+            <div class="task-card glass-box p-3" style="cursor: pointer;" 
+                 onclick="viewPoolMigrationTaskDetails(${task.id})">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="font-size: 1.5rem;">${task.task_type_icon}</span>
+                        <div>
+                            <h6 class="text-white mb-0">${task.task_type_label}</h6>
+                            <small class="text-white-50">Order #${task.order_id}</small>
+                        </div>
+                    </div>
+                    <span class="badge ${statusClass}">${task.status}</span>
+                </div>
+                
+                <div class="glass-box mt-2 p-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-white-50 small">Plan:</span>
+                        <span class="text-white small">${task.plan_name}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-white-50 small">Domains/Inboxes:</span>
+                        <span class="text-white small">${task.selected_domains_count} / ${task.total_inboxes}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-white-50 small">Platform:</span>
+                        <span class="text-white small">${task.hosting_platform}</span>
+                    </div>
+                </div>
+
+                ${task.status === 'in-progress' ? `
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-success w-100" 
+                                onclick="event.stopPropagation(); updatePoolMigrationTaskStatus(${task.id}, 'completed')">
+                            <i class="fas fa-check me-1"></i> Mark as Completed
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    async function viewPoolMigrationTaskDetails(taskId) {
+        try {
+            const response = await fetch(`/contractor/taskInQueue/pool-migration/${taskId}/details`);
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load task details');
+            }
+            
+            const task = data.task;
+            const order = data.order;
+            
+            const taskDetailsContainer = document.getElementById('taskDetailsContainer');
+            taskDetailsContainer.innerHTML = `
+                <div class="task-details-content">
+                    <h4 class="text-white mb-3">${task.task_type_icon} ${task.task_type_label}</h4>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-white-50">Task Information</h6>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Task ID</span>
+                                <span class="text-white fw-bold">#${task.id}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Status</span>
+                                <span class="badge ${getStatusClass(task.status)}">${task.status}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Assigned To</span>
+                                <span class="text-white">${task.assigned_to_name}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-white-50">Pool Order Details</h6>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Order ID</span>
+                                <span class="text-white fw-bold">#${order.order_id}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Plan</span>
+                                <span class="text-white">${order.plan_name}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Domains / Inboxes</span>
+                                <span class="text-white">${order.selected_domains_count} / ${order.total_inboxes}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Platform</span>
+                                <span class="text-white">${order.hosting_platform}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${task.notes ? `
+                        <div class="mb-4">
+                            <h6 class="text-white-50">Notes</h6>
+                            <div class="glass-box">
+                                <p class="text-white mb-0">${task.notes}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${task.status === 'in-progress' ? `
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success" onclick="updatePoolMigrationTaskStatus(${task.id}, 'completed')">
+                                <i class="fas fa-check me-2"></i>Mark as Completed
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            const offcanvas = new bootstrap.Offcanvas(document.getElementById('task-details-view'));
+            offcanvas.show();
+            
+        } catch (error) {
+            console.error('Error loading task details:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to load task details',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    async function updatePoolMigrationTaskStatus(taskId, status) {
+        try {
+            const result = await Swal.fire({
+                title: 'Update Status?',
+                text: `Mark this task as ${status}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, update it',
+                cancelButtonText: 'Cancel'
+            });
+
+            if (!result.isConfirmed) return;
+
+            const response = await fetch(`/contractor/taskInQueue/pool-migration/${taskId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ status })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to update status');
+            }
+
+            await Swal.fire({
+                title: 'Success!',
+                text: 'Task status updated successfully',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            // Reload pool migration tasks
+            loadPoolMigrationTasks();
+
+            // Close offcanvas
+            const offcanvasElement = document.getElementById('task-details-view');
+            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+            if (offcanvas) offcanvas.hide();
+
+        } catch (error) {
+            console.error('Error updating task status:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to update status',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
     }
 </script>
 @endpush

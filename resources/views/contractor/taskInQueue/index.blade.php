@@ -155,6 +155,13 @@
                     Migration Pending Tasks <span class="badge bg-primary ms-1" id="shifted-pending-count">0</span>
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pool-migration-tab" data-bs-toggle="tab" data-bs-target="#pool-migration-tab-pane"
+                    type="button" role="tab" aria-controls="pool-migration-tab-pane" aria-selected="false">
+                    <i class="ti ti-swimming me-1"></i>Pool Migration Tasks
+                    <span class="badge bg-info ms-1" id="pool-migration-count">0</span>
+                </button>
+            </li>
             <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="in-progress-tab" data-bs-toggle="tab" data-bs-target="#in-progress-tab-pane"
                     type="button" role="tab" aria-controls="in-progress-tab-pane" aria-selected="false">
@@ -199,6 +206,17 @@
                     <button id="load-more-shifted-pending" class="btn btn-outline-light btn-sm d-none">
                         <i class="fas fa-plus me-1"></i> Load More
                     </button>
+                </div>
+            </div>
+
+            <!-- Pool Migration Tasks Tab -->
+            <div class="tab-pane fade" id="pool-migration-tab-pane" role="tabpanel" aria-labelledby="pool-migration-tab" tabindex="0">
+                <div id="pool-migration-tasks-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Loading state -->
+                    <div class="loading-state text-center" style="grid-column: 1 / -1;">
+                        <div class="loading-spinner"></div>
+                        <p class="text-white-50 mt-2">Loading pool migration tasks...</p>
+                    </div>
                 </div>
             </div>
 
@@ -413,6 +431,8 @@
                 } else if (tabId === 'shifted-pending-tab-pane') {
                     activeTab = 'shifted-pending';
                     if (tasks['shifted-pending'].length === 0) loadShiftedPendingTasks();
+                } else if (tabId === 'pool-migration-tab-pane') {
+                    loadPoolMigrationTasks();
                 } else if (tabId === 'in-progress-tab-pane') {
                     activeTab = 'in-progress';
                     if (tasks['in-progress'].length === 0) loadTasks('in-progress');
@@ -2272,6 +2292,315 @@
         });
         
         return links.length > 0 ? links.join('<br>') : 'N/A';
+    }
+
+    // Pool Migration Tasks Functions
+    async function loadPoolMigrationTasks() {
+        const container = document.getElementById('pool-migration-tasks-container');
+        
+        try {
+            container.innerHTML = `
+                <div class="loading-state text-center" style="grid-column: 1 / -1;">
+                    <div class="loading-spinner"></div>
+                    <p class="text-white-50 mt-2">Loading pool migration tasks...</p>
+                </div>
+            `;
+
+            const response = await fetch('/contractor/taskInQueue/pool-migration-tasks');
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load pool migration tasks');
+            }
+
+            renderPoolMigrationTasks(data.tasks);
+            updateTabCounts();
+
+        } catch (error) {
+            console.error('Error loading pool migration tasks:', error);
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    <div class="mt-3">
+                        <h5>Error Loading Pool Migration Tasks</h5>
+                        <p class="text-white-50">${error.message}</p>
+                        <button class="btn btn-outline-light btn-sm mt-2" onclick="loadPoolMigrationTasks()">
+                            <i class="fas fa-redo me-1"></i> Retry
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function renderPoolMigrationTasks(tasks) {
+        const container = document.getElementById('pool-migration-tasks-container');
+        
+        if (!tasks || tasks.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="ti ti-swimming" style="font-size: 4rem;"></i>
+                    <h5>No Pool Migration Tasks Found</h5>
+                    <p class="text-white-50">All pool migration tasks have been assigned</p>
+                </div>
+            `;
+            document.getElementById('pool-migration-count').textContent = '0';
+            return;
+        }
+
+        container.innerHTML = tasks.map(task => createPoolMigrationCard(task)).join('');
+        document.getElementById('pool-migration-count').textContent = tasks.length;
+    }
+
+    function createPoolMigrationCard(task) {
+        const statusClass = getStatusClass(task.status);
+        
+        return `
+            <div class="task-card glass-box p-3" style="cursor: pointer;" 
+                 onclick="viewPoolMigrationTaskDetails(${task.id})">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="font-size: 1.5rem;">${task.task_type_icon}</span>
+                        <div>
+                            <h6 class="text-white mb-0">${task.task_type_label}</h6>
+                            <small class="text-white-50">Order #${task.order_id}</small>
+                        </div>
+                    </div>
+                    <span class="badge ${statusClass}">${task.status}</span>
+                </div>
+                
+                <div class="glass-box mt-2 p-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-white-50 small">Plan:</span>
+                        <span class="text-white small">${task.plan_name}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-white-50 small">Domains/Inboxes:</span>
+                        <span class="text-white small">${task.selected_domains_count} / ${task.total_inboxes}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-white-50 small">Platform:</span>
+                        <span class="text-white small">${task.hosting_platform}</span>
+                    </div>
+                </div>
+
+                <div class="mt-3 d-flex gap-2">
+                    <button class="btn btn-sm btn-primary flex-fill" 
+                            onclick="event.stopPropagation(); assignPoolMigrationTaskToMe(${task.id})">
+                        <i class="fas fa-user-check me-1"></i> Assign to Me
+                    </button>
+                    <button class="btn btn-sm btn-outline-light" 
+                            onclick="event.stopPropagation(); viewPoolMigrationTaskDetails(${task.id})">
+                        <i class="fas fa-eye me-1"></i> View
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    async function viewPoolMigrationTaskDetails(taskId) {
+        try {
+            const response = await fetch(`/contractor/taskInQueue/pool-migration/${taskId}/details`);
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load pool migration task details');
+            }
+            
+            const task = data.task;
+            const order = data.order;
+            const metadata = data.metadata;
+            
+            const taskDetailsContainer = document.getElementById('taskDetailsContainer');
+            taskDetailsContainer.innerHTML = `
+                <div class="task-details-content">
+                    <h4 class="text-white mb-3">${task.task_type_icon} ${task.task_type_label}</h4>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-white-50">Task Information</h6>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Task ID</span>
+                                <span class="text-white fw-bold">#${task.id}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Status</span>
+                                <span class="badge ${getStatusClass(task.status)}">${task.status}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Assigned To</span>
+                                <span class="text-white">${task.assigned_to_name}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-white-50">Pool Order Details</h6>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Order ID</span>
+                                <span class="text-white fw-bold">#${order.order_id}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Plan</span>
+                                <span class="text-white">${order.plan_name}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Domains / Inboxes</span>
+                                <span class="text-white">${order.selected_domains_count} / ${order.total_inboxes}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Platform</span>
+                                <span class="text-white">${order.hosting_platform}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${task.notes ? `
+                        <div class="mb-4">
+                            <h6 class="text-white-50">Notes</h6>
+                            <div class="glass-box">
+                                <p class="text-white mb-0">${task.notes}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${task.status === 'pending' ? `
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="assignPoolMigrationTaskToMe(${task.id})">
+                                <i class="fas fa-user-check me-2"></i>Assign to Me
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            const offcanvas = new bootstrap.Offcanvas(document.getElementById('task-details-view'));
+            offcanvas.show();
+            
+        } catch (error) {
+            console.error('Error loading pool migration task details:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to load task details',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    async function assignPoolMigrationTaskToMe(taskId) {
+        try {
+            const result = await Swal.fire({
+                title: 'Assign Task?',
+                text: 'Do you want to assign this pool migration task to yourself?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, assign it',
+                cancelButtonText: 'Cancel'
+            });
+
+            if (!result.isConfirmed) return;
+
+            const response = await fetch(`/contractor/taskInQueue/pool-migration/${taskId}/assign`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to assign task');
+            }
+
+            await Swal.fire({
+                title: 'Success!',
+                text: 'Task assigned successfully',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            // Reload pool migration tasks
+            loadPoolMigrationTasks();
+
+            // Close offcanvas if open
+            const offcanvasElement = document.getElementById('task-details-view');
+            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+            if (offcanvas) offcanvas.hide();
+
+        } catch (error) {
+            console.error('Error assigning pool migration task:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to assign task',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    async function updatePoolMigrationTaskStatus(taskId, status) {
+        try {
+            const result = await Swal.fire({
+                title: 'Update Status?',
+                text: `Mark this task as ${status}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, update it',
+                cancelButtonText: 'Cancel'
+            });
+
+            if (!result.isConfirmed) return;
+
+            const response = await fetch(`/contractor/taskInQueue/pool-migration/${taskId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ status })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to update status');
+            }
+
+            await Swal.fire({
+                title: 'Success!',
+                text: 'Task status updated successfully',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            // Reload pool migration tasks
+            loadPoolMigrationTasks();
+
+        } catch (error) {
+            console.error('Error updating pool migration task status:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to update status',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
     }
 
 </script>

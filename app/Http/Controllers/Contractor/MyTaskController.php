@@ -505,4 +505,43 @@ class MyTaskController extends Controller
             ], 404);
         }
     }
+
+    public function getMyPoolMigrationTasks(Request $request)
+    {
+        try {
+            $tasks = \App\Models\PoolOrderMigrationTask::with(['poolOrder', 'user', 'assignedTo'])
+                ->where('assigned_to', auth()->id()) // Only tasks assigned to current contractor
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($task) {
+                    $order = $task->poolOrder;
+                    return [
+                        'id' => $task->id,
+                        'task_type' => $task->task_type,
+                        'task_type_label' => ucfirst(str_replace('_', ' ', $task->task_type)),
+                        'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
+                        'status' => $task->status,
+                        'order_id' => $order->order_id ?? null,
+                        'plan_name' => $order->plan->name ?? 'N/A',
+                        'selected_domains_count' => $order->selected_domains_count ?? 0,
+                        'total_inboxes' => $order->total_inboxes ?? 0,
+                        'hosting_platform' => $order->hosting_platform ?? 'N/A',
+                        'assigned_to_name' => $task->assignedTo?->name ?? 'Unassigned',
+                        'created_at' => $task->created_at->format('Y-m-d H:i:s'),
+                        'notes' => $task->notes,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'tasks' => $tasks
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching my pool migration tasks (Contractor): ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch pool migration tasks'
+            ], 500);
+        }
+    }
 }
