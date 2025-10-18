@@ -178,12 +178,17 @@ class PoolOrderObserver
                                 'short' => true
                             ],
                             [
+                                'title' => 'Migration Task',
+                                'value' => '📋 Configuration task created and pending assignment',
+                                'short' => false
+                            ],
+                            [
                                 'title' => 'Domains',
                                 'value' => $domainsList,
                                 'short' => false
                             ]
                         ],
-                        'footer' => config('app.name', 'ProjectInbox') . ' - Pool Order System',
+                        'footer' => config('app.name', 'ProjectInbox') . ' - Pool Order System | Migration Task Created',
                         'ts' => time()
                     ]
                 ]
@@ -339,6 +344,11 @@ class PoolOrderObserver
                                 'short' => true
                             ],
                             [
+                                'title' => 'Migration Task',
+                                'value' => '🔧 Cancellation cleanup task created and pending assignment',
+                                'short' => false
+                            ],
+                            [
                                 'title' => 'Cancellation Reason',
                                 'value' => $reason,
                                 'short' => false
@@ -349,7 +359,7 @@ class PoolOrderObserver
                                 'short' => false
                             ]
                         ],
-                        'footer' => config('app.name', 'ProjectInbox') . ' - Pool Order Cancellation | ' . $poolOrder->selected_domains_count . ' domain(s) freed',
+                        'footer' => config('app.name', 'ProjectInbox') . ' - Pool Order Cancellation | ' . $poolOrder->selected_domains_count . ' domain(s) freed | Migration Task Created',
                         'ts' => time()
                     ]
                 ]
