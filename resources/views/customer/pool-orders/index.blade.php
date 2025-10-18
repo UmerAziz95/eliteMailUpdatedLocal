@@ -91,5 +91,57 @@ $(function() {
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]]
     });
 });
+
+/**
+ * Cancel pool subscription
+ */
+function cancelPoolSubscription(orderId) {
+    Swal.fire({
+        title: 'Cancel Subscription?',
+        text: "This will immediately cancel your pool subscription and free up the domains. This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, cancel it!',
+        cancelButtonText: 'No, keep it',
+        input: 'textarea',
+        inputPlaceholder: 'Optional: Tell us why you\'re cancelling...',
+        inputAttributes: {
+            'aria-label': 'Cancellation reason'
+        },
+        showLoaderOnConfirm: true,
+        preConfirm: (reason) => {
+            return $.ajax({
+                url: '{{ route('customer.pool-orders.cancel', ':id') }}'.replace(':id', orderId),
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    reason: reason || 'Customer requested cancellation'
+                },
+                dataType: 'json'
+            }).fail(function(xhr) {
+                let message = 'Failed to cancel subscription.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                Swal.showValidationMessage(message);
+            });
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+        if (result.isConfirmed && result.value) {
+            Swal.fire({
+                title: 'Cancelled!',
+                text: result.value.message || 'Your pool subscription has been cancelled successfully.',
+                icon: 'success',
+                timer: 3000
+            });
+            
+            // Reload the DataTable
+            $('#poolOrdersTable').DataTable().ajax.reload(null, false);
+        }
+    });
+}
 </script>
 @endpush

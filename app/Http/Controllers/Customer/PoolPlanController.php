@@ -326,6 +326,20 @@ class PoolPlanController extends Controller
             ->addColumn('actions', function($order) {
                 $viewUrl = route('customer.pool-orders.show', $order->id);
                 $editUrl = route('customer.pool-orders.edit', $order->id);
+                $cancelUrl = route('customer.pool-orders.cancel', $order->id);
+                
+                // Check if order can be cancelled (not already cancelled)
+                $canCancel = $order->status !== 'cancelled' && $order->status_manage_by_admin !== 'cancelled';
+                
+                $cancelButton = '';
+                if ($canCancel) {
+                    $cancelButton = '<li>
+                            <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="cancelPoolSubscription(\'' . $order->id . '\')">
+                                <i class="ti ti-x me-1"></i>Cancel Subscription
+                            </a>
+                        </li>';
+                }
+                
                 return '
                 <div class="dropdown">
                     <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -347,6 +361,7 @@ class PoolPlanController extends Controller
                                 <i class="ti ti-download me-1"></i>Download
                             </a>
                         </li>
+                        ' . $cancelButton . '
                     </ul>
                 </div>
                 ';
@@ -939,5 +954,36 @@ class PoolPlanController extends Controller
         }
         
         Log::info('=== updateDomainUsageInPools END ===');
+    }
+
+    /**
+     * Cancel pool order subscription
+     */
+    public function cancelPoolSubscription(Request $request, $id)
+    {
+        $user = Auth::user();
+        $reason = $request->input('reason', 'Customer requested cancellation');
+
+        // Use the PoolOrderCancelledService to handle cancellation
+        $cancellationService = new \App\Services\PoolOrderCancelledService();
+        $result = $cancellationService->cancelSubscription($id, $user->id, $reason);
+        
+        // Return appropriate HTTP status code based on result
+        if ($result['success']) {
+            return response()->json($result);
+        } else {
+            // Determine appropriate HTTP status code based on error message
+            $statusCode = 500; // Default to internal server error
+            
+            if (str_contains($result['message'], 'already cancelled')) {
+                $statusCode = 400; // Bad request
+            } elseif (str_contains($result['message'], 'Failed to find')) {
+                $statusCode = 404; // Not found
+            } elseif (str_contains($result['message'], 'No ChargeBee subscription')) {
+                $statusCode = 400; // Bad request
+            }
+            
+            return response()->json($result, $statusCode);
+        }
     }
 }

@@ -68,6 +68,8 @@ class PoolDomainService
                 $query->select('id', 'name', 'email');
             }])
             ->select('id', 'user_id', 'domains', 'status', 'status_manage_by_admin')
+            // status_manage_by_admin not equal to 'cancelled' to reduce unnecessary data
+            ->where('status_manage_by_admin', '!=', 'cancelled')
             ->whereNotNull('domains');
             
             // Apply filters if provided
