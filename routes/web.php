@@ -415,6 +415,12 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
         Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
+        // Pool Migration Task Routes
+        Route::get('taskInQueue/pool-migration-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolMigrationTasks'])->name("taskInQueue.pool-migration-tasks");
+        Route::get('taskInQueue/pool-migration/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolMigrationTaskDetails'])->name("taskInQueue.pool-migration.details");
+        Route::post('taskInQueue/pool-migration/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignPoolMigrationTaskToMe'])->name("taskInQueue.pool-migration.assign");
+        Route::put('taskInQueue/pool-migration/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updatePoolMigrationTaskStatus'])->name("taskInQueue.pool-migration.updateStatus");
+
         // My Task Routes
         Route::get('myTask', [App\Http\Controllers\Admin\MyTaskController::class, 'index'])->name("myTask.index");
         Route::get('myTask/data', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");

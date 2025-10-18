@@ -820,4 +820,312 @@ class TaskQueueController extends Controller
             ], 404);
         }
     }
+
+    /**
+     * Get pool migration tasks
+     */
+    public function getPoolMigrationTasks(Request $request)
+    {
+        try {
+            $query = \App\Models\PoolOrderMigrationTask::with([
+                'poolOrder.poolPlan',
+                'poolOrder.user',
+                'user',
+                'assignedTo'
+            ]);
+            
+            // Filter by status if provided (default: all statuses)
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+            
+            // Filter by task type if provided
+            if ($request->filled('task_type')) {
+                $query->where('task_type', $request->task_type);
+            }
+
+            // Filter by assigned status
+            if ($request->filled('assigned_status')) {
+                if ($request->assigned_status === 'unassigned') {
+                    $query->whereNull('assigned_to');
+                } elseif ($request->assigned_status === 'assigned') {
+                    $query->whereNotNull('assigned_to');
+                }
+            }
+
+            // Filter by date range
+            if ($request->filled('date_from')) {
+                $query->whereDate('created_at', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('created_at', '<=', $request->date_to);
+            }
+
+            // Apply ordering
+            $query->orderBy('created_at', 'desc');
+
+            // Pagination parameters
+            $perPage = $request->get('per_page', 12);
+            $page = $request->get('page', 1);
+            
+            // Get paginated results
+            $paginatedTasks = $query->paginate($perPage, ['*'], 'page', $page);
+
+            // Format tasks data for the frontend
+            $tasksData = $paginatedTasks->getCollection()->map(function ($task) {
+                $poolOrder = $task->poolOrder;
+                $user = $poolOrder ? $poolOrder->user : null;
+                $metadata = $task->metadata ?? [];
+                
+                return [
+                    'id' => $task->id,
+                    'task_id' => $task->id,
+                    'type' => 'pool_migration',
+                    'pool_order_id' => $task->pool_order_id,
+                    'task_type' => $task->task_type,
+                    'status' => $task->status,
+                    'customer_name' => $user ? $user->name : 'N/A',
+                    'customer_email' => $user ? $user->email : 'N/A',
+                    'customer_image' => $user && $user->profile_image 
+                        ? asset('storage/profile_images/' . $user->profile_image) 
+                        : null,
+                    'plan_name' => $metadata['plan_name'] ?? 'N/A',
+                    'amount' => $metadata['amount'] ?? 0,
+                    'quantity' => $metadata['quantity'] ?? 0,
+                    'domains_count' => $metadata['selected_domains_count'] ?? 0,
+                    'total_inboxes' => $metadata['total_inboxes'] ?? 0,
+                    'hosting_platform' => $metadata['hosting_platform'] ?? 'N/A',
+                    'previous_status' => $task->previous_status,
+                    'new_status' => $task->new_status,
+                    'assigned_to' => $task->assigned_to,
+                    'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : null,
+                    'notes' => $task->notes,
+                    'created_at' => $task->created_at,
+                    'started_at' => $task->started_at,
+                    'completed_at' => $task->completed_at,
+                    'task_type_label' => $task->task_type === 'configuration' ? 'Configuration' : 'Cancellation',
+                    'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
+                    'status_badge' => $this->getStatusBadge($task->status),
+                ];
+            });
+            
+            return response()->json([
+                'success' => true,
+                'data' => $tasksData,
+                'pagination' => [
+                    'current_page' => $paginatedTasks->currentPage(),
+                    'last_page' => $paginatedTasks->lastPage(),
+                    'per_page' => $paginatedTasks->perPage(),
+                    'total' => $paginatedTasks->total(),
+                    'has_more_pages' => $paginatedTasks->hasMorePages(),
+                    'from' => $paginatedTasks->firstItem(),
+                    'to' => $paginatedTasks->lastItem()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching pool migration tasks: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching pool migration tasks: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get pool migration task details
+     */
+    public function getPoolMigrationTaskDetails($taskId)
+    {
+        try {
+            $task = \App\Models\PoolOrderMigrationTask::with([
+                'poolOrder.poolPlan',
+                'poolOrder.user',
+                'user',
+                'assignedTo'
+            ])->findOrFail($taskId);
+
+            $poolOrder = $task->poolOrder;
+            $user = $poolOrder ? $poolOrder->user : null;
+            $metadata = $task->metadata ?? [];
+
+            $taskInfo = [
+                'id' => $task->id,
+                'pool_order_id' => $task->pool_order_id,
+                'task_type' => $task->task_type,
+                'task_type_label' => $task->task_type === 'configuration' ? 'Configuration Task' : 'Cancellation Cleanup Task',
+                'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
+                'status' => $task->status,
+                'previous_status' => $task->previous_status,
+                'new_status' => $task->new_status,
+                'assigned_to' => $task->assigned_to,
+                'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : 'Unassigned',
+                'notes' => $task->notes,
+                'created_at' => $task->created_at->format('Y-m-d H:i:s'),
+                'started_at' => $task->started_at ? $task->started_at->format('Y-m-d H:i:s') : null,
+                'completed_at' => $task->completed_at ? $task->completed_at->format('Y-m-d H:i:s') : null,
+            ];
+
+            $orderInfo = [
+                'order_id' => $poolOrder ? $poolOrder->id : null,
+                'status' => $poolOrder ? $poolOrder->status : 'N/A',
+                'status_manage_by_admin' => $poolOrder ? $poolOrder->status_manage_by_admin : 'N/A',
+                'customer_name' => $user ? $user->name : 'N/A',
+                'customer_email' => $user ? $user->email : 'N/A',
+                'plan_name' => $metadata['plan_name'] ?? 'N/A',
+                'amount' => $metadata['amount'] ?? 0,
+                'quantity' => $metadata['quantity'] ?? 0,
+                'selected_domains_count' => $metadata['selected_domains_count'] ?? 0,
+                'total_inboxes' => $metadata['total_inboxes'] ?? 0,
+                'hosting_platform' => $metadata['hosting_platform'] ?? 'N/A',
+            ];
+
+            // Add task-specific data
+            if ($task->task_type === 'cancellation') {
+                $orderInfo['cancellation_reason'] = $metadata['cancellation_reason'] ?? 'No reason provided';
+                $orderInfo['chargebee_subscription_id'] = $metadata['chargebee_subscription_id'] ?? 'N/A';
+                $orderInfo['cancelled_by'] = $metadata['cancelled_by'] ?? 'Unknown';
+                $orderInfo['cancelled_at'] = $metadata['cancelled_at'] ?? 'N/A';
+            } elseif ($task->task_type === 'configuration') {
+                $orderInfo['domains_selected'] = $metadata['domains_selected'] ?? [];
+                $orderInfo['hosting_platform_data'] = $metadata['hosting_platform_data'] ?? [];
+            }
+
+            return response()->json([
+                'success' => true,
+                'task' => $taskInfo,
+                'order' => $orderInfo,
+                'metadata' => $metadata,
+                'message' => 'Pool migration task details retrieved successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching pool migration task details: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Pool migration task not found or error fetching details'
+            ], 404);
+        }
+    }
+
+    /**
+     * Assign a pool migration task to current admin
+     */
+    public function assignPoolMigrationTaskToMe(Request $request, $taskId)
+    {
+        try {
+            $adminId = auth()->id();
+            
+            // Find the pool migration task
+            $task = \App\Models\PoolOrderMigrationTask::findOrFail($taskId);
+            
+            // Check if task is already assigned
+            if ($task->assigned_to) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This pool migration task is already assigned to another admin.'
+                ], 400);
+            }
+            
+            // Assign the task to the current admin and mark as in-progress
+            $task->update([
+                'assigned_to' => $adminId,
+                'status' => 'in-progress',
+                'started_at' => now()
+            ]);
+            
+            \Log::info("Pool migration task {$taskId} assigned to admin {$adminId}");
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Pool migration task assigned successfully!',
+                'task' => [
+                    'id' => $task->id,
+                    'assigned_to' => $adminId,
+                    'status' => $task->status
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error("Error assigning pool migration task {$taskId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign pool migration task: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update pool migration task status
+     */
+    public function updatePoolMigrationTaskStatus(Request $request, $taskId)
+    {
+        try {
+            $request->validate([
+                'status' => 'required|in:pending,in-progress,completed,failed',
+                'notes' => 'nullable|string|max:1000'
+            ]);
+
+            $task = \App\Models\PoolOrderMigrationTask::findOrFail($taskId);
+            
+            // Only allow status updates for assigned tasks or by the assigned admin
+            if ($task->assigned_to && $task->assigned_to !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can only update pool migration tasks assigned to you.'
+                ], 403);
+            }
+            
+            $updates = ['status' => $request->status];
+            
+            if ($request->filled('notes')) {
+                $updates['notes'] = $request->notes;
+            }
+            
+            if ($request->status === 'completed') {
+                $updates['completed_at'] = now();
+            } elseif ($request->status === 'in-progress' && !$task->started_at) {
+                $updates['started_at'] = now();
+            }
+            
+            $task->update($updates);
+            
+            \Log::info("Pool migration task {$taskId} status updated to {$request->status}");
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Pool migration task status updated successfully!',
+                'task' => [
+                    'id' => $task->id,
+                    'status' => $task->status,
+                    'completed_at' => $task->completed_at
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error("Error updating pool migration task status for task {$taskId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update pool migration task status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper function to get status badge HTML
+     */
+    private function getStatusBadge($status)
+    {
+        $badges = [
+            'pending' => '<span class="badge bg-warning text-dark">Pending</span>',
+            'in-progress' => '<span class="badge bg-info">In Progress</span>',
+            'completed' => '<span class="badge bg-success">Completed</span>',
+            'failed' => '<span class="badge bg-danger">Failed</span>',
+        ];
+        
+        return $badges[$status] ?? '<span class="badge bg-secondary">Unknown</span>';
+    }
 }

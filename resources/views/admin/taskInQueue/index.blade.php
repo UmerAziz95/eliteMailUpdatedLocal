@@ -155,6 +155,14 @@
                     {{-- <span class="badge bg-warning text-dark ms-1" id="shifted-pending-count">0</span> --}}
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pool-migration-tab" data-bs-toggle="tab" data-bs-target="#pool-migration-tab-pane"
+                    type="button" role="tab" aria-controls="pool-migration-tab-pane" aria-selected="false">
+                    <i class="ti ti-swimming me-1"></i>Pool Migration Tasks
+                    {{-- <span class="badge bg-info text-white ms-1" id="pool-migration-count">0</span> --}}
+                </button>
+            </li>
+            
             <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="in-progress-tab" data-bs-toggle="tab" data-bs-target="#in-progress-tab-pane"
                     type="button" role="tab" aria-controls="in-progress-tab-pane" aria-selected="false">
@@ -195,6 +203,22 @@
                 </div>
                 <div class="text-center mt-4">
                     <button id="load-more-shifted-pending" class="btn btn-outline-light btn-sm d-none">
+                        <i class="fas fa-plus me-1"></i> Load More
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pool Migration Tasks Tab -->
+            <div class="tab-pane fade" id="pool-migration-tab-pane" role="tabpanel" aria-labelledby="pool-migration-tab" tabindex="0">
+                <div id="pool-migration-tasks-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Loading state -->
+                    <div class="loading-state text-center" style="grid-column: 1 / -1;">
+                        <div class="loading-spinner"></div>
+                        <p class="text-white-50 mt-2">Loading pool migration tasks...</p>
+                    </div>
+                </div>
+                <div class="text-center mt-4">
+                    <button id="load-more-pool-migration" class="btn btn-outline-light btn-sm d-none">
                         <i class="fas fa-plus me-1"></i> Load More
                     </button>
                 </div>
@@ -385,12 +409,14 @@
     let tasks = {
         pending: [],
         'shifted-pending': [],
+        'pool-migration': [],
         'in-progress': [],
         completed: []
     };
     let pagination = {
         pending: { currentPage: 1, hasMore: false },
         'shifted-pending': { currentPage: 1, hasMore: false },
+        'pool-migration': { currentPage: 1, hasMore: false },
         'in-progress': { currentPage: 1, hasMore: false },
         completed: { currentPage: 1, hasMore: false }
     };
@@ -411,6 +437,9 @@
                 } else if (tabId === 'shifted-pending-tab-pane') {
                     activeTab = 'shifted-pending';
                     if (tasks['shifted-pending'].length === 0) loadTasks('shifted-pending');
+                } else if (tabId === 'pool-migration-tab-pane') {
+                    activeTab = 'pool-migration';
+                    if (tasks['pool-migration'].length === 0) loadPoolMigrationTasks();
                 } else if (tabId === 'in-progress-tab-pane') {
                     activeTab = 'in-progress';
                     if (tasks['in-progress'].length === 0) loadTasks('in-progress');
@@ -464,6 +493,12 @@
         document.getElementById('load-more-completed').addEventListener('click', function() {
             if (pagination.completed.hasMore && !isLoading) {
                 loadTasks('completed', true);
+            }
+        });
+
+        document.getElementById('load-more-pool-migration').addEventListener('click', function() {
+            if (pagination['pool-migration'].hasMore && !isLoading) {
+                loadPoolMigrationTasks(true);
             }
         });
     });
@@ -548,6 +583,411 @@
             }
         } finally {
             isLoading = false;
+        }
+    }
+
+    // Load pool migration tasks function
+    async function loadPoolMigrationTasks(append = false) {
+        if (isLoading) return;
+        
+        isLoading = true;
+        const container = document.getElementById('pool-migration-tasks-container');
+        const status = 'pool-migration';
+        
+        try {
+            if (!append) {
+                container.innerHTML = `
+                    <div class="loading-state text-center" style="grid-column: 1 / -1;">
+                        <div class="loading-spinner"></div>
+                        <p class="text-white-50 mt-2">Loading pool migration tasks...</p>
+                    </div>
+                `;
+            }
+            
+            const page = append ? pagination[status].currentPage + 1 : 1;
+            const params = new URLSearchParams({
+                page: page,
+                per_page: 12
+            });
+            
+            const response = await fetch(`{{ route('admin.taskInQueue.pool-migration-tasks') }}?${params}`);
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load pool migration tasks');
+            }
+            
+            if (append) {
+                tasks[status] = [...tasks[status], ...data.data];
+            } else {
+                tasks[status] = data.data;
+            }
+            
+            pagination[status] = {
+                currentPage: data.pagination.current_page,
+                hasMore: data.pagination.has_more_pages
+            };
+            
+            renderPoolMigrationTasks(append);
+            updateLoadMoreButton(status);
+            
+        } catch (error) {
+            console.error('Error loading pool migration tasks:', error);
+            if (!append) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        <h5>Error Loading Pool Migration Tasks</h5>
+                        <p>${error.message}</p>
+                        <button class="btn btn-outline-light btn-sm" onclick="loadPoolMigrationTasks()">
+                            <i class="fas fa-redo me-1"></i> Retry
+                        </button>
+                    </div>
+                `;
+            }
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    // Render pool migration tasks function
+    function renderPoolMigrationTasks(append = false) {
+        const container = document.getElementById('pool-migration-tasks-container');
+        const tasksList = tasks['pool-migration'];
+        
+        if (tasksList.length === 0 && !append) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="ti ti-swimming" style="font-size: 4rem; opacity: 0.5;"></i>
+                    <h5>No Pool Migration Tasks Found</h5>
+                    <p>There are no pool order migration tasks to display.</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (!append) {
+            container.innerHTML = '';
+        }
+
+        const tasksToRender = append ? tasksList.slice(tasks['pool-migration'].length - (tasksList.length - tasks['pool-migration'].length)) : tasksList;
+        
+        tasksToRender.forEach((task, index) => {
+            const taskCard = createPoolMigrationCard(task);
+            container.appendChild(taskCard);
+        });
+    }
+
+    // Create pool migration task card
+    function createPoolMigrationCard(task) {
+        const div = document.createElement('div');
+        div.className = 'card task-card p-3 rounded-4 border-0 shadow';
+        
+        const statusClass = getStatusClass(task.status);
+        const taskTypeColor = task.task_type === 'configuration' ? 'success' : 'warning';
+        
+        div.innerHTML = `
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <span class="text-white-50 small mb-1">${task.task_type_icon} #${task.task_id}</span>
+                    <span class="badge px-2 py-1 rounded ${statusClass} ms-1">
+                        ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+                    </span>
+                    <span class="badge bg-${taskTypeColor} px-2 py-1 rounded ms-1">
+                        ${task.task_type_label}
+                    </span>
+                </div>
+                ${task.status === 'pending' && !task.assigned_to ? `
+                    <button class="btn btn-sm border-0 assign-btn" 
+                            style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
+                            onclick="assignPoolMigrationTaskToMe(${task.task_id})"
+                            title="Assign to Me">
+                        <i class="fas fa-user-plus text-white"></i>
+                    </button>
+                ` : `
+                    <button class="btn btn-sm border-0"
+                            style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
+                            onclick="viewPoolMigrationTaskDetails(${task.task_id})"
+                            data-bs-toggle="offcanvas" 
+                            data-bs-target="#task-details-view"
+                            title="View Task Details">
+                        <i class="fas fa-eye text-white"></i>
+                    </button>
+                `}
+            </div>
+
+            <!-- Order Info -->
+            <div class="mb-3">
+                <div class="glass-box mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-white-50">Pool Order ID</span>
+                        <span class="fw-bold text-white">#${task.pool_order_id}</span>
+                    </div>
+                </div>
+                <div class="glass-box mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-white-50">Plan</span>
+                        <span class="fw-bold text-white">${task.plan_name}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="glass-box text-center">
+                        <small class="text-white-50 d-block mb-1">Domains</small>
+                        <span class="fw-semibold text-white">${task.domains_count}</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="glass-box text-center">
+                        <small class="text-white-50 d-block mb-1">Inboxes</small>
+                        <span class="fw-semibold text-white">${task.total_inboxes}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="glass-box mb-3">
+                <div class="d-flex justify-content-between">
+                    <span class="small text-white-50">Platform</span>
+                    <span class="fw-bold text-white">${task.hosting_platform}</span>
+                </div>
+            </div>
+
+            ${task.assigned_to ? `
+                <div class="glass-box mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-white-50">Assigned To</span>
+                        <span class="fw-bold text-white">${task.assigned_to_name}</span>
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Customer Info -->
+            <div class="d-flex align-items-center mt-auto">
+                <img src="${task.customer_image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(task.customer_name || 'User') + '&background=007bff&color=fff'}" 
+                     alt="User" class="rounded-circle border border-info" width="42" height="42">
+                <div class="ms-2 flex-grow-1">
+                    <div class="fw-semibold text-white">${task.customer_name || 'Unknown User'}</div>
+                    <small class="text-white-50">${task.customer_email || 'N/A'}</small>
+                </div>
+            </div>
+        `;
+        
+        return div;
+    }
+
+    // Assign pool migration task to current admin
+    async function assignPoolMigrationTaskToMe(taskId) {
+        try {
+            const result = await Swal.fire({
+                title: 'Assign Pool Migration Task?',
+                text: 'Do you want to assign this pool migration task to yourself?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, assign to me!',
+                cancelButtonText: 'Cancel'
+            });
+            
+            if (!result.isConfirmed) return;
+            
+            const response = await fetch(`/admin/taskInQueue/pool-migration/${taskId}/assign`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message,
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                // Reload pool migration tasks
+                tasks['pool-migration'] = [];
+                pagination['pool-migration'] = { currentPage: 1, hasMore: false };
+                loadPoolMigrationTasks();
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Error assigning pool migration task:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to assign pool migration task',
+                icon: 'error'
+            });
+        }
+    }
+
+    // View pool migration task details
+    async function viewPoolMigrationTaskDetails(taskId) {
+        try {
+            const response = await fetch(`/admin/taskInQueue/pool-migration/${taskId}/details`);
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load pool migration task details');
+            }
+            
+            const task = data.task;
+            const order = data.order;
+            const metadata = data.metadata;
+            
+            // Build task details HTML (reuse existing task details container)
+            const taskDetailsContainer = document.getElementById('taskDetailsContainer');
+            taskDetailsContainer.innerHTML = `
+                <div class="task-details-content">
+                    <h4 class="text-white mb-3">${task.task_type_icon} ${task.task_type_label}</h4>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-white-50">Task Information</h6>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Task ID</span>
+                                <span class="text-white fw-bold">#${task.id}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Status</span>
+                                <span class="badge ${getStatusClass(task.status)}">${task.status}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Assigned To</span>
+                                <span class="text-white">${task.assigned_to_name}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-white-50">Pool Order Details</h6>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Order ID</span>
+                                <span class="text-white fw-bold">#${order.order_id}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Plan</span>
+                                <span class="text-white">${order.plan_name}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Domains / Inboxes</span>
+                                <span class="text-white">${order.selected_domains_count} / ${order.total_inboxes}</span>
+                            </div>
+                        </div>
+                        <div class="glass-box mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-white-50">Platform</span>
+                                <span class="text-white">${order.hosting_platform}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${task.notes ? `
+                        <div class="mb-4">
+                            <h6 class="text-white-50">Notes</h6>
+                            <div class="glass-box">
+                                <p class="text-white mb-0">${task.notes}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${task.status === 'pending' || task.status === 'in-progress' ? `
+                        <div class="d-grid gap-2">
+                            ${task.status === 'in-progress' ? `
+                                <button class="btn btn-success" onclick="updatePoolMigrationTaskStatus(${task.id}, 'completed')">
+                                    <i class="fas fa-check me-2"></i>Mark as Completed
+                                </button>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+        } catch (error) {
+            console.error('Error loading pool migration task details:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to load task details',
+                icon: 'error'
+            });
+        }
+    }
+
+    // Update pool migration task status
+    async function updatePoolMigrationTaskStatus(taskId, newStatus) {
+        try {
+            const notes = newStatus === 'completed' ? await Swal.fire({
+                title: 'Completion Notes',
+                input: 'textarea',
+                inputLabel: 'Add any notes about task completion (optional)',
+                inputPlaceholder: 'Enter notes...',
+                showCancelButton: true,
+                confirmButtonText: 'Complete Task',
+                cancelButtonText: 'Cancel'
+            }).then(result => result.isConfirmed ? result.value : null) : null;
+            
+            if (newStatus === 'completed' && notes === null) return;
+            
+            const response = await fetch(`/admin/taskInQueue/pool-migration/${taskId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    status: newStatus,
+                    notes: notes
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message,
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                // Close offcanvas and reload tasks
+                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('task-details-view'));
+                if (offcanvas) offcanvas.hide();
+                
+                tasks['pool-migration'] = [];
+                pagination['pool-migration'] = { currentPage: 1, hasMore: false };
+                loadPoolMigrationTasks();
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Error updating pool migration task status:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to update task status',
+                icon: 'error'
+            });
         }
     }
 
@@ -826,7 +1266,8 @@
             'pending': 'load-more-pending',
             'shifted-pending': 'load-more-shifted-pending',
             'in-progress': 'load-more-progress',
-            'completed': 'load-more-completed'
+            'completed': 'load-more-completed',
+            'pool-migration': 'load-more-pool-migration'
         };
         
         const btn = document.getElementById(loadMoreBtnMap[status]);
@@ -842,7 +1283,8 @@
             'pending': 'pending-tasks-container',
             'shifted-pending': 'shifted-pending-tasks-container',
             'in-progress': 'in-progress-tasks-container',
-            'completed': 'completed-tasks-container'
+            'completed': 'completed-tasks-container',
+            'pool-migration': 'pool-migration-tasks-container'
         };
         
         const container = document.getElementById(containerMap[status]);
