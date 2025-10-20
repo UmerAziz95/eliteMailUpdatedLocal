@@ -418,8 +418,7 @@ class PoolPlanController extends Controller
         // ========================================
         // Toggle these flags to enable/disable platform sections in the edit page
         // Set to true to show the section, false to hide it
-        // No database changes or cache clearing required - changes take effect immediately
-        // See docs/POOL_ORDER_PLATFORM_SETTINGS.md for detailed documentation
+
         // ========================================
         
         // Settings flags for enabling/disabling platform sections
