@@ -482,7 +482,7 @@
 
     /* Header */
     .disclaimer-canvas-header {
-        padding: 2rem 2.5rem;
+        padding: 1.5rem 1.5rem;
         border-bottom: 2px solid rgba(255, 193, 7, 0.3);
         background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 152, 0, 0.05));
         border-radius: 30px 30px 0 0;
@@ -527,9 +527,9 @@
     .disclaimer-canvas-body {
         flex: 1;
         overflow-y: auto;
-        padding: 2.5rem;
+        padding: 1.5rem;
         /* background: #ffffff; */
-        margin: 1.5rem 2.5rem;
+        margin: 1rem 1.5rem;
         border-radius: 15px;
         box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
     }
@@ -643,7 +643,7 @@
 
     /* Footer */
     .disclaimer-canvas-footer {
-        padding: 2rem 2.5rem;
+        padding: 1.5rem 1.5rem;
         border-top: 2px solid rgba(255, 255, 255, 0.1);
         background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(67, 56, 202, 0.05));
         flex-shrink: 0;
@@ -695,7 +695,7 @@
         }
 
         .disclaimer-canvas-header {
-            padding: 1.5rem;
+            padding: 1rem;
         }
 
         .disclaimer-canvas-header h3 {
@@ -703,12 +703,12 @@
         }
 
         .disclaimer-canvas-body {
-            padding: 1.5rem;
-            margin: 1rem 1rem;
+            padding: 1rem;
+            margin: 0.75rem;
         }
 
         .disclaimer-canvas-footer {
-            padding: 1.5rem;
+            padding: 1rem;
         }
 
         .disclaimer-canvas-footer .d-flex {
@@ -1013,6 +1013,9 @@ document.addEventListener('DOMContentLoaded', function() {
         from: 0,
         to: 0
     };
+    
+    // Disclaimer acknowledgment flag
+    let disclaimerAcknowledged = false;
     
     // DOM Elements
     const searchInput = document.getElementById('domainSearch');
@@ -1848,22 +1851,50 @@ document.addEventListener('DOMContentLoaded', function() {
     // Confirm disclaimer button
     document.getElementById('confirmDisclaimer').addEventListener('click', function() {
         hideDisclaimerCanvas(() => {
+            // Mark disclaimer as acknowledged and enable save button
+            disclaimerAcknowledged = true;
+            const saveBtn = document.getElementById('saveBtn');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+            }
+            // Proceed to submit order
             submitOrder();
         });
     });
     
     // Cancel disclaimer buttons
     document.getElementById('cancelDisclaimer').addEventListener('click', function() {
-        hideDisclaimerCanvas();
+        hideDisclaimerCanvas(() => {
+            // Enable save button when closed (user can review and try again)
+            disclaimerAcknowledged = true;
+            const saveBtn = document.getElementById('saveBtn');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+            }
+        });
     });
     
     document.getElementById('closeDisclaimerCanvas').addEventListener('click', function() {
-        hideDisclaimerCanvas();
+        hideDisclaimerCanvas(() => {
+            // Enable save button when closed
+            disclaimerAcknowledged = true;
+            const saveBtn = document.getElementById('saveBtn');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+            }
+        });
     });
     
     // Close on overlay click
     document.querySelector('.disclaimer-canvas-overlay')?.addEventListener('click', function() {
-        hideDisclaimerCanvas();
+        hideDisclaimerCanvas(() => {
+            // Enable save button when closed
+            disclaimerAcknowledged = true;
+            const saveBtn = document.getElementById('saveBtn');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+            }
+        });
     });
     
     // Function to handle the actual order submission
