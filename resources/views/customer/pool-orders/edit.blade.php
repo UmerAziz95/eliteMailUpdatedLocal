@@ -482,7 +482,7 @@
 
     /* Header */
     .disclaimer-canvas-header {
-        padding: 1.5rem 1.5rem;
+        padding: 1rem 1.5rem;
         border-bottom: 2px solid rgba(255, 193, 7, 0.3);
         background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 152, 0, 0.05));
         border-radius: 30px 30px 0 0;
@@ -643,7 +643,7 @@
 
     /* Footer */
     .disclaimer-canvas-footer {
-        padding: 1.5rem 1.5rem;
+        padding: 1rem 1.5rem;
         border-top: 2px solid rgba(255, 255, 255, 0.1);
         background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(67, 56, 202, 0.05));
         flex-shrink: 0;
@@ -653,38 +653,36 @@
         background: linear-gradient(135deg, #6c757d, #5a6268);
         border: none;
         color: white;
-        padding: 14px 35px;
-        border-radius: 12px;
+        padding: 10px 24px;
+        border-radius: 8px;
         font-weight: 600;
-        font-size: 1.05rem;
+        font-size: 0.95rem;
         cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        transition: background 0.2s ease;
+        box-shadow: 0 2px 8px rgba(108, 117, 125, 0.2);
     }
 
     .btn-cancel-disclaimer:hover {
         background: linear-gradient(135deg, #5a6268, #4a5056);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+        box-shadow: 0 2px 10px rgba(108, 117, 125, 0.3);
     }
 
     .btn-confirm-disclaimer {
         background: linear-gradient(135deg, #28a745, #20c997);
         border: none;
         color: white;
-        padding: 14px 35px;
-        border-radius: 12px;
+        padding: 10px 24px;
+        border-radius: 8px;
         font-weight: 600;
-        font-size: 1.05rem;
+        font-size: 0.95rem;
         cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        transition: background 0.2s ease;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
     }
 
     .btn-confirm-disclaimer:hover {
         background: linear-gradient(135deg, #20c997, #17a2b8);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        box-shadow: 0 2px 10px rgba(40, 167, 69, 0.3);
     }
 
     /* Mobile Responsive */
@@ -695,7 +693,7 @@
         }
 
         .disclaimer-canvas-header {
-            padding: 1rem;
+            padding: 0.75rem 1rem;
         }
 
         .disclaimer-canvas-header h3 {
@@ -708,7 +706,7 @@
         }
 
         .disclaimer-canvas-footer {
-            padding: 1rem;
+            padding: 0.75rem 1rem;
         }
 
         .disclaimer-canvas-footer .d-flex {
@@ -718,7 +716,8 @@
         .btn-cancel-disclaimer,
         .btn-confirm-disclaimer {
             width: 100%;
-            padding: 12px 20px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
         }
     }
 
@@ -1981,7 +1980,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmButtonText: 'Continue'
                 }).then((result) => {
                     // Redirect to pool order details page
-                    // window.location.href = '{{ route('customer.pool-orders.show', $poolOrder->id) }}';
+                    window.location.href = '{{ route('customer.pool-orders.show', $poolOrder->id) }}';
                 });
             } else {
                 throw new Error(data.message || 'Failed to save');

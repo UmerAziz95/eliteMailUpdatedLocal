@@ -248,6 +248,15 @@ class SidebarNavigationSeeder extends Seeder
                 'sub_menu' => [],
                 'order' => 24
             ],
+            // Disclaimer
+            [
+                "name" => "Disclaimers",
+                "icon" => "ti ti-alert-circle fs-5",
+                "route" => "admin.disclaimers.index",
+                "permission" => "Disclaimers",
+                'sub_menu' => [],
+                'order' => 25
+            ],
             [
                 "name" => "Team Leader Dashboard",
                 "icon" => "ti ti-dashboard fs-5",
