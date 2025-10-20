@@ -425,9 +425,9 @@
                                         <div class="flex-grow-1">
                                             <div class="d-flex align-items-center gap-2 mb-2">
                                                 <strong>{{ $domain['domain_name'] ?? 'Unknown Domain' }}</strong>
-                                                <span class="badge bg-{{ $domain['status'] === 'available' ? 'success' : 'primary' }} small">
+                                                <!-- <span class="badge bg-{{ $domain['status'] === 'available' ? 'success' : 'primary' }} small">
                                                     {{ ucfirst($domain['status'] ?? 'Unknown') }}
-                                                </span>
+                                                </span> -->
                                             </div>
                                             
                                             <div class="row">
