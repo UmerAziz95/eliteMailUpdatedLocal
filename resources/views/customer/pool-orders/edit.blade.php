@@ -447,6 +447,7 @@
                         <div class="row">
                             <div class="col-lg-8">
                                 
+                                @if($enableHostingPlatform ?? false)
                                 <!-- Domain Hosting Platform Section -->
                                 <div class="card mb-4" style="background: linear-gradient(145deg, #2d3748, #1a202c); border: 2px solid rgba(99, 102, 241, 0.3);">
                                     <div class="card-body">
@@ -470,7 +471,7 @@
                                                 @endforeach
                                             </select>
                                             <div class="invalid-feedback" id="hosting-error"></div>
-                                            <small class="text-muted d-block mt-1">Where your domains are hosted and can be accessed to modify DNS settings</small>
+                                            <small class=" d-block mt-1">Where your domains are hosted and can be accessed to modify DNS settings</small>
                                         </div>
 
                                         <div id="tutorial_section" class="mb-3" style="display: none;">
@@ -486,7 +487,9 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endif
 
+                                @if($enableSendingPlatform ?? false)
                                 <!-- Cold Email Platform Section -->
                                 <div class="card mb-4" style="background: linear-gradient(145deg, #2d3748, #1a202c); border: 2px solid rgba(99, 102, 241, 0.3);">
                                     <div class="card-body">
@@ -507,7 +510,9 @@
                                                 @endforeach
                                             </select>
                                             <div class="invalid-feedback" id="sending-platform-error"></div>
-                                            <small class="text-muted d-block mt-1">Please select the cold email platform you would like us to install the inboxes on. To avoid any delays, ensure it isn't on a free trial and that your chosen paid plan is active.</small>
+                                            <small class=" d-block mt-1">Please select the cold email platform you would like us to install the inboxes on. 
+                                                <!-- To avoid any delays, ensure it isn't on a free trial and that your chosen paid plan is active. -->
+                                            </small>
                                         </div>
 
                                         <div class="sending-platform-fields" id="sending-platform-fields">
@@ -515,6 +520,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endif
 
                                 <!-- Search and Filter Controls -->
                                 <div class="mb-4">
@@ -1170,6 +1176,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ===== HOSTING PLATFORM FUNCTIONS =====
     
+    // Check if hosting platform is enabled
+    const isHostingPlatformEnabled = {{ ($enableHostingPlatform ?? false) ? 'true' : 'false' }};
+    const isSendingPlatformEnabled = {{ ($enableSendingPlatform ?? false) ? 'true' : 'false' }};
+    
     // Generate a single field
     function generateField(name, field, existingValue = '', colClass = 'mb-3') {
         const fieldId = `${name}`;
@@ -1196,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (field.note) {
-            html += `<p class="note mb-0 text-muted" style="font-size: 0.875rem; margin-top: 0.25rem;">${field.note}</p>`;
+            html += `<p class="note mb-0 " style="font-size: 0.875rem; margin-top: 0.25rem;">${field.note}</p>`;
         }
         
         html += `<div class="invalid-feedback" id="${fieldId}-error"></div></div>`;
@@ -1350,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize hosting platform on page load
     const hostingSelect = document.getElementById('hosting');
-    if (hostingSelect) {
+    if (hostingSelect && isHostingPlatformEnabled) {
         updatePlatformFields();
         hostingSelect.addEventListener('change', updatePlatformFields);
     }
@@ -1360,7 +1370,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update sending platform fields when platform changes
     function updateSendingPlatformFields() {
         const sendingSelect = document.getElementById('sending_platform');
-        if (!sendingSelect) return;
+        if (!sendingSelect || !isSendingPlatformEnabled) return;
         
         const selectedOption = sendingSelect.options[sendingSelect.selectedIndex];
         const fieldsData = selectedOption.getAttribute('data-fields');
@@ -1385,7 +1395,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize sending platform on page load
     const sendingSelect = document.getElementById('sending_platform');
-    if (sendingSelect) {
+    if (sendingSelect && isSendingPlatformEnabled) {
         updateSendingPlatformFields();
         sendingSelect.addEventListener('change', updateSendingPlatformFields);
     }
@@ -1450,35 +1460,39 @@ document.addEventListener('DOMContentLoaded', function() {
         saveBtn.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Saving...';
         saveBtn.disabled = true;
         
-        // Collect hosting platform data
+        // Collect hosting platform data (only if enabled)
         const formData = new FormData(form);
-        const hostingPlatformData = {
-            hosting_platform: formData.get('hosting_platform')
-        };
+        const hostingPlatformData = {};
         
-        // Collect all platform-specific fields
-        const platformFieldsContainer = document.getElementById('platform-fields-container');
-        if (platformFieldsContainer) {
-            platformFieldsContainer.querySelectorAll('input, select, textarea').forEach(field => {
-                if (field.name) {
-                    hostingPlatformData[field.name] = field.value;
-                }
-            });
+        if (isHostingPlatformEnabled) {
+            hostingPlatformData.hosting_platform = formData.get('hosting_platform');
+            
+            // Collect all platform-specific fields
+            const platformFieldsContainer = document.getElementById('platform-fields-container');
+            if (platformFieldsContainer) {
+                platformFieldsContainer.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (field.name) {
+                        hostingPlatformData[field.name] = field.value;
+                    }
+                });
+            }
         }
         
-        // Collect sending platform data
-        const sendingPlatformData = {
-            sending_platform: formData.get('sending_platform')
-        };
+        // Collect sending platform data (only if enabled)
+        const sendingPlatformData = {};
         
-        // Collect all sending platform-specific fields
-        const sendingFieldsContainer = document.getElementById('sending-platform-fields');
-        if (sendingFieldsContainer) {
-            sendingFieldsContainer.querySelectorAll('input, select, textarea').forEach(field => {
-                if (field.name) {
-                    sendingPlatformData[field.name] = field.value;
-                }
-            });
+        if (isSendingPlatformEnabled) {
+            sendingPlatformData.sending_platform = formData.get('sending_platform');
+            
+            // Collect all sending platform-specific fields
+            const sendingFieldsContainer = document.getElementById('sending-platform-fields');
+            if (sendingFieldsContainer) {
+                sendingFieldsContainer.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (field.name) {
+                        sendingPlatformData[field.name] = field.value;
+                    }
+                });
+            }
         }
         
         fetch(`{{ route('customer.pool-orders.update', $poolOrder->id) }}`, {

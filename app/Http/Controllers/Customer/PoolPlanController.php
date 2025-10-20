@@ -413,14 +413,33 @@ class PoolPlanController extends Controller
             return response()->json($this->getAvailableDomainsWithPagination($page, $perPage, $search));
         }
 
-        // Get hosting platforms for the dropdown
-        $hostingPlatforms = \App\Models\HostingPlatform::where('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
+        // ========================================
+        // PLATFORM SETTINGS CONFIGURATION
+        // ========================================
+        // Toggle these flags to enable/disable platform sections in the edit page
+        // Set to true to show the section, false to hide it
+        // No database changes or cache clearing required - changes take effect immediately
+        // See docs/POOL_ORDER_PLATFORM_SETTINGS.md for detailed documentation
+        // ========================================
         
-        // Get sending platforms for the dropdown
-        $sendingPlatforms = \App\Models\SendingPlatform::orderBy('name')
-            ->get();
+        // Settings flags for enabling/disabling platform sections
+        $enableHostingPlatform = false; // Set to false to disable Domain Hosting Platform section
+        $enableSendingPlatform = true; // Set to false to disable Cold Email Platform section
+        
+        // Get hosting platforms for the dropdown (only if enabled)
+        $hostingPlatforms = [];
+        if ($enableHostingPlatform) {
+            $hostingPlatforms = \App\Models\HostingPlatform::where('is_active', true)
+                ->orderBy('sort_order')
+                ->get();
+        }
+        
+        // Get sending platforms for the dropdown (only if enabled)
+        $sendingPlatforms = [];
+        if ($enableSendingPlatform) {
+            $sendingPlatforms = \App\Models\SendingPlatform::orderBy('name')
+                ->get();
+        }
 
         // Get full domain details for existing selections (with prefix_variants)
         $existingDomainDetails = [];
@@ -484,7 +503,15 @@ class PoolPlanController extends Controller
         // For regular page load, don't load all domains immediately
         // Pass empty array for initial load to avoid template errors
         $availableDomains = [];
-        return view('customer.pool-orders.edit', compact('poolOrder', 'availableDomains', 'hostingPlatforms', 'sendingPlatforms', 'existingDomainDetails'));
+        return view('customer.pool-orders.edit', compact(
+            'poolOrder', 
+            'availableDomains', 
+            'hostingPlatforms', 
+            'sendingPlatforms', 
+            'existingDomainDetails',
+            'enableHostingPlatform',
+            'enableSendingPlatform'
+        ));
     }
 
     /**
