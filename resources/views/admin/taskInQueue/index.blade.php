@@ -750,13 +750,6 @@
             </div>
 
             <!-- Additional Info -->
-            <div class="glass-box mb-3">
-                <div class="d-flex justify-content-between">
-                    <span class="small text-white-50">Platform</span>
-                    <span class="fw-bold text-white">${task.hosting_platform}</span>
-                </div>
-            </div>
-
             ${task.assigned_to ? `
                 <div class="glass-box mb-3">
                     <div class="d-flex justify-content-between">
