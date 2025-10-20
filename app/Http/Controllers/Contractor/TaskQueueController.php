@@ -909,8 +909,42 @@ class TaskQueueController extends Controller
 
             $validated = $request->validate([
                 'status' => 'required|in:pending,in-progress,completed,cancelled',
-                'notes' => 'nullable|string'
+                'notes' => 'nullable|string',
+                'force' => 'nullable|boolean'
             ]);
+
+            // Check domain statuses before marking as completed (unless force is true)
+            if ($validated['status'] === 'completed' && !$request->force) {
+                $poolOrder = $task->poolOrder;
+                
+                if ($poolOrder && $poolOrder->domains) {
+                    $domains = is_string($poolOrder->domains) ? json_decode($poolOrder->domains, true) : $poolOrder->domains;
+                    
+                    if (is_array($domains)) {
+                        $nonSubscribedDomains = [];
+                        
+                        foreach ($domains as $domain) {
+                            if (isset($domain['status']) && $domain['status'] !== 'subscribed') {
+                                $nonSubscribedDomains[] = [
+                                    'name' => $domain['name'] ?? 'Unknown',
+                                    'status' => $domain['status'] ?? 'unknown'
+                                ];
+                            }
+                        }
+                        
+                        if (!empty($nonSubscribedDomains)) {
+                            return response()->json([
+                                'success' => false,
+                                'requiresConfirmation' => true,
+                                'message' => 'Some domains are not in subscribed status',
+                                'nonSubscribedDomains' => $nonSubscribedDomains,
+                                'totalDomains' => count($domains),
+                                'nonSubscribedCount' => count($nonSubscribedDomains)
+                            ], 422);
+                        }
+                    }
+                }
+            }
 
             $task->update($validated);
 

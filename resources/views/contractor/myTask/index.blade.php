@@ -2179,18 +2179,21 @@
         }
     }
 
-    async function updatePoolMigrationTaskStatus(taskId, status) {
+    async function updatePoolMigrationTaskStatus(taskId, status, force = false) {
         try {
-            const result = await Swal.fire({
-                title: 'Update Status?',
-                text: `Mark this task as ${status}?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, update it',
-                cancelButtonText: 'Cancel'
-            });
+            // Only show confirmation if not forcing and status is completed
+            if (status === 'completed' && !force) {
+                const result = await Swal.fire({
+                    title: 'Update Status?',
+                    text: `Mark this task as ${status}?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, update it',
+                    cancelButtonText: 'Cancel'
+                });
 
-            if (!result.isConfirmed) return;
+                if (!result.isConfirmed) return;
+            }
 
             const response = await fetch(`/contractor/taskInQueue/pool-migration/${taskId}/status`, {
                 method: 'PUT',
@@ -2198,10 +2201,64 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
-                body: JSON.stringify({ status })
+                body: JSON.stringify({ 
+                    status,
+                    force: force
+                })
             });
 
             const data = await response.json();
+
+            // Handle case where domains are not all subscribed
+            if (response.status === 422 && data.requiresConfirmation && data.nonSubscribedDomains) {
+                const domainsList = data.nonSubscribedDomains
+                    .map(d => `<tr>
+                        <td class="text-start">${d.name}</td>
+                        <td><span class="badge ${d.status === 'warming' ? 'bg-info' : d.status === 'available' ? 'bg-success' : 'bg-secondary'}">${d.status}</span></td>
+                    </tr>`)
+                    .join('');
+                
+                const result = await Swal.fire({
+                    title: 'Warning: Domains Not Subscribed',
+                    html: `
+                        <div class="text-start">
+                            <p class="mb-3"><strong>${data.nonSubscribedCount} out of ${data.totalDomains} domains</strong> are not in subscribed status:</p>
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="text-start">Domain Name</th>
+                                            <th>Current Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${domainsList}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="mt-3 text-muted small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                All domains should be in "subscribed" status before completing this task.
+                            </p>
+                        </div>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Complete Anyway',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#d33',
+                    width: '600px',
+                    customClass: {
+                        htmlContainer: 'text-start'
+                    }
+                });
+                
+                if (result.isConfirmed) {
+                    // User confirmed to proceed despite warning, retry with force flag
+                    return updatePoolMigrationTaskStatus(taskId, status, true);
+                }
+                return;
+            }
 
             if (!data.success) {
                 throw new Error(data.message || 'Failed to update status');

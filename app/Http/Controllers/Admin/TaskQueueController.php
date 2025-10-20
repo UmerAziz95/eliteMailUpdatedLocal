@@ -1069,7 +1069,8 @@ class TaskQueueController extends Controller
         try {
             $request->validate([
                 'status' => 'required|in:pending,in-progress,completed,failed',
-                'notes' => 'nullable|string|max:1000'
+                'notes' => 'nullable|string|max:1000',
+                'force' => 'nullable|boolean'
             ]);
 
             $task = \App\Models\PoolOrderMigrationTask::findOrFail($taskId);
@@ -1080,6 +1081,39 @@ class TaskQueueController extends Controller
                     'success' => false,
                     'message' => 'You can only update pool migration tasks assigned to you.'
                 ], 403);
+            }
+            
+            // Check domain statuses before marking as completed (unless force is true)
+            if ($request->status === 'completed' && !$request->force) {
+                $poolOrder = $task->poolOrder;
+                
+                if ($poolOrder && $poolOrder->domains) {
+                    $domains = is_string($poolOrder->domains) ? json_decode($poolOrder->domains, true) : $poolOrder->domains;
+                    
+                    if (is_array($domains)) {
+                        $nonSubscribedDomains = [];
+                        
+                        foreach ($domains as $domain) {
+                            if (isset($domain['status']) && $domain['status'] !== 'subscribed') {
+                                $nonSubscribedDomains[] = [
+                                    'name' => $domain['name'] ?? 'Unknown',
+                                    'status' => $domain['status'] ?? 'unknown'
+                                ];
+                            }
+                        }
+                        
+                        if (!empty($nonSubscribedDomains)) {
+                            return response()->json([
+                                'success' => false,
+                                'requiresConfirmation' => true,
+                                'message' => 'Some domains are not in subscribed status',
+                                'nonSubscribedDomains' => $nonSubscribedDomains,
+                                'totalDomains' => count($domains),
+                                'nonSubscribedCount' => count($nonSubscribedDomains)
+                            ], 422);
+                        }
+                    }
+                }
             }
             
             $updates = ['status' => $request->status];
