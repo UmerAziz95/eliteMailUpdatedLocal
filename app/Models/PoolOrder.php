@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PoolOrder extends Model
 {
     use HasFactory;
-    // append ready_domains_prefix
-    protected $appends = ['ready_domains_prefix'];
+    // append ready_domains_prefix and pool_id
+    protected $appends = ['ready_domains_prefix', 'pool_id'];
     // Status configurations with colors and labels
     const STATUS_CONFIG = [
         'pending' => [
@@ -107,6 +107,40 @@ class PoolOrder extends Model
     public function poolPlan(): BelongsTo
     {
         return $this->belongsTo(PoolPlan::class);
+    }
+
+    /**
+     * Get pool_id attribute for easier access
+     */
+    public function getPoolIdAttribute()
+    {
+        if (is_array($this->domains) && !empty($this->domains)) {
+            return $this->domains[0]['pool_id'] ?? null;
+        }
+        return null;
+    }
+
+    /**
+     * Get pool attribute for easier access
+     * This retrieves the Pool model from the first domain's pool_id
+     */
+    public function getPoolAttribute()
+    {
+        // Get the first pool_id from domains JSON
+        $poolId = null;
+        if (is_array($this->domains) && !empty($this->domains)) {
+            $poolId = $this->domains[0]['pool_id'] ?? null;
+        }
+        
+        if ($poolId) {
+            // Cache the pool to avoid multiple queries
+            if (!isset($this->relations['pool'])) {
+                $this->setRelation('pool', Pool::find($poolId));
+            }
+            return $this->relations['pool'];
+        }
+        
+        return null;
     }
 
     /**

@@ -110,7 +110,264 @@
                         </div>
                     </div>
 
-                    <div class="card p-3">
+                    
+
+                    @if($poolOrder->pool_id && $poolOrder->pool)
+                    <!-- Pool Details Card -->
+                    <div class="card p-3 mt-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            Pool Profile Information
+                        </h6>
+
+                        <div class="row">
+                            @if($poolOrder->pool->first_name || $poolOrder->pool->last_name)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Full Name</span>
+                                    <span>{{ trim(($poolOrder->pool->first_name ?? '') . ' ' . ($poolOrder->pool->last_name ?? '')) }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->email)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Email</span>
+                                    <span>{{ $poolOrder->pool->email }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->phone)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Phone</span>
+                                    <span>{{ $poolOrder->pool->phone }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->location)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Location</span>
+                                    <span>{{ $poolOrder->pool->location }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->company)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Company</span>
+                                    <span>{{ $poolOrder->pool->company }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->job_title)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Job Title</span>
+                                    <span>{{ $poolOrder->pool->job_title }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->linkedin_url)
+                            <div class="col-md-12">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">LinkedIn URL</span>
+                                    <a href="{{ $poolOrder->pool->linkedin_url }}" target="_blank" class="text-primary">
+                                        {{ $poolOrder->pool->linkedin_url }}
+                                    </a>
+                                </div>
+                            </div>
+                            @endif
+                        </div>
+
+                        <hr>
+                        <h6 class="mb-3"><i class="fa-solid fa-cog me-2"></i>Platform Configuration</h6>
+                        
+                        <div class="row">
+                            @if($poolOrder->pool->hosting_platform)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Hosting Platform</span>
+                                    <span class="badge bg-success w-fit">{{ ucfirst($poolOrder->pool->hosting_platform) }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->sending_platform)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Sending Platform</span>
+                                    <span class="badge bg-primary w-fit">{{ ucfirst($poolOrder->pool->sending_platform) }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->forwarding_url)
+                            <div class="col-md-12">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Domain Forwarding Destination URL</span>
+                                    <a href="{{ $poolOrder->pool->forwarding_url }}" target="_blank" class="text-primary text-break">
+                                        {{ $poolOrder->pool->forwarding_url }}
+                                    </a>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->platform_login)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Platform Login</span>
+                                    <span>{{ $poolOrder->pool->platform_login }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->platform_password)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Platform Password</span>
+                                    <span class="">{{ $poolOrder->pool->platform_password }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->sequencer_login)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Cold Email Platform - Login</span>
+                                    <span>{{ $poolOrder->pool->sequencer_login }}</span>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($poolOrder->pool->sequencer_password)
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Cold Email Platform - Password</span>
+                                    <span class="">{{ $poolOrder->pool->sequencer_password }}</span>
+                                </div>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($poolOrder->sending_platform_data)
+                    <!-- Sending Platform Data Card -->
+                    <div class="card p-3 mt-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-mail-bulk"></i>
+                            </div>
+                            Sending Platform Configuration
+                        </h6>
+
+                        @php
+                            $sendingData = is_string($poolOrder->sending_platform_data) 
+                                ? json_decode($poolOrder->sending_platform_data, true) 
+                                : $poolOrder->sending_platform_data;
+                        @endphp
+
+                        @if($poolOrder->sending_platform)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Platform</span>
+                            <span class="badge bg-primary w-fit">{{ ucfirst($poolOrder->sending_platform) }}</span>
+                        </div>
+                        @endif
+
+                        @if($sendingData && is_array($sendingData))
+                        <div class="row">
+                            @foreach($sendingData as $key => $value)
+                                @if($value && !in_array(strtolower($key), ['password', 'api_key', 'token', 'secret']))
+                                <div class="col-md-6">
+                                    <div class="d-flex flex-column mb-3">
+                                        <span class="opacity-50">{{ ucwords(str_replace('_', ' ', $key)) }}</span>
+                                        <span>{{ $value }}</span>
+                                    </div>
+                                </div>
+                                @elseif($value && in_array(strtolower($key), ['password', 'api_key', 'token', 'secret']))
+                                <div class="col-md-6">
+                                    <div class="d-flex flex-column mb-3">
+                                        <span class="opacity-50">{{ ucwords(str_replace('_', ' ', $key)) }}</span>
+                                        <span class="text-muted">••••••••</span>
+                                    </div>
+                                </div>
+                                @endif
+                            @endforeach
+                        </div>
+                        @else
+                        <div class="alert alert-info small mb-0">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            No sending platform data available
+                        </div>
+                        @endif
+                    </div>
+                    @endif
+
+                    @if($poolOrder->hosting_platform_data)
+                    <!-- Hosting Platform Data Card -->
+                    <div class="card p-3 mt-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-server"></i>
+                            </div>
+                            Hosting Platform Configuration
+                        </h6>
+
+                        @php
+                            $hostingData = is_string($poolOrder->hosting_platform_data) 
+                                ? json_decode($poolOrder->hosting_platform_data, true) 
+                                : $poolOrder->hosting_platform_data;
+                        @endphp
+
+                        @if($poolOrder->hosting_platform)
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Platform</span>
+                            <span class="badge bg-success w-fit">{{ ucfirst($poolOrder->hosting_platform) }}</span>
+                        </div>
+                        @endif
+
+                        @if($hostingData && is_array($hostingData))
+                        <div class="row">
+                            @foreach($hostingData as $key => $value)
+                                @if($value && !in_array(strtolower($key), ['password', 'api_key', 'token', 'secret']))
+                                <div class="col-md-6">
+                                    <div class="d-flex flex-column mb-3">
+                                        <span class="opacity-50">{{ ucwords(str_replace('_', ' ', $key)) }}</span>
+                                        <span>{{ $value }}</span>
+                                    </div>
+                                </div>
+                                @elseif($value && in_array(strtolower($key), ['password', 'api_key', 'token', 'secret']))
+                                <div class="col-md-6">
+                                    <div class="d-flex flex-column mb-3">
+                                        <span class="opacity-50">{{ ucwords(str_replace('_', ' ', $key)) }}</span>
+                                        <span class="text-muted">••••••••</span>
+                                    </div>
+                                </div>
+                                @endif
+                            @endforeach
+                        </div>
+                        @else
+                        <div class="alert alert-info small mb-0">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            No hosting platform data available
+                        </div>
+                        @endif
+                    </div>
+                    @endif
+                    <!-- <div class="card p-3">
                         <h6 class="d-flex align-items-center gap-2">
                             <div class="d-flex align-items-center justify-content-center"
                                 style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
@@ -136,7 +393,7 @@
                                 <h6><span class="theme-text small">Total:</span> <small>Plan information not available</small></h6>
                             @endif
                         </div>
-                    </div>
+                    </div> -->
                 </div>
 
                 <div class="col-md-6">
