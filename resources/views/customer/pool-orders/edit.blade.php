@@ -432,6 +432,304 @@
             max-height: 400px;
         }
     }
+
+    /* Full Screen Disclaimer Canvas - Slides from Bottom to Top */
+    .disclaimer-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .disclaimer-canvas.active {
+        display: block;
+        opacity: 1;
+    }
+
+    .disclaimer-canvas-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+    }
+
+    .disclaimer-canvas-content {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 90%;
+        background: linear-gradient(180deg, #1a202c 0%, #2d3748 100%);
+        border-radius: 30px 30px 0 0;
+        box-shadow: 0 -10px 50px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .disclaimer-canvas.active .disclaimer-canvas-content {
+        transform: translateY(0);
+    }
+
+    /* Header */
+    .disclaimer-canvas-header {
+        padding: 2rem 2.5rem;
+        border-bottom: 2px solid rgba(255, 193, 7, 0.3);
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 152, 0, 0.05));
+        border-radius: 30px 30px 0 0;
+        flex-shrink: 0;
+    }
+
+    .disclaimer-canvas-header h3 {
+        color: #ffc107;
+        font-size: 1.8rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+    }
+
+    .disclaimer-canvas-header h3 i {
+        font-size: 2rem;
+    }
+
+    .btn-close-canvas {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1.5rem;
+    }
+
+    .btn-close-canvas:hover {
+        background: rgba(220, 53, 69, 0.2);
+        border-color: #dc3545;
+        color: #dc3545;
+        transform: rotate(90deg);
+    }
+
+    /* Body */
+    .disclaimer-canvas-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 2.5rem;
+        /* background: #ffffff; */
+        margin: 1.5rem 2.5rem;
+        border-radius: 15px;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .disclaimer-canvas-body p {
+        margin-bottom: 1rem;
+        /* color: #333; */
+        line-height: 1.8;
+        font-size: 1.05rem;
+    }
+
+    .disclaimer-canvas-body p:last-child {
+        margin-bottom: 0;
+    }
+
+    .disclaimer-canvas-body h1,
+    .disclaimer-canvas-body h2,
+    .disclaimer-canvas-body h3,
+    .disclaimer-canvas-body h4 {
+        color: #1a202c;
+        font-weight: 700;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .disclaimer-canvas-body h1 {
+        font-size: 2rem;
+        border-bottom: 3px solid #ffc107;
+        padding-bottom: 0.5rem;
+    }
+
+    .disclaimer-canvas-body h2 {
+        font-size: 1.6rem;
+    }
+
+    .disclaimer-canvas-body h3 {
+        font-size: 1.4rem;
+    }
+
+    .disclaimer-canvas-body h4 {
+        font-size: 1.2rem;
+    }
+
+    .disclaimer-canvas-body ul,
+    .disclaimer-canvas-body ol {
+        margin-left: 2rem;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    .disclaimer-canvas-body li {
+        margin-bottom: 0.75rem;
+        color: #333;
+        line-height: 1.8;
+        font-size: 1.05rem;
+    }
+
+    .disclaimer-canvas-body a {
+        color: #0d6efd;
+        text-decoration: underline;
+        font-weight: 600;
+    }
+
+    .disclaimer-canvas-body a:hover {
+        color: #0a58ca;
+    }
+
+    .disclaimer-canvas-body strong,
+    .disclaimer-canvas-body b {
+        font-weight: 700;
+        color: #000;
+    }
+
+    .disclaimer-canvas-body em,
+    .disclaimer-canvas-body i {
+        font-style: italic;
+    }
+
+    .disclaimer-canvas-body blockquote {
+        border-left: 5px solid #ffc107;
+        padding-left: 1.5rem;
+        margin-left: 0;
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+        font-style: italic;
+        color: #555;
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.08), rgba(255, 152, 0, 0.05));
+        padding: 1.5rem;
+        border-radius: 8px;
+        font-size: 1.05rem;
+    }
+
+    /* Custom scrollbar */
+    .disclaimer-canvas-body::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .disclaimer-canvas-body::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 10px;
+    }
+
+    .disclaimer-canvas-body::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #6366f1, #4f46e5);
+        border-radius: 10px;
+    }
+
+    .disclaimer-canvas-body::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, #4f46e5, #4338ca);
+    }
+
+    /* Footer */
+    .disclaimer-canvas-footer {
+        padding: 2rem 2.5rem;
+        border-top: 2px solid rgba(255, 255, 255, 0.1);
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(67, 56, 202, 0.05));
+        flex-shrink: 0;
+    }
+
+    .btn-cancel-disclaimer {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        border: none;
+        color: white;
+        padding: 14px 35px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-cancel-disclaimer:hover {
+        background: linear-gradient(135deg, #5a6268, #4a5056);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+    }
+
+    .btn-confirm-disclaimer {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 14px 35px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-confirm-disclaimer:hover {
+        background: linear-gradient(135deg, #20c997, #17a2b8);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .disclaimer-canvas-content {
+            height: 95%;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .disclaimer-canvas-header {
+            padding: 1.5rem;
+        }
+
+        .disclaimer-canvas-header h3 {
+            font-size: 1.4rem;
+        }
+
+        .disclaimer-canvas-body {
+            padding: 1.5rem;
+            margin: 1rem 1rem;
+        }
+
+        .disclaimer-canvas-footer {
+            padding: 1.5rem;
+        }
+
+        .disclaimer-canvas-footer .d-flex {
+            flex-direction: column;
+        }
+
+        .btn-cancel-disclaimer,
+        .btn-confirm-disclaimer {
+            width: 100%;
+            padding: 12px 20px;
+        }
+    }
+
+    /* Animation when canvas closes */
+    .disclaimer-canvas.closing .disclaimer-canvas-content {
+        transform: translateY(100%);
+    }
+
+    .disclaimer-canvas.closing {
+        opacity: 0;
+    }
 </style>
 @endpush
 
@@ -630,10 +928,62 @@
                                             </div>
                                         </div>
 
+                                        <!-- Hidden disclaimer content for canvas -->
+                                        @if(isset($trialNewOrderDisclaimer) && $trialNewOrderDisclaimer)
+                                        <input type="hidden" id="disclaimerContent" value="{{ base64_encode($trialNewOrderDisclaimer->content) }}">
+                                        <input type="hidden" id="hasDisclaimer" value="1">
+                                        @else
+                                        <input type="hidden" id="hasDisclaimer" value="0">
+                                        @endif
+
                                         <!-- Save Button -->
                                         <button type="submit" class="btn btn-save w-100 mt-3" id="saveBtn" disabled>
                                             <i class="ti ti-device-floppy me-2"></i>Save Configuration
                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Full Screen Disclaimer Canvas (slides from bottom to top) -->
+<div id="disclaimerCanvas" class="disclaimer-canvas">
+    <div class="disclaimer-canvas-overlay"></div>
+    <div class="disclaimer-canvas-content">
+        <!-- Header -->
+        <div class="disclaimer-canvas-header">
+            <div class="d-flex align-items-center justify-content-between">
+                <h3 class="mb-0">
+                    <i class="ti ti-alert-triangle me-2"></i>
+                    Important Notice
+                </h3>
+                <button type="button" class="btn-close-canvas" id="closeDisclaimerCanvas">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Body -->
+        <div class="disclaimer-canvas-body" id="disclaimerCanvasBody">
+            <!-- Content will be inserted here -->
+        </div>
+        
+        <!-- Footer -->
+        <div class="disclaimer-canvas-footer">
+            <div class="d-flex gap-3 justify-content-end">
+                <button type="button" class="btn btn-cancel-disclaimer" id="cancelDisclaimer">
+                    <i class="ti ti-x me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-confirm-disclaimer" id="confirmDisclaimer">
+                    <i class="ti ti-check me-2"></i>I Understand, Continue
+                </button>
+            </div>
+        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1442,6 +1792,84 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Check if disclaimer needs to be shown
+        const hasDisclaimer = document.getElementById('hasDisclaimer');
+        const disclaimerContent = document.getElementById('disclaimerContent');
+        
+        if (hasDisclaimer && hasDisclaimer.value === '1' && disclaimerContent) {
+            // Decode the base64 content
+            const decodedContent = atob(disclaimerContent.value);
+            
+            // Show disclaimer canvas (slides from bottom to top)
+            showDisclaimerCanvas(decodedContent);
+            return;
+        }
+        
+        // No disclaimer, proceed directly
+        submitOrder();
+    });
+    
+    // Function to show full-screen disclaimer canvas
+    function showDisclaimerCanvas(content) {
+        const canvas = document.getElementById('disclaimerCanvas');
+        const body = document.getElementById('disclaimerCanvasBody');
+        
+        // Insert content
+        body.innerHTML = content;
+        
+        // Show canvas with animation
+        canvas.style.display = 'block';
+        setTimeout(() => {
+            canvas.classList.add('active');
+        }, 10);
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // Function to hide disclaimer canvas
+    function hideDisclaimerCanvas(callback) {
+        const canvas = document.getElementById('disclaimerCanvas');
+        
+        // Add closing animation
+        canvas.classList.add('closing');
+        
+        setTimeout(() => {
+            canvas.classList.remove('active', 'closing');
+            canvas.style.display = 'none';
+            document.body.style.overflow = '';
+            
+            if (callback) {
+                callback();
+            }
+        }, 400);
+    }
+    
+    // Confirm disclaimer button
+    document.getElementById('confirmDisclaimer').addEventListener('click', function() {
+        hideDisclaimerCanvas(() => {
+            submitOrder();
+        });
+    });
+    
+    // Cancel disclaimer buttons
+    document.getElementById('cancelDisclaimer').addEventListener('click', function() {
+        hideDisclaimerCanvas();
+    });
+    
+    document.getElementById('closeDisclaimerCanvas').addEventListener('click', function() {
+        hideDisclaimerCanvas();
+    });
+    
+    // Close on overlay click
+    document.querySelector('.disclaimer-canvas-overlay')?.addEventListener('click', function() {
+        hideDisclaimerCanvas();
+    });
+    
+    // Function to handle the actual order submission
+    function submitOrder() {
+        const selectedArray = Array.from(selectedDomains.keys());
+        
         // Show loading alert
         Swal.fire({
             title: 'Saving Configuration',
@@ -1544,7 +1972,7 @@ document.addEventListener('DOMContentLoaded', function() {
             saveBtn.innerHTML = originalText;
             saveBtn.disabled = false;
         });
-    });
+    }
 });
 </script>
 @endpush

@@ -440,6 +440,9 @@ class PoolPlanController extends Controller
                 ->get();
         }
 
+        // Get active trial-new-order disclaimer
+        $trialNewOrderDisclaimer = \App\Models\Disclaimer::getActiveByType('trial-new-order');
+
         // Get full domain details for existing selections (with prefix_variants)
         $existingDomainDetails = [];
         
@@ -509,7 +512,8 @@ class PoolPlanController extends Controller
             'sendingPlatforms', 
             'existingDomainDetails',
             'enableHostingPlatform',
-            'enableSendingPlatform'
+            'enableSendingPlatform',
+            'trialNewOrderDisclaimer'
         ));
     }
 
