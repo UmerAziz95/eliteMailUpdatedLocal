@@ -106,7 +106,9 @@ class PoolOrderCancelledService
         // Step 2: Cancel subscription in ChargeBee FIRST
         try {
             Log::info("Starting ChargeBee cancellation", [
-                'subscription_id' => $poolOrder->chargebee_subscription_id
+                'subscription_id' => $poolOrder->chargebee_subscription_id,
+                'chargebee_site' => config('services.chargebee.site'),
+                'api_key_configured' => !empty(config('services.chargebee.api_key'))
             ]);
 
             // Configure ChargeBee environment
@@ -116,27 +118,107 @@ class PoolOrderCancelledService
             );
 
             // First check if already cancelled in ChargeBee
-            $chargebeeSubscription = Subscription::retrieve($poolOrder->chargebee_subscription_id);
-            $isAlreadyCancelled = $chargebeeSubscription->subscription()->status === 'cancelled';
-            
-            Log::info("ChargeBee subscription retrieved", [
-                'status' => $chargebeeSubscription->subscription()->status,
-                'is_already_cancelled' => $isAlreadyCancelled
+            Log::info("Retrieving subscription from ChargeBee", [
+                'subscription_id' => $poolOrder->chargebee_subscription_id
             ]);
+            
+            $chargebeeSubscription = Subscription::retrieve($poolOrder->chargebee_subscription_id);
+            $currentStatus = $chargebeeSubscription->subscription()->status;
+            $isAlreadyCancelled = $currentStatus === 'cancelled';
+            
+            // Log detailed subscription information
+            $subscriptionData = [
+                'subscription_id' => $poolOrder->chargebee_subscription_id,
+                'status' => $currentStatus,
+                'is_already_cancelled' => $isAlreadyCancelled,
+                'has_subscription_items' => !empty($chargebeeSubscription->subscription()->subscriptionItems),
+                'customer_id' => $chargebeeSubscription->subscription()->customerId ?? 'N/A',
+                'currency_code' => $chargebeeSubscription->subscription()->currencyCode ?? 'N/A',
+                'billing_period' => $chargebeeSubscription->subscription()->billingPeriod ?? 'N/A',
+                'billing_period_unit' => $chargebeeSubscription->subscription()->billingPeriodUnit ?? 'N/A'
+            ];
+            
+            if (!empty($chargebeeSubscription->subscription()->subscriptionItems)) {
+                $subscriptionData['subscription_items_count'] = count($chargebeeSubscription->subscription()->subscriptionItems);
+                $subscriptionData['first_item_id'] = $chargebeeSubscription->subscription()->subscriptionItems[0]->itemPriceId ?? 'N/A';
+            }
+            
+            Log::info("ChargeBee subscription retrieved successfully", $subscriptionData);
 
             // Only call cancel API if not already cancelled
             if (!$isAlreadyCancelled) {
-                $result = Subscription::cancelForItems($poolOrder->chargebee_subscription_id, [
+                Log::info("Preparing to cancel subscription - Product Catalog 2.0");
+
+                // Build cancellation parameters
+                $cancelParams = [
                     "end_of_term" => false,
-                    "credit_option" => "none",
-                    "unbilled_charges_option" => "delete",
-                    "account_receivables_handling" => "no_action"
-                ]);
+                    "unbilled_charges_option" => "delete"
+                ];
                 
-                Log::info('ChargeBee subscription cancelled', [
-                    'subscription_id' => $poolOrder->chargebee_subscription_id,
-                    'new_status' => $result->subscription()->status
+                // Only add credit option if subscription has a current term
+                if (!empty($chargebeeSubscription->subscription()->currentTermEnd)) {
+                    $cancelParams["credit_option_for_current_term_charges"] = "none";
+                }
+                
+                Log::info("Cancellation parameters prepared", [
+                    'params' => $cancelParams,
+                    'subscription_has_current_term' => !empty($chargebeeSubscription->subscription()->currentTermEnd)
                 ]);
+
+                try {
+                    Log::info("Calling ChargeBee cancelForItems API");
+                    
+                    $result = Subscription::cancelForItems(
+                        $poolOrder->chargebee_subscription_id, 
+                        $cancelParams
+                    );
+                    
+                    Log::info('ChargeBee subscription cancelled successfully', [
+                        'subscription_id' => $poolOrder->chargebee_subscription_id,
+                        'new_status' => $result->subscription()->status,
+                        'cancelled_at' => $result->subscription()->cancelledAt ?? 'not set',
+                        'current_term_end' => $result->subscription()->currentTermEnd ?? 'N/A'
+                    ]);
+                    
+                } catch (\ChargeBee\ChargeBee\Exceptions\APIError $apiError) {
+                    // Detailed API error logging
+                    Log::error('ChargeBee API Error during cancel call', [
+                        'error_message' => $apiError->getMessage(),
+                        'api_error_code' => $apiError->getApiErrorCode() ?? 'unknown',
+                        'http_status_code' => $apiError->getHttpStatusCode() ?? 'unknown',
+                        'subscription_id' => $poolOrder->chargebee_subscription_id,
+                        'params_sent' => $cancelParams
+                    ]);
+                    
+                    // If internal error, try simpler parameters
+                    if ($apiError->getApiErrorCode() === 'internal_error') {
+                        Log::warning("Internal error detected, trying simplified cancellation");
+                        
+                        $simplifiedParams = [
+                            "end_of_term" => false
+                        ];
+                        
+                        Log::info("Retrying with simplified parameters", ['params' => $simplifiedParams]);
+                        
+                        $result = Subscription::cancelForItems(
+                            $poolOrder->chargebee_subscription_id,
+                            $simplifiedParams
+                        );
+                        
+                        Log::info('Subscription cancelled with simplified parameters', [
+                            'new_status' => $result->subscription()->status
+                        ]);
+                    } else {
+                        throw $apiError;
+                    }
+                } catch (\Exception $cancelException) {
+                    Log::error('Unexpected error during cancellation', [
+                        'error' => $cancelException->getMessage(),
+                        'error_class' => get_class($cancelException),
+                        'trace' => $cancelException->getTraceAsString()
+                    ]);
+                    throw $cancelException;
+                }
             } else {
                 $result = $chargebeeSubscription;
                 Log::info('Subscription already cancelled in ChargeBee, using existing status');
@@ -149,13 +231,36 @@ class PoolOrderCancelledService
                 throw new \Exception('ChargeBee subscription status is not cancelled: ' . $subscription->status);
             }
 
-        } catch (\Exception $e) {
-            Log::error('ChargeBee cancellation failed', [
+        } catch (\ChargeBee\ChargeBee\Exceptions\APIError $e) {
+            // ChargeBee specific API error
+            Log::error('ChargeBee API Error during cancellation', [
                 'error' => $e->getMessage(),
+                'api_error_code' => $e->getApiErrorCode() ?? 'unknown',
+                'http_status_code' => $e->getHttpStatusCode() ?? 'unknown',
                 'subscription_id' => $poolOrder->chargebee_subscription_id,
                 'pool_order_id' => $poolOrderId,
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
+            ]);
+
+            $errorMessage = $e->getMessage();
+            if ($e->getApiErrorCode()) {
+                $errorMessage .= ' (Code: ' . $e->getApiErrorCode() . ')';
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Failed to cancel subscription in ChargeBee: ' . $errorMessage
+            ];
+        } catch (\Exception $e) {
+            Log::error('ChargeBee cancellation failed', [
+                'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'subscription_id' => $poolOrder->chargebee_subscription_id,
+                'pool_order_id' => $poolOrderId,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return [
