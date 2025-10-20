@@ -131,6 +131,9 @@ Route::get('/plans/{id?}/discounted', [\App\Http\Controllers\DiscountedPlanContr
 Route::get('/discounted/user/verify/{encrypted}/{discord_id?}', [\App\Http\Controllers\DiscountedPlanController::class,'verifyDiscountedUser' ])->name('discounted.plans.verify');
 Route::get('/discounted/user/redirect/{subscription_id}',[\App\Http\Controllers\DiscountedPlanController::class,'redirectToDashboard'])->name('discounted.plans.redirect');
 
+// Public disclaimer route (no auth required)
+Route::get('/api/disclaimer/{type}', [App\Http\Controllers\Admin\DisclaimerController::class, 'getActiveDisclaimer'])->name('api.disclaimer.get');
+
 // Chargebee webhooks (no auth required)
 Route::post('/webhook/chargebee/master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'handleChargebeeWebhook'])->name('webhook.chargebee.master-plan');
 
@@ -454,6 +457,14 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('slack/settings/save',[App\Http\Controllers\Admin\SlackSettingsController::class,'store'])->name('slack.settings.save');
         Route::post('slack/settings/test',[App\Http\Controllers\Admin\SlackSettingsController::class,'testWebhook'])->name('slack.settings.test');
         Route::delete('slack/settings/{id}',[App\Http\Controllers\Admin\SlackSettingsController::class,'destroy'])->name('slack.settings.delete');
+        
+        //disclaimer settings
+        Route::get('disclaimers',[App\Http\Controllers\Admin\DisclaimerController::class,'index'])->name('disclaimers.index');
+        Route::post('disclaimers/save',[App\Http\Controllers\Admin\DisclaimerController::class,'store'])->name('disclaimers.save');
+        Route::get('disclaimers/{type}',[App\Http\Controllers\Admin\DisclaimerController::class,'show'])->name('disclaimers.show');
+        Route::put('disclaimers/{id}/status',[App\Http\Controllers\Admin\DisclaimerController::class,'updateStatus'])->name('disclaimers.update-status');
+        Route::delete('disclaimers/{id}',[App\Http\Controllers\Admin\DisclaimerController::class,'destroy'])->name('disclaimers.delete');
+        
         Route::get('/discord/settvings/get', [App\Http\Controllers\SettingController::class, 'getCronSettings'])->name('discord.settings.get');
 
         //domain health dashboard   
