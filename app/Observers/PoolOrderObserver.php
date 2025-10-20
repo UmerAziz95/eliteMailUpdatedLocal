@@ -374,8 +374,8 @@ class PoolOrderObserver
                 ]
             ];
 
-            // Send to Slack - use 'inbox-cancellation' channel for cancellations
-            $result = SlackNotificationService::send('inbox-cancellation', $message);
+            // Send to Slack - use 'inbox-trial-cancellations' channel for cancellations
+            $result = SlackNotificationService::send('inbox-trial-cancellations', $message);
             
             if ($result) {
                 Log::info('Slack cancellation notification sent successfully', [
