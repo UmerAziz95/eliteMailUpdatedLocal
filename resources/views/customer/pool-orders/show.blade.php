@@ -540,6 +540,7 @@
                                     <th>Amount</th>
                                     <th>Status</th>
                                     <th>Paid At</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                         </table>
@@ -573,7 +574,8 @@
                                     { data: 'chargebee_invoice_id', name: 'chargebee_invoice_id' },
                                     { data: 'amount', name: 'amount' },
                                     { data: 'status', name: 'status' },
-                                    { data: 'paid_at', name: 'paid_at' }
+                                    { data: 'paid_at', name: 'paid_at' },
+                                    { data: 'action', name: 'action', orderable: false, searchable: false }
                                 ],
                                 order: [ [0, 'desc'] ],
                                 drawCallback: function(settings) {

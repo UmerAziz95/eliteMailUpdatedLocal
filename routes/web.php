@@ -569,6 +569,7 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     // Pool order invoices (DataTables + export)
     Route::get('/pool-orders/{id}/invoices/data', [CustomerPoolPlanController::class, 'getPoolInvoicesData'])->name('pool-orders.invoices.data');
     Route::get('/pool-orders/{id}/invoices/export', [CustomerPoolPlanController::class, 'exportPoolInvoices'])->name('pool-orders.invoices.export');
+    Route::get('/pool-orders/invoices/{invoiceId}/download', [CustomerPoolPlanController::class, 'downloadPoolInvoice'])->name('pool-orders.invoices.download');
 
     // Order Email routes 
     Route::get('/orders/{orderId}/emails', [CustomerOrderEmailController::class, 'getEmails']);

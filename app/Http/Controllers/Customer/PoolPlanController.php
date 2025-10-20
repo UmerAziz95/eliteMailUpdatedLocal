@@ -741,12 +741,27 @@ class PoolPlanController extends Controller
                     'pool_invoices.chargebee_invoice_id',
                     'pool_invoices.pool_order_id',
                     'pool_invoices.amount',
+                    'pool_invoices.currency',
                     'pool_invoices.status',
                     'pool_invoices.paid_at',
                     'pool_invoices.created_at'
                 ]);
 
             return \DataTables::of($query)
+                ->addColumn('action', function($invoice) {
+                    $downloadUrl = route('customer.pool-orders.invoices.download', $invoice->id);
+                    return '
+                        <div class="dropdown">
+                            <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="' . $downloadUrl . '">
+                                    <i class="fa-solid fa-download me-1"></i>Download PDF
+                                </a></li>
+                            </ul>
+                        </div>';
+                })
                 ->editColumn('paid_at', function($row) {
                     return $row->paid_at ? $row->paid_at->format('d F, Y') : '';
                 })
@@ -754,9 +769,13 @@ class PoolPlanController extends Controller
                     return $row->created_at ? $row->created_at->format('d F, Y') : '';
                 })
                 ->editColumn('amount', function($row) {
-                    return '$' . number_format($row->amount, 2);
+                    return '$' . number_format($row->amount, 2) . ' ' . strtoupper($row->currency ?? 'USD');
                 })
-                ->rawColumns([])
+                ->editColumn('status', function($row) {
+                    $statusClass = $row->status === 'paid' ? 'success' : 'warning';
+                    return '<span class="badge bg-' . $statusClass . '">' . ucfirst($row->status) . '</span>';
+                })
+                ->rawColumns(['action', 'status'])
                 ->make(true);
         } catch (\Exception $e) {
             Log::error('Error in getPoolInvoicesData: ' . $e->getMessage());
@@ -801,6 +820,43 @@ class PoolPlanController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Download pool invoice as PDF
+     */
+    public function downloadPoolInvoice($invoiceId)
+    {
+        try {
+            $user = Auth::user();
+            
+            // Find the pool invoice by ID
+            $poolInvoice = PoolInvoice::with(['user', 'poolOrder.poolPlan'])
+                ->where('user_id', $user->id)
+                ->where('id', $invoiceId)
+                ->firstOrFail();
+
+            // Generate PDF using dompdf
+            $pdf = \PDF::loadView('customer.pool-invoices.pdf', compact('poolInvoice'));
+            
+            // Generate filename
+            $filename = 'pool_invoice_' . $poolInvoice->chargebee_invoice_id . '.pdf';
+
+            // Return PDF file as download
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            Log::error('Error downloading pool invoice: ' . $e->getMessage());
+            
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error downloading invoice'
+                ], 500);
+            }
+
+            return back()->with('error', 'Error downloading invoice');
+        }
     }
 
     /**
