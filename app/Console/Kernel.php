@@ -69,11 +69,11 @@ class Kernel extends ConsoleKernel
                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
         // Process failed invoice notifications daily at 9:00 AM
-        $schedule->command('invoices:process-failed-notifications')
-                ->dailyAt('09:00')
-                ->withoutOverlapping()
-                ->runInBackground()
-                ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+        // $schedule->command('invoices:process-failed-notifications')
+        //         ->dailyAt('09:00')
+        //         ->withoutOverlapping()
+        //         ->runInBackground()
+        //         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
         
         $schedule->command('domain:check-health')
                 ->dailyAt('22:00') // 10:00 PM UTC
