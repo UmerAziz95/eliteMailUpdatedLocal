@@ -64,7 +64,29 @@ class PoolDomainController extends Controller
                         return '<span class="badge bg-light text-dark">Available</span>';
                     }
                 })
-                ->rawColumns(['status_badge', 'pool_order_status_badge', 'usage_badge'])
+                ->addColumn('actions', function ($row) {
+                    $poolId = $row['pool_id'] ?? '';
+                    $poolOrderId = $row['pool_order_id'] ?? '';
+                    $domainId = $row['domain_id'] ?? '';
+                    $domainName = addslashes($row['domain_name'] ?? '');
+                    $status = $row['status'] ?? 'available';
+                    
+                    return '
+                        <div class="dropdown">
+                            <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0)" 
+                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\')">
+                                        <i class="fa-solid fa-edit me-1"></i>Edit Domain
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>';
+                })
+                ->rawColumns(['status_badge', 'pool_order_status_badge', 'usage_badge', 'actions'])
                 ->make(true);
         }
 
@@ -140,5 +162,88 @@ class PoolDomainController extends Controller
         ];
         
         return response()->json($data);
+    }
+
+    /**
+     * Update domain name and status
+     */
+    public function update(Request $request)
+    {
+        $request->validate([
+            'pool_id' => 'nullable|integer',
+            'pool_order_id' => 'nullable|integer',
+            'domain_id' => 'required',
+            'domain_name' => 'required|string',
+            'status' => 'required|in:warming,available,subscribed'
+        ]);
+
+        try {
+            $updated = false;
+            $message = '';
+
+            // Try to update in Pool first
+            if ($request->pool_id) {
+                $pool = \App\Models\Pool::find($request->pool_id);
+                if ($pool && is_array($pool->domains)) {
+                    $domains = $pool->domains;
+                    foreach ($domains as &$domain) {
+                        if (isset($domain['id']) && $domain['id'] == $request->domain_id) {
+                            $domain['name'] = $request->domain_name;
+                            $domain['status'] = $request->status;
+                            $updated = true;
+                            break;
+                        }
+                    }
+                    if ($updated) {
+                        $pool->domains = $domains;
+                        $pool->save();
+                        $message = 'Pool domain updated successfully';
+                    }
+                }
+            }
+
+            // Try to update in PoolOrder if not found in Pool or also exists there
+            if ($request->pool_order_id) {
+                $poolOrder = \App\Models\PoolOrder::find($request->pool_order_id);
+                if ($poolOrder && is_array($poolOrder->domains)) {
+                    $domains = $poolOrder->domains;
+                    foreach ($domains as &$domain) {
+                        if (isset($domain['id']) && $domain['id'] == $request->domain_id) {
+                            $domain['name'] = $request->domain_name;
+                            $domain['status'] = $request->status;
+                            $updated = true;
+                            break;
+                        }
+                    }
+                    if ($updated) {
+                        $poolOrder->domains = $domains;
+                        $poolOrder->save();
+                        $message = $message ? 'Domain updated in both Pool and Pool Order' : 'Pool Order domain updated successfully';
+                    }
+                }
+            }
+
+            if (!$updated) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Domain not found or could not be updated'
+                ], 404);
+            }
+
+            // Clear cache after update
+            $this->poolDomainService->clearCache();
+
+            return response()->json([
+                'success' => true,
+                'message' => $message
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error updating pool domain: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating domain: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -678,7 +678,7 @@
             });
         }
     }
-
+    // added functionality when task is marked as completed if all assigned domains are not warming show alert
     // Update pool migration task status (reuse from taskInQueue)
     async function updatePoolMigrationTaskStatus(taskId, newStatus) {
         try {
