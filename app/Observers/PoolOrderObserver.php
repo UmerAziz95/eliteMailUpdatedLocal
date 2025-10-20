@@ -23,6 +23,15 @@ class PoolOrderObserver
     public function created(PoolOrder $poolOrder): void
     {
         $this->clearRelatedCaches($poolOrder);
+        
+        // Send Slack notification for new pool order
+        Log::info('New PoolOrder created, sending Slack notification', [
+            'pool_order_id' => $poolOrder->id,
+            'user_id' => $poolOrder->user_id,
+            'status' => $poolOrder->status
+        ]);
+        
+        $this->sendCreationNotification($poolOrder);
     }
 
     /**
@@ -195,7 +204,7 @@ class PoolOrderObserver
             ];
 
             // Send to Slack
-            $result = SlackNotificationService::send('inbox-setup', $message);
+            $result = SlackNotificationService::send('inbox-trial-setup', $message);
             
             if ($result) {
                 Log::info('Slack notification sent successfully for pool order', [
@@ -382,6 +391,119 @@ class PoolOrderObserver
         } catch (\Exception $e) {
             // Non-critical, just log the error
             Log::error('Exception sending Slack cancellation notification', [
+                'error' => $e->getMessage(),
+                'pool_order_id' => $poolOrder->id,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Send Slack notification for new pool order creation
+     * 
+     * @param \App\Models\PoolOrder $poolOrder
+     * @return void
+     */
+    private function sendCreationNotification(PoolOrder $poolOrder): void
+    {
+        try {
+            $user = $poolOrder->user;
+            
+            if (!$user) {
+                Log::warning('User not found for new pool order', [
+                    'pool_order_id' => $poolOrder->id
+                ]);
+                return;
+            }
+
+            // Prepare domain list for notification
+            $domainsList = 'N/A';
+            if ($poolOrder->domains && is_array($poolOrder->domains) && count($poolOrder->domains) > 0) {
+                $domainNames = array_map(function($domain) {
+                    return $domain['domain_name'] ?? 'Unknown';
+                }, array_slice($poolOrder->domains, 0, 5)); // Show first 5 domains
+                
+                $domainsList = implode(', ', $domainNames);
+                
+                if (count($poolOrder->domains) > 5) {
+                    $remaining = count($poolOrder->domains) - 5;
+                    $domainsList .= " (and {$remaining} more)";
+                }
+            }
+
+            $message = [
+                'text' => '🆕 *New Pool Order Created*',
+                'attachments' => [
+                    [
+                        'color' => '#36a64f',
+                        'fields' => [
+                            [
+                                'title' => 'Order ID',
+                                'value' => '#' . $poolOrder->id,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Status',
+                                'value' => '🔵 ' . ucfirst($poolOrder->status_manage_by_admin),
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Customer Name',
+                                'value' => $user->name,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Customer Email',
+                                'value' => $user->email,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Plan',
+                                'value' => $poolOrder->poolPlan->name ?? 'N/A',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Quantity',
+                                'value' => $poolOrder->quantity . ' inboxes',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Amount',
+                                'value' => '$' . number_format($poolOrder->amount, 2),
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'ChargeBee Subscription',
+                                'value' => $poolOrder->chargebee_subscription_id ?? 'Pending',
+                                'short' => true
+                            ]
+                        ],
+                        'footer' => config('app.name', 'ProjectInbox') . ' - New Pool Order',
+                        'ts' => time()
+                    ]
+                ]
+            ];
+
+            // Send to Slack
+            $result = SlackNotificationService::send('inbox-trial-setup', $message);
+            
+            if ($result) {
+                Log::info('Slack notification sent successfully for new pool order', [
+                    'pool_order_id' => $poolOrder->id,
+                    'user_email' => $user->email,
+                    'amount' => $poolOrder->amount
+                ]);
+            } else {
+                Log::warning('Slack notification failed to send for new pool order', [
+                    'pool_order_id' => $poolOrder->id
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            // Non-critical, just log the error
+            Log::error('Exception sending Slack notification for new pool order', [
                 'error' => $e->getMessage(),
                 'pool_order_id' => $poolOrder->id,
                 'file' => $e->getFile(),

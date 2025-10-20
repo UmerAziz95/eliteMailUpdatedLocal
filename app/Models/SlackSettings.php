@@ -26,6 +26,7 @@ class SlackSettings extends Model
         'inbox-admins' => 'Inbox Admins',
         'inbox-subscriptions' => 'Inbox Subscriptions',
         'inbox-tickets' => 'Inbox Tickets',
+        'inbox-trial-setup' => 'Inbox Trial Setup',
     ];
     
     public static function getTypes()
