@@ -417,6 +417,10 @@ class PoolPlanController extends Controller
         $hostingPlatforms = \App\Models\HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get();
+        
+        // Get sending platforms for the dropdown
+        $sendingPlatforms = \App\Models\SendingPlatform::orderBy('name')
+            ->get();
 
         // Get full domain details for existing selections (with prefix_variants)
         $existingDomainDetails = [];
@@ -480,7 +484,7 @@ class PoolPlanController extends Controller
         // For regular page load, don't load all domains immediately
         // Pass empty array for initial load to avoid template errors
         $availableDomains = [];
-        return view('customer.pool-orders.edit', compact('poolOrder', 'availableDomains', 'hostingPlatforms', 'existingDomainDetails'));
+        return view('customer.pool-orders.edit', compact('poolOrder', 'availableDomains', 'hostingPlatforms', 'sendingPlatforms', 'existingDomainDetails'));
     }
 
     /**
@@ -631,6 +635,34 @@ class PoolPlanController extends Controller
                 ]);
             }
             
+            // Save sending platform data
+            if ($request->has('sending_platform')) {
+                $poolOrder->sending_platform = $request->sending_platform;
+                
+                // Collect all dynamic sending platform fields
+                $sendingPlatformData = [];
+                
+                // Get the sending platform configuration
+                $sendingPlatform = \App\Models\SendingPlatform::where('value', $request->sending_platform)->first();
+                
+                if ($sendingPlatform && $sendingPlatform->fields) {
+                    // Iterate through defined fields and collect their values
+                    foreach ($sendingPlatform->fields as $fieldName => $fieldConfig) {
+                        if ($request->has($fieldName)) {
+                            $sendingPlatformData[$fieldName] = $request->input($fieldName);
+                        }
+                    }
+                }
+                
+                // Store all collected data as JSON
+                $poolOrder->sending_platform_data = $sendingPlatformData;
+                
+                Log::info('Sending platform data saved:', [
+                    'platform' => $poolOrder->sending_platform,
+                    'data' => $sendingPlatformData
+                ]);
+            }
+            
             Log::info('Before saving pool order - domains:', ['domains' => $poolOrder->domains]);
             
             // Update status to in-progress when configuration is saved
@@ -649,7 +681,8 @@ class PoolPlanController extends Controller
                 'message' => 'Configuration saved successfully',
                 'total_domains' => $poolOrder->selected_domains_count,
                 'total_inboxes' => $poolOrder->total_inboxes,
-                'hosting_platform' => $poolOrder->hosting_platform
+                'hosting_platform' => $poolOrder->hosting_platform,
+                'sending_platform' => $poolOrder->sending_platform
             ]);
 
         } catch (\Exception $e) {

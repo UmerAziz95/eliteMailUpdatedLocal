@@ -487,6 +487,35 @@
                                     </div>
                                 </div>
 
+                                <!-- Cold Email Platform Section -->
+                                <div class="card mb-4" style="background: linear-gradient(145deg, #2d3748, #1a202c); border: 2px solid rgba(99, 102, 241, 0.3);">
+                                    <div class="card-body">
+                                        <h5 class="mb-4" style="color: #6366f1;">
+                                            <i class="ti ti-mail me-2"></i>Cold Email Platform
+                                        </h5>
+                                        
+                                        <div class="sending-platform mb-3">
+                                            <label for="sending_platform" class="form-label text-white">Sending Platform *</label>
+                                            <select id="sending_platform" name="sending_platform" class="form-control" required>
+                                                <option value="">Select Platform</option>
+                                                @foreach($sendingPlatforms ?? [] as $platform)
+                                                <option value="{{ $platform->value }}" 
+                                                        data-fields='@json($platform->fields)'
+                                                        {{ ($poolOrder->sending_platform === $platform->value) ? 'selected' : '' }}>
+                                                    {{ $platform->name }}
+                                                </option>
+                                                @endforeach
+                                            </select>
+                                            <div class="invalid-feedback" id="sending-platform-error"></div>
+                                            <small class="text-muted d-block mt-1">Please select the cold email platform you would like us to install the inboxes on. To avoid any delays, ensure it isn't on a free trial and that your chosen paid plan is active.</small>
+                                        </div>
+
+                                        <div class="sending-platform-fields" id="sending-platform-fields">
+                                            <!-- Dynamic sending platform fields will be inserted here -->
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Search and Filter Controls -->
                                 <div class="mb-4">
                                     <div class="row g-3">
@@ -1326,6 +1355,43 @@ document.addEventListener('DOMContentLoaded', function() {
         hostingSelect.addEventListener('change', updatePlatformFields);
     }
     
+    // ===== SENDING PLATFORM FUNCTIONS =====
+    
+    // Update sending platform fields when platform changes
+    function updateSendingPlatformFields() {
+        const sendingSelect = document.getElementById('sending_platform');
+        if (!sendingSelect) return;
+        
+        const selectedOption = sendingSelect.options[sendingSelect.selectedIndex];
+        const fieldsData = selectedOption.getAttribute('data-fields');
+        const platformValue = selectedOption.value;
+        
+        const container = document.getElementById('sending-platform-fields');
+        container.innerHTML = '';
+        
+        if (fieldsData) {
+            try {
+                const fields = JSON.parse(fieldsData);
+                const poolOrder = @json($poolOrder ?? null);
+                const existingValues = poolOrder && poolOrder.sending_platform_data ? poolOrder.sending_platform_data : {};
+                
+                container.innerHTML = generatePairedFields(fields, existingValues);
+                initializePasswordToggles();
+            } catch (e) {
+                console.error('Error parsing sending platform fields data:', e);
+            }
+        }
+    }
+    
+    // Initialize sending platform on page load
+    const sendingSelect = document.getElementById('sending_platform');
+    if (sendingSelect) {
+        updateSendingPlatformFields();
+        sendingSelect.addEventListener('change', updateSendingPlatformFields);
+    }
+    
+    // ===== END SENDING PLATFORM FUNCTIONS =====
+    
     // ===== END HOSTING PLATFORM FUNCTIONS =====
     
     // Form submission
@@ -1400,6 +1466,21 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Collect sending platform data
+        const sendingPlatformData = {
+            sending_platform: formData.get('sending_platform')
+        };
+        
+        // Collect all sending platform-specific fields
+        const sendingFieldsContainer = document.getElementById('sending-platform-fields');
+        if (sendingFieldsContainer) {
+            sendingFieldsContainer.querySelectorAll('input, select, textarea').forEach(field => {
+                if (field.name) {
+                    sendingPlatformData[field.name] = field.value;
+                }
+            });
+        }
+        
         fetch(`{{ route('customer.pool-orders.update', $poolOrder->id) }}`, {
             method: 'PUT',
             headers: {
@@ -1408,7 +1489,8 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({
                 domains: selectedArray,
-                ...hostingPlatformData
+                ...hostingPlatformData,
+                ...sendingPlatformData
             })
         })
         .then(response => response.json())
