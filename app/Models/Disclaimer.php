@@ -21,12 +21,7 @@ class Disclaimer extends Model
     
     // Define available types
     const TYPES = [
-        'order-page' => 'Order Page',
-        'checkout-page' => 'Checkout Page',
-        'pool-order-page' => 'Pool Order Page',
-        'pool-checkout-page' => 'Pool Checkout Page',
-        'customer-dashboard' => 'Customer Dashboard',
-        'general' => 'General Disclaimer',
+        'trial-new-order' => 'Trial New Order Disclaimer',
     ];
     
     public static function getTypes()

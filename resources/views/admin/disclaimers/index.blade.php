@@ -179,6 +179,86 @@
     .char-counter.danger {
         color: #dc3545;
     }
+
+    /* Summernote Custom Styles */
+    .note-editor {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+    }
+
+    .note-editor.note-frame {
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .note-toolbar {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .note-btn-group .note-btn {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+        color: var(--white-color) !important;
+    }
+
+    .note-btn-group .note-btn:hover {
+        background-color: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .note-editable {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: var(--white-color) !important;
+        min-height: 200px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .note-editable:focus {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+    }
+
+    .note-placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    .note-dropdown-menu {
+        background-color: #2c3e50 !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .note-dropdown-menu .dropdown-item {
+        color: var(--white-color) !important;
+    }
+
+    .note-dropdown-menu .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .note-color .dropdown-menu {
+        background-color: #2c3e50 !important;
+    }
+
+    .editor-wrapper {
+        border-radius: 6px;
+    }
+
+    .editor-wrapper.is-invalid .note-editor {
+        border-color: #dc3545 !important;
+    }
+
+    .editor-wrapper.is-valid .note-editor {
+        border-color: #28a745 !important;
+    }
+
+    .note-statusbar {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .note-resizebar {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+    }
 </style>
 @endpush
 
@@ -204,7 +284,7 @@
                     </h5>
                     <p class="mb-2 mx-2 text-muted">Manage disclaimers that appear on different pages of your application:</p>
                     <ul class="mb-0">
-                        <li>Create custom disclaimers for specific pages (Order, Checkout, Dashboard, etc.)</li>
+                        <li>Create custom disclaimers for specific pages (Trial New Order, etc.)</li>
                         <li>Enable or disable disclaimers without deleting them</li>
                         <li>Rich text content support with up to 5000 characters</li>
                         <li>Active disclaimers are automatically displayed on their respective pages</li>
@@ -245,16 +325,15 @@
                                         Disclaimer Content *
                                         <span class="char-counter" id="char-counter-{{ $typeKey }}">0 / 5000</span>
                                     </label>
-                                    <textarea 
-                                        class="form-control disclaimer-content" 
-                                        id="content-{{ $typeKey }}" 
-                                        name="content" 
-                                        rows="6" 
-                                        maxlength="5000"
-                                        placeholder="Enter your disclaimer text here..."
-                                        required>{{ isset($disclaimers[$typeKey]) && $disclaimers[$typeKey] ? $disclaimers[$typeKey]->content : '' }}</textarea>
-                                    <small class="form-text text-muted">
-                                        Enter the disclaimer text for {{ strtolower($typeLabel) }}. Supports line breaks and basic formatting.
+                                    <div class="editor-wrapper" id="editor-wrapper-{{ $typeKey }}">
+                                        <textarea 
+                                            class="form-control disclaimer-content" 
+                                            id="content-{{ $typeKey }}" 
+                                            name="content" 
+                                            style="display: none;">{{ isset($disclaimers[$typeKey]) && $disclaimers[$typeKey] ? $disclaimers[$typeKey]->content : '' }}</textarea>
+                                    </div>
+                                    <small class="form-text text-muted mt-2 d-block">
+                                        Enter the disclaimer text for {{ strtolower($typeLabel) }}. Rich text editor with formatting options available.
                                     </small>
                                     <div class="validation-error" id="content-error-{{ $typeKey }}" style="display: none;"></div>
                                 </div>
@@ -280,6 +359,8 @@
 @endsection
 
 @push('scripts')
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
 <script>
 $(document).ready(function() {
     // CSRF Token Setup
@@ -357,7 +438,11 @@ $(document).ready(function() {
     const updateCharCounter = (type) => {
         const textarea = $(`#content-${type}`);
         const counter = $(`#char-counter-${type}`);
-        const length = textarea.val().length;
+        
+        const content = textarea.summernote('code');
+        // Strip HTML tags for accurate character count
+        const textContent = content.replace(/<[^>]*>/g, '').trim();
+        const length = textContent.length;
         const maxLength = 5000;
         
         counter.text(`${length} / ${maxLength}`);
@@ -371,16 +456,43 @@ $(document).ready(function() {
         }
     };
 
-    // Initialize character counters
-    $('.disclaimer-content').each(function() {
-        const type = $(this).closest('.disclaimer-settings-form').data('type');
-        updateCharCounter(type);
-    });
-
-    // Update character counter on input
-    $('.disclaimer-content').on('input', function() {
-        const type = $(this).closest('.disclaimer-settings-form').data('type');
-        updateCharCounter(type);
+    // Initialize Summernote for all disclaimer types
+    const types = @json(array_keys($types));
+    
+    types.forEach(type => {
+        $(`#content-${type}`).summernote({
+            placeholder: 'Enter your disclaimer text here...',
+            tabsize: 2,
+            height: 200,
+            minHeight: 200,
+            maxHeight: 400,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                ['fontsize', ['fontsize']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['height', ['height']],
+                ['insert', ['link']],
+                ['view', ['codeview', 'fullscreen']],
+                ['help', ['help']]
+            ],
+            styleTags: [
+                'p',
+                { title: 'Heading 1', tag: 'h1', className: '', value: 'h1' },
+                { title: 'Heading 2', tag: 'h2', className: '', value: 'h2' },
+                { title: 'Heading 3', tag: 'h3', className: '', value: 'h3' },
+                { title: 'Heading 4', tag: 'h4', className: '', value: 'h4' }
+            ],
+            callbacks: {
+                onChange: function(contents, $editable) {
+                    updateCharCounter(type);
+                },
+                onInit: function() {
+                    updateCharCounter(type);
+                }
+            }
+        });
     });
 
     // Handle status toggle change
@@ -391,8 +503,9 @@ $(document).ready(function() {
         updateStatusDisplay(type, isChecked);
         
         // Auto-save status change if content exists
-        const content = $(`#content-${type}`).val();
-        if (content && content.trim().length > 0) {
+        const content = $(`#content-${type}`).summernote('code');
+        const textContent = content.replace(/<[^>]*>/g, '').trim();
+        if (textContent.length > 0) {
             autoSaveSettings(type);
         }
     });
@@ -403,6 +516,9 @@ $(document).ready(function() {
         const formData = new FormData(form[0]);
         const statusCheckbox = $(`#status-${type}`);
         
+        // Get content from Summernote
+        const content = $(`#content-${type}`).summernote('code');
+        formData.set('content', content);
         formData.append('status', statusCheckbox.is(':checked') ? 'true' : 'false');
         
         $.ajax({
@@ -430,14 +546,21 @@ $(document).ready(function() {
         const type = form.data('type');
         const formData = new FormData(this);
         const statusCheckbox = $(`#status-${type}`);
-        const content = $(`#content-${type}`).val();
         
         // Clear previous validation errors
         clearValidationErrors(type);
         
+        // Get content from Summernote
+        const content = $(`#content-${type}`).summernote('code');
+        const textContent = content.replace(/<[^>]*>/g, '').trim();
+        
+        // Update formData with content
+        formData.set('content', content);
+        
         // Client-side validation
-        if (!content || content.trim().length === 0) {
+        if (!textContent || textContent.length === 0) {
             showValidationError(type, 'content', 'Disclaimer content is required');
+            $(`#editor-wrapper-${type}`).addClass('is-invalid');
             Swal.fire({
                 icon: 'error',
                 title: 'Validation Error!',
@@ -449,8 +572,9 @@ $(document).ready(function() {
             return;
         }
         
-        if (content.length > 5000) {
+        if (textContent.length > 5000) {
             showValidationError(type, 'content', 'Content cannot exceed 5000 characters');
+            $(`#editor-wrapper-${type}`).addClass('is-invalid');
             Swal.fire({
                 icon: 'error',
                 title: 'Validation Error!',
@@ -480,8 +604,8 @@ $(document).ready(function() {
             contentType: false,
             success: function(response) {
                 if (response.success) {
-                    // Mark input as valid
-                    $(`#content-${type}`).addClass('is-valid');
+                    // Mark editor wrapper as valid
+                    $(`#editor-wrapper-${type}`).removeClass('is-invalid').addClass('is-valid');
                     
                     closeSwalLoading();
                     
@@ -578,8 +702,9 @@ $(document).ready(function() {
                     method: 'DELETE',
                     success: function(response) {
                         if (response.success) {
-                            // Reset form
-                            $(`#content-${type}`).val('').removeClass('is-valid is-invalid');
+                            // Reset Summernote and form
+                            $(`#content-${type}`).summernote('code', '');
+                            $(`#editor-wrapper-${type}`).removeClass('is-valid is-invalid');
                             updateStatusDisplay(type, false);
                             updateCharCounter(type);
                             btn.remove();
@@ -633,22 +758,8 @@ $(document).ready(function() {
         }, 500);
     });
 
-    // Real-time content validation
-    $('.disclaimer-content').on('input', function() {
-        const type = $(this).closest('.disclaimer-settings-form').data('type');
-        const content = $(this).val();
-        
-        clearValidationErrors(type);
-        
-        if (content && content.length > 5000) {
-            showValidationError(type, 'content', 'Content cannot exceed 5000 characters');
-            $(this).addClass('is-invalid');
-        } else if (content && content.trim().length > 0) {
-            $(this).removeClass('is-invalid').addClass('is-valid');
-        } else {
-            $(this).removeClass('is-invalid is-valid');
-        }
-    });
+    // Real-time content validation (handled by CKEditor change event)
+    // Validation is done in the editor's change:data event listener
 
     // Initialize tooltips if Bootstrap tooltips are available
     if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
