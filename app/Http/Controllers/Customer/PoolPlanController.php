@@ -727,6 +727,83 @@ class PoolPlanController extends Controller
     }
 
     /**
+     * AJAX DataTables: Get pool invoices for a specific pool order
+     */
+    public function getPoolInvoicesData(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+
+            $query = PoolInvoice::where('user_id', $user->id)
+                ->where('pool_order_id', $id)
+                ->select([
+                    'pool_invoices.id',
+                    'pool_invoices.chargebee_invoice_id',
+                    'pool_invoices.pool_order_id',
+                    'pool_invoices.amount',
+                    'pool_invoices.status',
+                    'pool_invoices.paid_at',
+                    'pool_invoices.created_at'
+                ]);
+
+            return \DataTables::of($query)
+                ->editColumn('paid_at', function($row) {
+                    return $row->paid_at ? $row->paid_at->format('d F, Y') : '';
+                })
+                ->editColumn('created_at', function($row) {
+                    return $row->created_at ? $row->created_at->format('d F, Y') : '';
+                })
+                ->editColumn('amount', function($row) {
+                    return '$' . number_format($row->amount, 2);
+                })
+                ->rawColumns([])
+                ->make(true);
+        } catch (\Exception $e) {
+            Log::error('Error in getPoolInvoicesData: ' . $e->getMessage());
+            return response()->json(['error' => 'Error loading pool invoices'], 500);
+        }
+    }
+
+    /**
+     * Export pool invoices as CSV for a specific pool order
+     */
+    public function exportPoolInvoices($id)
+    {
+        $user = Auth::user();
+        $invoices = PoolInvoice::where('user_id', $user->id)
+            ->where('pool_order_id', $id)
+            ->get();
+
+        $filename = 'pool_order_' . $id . '_invoices_' . date('Ymd_His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($invoices) {
+            $file = fopen('php://output', 'w');
+            // Header
+            fputcsv($file, ['Invoice ID', 'Amount', 'Currency', 'Status', 'Paid At', 'Created At']);
+
+            foreach ($invoices as $inv) {
+                fputcsv($file, [
+                    $inv->chargebee_invoice_id,
+                    number_format($inv->amount, 2),
+                    strtoupper($inv->currency ?? ''),
+                    $inv->status,
+                    $inv->paid_at ? $inv->paid_at->format('Y-m-d H:i:s') : '',
+                    $inv->created_at ? $inv->created_at->format('Y-m-d H:i:s') : ''
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
      * Get available domains for pool order selection from pools table
      */
     private function getAvailableDomains()

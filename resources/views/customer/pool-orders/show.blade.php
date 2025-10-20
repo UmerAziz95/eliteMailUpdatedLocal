@@ -522,9 +522,18 @@
 
                     @if($poolOrder->poolInvoices && $poolOrder->poolInvoices->count() > 0)
                     <hr>
-                    <h6 class="mb-3">Pool Invoices</h6>
+
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="mb-0">Pool Invoices</h6>
+                        <div>
+                            <button id="exportPoolInvoicesBtn" class="btn btn-sm btn-outline-primary">
+                                <i class="fa-solid fa-download me-1"></i>Export
+                            </button>
+                        </div>
+                    </div>
+                    
                     <div class="table-responsive">
-                        <table class="table table-sm mb-0">
+                        <table id="poolInvoicesTable" class="display w-100">
                             <thead>
                                 <tr>
                                     <th>Invoice ID</th>
@@ -533,22 +542,70 @@
                                     <th>Paid At</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @foreach($poolOrder->poolInvoices as $poolInvoice)
-                                    <tr>
-                                        <td>{{ $poolInvoice->chargebee_invoice_id }}</td>
-                                        <td>${{ number_format($poolInvoice->amount, 2) }} {{ strtoupper($poolInvoice->currency) }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ $poolInvoice->status === 'paid' ? 'success' : 'warning' }}">
-                                                {{ ucfirst($poolInvoice->status) }}
-                                            </span>
-                                        </td>
-                                        <td>{{ $poolInvoice->paid_at ? $poolInvoice->paid_at->format('M d, Y h:i A') : 'N/A' }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
                         </table>
                     </div>
+
+                    @push('scripts')
+                    <script>
+                        $(document).ready(function() {
+                            let poolInvoicesTable = $('#poolInvoicesTable').DataTable({
+                                processing: true,
+                                serverSide: true,
+                                responsive: {
+                                    details: {
+                                        display: $.fn.dataTable.Responsive.display.modal({
+                                            header: function(row) {
+                                                return 'Invoice Details';
+                                            }
+                                        }),
+                                        renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                                    }
+                                },
+                                ajax: {
+                                    url: "{{ route('customer.pool-orders.invoices.data', $poolOrder->id) }}",
+                                    type: "GET",
+                                    error: function(xhr, error, thrown) {
+                                        console.error('Error loading pool invoices:', error);
+                                        toastr.error('Error loading invoice data');
+                                    }
+                                },
+                                columns: [
+                                    { data: 'chargebee_invoice_id', name: 'chargebee_invoice_id' },
+                                    { data: 'amount', name: 'amount' },
+                                    { data: 'status', name: 'status' },
+                                    { data: 'paid_at', name: 'paid_at' }
+                                ],
+                                order: [ [0, 'desc'] ],
+                                drawCallback: function(settings) {
+                                    if (settings.json && settings.json.error) {
+                                        toastr.error(settings.json.message || 'Error loading data');
+                                    }
+                                    $('[data-bs-toggle="tooltip"]').tooltip();
+                                }
+                            });
+
+                            // Export button
+                            $('#exportPoolInvoicesBtn').on('click', function(e) {
+                                e.preventDefault();
+
+                                Swal.fire({
+                                    title: 'Export invoices? ',
+                                    text: "This will download the invoice list for this pool order.",
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#d33',
+                                    confirmButtonText: 'Yes, download'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        // start file download; backend route must exist to serve export
+                                        window.location.href = "{{ route('customer.pool-orders.invoices.export', $poolOrder->id) }}";
+                                    }
+                                });
+                            });
+                        });
+                    </script>
+                    @endpush
                     @endif
 
                     <!-- @if($poolOrder->poolPlan && $poolOrder->poolPlan->features)
