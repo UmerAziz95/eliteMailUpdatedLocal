@@ -27,7 +27,13 @@ class CustomerController extends Controller
             }
 
             if ($request->filled('status')) {
-                $query->where('status', $request->input('status'));
+                $statusValue = $request->input('status');
+                // If status filter is 0 (inactive), query for -1
+                if ($statusValue == '0') {
+                    $query->where('status', -1);
+                } else {
+                    $query->where('status', $statusValue);
+                }
             }
             // Only apply search to the query builder — NOT to a Collection
             if ($request->has('search') && $request->input('search.value') != '') {
@@ -48,6 +54,7 @@ class CustomerController extends Controller
                     return '<i class="ti ti-contract me-2 text-primary"></i>Customer';
                 })
                 ->addColumn('status', function ($row) {
+                    // Treat status -1 as inactive, 1 as active
                     $checked = $row->status == 1 ? 'checked' : '';
                     $toggleClass = $row->status == 1 ? 'bg-success' : 'bg-danger';
 
@@ -64,7 +71,7 @@ class CustomerController extends Controller
                     'counters' => [
                         'total' => User::where('role_id', 3)->count(),
                         'active' => User::where('status', 1)->where('role_id', 3)->count(),
-                        'inactive' => User::where('status', 0)->where('role_id', 3)->count(),
+                        'inactive' => User::where('status', -1)->where('role_id', 3)->count(),
                     ]
                 ])
                 ->make(true);
@@ -84,7 +91,8 @@ class CustomerController extends Controller
     {
         try {
             $user = User::findOrFail($request->user_id);
-            $user->status = $user->status == 1 ? 0 : 1;
+            // Toggle: if active (1) set to inactive (-1), if inactive (-1 or 0) set to active (1)
+            $user->status = $user->status == 1 ? -1 : 1;
             $user->save();
 
             return response()->json([
