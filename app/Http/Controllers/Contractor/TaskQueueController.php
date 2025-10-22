@@ -8,6 +8,7 @@ use App\Models\DomainRemovalTask;
 use App\Models\Order;
 use App\Models\PanelReassignmentHistory;
 use App\Services\PanelReassignmentService;
+use App\Services\PoolMigrationTaskService;
 use Carbon\Carbon;
 use App\Models\OrderEmail;
 
@@ -876,23 +877,15 @@ class TaskQueueController extends Controller
     {
         try {
             $task = \App\Models\PoolOrderMigrationTask::findOrFail($taskId);
-
-            if ($task->assigned_to) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This task is already assigned to someone'
-                ], 400);
-            }
-
-            $task->update([
-                'assigned_to' => auth()->id(),
-                'status' => 'in-progress'
-            ]);
-
+            $service = new PoolMigrationTaskService();
+            
+            $result = $service->assignTask($task, auth()->id());
+            
             return response()->json([
-                'success' => true,
-                'message' => 'Task assigned successfully'
-            ]);
+                'success' => $result['success'],
+                'message' => $result['message']
+            ], $result['statusCode']);
+            
         } catch (\Exception $e) {
             \Log::error('Error assigning pool migration task (Contractor): ' . $e->getMessage());
             return response()->json([
@@ -901,7 +894,7 @@ class TaskQueueController extends Controller
             ], 500);
         }
     }
-
+    
     public function updatePoolMigrationTaskStatus(Request $request, $taskId)
     {
         try {
@@ -913,49 +906,21 @@ class TaskQueueController extends Controller
                 'force' => 'nullable|boolean'
             ]);
 
-            // Check domain statuses before marking as completed (unless force is true)
-            if ($validated['status'] === 'completed' && !$request->force) {
-                $poolOrder = $task->poolOrder;
-                
-                if ($poolOrder && $poolOrder->domains) {
-                    $domains = is_string($poolOrder->domains) ? json_decode($poolOrder->domains, true) : $poolOrder->domains;
-                    
-                    if (is_array($domains)) {
-                        $nonSubscribedDomains = [];
-                        
-                        foreach ($domains as $domain) {
-                            // Get status, default to 'warming' if not set
-                            $domainStatus = $domain['status'] ?? 'warming';
-                            
-                            // Only flag if status is not 'subscribed'
-                            if ($domainStatus !== 'subscribed') {
-                                $nonSubscribedDomains[] = [
-                                    'name' => $domain['domain_name'] ?? 'Unknown',
-                                    'status' => $domainStatus
-                                ];
-                            }
-                        }
-                        
-                        if (!empty($nonSubscribedDomains)) {
-                            return response()->json([
-                                'success' => false,
-                                'requiresConfirmation' => true,
-                                'message' => 'Some domains are not in subscribed status',
-                                'nonSubscribedDomains' => $nonSubscribedDomains,
-                                'totalDomains' => count($domains),
-                                'nonSubscribedCount' => count($nonSubscribedDomains)
-                            ], 422);
-                        }
-                    }
-                }
-            }
-
-            $task->update($validated);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Task status updated successfully'
-            ]);
+            $service = new PoolMigrationTaskService();
+            
+            $result = $service->updateTaskStatus(
+                $task,
+                $validated['status'],
+                $validated['notes'] ?? null,
+                $request->boolean('force'),
+                auth()->id()
+            );
+            
+            $statusCode = $result['statusCode'] ?? 200;
+            unset($result['statusCode']);
+            
+            return response()->json($result, $statusCode);
+            
         } catch (\Exception $e) {
             \Log::error('Error updating pool migration task status (Contractor): ' . $e->getMessage());
             return response()->json([

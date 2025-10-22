@@ -714,7 +714,7 @@
             if (response.status === 422 && data.requiresConfirmation && data.nonSubscribedDomains) {
                 const domainsList = data.nonSubscribedDomains
                     .map(d => `<tr>
-                        <td class="text-start">${d.name}</td>
+                        <td class="text-start">${d.name || d.domain_name || 'Unknown Domain'}</td>
                         <td><span class="badge ${d.status === 'warming' ? 'bg-info' : d.status === 'available' ? 'bg-success' : 'bg-secondary'}">${d.status}</span></td>
                     </tr>`)
                     .join('');
