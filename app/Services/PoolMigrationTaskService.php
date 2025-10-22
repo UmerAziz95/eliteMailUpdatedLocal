@@ -34,7 +34,7 @@ class PoolMigrationTaskService
         
         foreach ($domains as $domain) {
             // Get status, default to 'warming' if not set
-            $domainStatus = $domain['status'] ?? 'warming';
+            $domainStatus = $domain['status'] ?? 'subscribed';
             
             // Only flag if status is not 'subscribed'
             if ($domainStatus !== 'subscribed') {

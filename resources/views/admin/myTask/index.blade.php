@@ -682,11 +682,34 @@
     // Update pool migration task status (reuse from taskInQueue)
     async function updatePoolMigrationTaskStatus(taskId, newStatus, force = false) {
         try {
+            // Fetch task details to check task type
+            let taskType = null;
+            if (newStatus === 'completed' && !force) {
+                const taskResponse = await fetch(`/admin/taskInQueue/pool-migration/${taskId}/details`);
+                const taskData = await taskResponse.json();
+                if (taskData.success) {
+                    taskType = taskData.task.task_type;
+                }
+            }
+
             // Get completion notes if status is completed and not forcing
             const notes = newStatus === 'completed' && !force ? await Swal.fire({
                 title: 'Completion Notes',
+                html: taskType === 'cancellation' ? `
+                    <div class="alert alert-warning mb-3 text-start" role="alert">
+                        <h6 class="alert-heading mb-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Cancellation Task Instructions
+                        </h6>
+                        <ol class="mb-0 ps-3">
+                            <li class="mb-2">Remove the accounts from the client's Instantly workspace.</li>
+                            <li class="mb-2">Re-upload them into Project Inbox's Instantly account, add custom domain tracking & activate warmup.</li>
+                            <li class="mb-0">Once marked complete, the inboxes are released back into the pool and become available again for new trial orders.</li>
+                        </ol>
+                    </div>
+                    <label for="swal-input1" class="swal2-input-label">Add any notes about task completion (optional)</label>
+                ` : 'Add any notes about task completion (optional)',
                 input: 'textarea',
-                inputLabel: 'Add any notes about task completion (optional)',
                 inputPlaceholder: 'Enter notes...',
                 showCancelButton: true,
                 confirmButtonText: 'Complete Task',
