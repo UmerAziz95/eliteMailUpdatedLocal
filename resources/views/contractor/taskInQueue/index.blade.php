@@ -2348,51 +2348,98 @@
             return;
         }
 
-        container.innerHTML = tasks.map(task => createPoolMigrationCard(task)).join('');
+        container.innerHTML = '';
+        tasks.forEach(task => {
+            container.innerHTML += createPoolMigrationCard(task);
+        });
+        
         document.getElementById('pool-migration-count').textContent = tasks.length;
     }
-
+    // Create individual pool migration task card 
     function createPoolMigrationCard(task) {
         const statusClass = getStatusClass(task.status);
+        const taskTypeColor = task.task_type === 'configuration' ? 'success' : 'warning';
         
         return `
-            <div class="task-card glass-box p-3" style="cursor: pointer;" 
-                 onclick="viewPoolMigrationTaskDetails(${task.id})">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <span style="font-size: 1.5rem;">${task.task_type_icon}</span>
-                        <div>
-                            <h6 class="text-white mb-0">${task.task_type_label}</h6>
-                            <small class="text-white-50">Order #${task.order_id}</small>
+            <div class="card task-card p-3 rounded-4 border-0 shadow">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <span class="text-white-50 small mb-1">${task.task_type_icon} #${task.task_id}</span>
+                        <span class="badge px-2 py-1 rounded ${statusClass} ms-1">
+                            ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+                        </span>
+                        <span class="badge bg-${taskTypeColor} px-2 py-1 rounded ms-1">
+                            ${task.task_type_label}
+                        </span>
+                    </div>
+                    ${task.status === 'pending' && !task.assigned_to ? `
+                        <button class="btn btn-sm border-0 assign-btn" 
+                                style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
+                                onclick="assignPoolMigrationTaskToMe(${task.task_id})"
+                                title="Assign to Me">
+                            <i class="fas fa-user-plus text-white"></i>
+                        </button>
+                    ` : `
+                        <button class="btn btn-sm border-0"
+                                style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
+                                onclick="viewPoolMigrationTaskDetails(${task.task_id})"
+                                title="View Task Details">
+                            <i class="fas fa-eye text-white"></i>
+                        </button>
+                    `}
+                </div>
+
+                <!-- Order Info -->
+                <div class="mb-3">
+                    <div class="glass-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Pool Order ID</span>
+                            <span class="fw-bold text-white">#${task.pool_order_id}</span>
                         </div>
                     </div>
-                    <span class="badge ${statusClass}">${task.status}</span>
-                </div>
-                
-                <div class="glass-box mt-2 p-2">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-white-50 small">Plan:</span>
-                        <span class="text-white small">${task.plan_name}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-white-50 small">Domains/Inboxes:</span>
-                        <span class="text-white small">${task.selected_domains_count} / ${task.total_inboxes}</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-white-50 small">Platform:</span>
-                        <span class="text-white small">${task.hosting_platform}</span>
+                    <div class="glass-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Plan</span>
+                            <span class="fw-bold text-white">${task.plan_name}</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="mt-3 d-flex gap-2">
-                    <button class="btn btn-sm btn-primary flex-fill" 
-                            onclick="event.stopPropagation(); assignPoolMigrationTaskToMe(${task.id})">
-                        <i class="fas fa-user-check me-1"></i> Assign to Me
-                    </button>
-                    <button class="btn btn-sm btn-outline-light" 
-                            onclick="event.stopPropagation(); viewPoolMigrationTaskDetails(${task.id})">
-                        <i class="fas fa-eye me-1"></i> View
-                    </button>
+                <!-- Stats -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="glass-box text-center">
+                            <small class="text-white-50 d-block mb-1">Domains</small>
+                            <span class="fw-semibold text-white">${task.domains_count}</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="glass-box text-center">
+                            <small class="text-white-50 d-block mb-1">Inboxes</small>
+                            <span class="fw-semibold text-white">${task.total_inboxes}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Info -->
+                ${task.assigned_to ? `
+                    <div class="glass-box mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Assigned To</span>
+                            <span class="fw-bold text-white">${task.assigned_to_name}</span>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Customer Info -->
+                <div class="d-flex align-items-center mt-auto">
+                    <img src="${task.customer_image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(task.customer_name || 'User') + '&background=007bff&color=fff'}" 
+                         alt="User" class="rounded-circle border border-info" width="42" height="42">
+                    <div class="ms-2 flex-grow-1">
+                        <div class="fw-semibold text-white">${task.customer_name || 'Unknown User'}</div>
+                        <small class="text-white-50">${task.customer_email || 'N/A'}</small>
+                    </div>
                 </div>
             </div>
         `;

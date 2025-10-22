@@ -799,23 +799,36 @@ class TaskQueueController extends Controller
     public function getPoolMigrationTasks(Request $request)
     {
         try {
-            $tasks = \App\Models\PoolOrderMigrationTask::with(['poolOrder', 'user', 'assignedTo'])
+            $tasks = \App\Models\PoolOrderMigrationTask::with(['poolOrder.poolPlan', 'poolOrder.user', 'user', 'assignedTo'])
                 ->whereNull('assigned_to') // Only unassigned tasks for queue
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($task) {
-                    $order = $task->poolOrder;
+                    $poolOrder = $task->poolOrder;
+                    $user = $poolOrder ? $poolOrder->user : null;
+                    $metadata = $task->metadata ?? [];
+                    
                     return [
                         'id' => $task->id,
+                        'task_id' => $task->id,
+                        'type' => 'pool_migration',
+                        'pool_order_id' => $task->pool_order_id,
                         'task_type' => $task->task_type,
-                        'task_type_label' => ucfirst(str_replace('_', ' ', $task->task_type)),
+                        'task_type_label' => $task->task_type === 'configuration' ? 'Configuration' : 'Cancellation',
                         'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
                         'status' => $task->status,
-                        'order_id' => $order->order_id ?? null,
-                        'plan_name' => $order->plan->name ?? 'N/A',
-                        'selected_domains_count' => $order->selected_domains_count ?? 0,
-                        'total_inboxes' => $order->total_inboxes ?? 0,
-                        'hosting_platform' => $order->hosting_platform ?? 'N/A',
+                        'order_id' => $poolOrder->order_id ?? null,
+                        'plan_name' => $metadata['plan_name'] ?? ($poolOrder && $poolOrder->plan ? $poolOrder->plan->name : 'N/A'),
+                        'selected_domains_count' => $metadata['selected_domains_count'] ?? ($poolOrder->selected_domains_count ?? 0),
+                        'domains_count' => $metadata['selected_domains_count'] ?? ($poolOrder->selected_domains_count ?? 0),
+                        'total_inboxes' => $metadata['total_inboxes'] ?? ($poolOrder->total_inboxes ?? 0),
+                        'hosting_platform' => $metadata['hosting_platform'] ?? ($poolOrder->hosting_platform ?? 'N/A'),
+                        'customer_name' => $user ? $user->name : 'N/A',
+                        'customer_email' => $user ? $user->email : 'N/A',
+                        'customer_image' => $user && $user->profile_image 
+                            ? asset('storage/profile_images/' . $user->profile_image) 
+                            : null,
+                        'assigned_to' => $task->assigned_to,
                         'assigned_to_name' => $task->assignedTo?->name ?? 'Unassigned',
                         'created_at' => $task->created_at->format('Y-m-d H:i:s'),
                         'notes' => $task->notes,
