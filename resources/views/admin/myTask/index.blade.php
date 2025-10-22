@@ -726,7 +726,7 @@
                             <p class="mb-3"><strong>${data.nonSubscribedCount} out of ${data.totalDomains} domains</strong> are not in subscribed status:</p>
                             <div style="max-height: 300px; overflow-y: auto;">
                                 <table class="table table-sm table-bordered">
-                                    <thead class="table-light">
+                                    <thead class="">
                                         <tr>
                                             <th class="text-start">Domain Name</th>
                                             <th>Current Status</th>

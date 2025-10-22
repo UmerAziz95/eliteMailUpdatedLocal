@@ -924,10 +924,14 @@ class TaskQueueController extends Controller
                         $nonSubscribedDomains = [];
                         
                         foreach ($domains as $domain) {
-                            if (isset($domain['status']) && $domain['status'] !== 'subscribed') {
+                            // Get status, default to 'warming' if not set
+                            $domainStatus = $domain['status'] ?? 'warming';
+                            
+                            // Only flag if status is not 'subscribed'
+                            if ($domainStatus !== 'subscribed') {
                                 $nonSubscribedDomains[] = [
-                                    'name' => $domain['name'] ?? 'Unknown',
-                                    'status' => $domain['status'] ?? 'unknown'
+                                    'name' => $domain['domain_name'] ?? 'Unknown',
+                                    'status' => $domainStatus
                                 ];
                             }
                         }

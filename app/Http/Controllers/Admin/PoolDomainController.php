@@ -201,15 +201,18 @@ class PoolDomainController extends Controller
                     }
                 }
             }
-
+            
             // Try to update in PoolOrder if not found in Pool or also exists there
             if ($request->pool_order_id) {
                 $poolOrder = \App\Models\PoolOrder::find($request->pool_order_id);
                 if ($poolOrder && is_array($poolOrder->domains)) {
                     $domains = $poolOrder->domains;
                     foreach ($domains as &$domain) {
-                        if (isset($domain['id']) && $domain['id'] == $request->domain_id) {
-                            $domain['name'] = $request->domain_name;
+                        // Check both 'domain_id' and 'id' keys for compatibility
+                        $domainIdKey = isset($domain['domain_id']) ? 'domain_id' : (isset($domain['id']) ? 'id' : null);
+                        
+                        if ($domainIdKey && $domain[$domainIdKey] == $request->domain_id) {
+                            $domain['domain_name'] = $request->domain_name;
                             $domain['status'] = $request->status;
                             $updated = true;
                             break;

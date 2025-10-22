@@ -520,7 +520,6 @@ class PoolPlanController extends Controller
     /**
      * Update pool order with selected domains
      */
-    
     public function updatePoolOrder(Request $request, $id)
     {
         $user = Auth::user();
@@ -615,7 +614,8 @@ class PoolPlanController extends Controller
                     'domain_id' => $domain['id'], // Use unique domain ID
                     'pool_id' => $domain['pool_id'], // Store pool reference
                     'domain_name' => $domain['name'], // Store domain name
-                    'per_inbox' => $domain['available_inboxes']
+                    'per_inbox' => $domain['available_inboxes'],
+                    'status' => $domain['status'] ?? 'subscribed' // Save domain status
                 ];
             }
 
