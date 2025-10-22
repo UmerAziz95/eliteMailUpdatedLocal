@@ -73,6 +73,11 @@ class PoolPlanController extends Controller
                     return redirect()->route('login')->withErrors(['error' => 'Security verification failed']);
                 }
             }
+            // if user status is 0 then active
+            if ($user->status == 0) {
+                $user->status = 1;
+                $user->save();
+            }
             // dd($subscription, $customer, $invoice, $user);
             // Get pool plan from ChargeBee subscription plan ID
             $subscriptionItems = $subscription->subscriptionItems;

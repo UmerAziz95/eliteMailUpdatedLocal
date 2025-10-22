@@ -94,6 +94,12 @@ class AuthController extends Controller
         } else {
             $loginSuccessful = false;
         }
+
+        // if status = -1 then show inactive message
+        if (Auth::check() && Auth::user()->status == -1) {
+            return back()->withErrors(['email' => 'Your account is inactive. Please contact support.']);
+        }
+
         // check session then forget it
         if (session()->has('temp_user_custom_checkout')) {
             session()->forget('temp_user_custom_checkout');
@@ -115,8 +121,8 @@ class AuthController extends Controller
              return back()->withErrors(['email' => 'Account does not exist!']);
         }
         
-        //
-        if($userCheck->status==0){
+        // session('static_link_hit') and session('static_plan_data') are not set then proceed
+        if($userCheck->status==0 && !(session('static_link_hit') && session('static_plan_data'))){
             // Generate new verification code
             $verificationCode = rand(1000, 9999);
             $userCheck->email_verification_code = $verificationCode;
