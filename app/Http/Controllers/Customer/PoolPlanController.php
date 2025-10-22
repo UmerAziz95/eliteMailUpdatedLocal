@@ -436,7 +436,7 @@ class PoolPlanController extends Controller
         // Get sending platforms for the dropdown (only if enabled)
         $sendingPlatforms = [];
         if ($enableSendingPlatform) {
-            $sendingPlatforms = \App\Models\SendingPlatform::orderBy('name')
+            $sendingPlatforms = \App\Models\SendingPlatform::where('name','Instantly')->orderBy('name')
                 ->get();
         }
 
