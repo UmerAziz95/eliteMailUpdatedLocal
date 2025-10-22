@@ -391,96 +391,23 @@ class MyTaskController extends Controller
      */
     public function getMyPoolMigrationTasks(Request $request)
     {
-        try {
-            $query = \App\Models\PoolOrderMigrationTask::with([
-                'poolOrder.poolPlan',
-                'poolOrder.user',
-                'user',
-                'assignedTo'
-            ])
-            ->where('assigned_to', auth()->id()); // Only tasks assigned to current admin
-            
-            // Filter by status if provided
-            if ($request->filled('status')) {
-                $query->where('status', $request->status);
-            }
-            
-            // Filter by task type if provided
-            if ($request->filled('task_type')) {
-                $query->where('task_type', $request->task_type);
-            }
-
-            // Filter by date range
-            if ($request->filled('date_from')) {
-                $query->whereDate('created_at', '>=', $request->date_from);
-            }
-
-            if ($request->filled('date_to')) {
-                $query->whereDate('created_at', '<=', $request->date_to);
-            }
-
-            // Apply ordering
-            $query->orderBy('created_at', 'desc');
-
-            // Pagination parameters
-            $perPage = $request->get('per_page', 12);
-            $page = $request->get('page', 1);
-            
-            // Get paginated results
-            $paginatedTasks = $query->paginate($perPage, ['*'], 'page', $page);
-
-            // Format tasks data for the frontend
-            $tasksData = $paginatedTasks->getCollection()->map(function ($task) {
-                $poolOrder = $task->poolOrder;
-                $user = $poolOrder ? $poolOrder->user : null;
-                $metadata = $task->metadata ?? [];
-                
-                return [
-                    'id' => $task->id,
-                    'task_id' => $task->id,
-                    'type' => 'pool_migration',
-                    'pool_order_id' => $task->pool_order_id,
-                    'task_type' => $task->task_type,
-                    'task_type_label' => ucfirst($task->task_type),
-                    'task_type_icon' => $task->task_type === 'configuration' ? '⚙️' : '❌',
-                    'status' => $task->status,
-                    'customer_name' => $user ? $user->name : 'N/A',
-                    'customer_email' => $user ? $user->email : 'N/A',
-                    'customer_image' => $user && $user->profile_image 
-                        ? asset('storage/profile_images/' . $user->profile_image) 
-                        : null,
-                    'plan_name' => $metadata['plan_name'] ?? 'N/A',
-                    'amount' => $metadata['amount'] ?? 0,
-                    'quantity' => $metadata['quantity'] ?? 0,
-                    'domains_count' => $metadata['selected_domains_count'] ?? 0,
-                    'total_inboxes' => $metadata['total_inboxes'] ?? 0,
-                    'hosting_platform' => $metadata['hosting_platform'] ?? 'N/A',
-                    'assigned_to' => $task->assigned_to,
-                    'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : 'N/A',
-                    'notes' => $task->notes,
-                    'created_at' => $task->created_at->format('Y-m-d H:i:s'),
-                    'updated_at' => $task->updated_at->format('Y-m-d H:i:s'),
-                ];
-            });
-
-            return response()->json([
-                'success' => true,
-                'data' => $tasksData,
-                'pagination' => [
-                    'current_page' => $paginatedTasks->currentPage(),
-                    'per_page' => $paginatedTasks->perPage(),
-                    'total' => $paginatedTasks->total(),
-                    'last_page' => $paginatedTasks->lastPage(),
-                    'has_more_pages' => $paginatedTasks->hasMorePages()
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Error fetching my pool migration tasks: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error fetching pool migration tasks: ' . $e->getMessage()
-            ], 500);
-        }
+        $service = new \App\Services\PoolMigrationTaskService();
+        
+        $filters = [
+            'status' => $request->filled('status') ? $request->status : null,
+            'task_type' => $request->filled('task_type') ? $request->task_type : null,
+            'date_from' => $request->filled('date_from') ? $request->date_from : null,
+            'date_to' => $request->filled('date_to') ? $request->date_to : null,
+        ];
+        
+        $perPage = $request->get('per_page', 12);
+        $page = $request->get('page', 1);
+        
+        $result = $service->getMyPoolMigrationTasks(auth()->id(), $filters, $perPage, $page);
+        
+        $statusCode = $result['statusCode'] ?? 200;
+        unset($result['statusCode']);
+        
+        return response()->json($result, $statusCode);
     }
 }

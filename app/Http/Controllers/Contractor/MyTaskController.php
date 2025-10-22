@@ -508,54 +508,30 @@ class MyTaskController extends Controller
 
     public function getMyPoolMigrationTasks(Request $request)
     {
-        try {
-            $tasks = \App\Models\PoolOrderMigrationTask::with(['poolOrder.poolPlan', 'poolOrder.user', 'user', 'assignedTo'])
-                ->where('assigned_to', auth()->id()) // Only tasks assigned to current contractor
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($task) {
-                    $poolOrder = $task->poolOrder;
-                    $user = $poolOrder ? $poolOrder->user : null;
-                    $metadata = $task->metadata ?? [];
-                    
-                    return [
-                        'id' => $task->id,
-                        'task_id' => $task->id,
-                        'type' => 'pool_migration',
-                        'pool_order_id' => $task->pool_order_id,
-                        'task_type' => $task->task_type,
-                        'task_type_label' => $task->task_type === 'configuration' ? 'Configuration' : 'Cancellation',
-                        'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
-                        'status' => $task->status,
-                        'order_id' => $poolOrder->order_id ?? null,
-                        'plan_name' => $metadata['plan_name'] ?? ($poolOrder && $poolOrder->plan ? $poolOrder->plan->name : 'N/A'),
-                        'selected_domains_count' => $metadata['selected_domains_count'] ?? ($poolOrder->selected_domains_count ?? 0),
-                        'domains_count' => $metadata['selected_domains_count'] ?? ($poolOrder->selected_domains_count ?? 0),
-                        'total_inboxes' => $metadata['total_inboxes'] ?? ($poolOrder->total_inboxes ?? 0),
-                        'hosting_platform' => $metadata['hosting_platform'] ?? ($poolOrder->hosting_platform ?? 'N/A'),
-                        'customer_name' => $user ? $user->name : 'N/A',
-                        'customer_email' => $user ? $user->email : 'N/A',
-                        'customer_image' => $user && $user->profile_image 
-                            ? asset('storage/profile_images/' . $user->profile_image) 
-                            : null,
-                        'assigned_to' => $task->assigned_to,
-                        'assigned_to_name' => $task->assignedTo?->name ?? 'Unassigned',
-                        'created_at' => $task->created_at->format('Y-m-d H:i:s'),
-                        'notes' => $task->notes,
-                    ];
-                });
-
-            return response()->json([
-                'success' => true,
-                'tasks' => $tasks
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error fetching my pool migration tasks (Contractor): ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch pool migration tasks'
-            ], 500);
+        $service = new \App\Services\PoolMigrationTaskService();
+        
+        $filters = [
+            'status' => $request->filled('status') ? $request->status : null,
+            'task_type' => $request->filled('task_type') ? $request->task_type : null,
+            'date_from' => $request->filled('date_from') ? $request->date_from : null,
+            'date_to' => $request->filled('date_to') ? $request->date_to : null,
+        ];
+        
+        $perPage = $request->get('per_page', 12);
+        $page = $request->get('page', 1);
+        
+        $result = $service->getMyPoolMigrationTasks(auth()->id(), $filters, $perPage, $page);
+        
+        // For backward compatibility with contractor frontend that expects 'tasks' instead of 'data'
+        if ($result['success'] && isset($result['data'])) {
+            $result['tasks'] = $result['data'];
+            unset($result['data']);
         }
+        
+        $statusCode = $result['statusCode'] ?? 200;
+        unset($result['statusCode']);
+        
+        return response()->json($result, $statusCode);
     }
 
 
