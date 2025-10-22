@@ -2037,50 +2037,111 @@
 
     function createPoolMigrationCard(task) {
         const statusClass = getStatusClass(task.status);
+        const taskTypeColor = task.task_type === 'configuration' ? 'success' : 'warning';
         
         return `
-            <div class="task-card glass-box p-3" style="cursor: pointer;" 
-                 onclick="viewPoolMigrationTaskDetails(${task.id})">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <span style="font-size: 1.5rem;">${task.task_type_icon}</span>
-                        <div>
-                            <h6 class="text-white mb-0">${task.task_type_label}</h6>
-                            <small class="text-white-50">Order #${task.order_id}</small>
+            <div class="card task-card p-3 rounded-4 border-0 shadow">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <span class="text-white-50 small mb-1">${task.task_type_icon} #${task.task_id}</span>
+                        <span class="badge px-2 py-1 rounded ${statusClass} ms-1">
+                            ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+                        </span>
+                        <span class="badge bg-${taskTypeColor} px-2 py-1 rounded ms-1">
+                            ${task.task_type_label}
+                        </span>
+                    </div>
+                    <button class="btn btn-sm border-0"
+                            style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
+                            onclick="viewPoolMigrationTaskDetails(${task.task_id})"
+                            title="View Task Details">
+                        <i class="fas fa-eye text-white"></i>
+                    </button>
+                </div>
+
+                <!-- Order Info -->
+                <div class="mb-3">
+                    <div class="glass-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Pool Order ID</span>
+                            <span class="fw-bold text-white">#${task.pool_order_id}</span>
                         </div>
                     </div>
-                    <span class="badge ${statusClass}">${task.status}</span>
+                    <div class="glass-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Plan</span>
+                            <span class="fw-bold text-white">${task.plan_name}</span>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="glass-box mt-2 p-2">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-white-50 small">Plan:</span>
-                        <span class="text-white small">${task.plan_name}</span>
+
+                <!-- Stats -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="glass-box text-center">
+                            <small class="text-white-50 d-block mb-1">Domains</small>
+                            <span class="fw-semibold text-white">${task.domains_count}</span>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-white-50 small">Domains/Inboxes:</span>
-                        <span class="text-white small">${task.selected_domains_count} / ${task.total_inboxes}</span>
+                    <div class="col-6">
+                        <div class="glass-box text-center">
+                            <small class="text-white-50 d-block mb-1">Inboxes</small>
+                            <span class="fw-semibold text-white">${task.total_inboxes}</span>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-white-50 small">Platform:</span>
-                        <span class="text-white small">${task.hosting_platform}</span>
+                </div>
+
+                ${task.assigned_to ? `
+                    <div class="glass-box mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Assigned To</span>
+                            <span class="fw-bold text-white">${task.assigned_to_name}</span>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Customer Info -->
+                <div class="d-flex align-items-center mt-auto">
+                    <img src="${task.customer_image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(task.customer_name || 'User') + '&background=007bff&color=fff'}" 
+                         alt="User" class="rounded-circle border border-info" width="42" height="42">
+                    <div class="ms-2 flex-grow-1">
+                        <div class="fw-semibold text-white">${task.customer_name || 'Unknown User'}</div>
+                        <small class="text-white-50">${task.customer_email || 'N/A'}</small>
                     </div>
                 </div>
 
                 ${task.status === 'in-progress' ? `
                     <div class="mt-3">
-                        <button class="btn btn-sm btn-success w-100" 
-                                onclick="event.stopPropagation(); updatePoolMigrationTaskStatus(${task.id}, 'completed')">
-                            <i class="fas fa-check me-1"></i> Mark as Completed
+                        <button class="btn btn-success btn-sm w-100" onclick="updatePoolMigrationTaskStatus(${task.task_id}, 'completed')">
+                            <i class="fas fa-check me-1"></i>Mark as Completed
                         </button>
                     </div>
                 ` : ''}
             </div>
         `;
     }
-
+    
     async function viewPoolMigrationTaskDetails(taskId) {
         try {
+            // Show loading in offcanvas
+            const container = document.getElementById('taskDetailsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div id="taskLoadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading task details...</span>
+                        </div>
+                        <p class="mt-2 text-white">Loading task details...</p>
+                    </div>
+                `;
+            }
+            
+            // Show offcanvas
+            const offcanvasElement = document.getElementById('task-details-view');
+            const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+            offcanvas.show();
+            
             const response = await fetch(`/contractor/taskInQueue/pool-migration/${taskId}/details`);
             const data = await response.json();
             
@@ -2138,12 +2199,6 @@
                                 <span class="text-white">${order.selected_domains_count} / ${order.total_inboxes}</span>
                             </div>
                         </div>
-                        <div class="glass-box mb-2">
-                            <div class="d-flex justify-content-between">
-                                <span class="text-white-50">Platform</span>
-                                <span class="text-white">${order.hosting_platform}</span>
-                            </div>
-                        </div>
                     </div>
                     
                     ${task.notes ? `
@@ -2155,18 +2210,17 @@
                         </div>
                     ` : ''}
                     
-                    ${task.status === 'in-progress' ? `
+                    ${task.status === 'pending' || task.status === 'in-progress' ? `
                         <div class="d-grid gap-2">
-                            <button class="btn btn-success" onclick="updatePoolMigrationTaskStatus(${task.id}, 'completed')">
-                                <i class="fas fa-check me-2"></i>Mark as Completed
-                            </button>
+                            ${task.status === 'in-progress' ? `
+                                <button class="btn btn-success" onclick="updatePoolMigrationTaskStatus(${task.id}, 'completed')">
+                                    <i class="fas fa-check me-2"></i>Mark as Completed
+                                </button>
+                            ` : ''}
                         </div>
                     ` : ''}
                 </div>
             `;
-            
-            const offcanvas = new bootstrap.Offcanvas(document.getElementById('task-details-view'));
-            offcanvas.show();
             
         } catch (error) {
             console.error('Error loading task details:', error);
@@ -2181,19 +2235,18 @@
 
     async function updatePoolMigrationTaskStatus(taskId, status, force = false) {
         try {
-            // Only show confirmation if not forcing and status is completed
-            if (status === 'completed' && !force) {
-                const result = await Swal.fire({
-                    title: 'Update Status?',
-                    text: `Mark this task as ${status}?`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, update it',
-                    cancelButtonText: 'Cancel'
-                });
-
-                if (!result.isConfirmed) return;
-            }
+            // Get completion notes if status is completed and not forcing
+            const notes = status === 'completed' && !force ? await Swal.fire({
+                title: 'Completion Notes',
+                input: 'textarea',
+                inputLabel: 'Add any notes about task completion (optional)',
+                inputPlaceholder: 'Enter notes...',
+                showCancelButton: true,
+                confirmButtonText: 'Complete Task',
+                cancelButtonText: 'Cancel'
+            }).then(result => result.isConfirmed ? result.value : null) : null;
+            
+            if (status === 'completed' && notes === null && !force) return;
 
             const response = await fetch(`/contractor/taskInQueue/pool-migration/${taskId}/status`, {
                 method: 'PUT',
@@ -2203,6 +2256,7 @@
                 },
                 body: JSON.stringify({ 
                     status,
+                    notes: notes,
                     force: force
                 })
             });
@@ -2213,7 +2267,7 @@
             if (response.status === 422 && data.requiresConfirmation && data.nonSubscribedDomains) {
                 const domainsList = data.nonSubscribedDomains
                     .map(d => `<tr>
-                        <td class="text-start">${d.name}</td>
+                        <td class="text-start">${d.name || d.domain_name || 'Unknown Domain'}</td>
                         <td><span class="badge ${d.status === 'warming' ? 'bg-info' : d.status === 'available' ? 'bg-success' : 'bg-secondary'}">${d.status}</span></td>
                     </tr>`)
                     .join('');
@@ -2225,7 +2279,7 @@
                             <p class="mb-3"><strong>${data.nonSubscribedCount} out of ${data.totalDomains} domains</strong> are not in subscribed status:</p>
                             <div style="max-height: 300px; overflow-y: auto;">
                                 <table class="table table-sm table-bordered">
-                                    <thead class="table-light">
+                                    <thead>
                                         <tr>
                                             <th class="text-start">Domain Name</th>
                                             <th>Current Status</th>
@@ -2247,10 +2301,7 @@
                     confirmButtonText: 'Complete Anyway',
                     cancelButtonText: 'Cancel',
                     confirmButtonColor: '#d33',
-                    width: '600px',
-                    customClass: {
-                        htmlContainer: 'text-start'
-                    }
+                    width: '600px'
                 });
                 
                 if (result.isConfirmed) {
