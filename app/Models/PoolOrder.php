@@ -555,7 +555,7 @@ class PoolOrder extends Model
                     'pool_id' => $domainData['pool_id'] ?? null,
                     'domain_name' => $domainData['domain_name'] ?? null,
                     'per_inbox' => (int) $domainData['per_inbox'],
-                    'status' => $domainData['status'] ?? 'subscribed' // Save domain status
+                    'status' => 'subscribed' // Save domain status
                 ];
             }
         }
