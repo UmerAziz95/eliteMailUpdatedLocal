@@ -943,75 +943,13 @@ class TaskQueueController extends Controller
      */
     public function getPoolMigrationTaskDetails($taskId)
     {
-        try {
-            $task = \App\Models\PoolOrderMigrationTask::with([
-                'poolOrder.poolPlan',
-                'poolOrder.user',
-                'user',
-                'assignedTo'
-            ])->findOrFail($taskId);
-
-            $poolOrder = $task->poolOrder;
-            $user = $poolOrder ? $poolOrder->user : null;
-            $metadata = $task->metadata ?? [];
-
-            $taskInfo = [
-                'id' => $task->id,
-                'pool_order_id' => $task->pool_order_id,
-                'task_type' => $task->task_type,
-                'task_type_label' => $task->task_type === 'configuration' ? 'Configuration Task' : 'Cancellation Cleanup Task',
-                'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
-                'status' => $task->status,
-                'previous_status' => $task->previous_status,
-                'new_status' => $task->new_status,
-                'assigned_to' => $task->assigned_to,
-                'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : 'Unassigned',
-                'notes' => $task->notes,
-                'created_at' => $task->created_at->format('Y-m-d H:i:s'),
-                'started_at' => $task->started_at ? $task->started_at->format('Y-m-d H:i:s') : null,
-                'completed_at' => $task->completed_at ? $task->completed_at->format('Y-m-d H:i:s') : null,
-            ];
-
-            $orderInfo = [
-                'order_id' => $poolOrder ? $poolOrder->id : null,
-                'status' => $poolOrder ? $poolOrder->status : 'N/A',
-                'status_manage_by_admin' => $poolOrder ? $poolOrder->status_manage_by_admin : 'N/A',
-                'customer_name' => $user ? $user->name : 'N/A',
-                'customer_email' => $user ? $user->email : 'N/A',
-                'plan_name' => $metadata['plan_name'] ?? 'N/A',
-                'amount' => $metadata['amount'] ?? 0,
-                'quantity' => $metadata['quantity'] ?? 0,
-                'selected_domains_count' => $metadata['selected_domains_count'] ?? 0,
-                'total_inboxes' => $metadata['total_inboxes'] ?? 0,
-                'hosting_platform' => $metadata['hosting_platform'] ?? 'N/A',
-            ];
-
-            // Add task-specific data
-            if ($task->task_type === 'cancellation') {
-                $orderInfo['cancellation_reason'] = $metadata['cancellation_reason'] ?? 'No reason provided';
-                $orderInfo['chargebee_subscription_id'] = $metadata['chargebee_subscription_id'] ?? 'N/A';
-                $orderInfo['cancelled_by'] = $metadata['cancelled_by'] ?? 'Unknown';
-                $orderInfo['cancelled_at'] = $metadata['cancelled_at'] ?? 'N/A';
-            } elseif ($task->task_type === 'configuration') {
-                $orderInfo['domains_selected'] = $metadata['domains_selected'] ?? [];
-                $orderInfo['hosting_platform_data'] = $metadata['hosting_platform_data'] ?? [];
-            }
-
-            return response()->json([
-                'success' => true,
-                'task' => $taskInfo,
-                'order' => $orderInfo,
-                'metadata' => $metadata,
-                'message' => 'Pool migration task details retrieved successfully'
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Error fetching pool migration task details: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Pool migration task not found or error fetching details'
-            ], 404);
-        }
+        $service = new \App\Services\PoolMigrationTaskService();
+        $result = $service->getTaskDetails($taskId, null, true);
+        
+        $statusCode = $result['statusCode'] ?? 200;
+        unset($result['statusCode']);
+        
+        return response()->json($result, $statusCode);
     }
 
     /**

@@ -214,4 +214,86 @@ class PoolMigrationTaskService
             ];
         }
     }
+
+    /**
+     * Get pool migration task details with full order information
+     * 
+     * @param int $taskId
+     * @param int|null $userId User ID for authorization check (null for admin, specific ID for contractor)
+     * @param bool $adminAccess Whether this is admin access (admins can see all tasks)
+     * @return array Response data
+     */
+    public function getTaskDetails(int $taskId, ?int $userId = null, bool $adminAccess = false): array
+    {
+        try {
+            $query = PoolOrderMigrationTask::with([
+                'poolOrder.poolPlan',
+                'poolOrder.user',
+                'user',
+                'assignedTo'
+            ]);
+
+            // If not admin access and userId provided, ensure contractor can only view their assigned tasks
+            if (!$adminAccess && $userId !== null) {
+                $query->where('assigned_to', $userId);
+            }
+
+            $task = $query->find($taskId);
+
+            if (!$task) {
+                return [
+                    'success' => false,
+                    'message' => 'Task not found or access denied',
+                    'statusCode' => 404
+                ];
+            }
+
+            $poolOrder = $task->poolOrder;
+            $user = $poolOrder ? $poolOrder->user : null;
+            $metadata = $task->metadata ?? [];
+
+            $taskInfo = [
+                'id' => $task->id,
+                'pool_order_id' => $task->pool_order_id,
+                'task_type' => $task->task_type,
+                'task_type_label' => $task->task_type === 'configuration' ? 'Configuration Task' : 'Cancellation Cleanup Task',
+                'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
+                'status' => $task->status,
+                'previous_status' => $task->previous_status,
+                'new_status' => $task->new_status,
+                'assigned_to' => $task->assigned_to,
+                'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : 'Unassigned',
+                'notes' => $task->notes,
+                'created_at' => $task->created_at->format('Y-m-d H:i:s'),
+                'started_at' => $task->started_at ? $task->started_at->format('Y-m-d H:i:s') : null,
+                'completed_at' => $task->completed_at ? $task->completed_at->format('Y-m-d H:i:s') : null,
+            ];
+
+            $orderInfo = [
+                'order_id' => $poolOrder->order_id ?? null,
+                'plan_name' => $metadata['plan_name'] ?? ($poolOrder && $poolOrder->poolPlan ? $poolOrder->poolPlan->name : 'N/A'),
+                'selected_domains_count' => $metadata['selected_domains_count'] ?? ($poolOrder->selected_domains_count ?? 0),
+                'total_inboxes' => $metadata['total_inboxes'] ?? ($poolOrder->total_inboxes ?? 0),
+                'hosting_platform' => $metadata['hosting_platform'] ?? ($poolOrder->hosting_platform ?? 'N/A'),
+                'customer_name' => $user ? $user->name : 'N/A',
+                'customer_email' => $user ? $user->email : 'N/A',
+            ];
+
+            return [
+                'success' => true,
+                'task' => $taskInfo,
+                'order' => $orderInfo,
+                'statusCode' => 200
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching pool migration task details: ' . $e->getMessage());
+            
+            return [
+                'success' => false,
+                'message' => 'Failed to fetch task details: ' . $e->getMessage(),
+                'statusCode' => 500
+            ];
+        }
+    }
 }

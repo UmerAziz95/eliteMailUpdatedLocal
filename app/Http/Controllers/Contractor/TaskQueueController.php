@@ -850,40 +850,13 @@ class TaskQueueController extends Controller
 
     public function getPoolMigrationTaskDetails($taskId)
     {
-        try {
-            $task = \App\Models\PoolOrderMigrationTask::with(['poolOrder.poolPlan', 'user', 'assignedTo'])
-                ->findOrFail($taskId);
-
-            $order = $task->poolOrder;
-
-            return response()->json([
-                'success' => true,
-                'task' => [
-                    'id' => $task->id,
-                    'task_type' => $task->task_type,
-                    'task_type_label' => ucfirst(str_replace('_', ' ', $task->task_type)),
-                    'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
-                    'status' => $task->status,
-                    'assigned_to_name' => $task->assignedTo?->name ?? 'Unassigned',
-                    'created_at' => $task->created_at->format('Y-m-d H:i:s'),
-                    'notes' => $task->notes,
-                ],
-                'order' => [
-                    'order_id' => $order->order_id,
-                    'plan_name' => $order->poolPlan->name ?? 'N/A',
-                    'selected_domains_count' => $order->selected_domains_count,
-                    'total_inboxes' => $order->total_inboxes,
-                    'hosting_platform' => $order->hosting_platform,
-                ],
-                'metadata' => $task->metadata
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error fetching pool migration task details (Contractor): ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Task not found'
-            ], 404);
-        }
+        $service = new PoolMigrationTaskService();
+        $result = $service->getTaskDetails($taskId, auth()->id(), false);
+        
+        $statusCode = $result['statusCode'] ?? 200;
+        unset($result['statusCode']);
+        
+        return response()->json($result, $statusCode);
     }
 
     public function assignPoolMigrationTaskToMe($taskId)
