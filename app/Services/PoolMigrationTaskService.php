@@ -270,7 +270,7 @@ class PoolMigrationTaskService
             ];
 
             $orderInfo = [
-                'order_id' => $poolOrder->order_id ?? null,
+                'order_id' => $poolOrder->id ?? null,
                 'plan_name' => $metadata['plan_name'] ?? ($poolOrder && $poolOrder->poolPlan ? $poolOrder->poolPlan->name : 'N/A'),
                 'selected_domains_count' => $metadata['selected_domains_count'] ?? ($poolOrder->selected_domains_count ?? 0),
                 'total_inboxes' => $metadata['total_inboxes'] ?? ($poolOrder->total_inboxes ?? 0),

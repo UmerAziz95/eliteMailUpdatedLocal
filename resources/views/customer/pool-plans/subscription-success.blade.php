@@ -41,6 +41,13 @@
                             <a href="{{ route('customer.dashboard') }}" class="btn btn-outline-primary d-flex align-items-center">
                                 <i class="ti ti-dashboard fs-5 me-2"></i> Go to Dashboard
                             </a>
+                        
+                            <a href="{{ route('customer.pool-orders.show', $poolOrder->id) }}" class="btn btn-outline-success d-flex align-items-center">
+                                <i class="ti ti-eye fs-5 me-2"></i> View Pool Order Details
+                            </a>
+                            <a href="{{ route('customer.pool-orders.edit', $poolOrder->id) }}" class="btn btn-outline-warning d-flex align-items-center">
+                                <i class="ti ti-pencil fs-5 me-2"></i> Edit Pool Order
+                            </a>
                         </div>
                     </div>
                 </div>
