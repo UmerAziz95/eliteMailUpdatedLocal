@@ -2028,9 +2028,9 @@
         
         if (!tasks || tasks.length === 0) {
             container.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <i class="ti ti-swimming" style="font-size: 4rem;"></i>
-                    <h5>No Pool Migration Tasks</h5>
+                <div class="text-center py-5" style="grid-column: 1 / -1;">
+                    <i class="ti ti-swimming text-white" style="font-size: 4rem;"></i>
+                    <h5 class="text-white mt-3">No Pool Migration Tasks</h5>
                     <p class="text-white-50">You don't have any assigned pool migration tasks</p>
                 </div>
             `;
