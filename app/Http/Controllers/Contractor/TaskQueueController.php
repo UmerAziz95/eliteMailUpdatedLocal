@@ -851,7 +851,7 @@ class TaskQueueController extends Controller
     public function getPoolMigrationTaskDetails($taskId)
     {
         try {
-            $task = \App\Models\PoolOrderMigrationTask::with(['poolOrder.plan', 'user', 'assignedTo'])
+            $task = \App\Models\PoolOrderMigrationTask::with(['poolOrder.poolPlan', 'user', 'assignedTo'])
                 ->findOrFail($taskId);
 
             $order = $task->poolOrder;
@@ -870,7 +870,7 @@ class TaskQueueController extends Controller
                 ],
                 'order' => [
                     'order_id' => $order->order_id,
-                    'plan_name' => $order->plan->name ?? 'N/A',
+                    'plan_name' => $order->poolPlan->name ?? 'N/A',
                     'selected_domains_count' => $order->selected_domains_count,
                     'total_inboxes' => $order->total_inboxes,
                     'hosting_platform' => $order->hosting_platform,

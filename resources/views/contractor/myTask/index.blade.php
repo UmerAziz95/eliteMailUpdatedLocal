@@ -72,7 +72,12 @@
         color: #28a745 !important;
         transform: scale(1.1) !important;
     }
-    
+    .glass-box {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 0.55rem .5rem;
+    }
 </style>
 @endpush
 
@@ -2142,7 +2147,7 @@
             const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
             offcanvas.show();
             
-            const response = await fetch(`/contractor/taskInQueue/pool-migration/${taskId}/details`);
+            const response = await fetch(`/contractor/myTask/pool-migration/${taskId}/details`);
             const data = await response.json();
             
             if (!data.success) {
@@ -2248,7 +2253,7 @@
             
             if (status === 'completed' && notes === null && !force) return;
 
-            const response = await fetch(`/contractor/taskInQueue/pool-migration/${taskId}/status`, {
+            const response = await fetch(`/contractor/myTask/pool-migration/${taskId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -409,31 +409,35 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // Task Queue Routes
         Route::get('taskInQueue', [App\Http\Controllers\Admin\TaskQueueController::class, 'index'])->name("taskInQueue.index");
         Route::get('taskInQueue/data', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
-        Route::get('taskInQueue/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTaskDetails'])->name("taskInQueue.details");
-        Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
-        Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
         
-        // Migration Panel Reassignment Task Routes
+        // Migration Panel Reassignment Task Routes (specific routes must come before generic {id} routes)
         Route::get('taskInQueue/shifted-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getShiftedTasks'])->name("taskInQueue.shifted-tasks");
         Route::get('taskInQueue/shifted/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getShiftedTaskDetails'])->name("taskInQueue.shifted.details");
         Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
         Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
-        // Pool Migration Task Routes
+        // Pool Migration Task Routes (specific routes must come before generic {id} routes)
         Route::get('taskInQueue/pool-migration-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolMigrationTasks'])->name("taskInQueue.pool-migration-tasks");
         Route::get('taskInQueue/pool-migration/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolMigrationTaskDetails'])->name("taskInQueue.pool-migration-details");
         Route::post('taskInQueue/pool-migration/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignPoolMigrationTaskToMe'])->name("taskInQueue.pool-migration-assign");
         Route::put('taskInQueue/pool-migration/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updatePoolMigrationTaskStatus'])->name("taskInQueue.pool-migration-status");
+        
+        // Generic task routes (must come AFTER specific routes to avoid conflicts)
+        Route::get('taskInQueue/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTaskDetails'])->name("taskInQueue.details");
+        Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
+        Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
 
         // My Task Routes
         Route::get('myTask', [App\Http\Controllers\Admin\MyTaskController::class, 'index'])->name("myTask.index");
         Route::get('myTask/data', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");
+        
+        // Specific routes must come before generic {taskId} routes
+        Route::get('myTask/pool-migration-tasks', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyPoolMigrationTasks'])->name("myTask.pool-migration-tasks");
+        
+        // Generic task routes (must come AFTER specific routes)
         Route::get('myTask/{taskId}/details', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
         Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
         Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Admin\MyTaskController::class, 'completeTask'])->name("myTask.complete");
-        
-        // Pool Migration Tasks (My Tasks)
-        Route::get('myTask/pool-migration-tasks', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyPoolMigrationTasks'])->name("myTask.pool-migration-tasks");
 
 
        //profile settings
@@ -685,31 +689,39 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     // Task Queue Routes
     Route::get('taskInQueue', [App\Http\Controllers\Contractor\TaskQueueController::class, 'index'])->name("taskInQueue.index");
     Route::get('taskInQueue/data', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
-    Route::get('taskInQueue/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getTaskDetails'])->name("taskInQueue.details");
-    Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
-    Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
     
-    // Migration Pending Tasks Routes  
+    // Migration Pending Tasks Routes (specific routes must come before generic {id} routes)
     Route::get('taskInQueue/shifted-tasks', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedTasks'])->name("taskInQueue.shifted-tasks");
     Route::get('taskInQueue/shifted-pending', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedPendingTasks'])->name("taskInQueue.shifted-pending");
     Route::get('taskInQueue/shifted/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedTaskDetails'])->name("taskInQueue.shifted.details");
     Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
     Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
-    // Pool Migration Tasks Routes
+    // Pool Migration Tasks Routes (specific routes must come before generic {id} routes)
     Route::get('taskInQueue/pool-migration-tasks', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getPoolMigrationTasks'])->name("taskInQueue.pool-migration-tasks");
     Route::get('taskInQueue/pool-migration/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getPoolMigrationTaskDetails'])->name("taskInQueue.pool-migration-details");
     Route::post('taskInQueue/pool-migration/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignPoolMigrationTaskToMe'])->name("taskInQueue.pool-migration-assign");
     Route::put('taskInQueue/pool-migration/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updatePoolMigrationTaskStatus'])->name("taskInQueue.pool-migration-status");
+    
+    // Generic task routes (must come AFTER specific routes to avoid conflicts)
+    Route::get('taskInQueue/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getTaskDetails'])->name("taskInQueue.details");
+    Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
+    Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
 
     // My Task Routes
     Route::get('myTask', [App\Http\Controllers\Contractor\MyTaskController::class, 'index'])->name("myTask.index");
     Route::get('myTask/data', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");
-    Route::get('myTask/{taskId}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
+    
+    // Specific routes must come before generic {taskId} routes
     Route::get('myTask/shifted/{id}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getShiftedTaskDetails'])->name("myTask.shifted.details");
+    Route::get('myTask/pool-migration-tasks', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyPoolMigrationTasks'])->name("myTask.pool-migration-tasks");
+    Route::get('myTask/pool-migration/{id}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getPoolMigrationTaskDetails'])->name("myTask.pool-migration-details");
+    Route::put('myTask/pool-migration/{id}/status', [App\Http\Controllers\Contractor\MyTaskController::class, 'updatePoolMigrationTaskStatus'])->name("myTask.pool-migration-status");
+    
+    // Generic task routes (must come AFTER specific routes)
+    Route::get('myTask/{taskId}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
     Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
     Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Contractor\MyTaskController::class, 'completeTask'])->name("myTask.complete");
-    Route::get('myTask/pool-migration-tasks', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyPoolMigrationTasks'])->name("myTask.pool-migration-tasks");
 
     // Domains Removal Tasks
     Route::post('/orders/{order}/check-contractor-helpers', [AdminOrderController::class, 'checkContractorInHelpers'])->name('orders.check-contractor-helpers');
