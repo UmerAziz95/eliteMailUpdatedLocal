@@ -28,6 +28,7 @@ class SlackSettings extends Model
         'inbox-tickets' => 'Inbox Tickets',
         'inbox-trial-setup' => 'Inbox Trial Setup',
         'inbox-trial-cancellations' => 'Inbox Trial Cancellations',
+        'inbox-trial-replacements' => 'Inbox Trial Replacements'
     ];
     
     public static function getTypes()
