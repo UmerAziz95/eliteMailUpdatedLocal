@@ -641,6 +641,22 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/dashboard', [App\Http\Controllers\Contractor\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/orders-history', [App\Http\Controllers\Contractor\DashboardController::class, 'getOrdersHistory'])->name('orders.history');
     
+    // Contractor Pool Domains listing
+    Route::get('pool-domains', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'index'])->name('pool-domains.index');
+    Route::get('pool-domains/test', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'test'])->name('pool-domains.test');
+    Route::post('pool-domains/refresh-cache', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'refreshCache'])->name('pool-domains.refresh-cache');
+    Route::post('pool-domains/update', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'update'])->name('pool-domains.update');
+    
+    // Pool Orders Management
+    Route::get('pool-orders/list', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'poolOrdersList'])->name('pool-orders.list');
+    Route::get('pool-orders/all', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'allPoolOrders'])->name('pool-orders.all');
+    Route::get('pool-orders/in-queue', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'inQueueOrders'])->name('pool-orders.in-queue');
+    Route::get('pool-orders/{id}/view', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'viewPoolOrder'])->name('pool-orders.view');
+    Route::post('pool-orders/cancel', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'cancelPoolOrder'])->name('pool-orders.cancel');
+    Route::post('pool-orders/assign-to-me', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'assignToMe'])->name('pool-orders.assign-to-me');
+    Route::post('pool-orders/change-status', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'changePoolOrderStatus'])->name('pool-orders.change-status');
+    Route::get('pool-orders/invoices/{invoiceId}/download', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'downloadPoolInvoice'])->name('pool-orders.invoices.download');
+    
     Route::get('/pricing', function () {
         return view('contractor.pricing.pricing');
     })->name('pricing');
