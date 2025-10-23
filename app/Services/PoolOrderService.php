@@ -310,60 +310,70 @@ class PoolOrderService
             // Add CSV headers matching Google Workspace format
             fputcsv($file, ['First Name', 'Last Name', 'Email address', 'Password', 'Org Unit Path [Required]']);
             
-            // Get pool data for first name, last name, and password
+            // Get pool data for password fallback
             $pool = $poolOrder->pool;
-            $poolFirstName = $pool->first_name ?? '';
-            $poolLastName = $pool->last_name ?? '';
-            $poolPassword = $pool->email_persona_password ?? $pool->persona_password ?? '';
-            // dd($poolOrder->ready_domains_prefix, $poolFirstName, $poolLastName, $poolPassword);
+            $poolPassword = '';
+            
+            if ($pool) {
+                $poolPassword = $pool->email_persona_password ?? $pool->persona_password ?? '';
+            }
+            
+            // Get prefix_variants_details from pool table as fallback
+            $prefixVariantsDetails = [];
+            if ($pool && $pool->prefix_variants_details) {
+                $prefixVariantsDetails = is_string($pool->prefix_variants_details) 
+                    ? json_decode($pool->prefix_variants_details, true) 
+                    : $pool->prefix_variants_details;
+            }
             
             // Add domain data
             foreach ($poolOrder->ready_domains_prefix as $domain) {
                 $domainName = $domain['domain_name'] ?? 'Unknown';
-                Log::info('Processing domain: ' . $poolOrder->id . ' - ' . $poolOrder->ready_domains_prefix);
+                
+                // Get first name and last name from pool_info in ready_domains_prefix
+                $firstName = $domain['pool_info']['first_name'] ?? '';
+                $lastName = $domain['pool_info']['last_name'] ?? '';
+                
                 if (!empty($domain['formatted_prefixes'])) {
-                    Log::info('Processing domain: ' . $domainName . ' with ' . count($domain['formatted_prefixes']) . ' prefixes.');
+                    $counter = 0;
                     foreach ($domain['formatted_prefixes'] as $index => $email) {
-                        Log::info('Processing email: ' . $email . ' at index ' . $index);
-                        // Try to get first_name and last_name from pool_info for this specific prefix
-                        $firstName = $poolFirstName;
-                        $lastName = $poolLastName;
+                        // Try to get specific first/last name for this prefix variant from pool table
+                        $variantFirstName = $firstName;
+                        $variantLastName = $lastName;
+                        
+                        // Fallback to prefix_variants_details from pool table if names are empty
+                        if ((empty($variantFirstName) || empty($variantLastName)) && !empty($prefixVariantsDetails)) {
+                            $prefixKey = 'prefix_variant_' . ($counter + 1);
+                            if (isset($prefixVariantsDetails[$prefixKey])) {
+                                $variantFirstName = $variantFirstName ?: ($prefixVariantsDetails[$prefixKey]['first_name'] ?? '');
+                                $variantLastName = $variantLastName ?: ($prefixVariantsDetails[$prefixKey]['last_name'] ?? '');
+                            }
+                        }
+                        
+                        // Use the password from pool, or generate if not available
                         $password = $poolPassword;
                         
-                        // Check if there's specific info for this prefix in pool_info
-                        if (isset($domain['pool_info'])) {
-                            // If pool_info is an array of details per prefix
-                            if (is_array($domain['pool_info']) && isset($domain['pool_info'][$index])) {
-                                $firstName = $domain['pool_info'][$index]['first_name'] ?? $poolFirstName;
-                                $lastName = $domain['pool_info'][$index]['last_name'] ?? $poolLastName;
-                            }
-                            // If pool_info has single values for all prefixes
-                            else if (isset($domain['pool_info']['first_name']) || isset($domain['pool_info']['last_name'])) {
-                                $firstName = $domain['pool_info']['first_name'] ?? $poolFirstName;
-                                $lastName = $domain['pool_info']['last_name'] ?? $poolLastName;
-                            }
+                        if (empty($password)) {
+                            $password = $this->customEncrypt($poolOrder->id, $counter);
                         }
                         
-                        // Generate password if not available
-                        if (empty($password)) {
-                            $password = $this->customEncrypt($poolOrder->id, $index);
-                        }
+                        $counter++;
                         
                         fputcsv($file, [
-                            $firstName,
-                            $lastName,
+                            $variantFirstName,
+                            $variantLastName,
                             $email,
                             $password,
                             '/'
                         ]);
                     }
                 } else {
-                    // If no prefixes, still add a row with pool data
+                    // If no prefixes, still add a row with pool_info data
                     $password = $poolPassword ?: $this->customEncrypt($poolOrder->id, 0);
                     
                     fputcsv($file, [
-                        $poolFirstName,
-                        $poolLastName,
+                        $firstName,
+                        $lastName,
                         '',
                         $password,
                         '/'
