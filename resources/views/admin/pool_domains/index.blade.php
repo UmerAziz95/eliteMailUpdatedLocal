@@ -255,6 +255,42 @@
         </div>
     </div>
 </div>
+
+<!-- Change Pool Order Status Modal -->
+<div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeStatusModalLabel">Change Pool Order Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="changeStatusForm">
+                <div class="modal-body">
+                    <input type="hidden" id="change_status_order_id" name="order_id">
+                    
+                    <div class="mb-3">
+                        <label for="new_status" class="form-label">Select New Status</label>
+                        <select class="form-select" id="new_status" name="status" required>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    
+                    <div class="alert alert-info small">
+                        <i class="fa fa-info-circle me-1"></i>
+                        Note: Once an order is cancelled, its status cannot be changed.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -511,5 +547,82 @@ function assignToMe(orderId) {
         }
     });
 }
+
+// Change pool order status
+function changePoolOrderStatus(orderId, currentStatus) {
+    $('#change_status_order_id').val(orderId);
+    $('#new_status').val(currentStatus);
+    $('#changeStatusModal').modal('show');
+}
+
+// Handle status change form submission
+$('#changeStatusForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    const orderId = $('#change_status_order_id').val();
+    const newStatus = $('#new_status').val();
+    
+    console.log('Changing status for order:', orderId, 'to:', newStatus);
+    
+    // Show loader
+    Swal.fire({
+        title: 'Updating Status...',
+        html: 'Please wait while we update the order status.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    $.ajax({
+        url: '{{ route("admin.pool-orders.change-status") }}',
+        type: 'POST',
+        data: {
+            order_id: orderId,
+            status: newStatus,
+            _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            console.log('Success response:', response);
+            $('#changeStatusModal').modal('hide');
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: response.message || 'Pool order status updated successfully',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            // Reload all relevant tables
+            $('#pool-orders-table').DataTable().ajax.reload();
+            $('#all-pool-orders-table').DataTable().ajax.reload();
+            $('#in-queue-orders-table').DataTable().ajax.reload();
+        },
+        error: function(xhr) {
+            console.error('Error response:', xhr);
+            console.error('Status:', xhr.status);
+            console.error('Response:', xhr.responseJSON);
+            
+            $('#changeStatusModal').modal('hide');
+            
+            let errorMsg = 'Error updating pool order status';
+            
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMsg = xhr.responseJSON.message;
+            } else if (xhr.responseText) {
+                errorMsg = xhr.responseText;
+            }
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: errorMsg,
+                confirmButtonText: 'OK'
+            });
+        }
+    });
+});
 </script>
 @endpush

@@ -207,6 +207,7 @@ class PoolOrderService
         $showViewDomains = $options['showViewDomains'] ?? true;
         $showCancel = $options['showCancel'] ?? true;
         $showAssignToMe = $options['showAssignToMe'] ?? false;
+        $showChangeStatus = $options['showChangeStatus'] ?? false;
         
         $orderId = $poolOrder->id;
         $viewRoute = route('admin.pool-orders.view', $poolOrder->id);
@@ -235,6 +236,21 @@ class PoolOrderService
                             <i class="fa-solid fa-user-check me-1"></i>Assign to Me
                         </a>
                     </li>';
+        }
+        
+        if ($showChangeStatus) {
+            // Only allow status change if order is not cancelled
+            if ($poolOrder->status !== 'cancelled') {
+                // Use status_manage_by_admin if set, otherwise use status
+                $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
+                $html .= '
+                    <li>
+                        <a class="dropdown-item" href="javascript:void(0)" 
+                           onclick="changePoolOrderStatus(' . $poolOrder->id . ', \'' . $currentStatus . '\')">
+                            <i class="fa-solid fa-sync me-1"></i>Change Status
+                        </a>
+                    </li>';
+            }
         }
         
         if ($showViewDomains) {

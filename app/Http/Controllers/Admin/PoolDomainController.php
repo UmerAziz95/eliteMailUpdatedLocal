@@ -286,7 +286,9 @@ class PoolDomainController extends Controller
                     return $row->created_at->format('Y-m-d H:i:s');
                 })
                 ->addColumn('actions', function ($row) {
-                    return $this->poolOrderService->getActionsDropdown($row);
+                    return $this->poolOrderService->getActionsDropdown($row, [
+                        'showChangeStatus' => true
+                    ]);
                 })
                 ->rawColumns(['status_badge', 'assigned_to_name', 'actions'])
                 ->make(true);
@@ -327,7 +329,9 @@ class PoolDomainController extends Controller
                     return $row->created_at->format('Y-m-d H:i:s');
                 })
                 ->addColumn('actions', function ($row) {
-                    return $this->poolOrderService->getActionsDropdown($row);
+                    return $this->poolOrderService->getActionsDropdown($row, [
+                        'showChangeStatus' => true
+                    ]);
                 })
                 ->rawColumns(['status_badge', 'assigned_to_name', 'actions'])
                 ->make(true);
@@ -472,6 +476,59 @@ class PoolDomainController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error assigning pool order'
+            ], 500);
+        }
+    }
+
+    /**
+     * Change pool order status
+     */
+    public function changePoolOrderStatus(Request $request)
+    {
+        try {
+            $request->validate([
+                'order_id' => 'required|integer|exists:pool_orders,id',
+                'status' => 'required|string|in:pending,in_progress,completed,cancelled'
+            ]);
+
+            $poolOrder = \App\Models\PoolOrder::findOrFail($request->order_id);
+
+            // Check if order is already cancelled
+            if ($poolOrder->status === 'cancelled') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot change status of a cancelled order'
+                ], 400);
+            }
+
+            $oldStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
+            
+            // Convert status format: underscore to hyphen for database ENUM compatibility
+            $statusValue = str_replace('_', '-', $request->status);
+            
+            // Use status_manage_by_admin column for admin status changes
+            $poolOrder->status_manage_by_admin = $statusValue;
+            $poolOrder->save();
+
+            \Log::info('Pool order #' . $poolOrder->id . ' status_manage_by_admin changed from ' . $oldStatus . ' to ' . $statusValue . ' by admin user #' . auth()->id());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pool order status updated successfully'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Error changing pool order status: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error changing pool order status: ' . $e->getMessage()
             ], 500);
         }
     }
