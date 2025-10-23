@@ -1,5 +1,5 @@
 @extends('admin.layouts.app')
-
+<!-- also added fun -->
 @section('title', 'Pool Domains Management')
 
 @push('styles')
@@ -271,9 +271,9 @@
                     <div class="mb-3">
                         <label for="new_status" class="form-label">Select New Status</label>
                         <select class="form-select" id="new_status" name="status" required>
-                            <option value="pending">Pending</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="completed">Completed</option>
+                            <!-- <option value="pending">Pending</option> -->
+                            <option value="in-progress">In Progress</option>
+                            <!-- <option value="completed">Completed</option> -->
                             <option value="cancelled">Cancelled</option>
                         </select>
                     </div>

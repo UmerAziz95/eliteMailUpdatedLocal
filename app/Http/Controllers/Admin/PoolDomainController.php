@@ -274,7 +274,7 @@ class PoolDomainController extends Controller
                     return $row->user->email ?? 'N/A';
                 })
                 ->addColumn('status_badge', function ($row) {
-                    return $this->poolOrderService->getStatusBadge($row->status);
+                    return $this->poolOrderService->getStatusBadge($row->status_manage_by_admin);
                 })
                 ->addColumn('assigned_to_name', function ($row) {
                     return $this->poolOrderService->getAssignedToBadge($row);
@@ -317,7 +317,7 @@ class PoolDomainController extends Controller
                     return $row->user->email ?? 'N/A';
                 })
                 ->addColumn('status_badge', function ($row) {
-                    return $this->poolOrderService->getStatusBadge($row->status);
+                    return $this->poolOrderService->getStatusBadge($row->status_manage_by_admin);
                 })
                 ->addColumn('assigned_to_name', function ($row) {
                     return $this->poolOrderService->getAssignedToBadge($row);
@@ -360,7 +360,7 @@ class PoolDomainController extends Controller
                     return $row->user->email ?? 'N/A';
                 })
                 ->addColumn('status_badge', function ($row) {
-                    return $this->poolOrderService->getStatusBadge($row->status);
+                    return $this->poolOrderService->getStatusBadge($row->status_manage_by_admin);
                 })
                 ->addColumn('created_at', function ($row) {
                     return $row->created_at->format('Y-m-d H:i:s');
@@ -483,12 +483,13 @@ class PoolDomainController extends Controller
     /**
      * Change pool order status
      */
+
     public function changePoolOrderStatus(Request $request)
     {
         try {
             $request->validate([
                 'order_id' => 'required|integer|exists:pool_orders,id',
-                'status' => 'required|string|in:pending,in_progress,completed,cancelled'
+                'status' => 'required|string|in:pending,in-progress,completed,cancelled'
             ]);
 
             $poolOrder = \App\Models\PoolOrder::findOrFail($request->order_id);
