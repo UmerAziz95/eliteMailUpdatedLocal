@@ -1,5 +1,5 @@
 @extends('admin.layouts.app')
-<!-- also added fun -->
+
 @section('title', 'Pool Domains Management')
 
 @push('styles')
