@@ -206,6 +206,7 @@ class PoolOrderService
         $showView = $options['showView'] ?? true;
         $showViewDomains = $options['showViewDomains'] ?? true;
         $showCancel = $options['showCancel'] ?? true;
+        $showAssignToMe = $options['showAssignToMe'] ?? false;
         
         $orderId = $poolOrder->id;
         $viewRoute = route('admin.pool-orders.view', $poolOrder->id);
@@ -222,6 +223,16 @@ class PoolOrderService
                     <li>
                         <a class="dropdown-item" href="' . $viewRoute . '">
                             <i class="fa-solid fa-eye me-1"></i>View Details
+                        </a>
+                    </li>';
+        }
+        
+        if ($showAssignToMe && !$poolOrder->assigned_to) {
+            $html .= '
+                    <li>
+                        <a class="dropdown-item text-success" href="javascript:void(0)" 
+                           onclick="assignToMe(' . $poolOrder->id . ')">
+                            <i class="fa-solid fa-user-check me-1"></i>Assign to Me
                         </a>
                     </li>';
         }

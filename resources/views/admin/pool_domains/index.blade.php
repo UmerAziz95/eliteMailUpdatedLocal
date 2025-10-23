@@ -453,5 +453,63 @@ $('#editDomainForm').on('submit', function(e) {
         }
     });
 });
+
+// Assign pool order to current admin user
+function assignToMe(orderId) {
+    Swal.fire({
+        title: 'Assign Order to You?',
+        text: 'This pool order will be assigned to you.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, assign it!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loader
+            Swal.fire({
+                title: 'Assigning Order...',
+                html: 'Please wait while we assign this order to you.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: '{{ route("admin.pool-orders.assign-to-me") }}',
+                type: 'POST',
+                data: {
+                    order_id: orderId,
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.message || 'Pool order assigned to you successfully',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    
+                    // Reload all relevant tables
+                    $('#in-queue-orders-table').DataTable().ajax.reload();
+                    $('#pool-orders-table').DataTable().ajax.reload();
+                    $('#all-pool-orders-table').DataTable().ajax.reload();
+                },
+                error: function(xhr) {
+                    const errorMsg = xhr.responseJSON?.message || 'Error assigning pool order';
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: errorMsg
+                    });
+                }
+            });
+        }
+    });
+}
 </script>
 @endpush

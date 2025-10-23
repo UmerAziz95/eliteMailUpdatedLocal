@@ -362,7 +362,9 @@ class PoolDomainController extends Controller
                     return $row->created_at->format('Y-m-d H:i:s');
                 })
                 ->addColumn('actions', function ($row) {
-                    return $this->poolOrderService->getActionsDropdown($row);
+                    return $this->poolOrderService->getActionsDropdown($row, [
+                        'showAssignToMe' => true
+                    ]);
                 })
                 ->rawColumns(['status_badge', 'actions'])
                 ->make(true);
@@ -429,6 +431,48 @@ class PoolDomainController extends Controller
             \Log::error('Error downloading pool invoice: ' . $e->getMessage());
             
             return redirect()->back()->with('error', 'Error downloading invoice');
+        }
+    }
+
+    /**
+     * Assign pool order to current admin user
+     */
+    public function assignToMe(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|integer|exists:pool_orders,id'
+        ]);
+
+        try {
+            $poolOrder = \App\Models\PoolOrder::findOrFail($request->order_id);
+
+            // Check if order is already assigned
+            if ($poolOrder->assigned_to) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This order is already assigned to ' . ($poolOrder->assignedTo->name ?? 'another user')
+                ], 400);
+            }
+
+            // Assign to current user
+            $poolOrder->assigned_to = auth()->id();
+            $poolOrder->assigned_at = now();
+            $poolOrder->save();
+
+            \Log::info('Pool order #' . $poolOrder->id . ' assigned to admin user #' . auth()->id());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pool order assigned to you successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error assigning pool order: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error assigning pool order'
+            ], 500);
         }
     }
 }
