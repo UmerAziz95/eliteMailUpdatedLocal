@@ -331,24 +331,48 @@ class PoolOrderService
                 $domainName = $domain['domain_name'] ?? 'Unknown';
                 
                 // Get first name and last name from pool_info in ready_domains_prefix
-                $firstName = $domain['pool_info']['first_name'] ?? '';
-                $lastName = $domain['pool_info']['last_name'] ?? '';
+                $poolFirstName = $domain['pool_info']['first_name'] ?? '';
+                $poolLastName = $domain['pool_info']['last_name'] ?? '';
                 
-                if (!empty($domain['formatted_prefixes'])) {
+                // Get prefix variants from domain
+                $prefixVariants = $domain['prefix_variants'] ?? [];
+                $prefixVariantsDetailsFromDomain = $domain['prefix_variants_details'] ?? [];
+                
+                if (!empty($prefixVariants)) {
                     $counter = 0;
-                    foreach ($domain['formatted_prefixes'] as $index => $email) {
-                        // Try to get specific first/last name for this prefix variant from pool table
-                        $variantFirstName = $firstName;
-                        $variantLastName = $lastName;
+                    foreach ($prefixVariants as $key => $prefix) {
+                        // Build email from prefix and domain name
+                        $email = $prefix . '@' . $domainName;
                         
-                        // Fallback to prefix_variants_details from pool table if names are empty
-                        if ((empty($variantFirstName) || empty($variantLastName)) && !empty($prefixVariantsDetails)) {
-                            $prefixKey = 'prefix_variant_' . ($counter + 1);
-                            if (isset($prefixVariantsDetails[$prefixKey])) {
-                                $variantFirstName = $variantFirstName ?: ($prefixVariantsDetails[$prefixKey]['first_name'] ?? '');
-                                $variantLastName = $variantLastName ?: ($prefixVariantsDetails[$prefixKey]['last_name'] ?? '');
-                            }
+                        // Try to get first/last name from domain's prefix_variants_details first
+                        $variantFirstName = '';
+                        $variantLastName = '';
+                        
+                        if (isset($prefixVariantsDetailsFromDomain[$key])) {
+                            $variantFirstName = $prefixVariantsDetailsFromDomain[$key]['first_name'] ?? '';
+                            $variantLastName = $prefixVariantsDetailsFromDomain[$key]['last_name'] ?? '';
                         }
+                        
+                        // Fallback to pool_info if variant details are empty
+                        if (empty($variantFirstName)) {
+                            $variantFirstName = $poolFirstName;
+                        }
+                        if (empty($variantLastName)) {
+                            $variantLastName = $poolLastName;
+                        }
+                        
+                        // Final fallback to prefix_variants_details from pool table
+                        // if ((empty($variantFirstName) || empty($variantLastName)) && !empty($prefixVariantsDetails)) {
+                        //     $prefixKey = 'prefix_variant_' . ($counter + 1);
+                        //     if (isset($prefixVariantsDetails[$prefixKey])) {
+                        //         if (empty($variantFirstName)) {
+                        //             $variantFirstName = $prefixVariantsDetails[$prefixKey]['first_name'] ?? '';
+                        //         }
+                        //         if (empty($variantLastName)) {
+                        //             $variantLastName = $prefixVariantsDetails[$prefixKey]['last_name'] ?? '';
+                        //         }
+                        //     }
+                        // }
                         
                         // Use the password from pool, or generate if not available
                         $password = $poolPassword;
@@ -357,8 +381,6 @@ class PoolOrderService
                             $password = $this->customEncrypt($poolOrder->id, $counter);
                         }
                         
-                        $counter++;
-                        
                         fputcsv($file, [
                             $variantFirstName,
                             $variantLastName,
@@ -366,14 +388,16 @@ class PoolOrderService
                             $password,
                             '/'
                         ]);
+                        
+                        $counter++;
                     }
                 } else {
                     // If no prefixes, still add a row with pool_info data
                     $password = $poolPassword ?: $this->customEncrypt($poolOrder->id, 0);
                     
                     fputcsv($file, [
-                        $firstName,
-                        $lastName,
+                        $poolFirstName,
+                        $poolLastName,
                         '',
                         $password,
                         '/'
