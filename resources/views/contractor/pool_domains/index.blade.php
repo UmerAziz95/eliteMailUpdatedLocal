@@ -77,8 +77,8 @@
 <section class="py-3">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1">Pool Domains Management</h2>
-            <p class="mb-0">Manage pool orders and domains</p>
+            <h2 class="mb-1">Trials Order Management</h2>
+            <p class="mb-0">Manage trials orders and domains</p>
         </div>
     </div>
 
@@ -88,21 +88,21 @@
             <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white" 
                     id="pool-orders-tab" data-bs-toggle="tab" data-bs-target="#pool-orders-tab-pane" type="button" 
                     role="tab" aria-controls="pool-orders-tab-pane" aria-selected="false">
-                <i class="fa fa-user-check me-1"></i>My Pool Orders
+                <i class="fa fa-user-check me-1"></i>My Trial Orders
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white" 
                     id="all-pool-orders-tab" data-bs-toggle="tab" data-bs-target="#all-pool-orders-tab-pane" type="button" 
                     role="tab" aria-controls="all-pool-orders-tab-pane" aria-selected="false">
-                <i class="fa fa-list me-1"></i>All Pool Orders
+                <i class="fa fa-list me-1"></i>All Trial Orders
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white active" 
                     id="all-domains-tab" data-bs-toggle="tab" data-bs-target="#all-domains-tab-pane" type="button" 
                     role="tab" aria-controls="all-domains-tab-pane" aria-selected="true">
-                <i class="fa fa-globe me-1"></i>Pool All Domains
+                <i class="fa fa-globe me-1"></i>Trial All Domains
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -177,7 +177,7 @@
                                 <th>Email</th>
                                 <th>Domain ID</th>
                                 <th>Pool ID</th>
-                                <th>Pool Order ID</th>
+                                <th>Trial Order ID</th>
                                 <th>Domain Name</th>
                                 <th>Status</th>
                                 <th>Usage</th>
