@@ -92,6 +92,13 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white" 
+                    id="all-pool-orders-tab" data-bs-toggle="tab" data-bs-target="#all-pool-orders-tab-pane" type="button" 
+                    role="tab" aria-controls="all-pool-orders-tab-pane" aria-selected="false">
+                <i class="fa fa-list me-1"></i>All Pool Orders
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white active" 
                     id="all-domains-tab" data-bs-toggle="tab" data-bs-target="#all-domains-tab-pane" type="button" 
                     role="tab" aria-controls="all-domains-tab-pane" aria-selected="true">
@@ -113,6 +120,31 @@
             <div class="card py-3 px-4 mb-4 shadow-sm border-0">
                 <div class="table-responsive">
                     <table id="pool-orders-table" class="table table-hover w-100">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Assigned To</th>
+                                <th>Assigned At</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Pool Orders Tab -->
+        <div class="tab-pane fade" id="all-pool-orders-tab-pane" role="tabpanel" aria-labelledby="all-pool-orders-tab" tabindex="0">
+            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                <div class="table-responsive">
+                    <table id="all-pool-orders-table" class="table table-hover w-100">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -282,6 +314,31 @@ $(document).ready(function() {
         dom: 'Bfrtip'
     });
 
+    // All Pool Orders DataTable
+    var allPoolOrdersTable = $('#all-pool-orders-table').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "{{ route('admin.pool-orders.all') }}",
+            type: 'GET'
+        },
+        columns: [
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'order_id', name: 'order_id' },
+            { data: 'customer_name', name: 'customer_name' },
+            { data: 'customer_email', name: 'customer_email' },
+            { data: 'status_badge', name: 'status', orderable: false },
+            { data: 'assigned_to_name', name: 'assigned_to', orderable: false },
+            { data: 'assigned_at_formatted', name: 'assigned_at' },
+            { data: 'created_at', name: 'created_at' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false }
+        ],
+        order: [[7, 'desc']],
+        pageLength: 25,
+        responsive: true,
+        dom: 'Bfrtip'
+    });
+
     // In-Queue Pool Orders Not Assigned DataTable
     var inQueueOrdersTable = $('#in-queue-orders-table').DataTable({
         processing: true,
@@ -310,6 +367,8 @@ $(document).ready(function() {
         var targetTab = $(e.target).attr('data-bs-target');
         if (targetTab === '#pool-orders-tab-pane') {
             poolOrdersTable.ajax.reload();
+        } else if (targetTab === '#all-pool-orders-tab-pane') {
+            allPoolOrdersTable.ajax.reload();
         } else if (targetTab === '#all-domains-tab-pane') {
             poolDomainsTable.ajax.reload();
         } else if (targetTab === '#in-queue-tab-pane') {
@@ -346,6 +405,7 @@ function cancelPoolOrder(orderId) {
         success: function(response) {
             toastr.success(response.message || 'Pool order cancelled successfully');
             $('#pool-orders-table').DataTable().ajax.reload();
+            $('#all-pool-orders-table').DataTable().ajax.reload();
             $('#in-queue-orders-table').DataTable().ajax.reload();
         },
         error: function(xhr) {

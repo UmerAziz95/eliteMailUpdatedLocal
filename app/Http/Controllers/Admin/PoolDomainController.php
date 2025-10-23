@@ -296,6 +296,47 @@ class PoolDomainController extends Controller
     }
 
     /**
+     * Get list of all pool orders (no filtering)
+     */
+    public function allPoolOrders(Request $request)
+    {
+        if ($request->ajax()) {
+            $poolOrders = $this->poolOrderService->getAllPoolOrders();
+
+            return DataTables::of($poolOrders)
+                ->addIndexColumn()
+                ->addColumn('order_id', function ($row) {
+                    return $row->id;
+                })
+                ->addColumn('customer_name', function ($row) {
+                    return $row->user->name ?? 'N/A';
+                })
+                ->addColumn('customer_email', function ($row) {
+                    return $row->user->email ?? 'N/A';
+                })
+                ->addColumn('status_badge', function ($row) {
+                    return $this->poolOrderService->getStatusBadge($row->status);
+                })
+                ->addColumn('assigned_to_name', function ($row) {
+                    return $this->poolOrderService->getAssignedToBadge($row);
+                })
+                ->addColumn('assigned_at_formatted', function ($row) {
+                    return $this->poolOrderService->formatAssignedAt($row);
+                })
+                ->addColumn('created_at', function ($row) {
+                    return $row->created_at->format('Y-m-d H:i:s');
+                })
+                ->addColumn('actions', function ($row) {
+                    return $this->poolOrderService->getActionsDropdown($row);
+                })
+                ->rawColumns(['status_badge', 'assigned_to_name', 'actions'])
+                ->make(true);
+        }
+
+        return view('admin.pool_domains.index');
+    }
+
+    /**
      * Get list of in-queue pool orders (not assigned)
      */
     public function inQueueOrders(Request $request)
