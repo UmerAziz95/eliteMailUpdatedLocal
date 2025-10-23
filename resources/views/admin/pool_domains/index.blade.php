@@ -451,6 +451,49 @@ function cancelPoolOrder(orderId) {
     });
 }
 
+// Lock out of Instantly
+function lockOutOfInstantly(orderId) {
+    Swal.fire({
+        title: 'Lock Out of Instantly?',
+        html: '<strong>This action will:</strong><br>' +
+              '• Cancel the pool order<br>' +
+              '• Remove the Chargebee subscription<br>' +
+              '• Mark as "Locked out of Instantly"<br><br>' +
+              '<span style="color: red;">This action cannot be undone!</span>',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, lock it out!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: '{{ route("admin.pool-orders.lock-out-of-instantly") }}',
+                type: 'POST',
+                data: {
+                    id: orderId,
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire('Locked Out!', response.message, 'success');
+                        $('#pool-orders-table').DataTable().ajax.reload();
+                        $('#all-pool-orders-table').DataTable().ajax.reload();
+                        $('#in-queue-orders-table').DataTable().ajax.reload();
+                    } else {
+                        Swal.fire('Error!', response.message, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    const errorMsg = xhr.responseJSON?.message || 'Error marking pool order as locked out';
+                    Swal.fire('Error!', errorMsg, 'error');
+                }
+            });
+        }
+    });
+}
+
 // Edit domain function
 function editDomain(poolId, poolOrderId, domainId, domainName, status) {
     $('#edit_pool_id').val(poolId);

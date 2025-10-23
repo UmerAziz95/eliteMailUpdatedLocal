@@ -275,6 +275,17 @@ class PoolOrderService
                     </li>';
         }
         
+        // Add "Locked Out of Instantly" option for non-cancelled orders
+        if (!$poolOrder->locked_out_of_instantly && $poolOrder->status !== 'cancelled') {
+            $html .= '
+                    <li>
+                        <a class="dropdown-item text-warning" href="javascript:void(0)" 
+                           onclick="lockOutOfInstantly(' . $poolOrder->id . ')">
+                            <i class="fa-solid fa-lock me-1"></i>Locked Out of Instantly
+                        </a>
+                    </li>';
+        }
+        
         $html .= '
                 </ul>
             </div>';
@@ -430,5 +441,73 @@ class PoolOrderService
         $password = ucfirst($password);
         
         return $password;
+    }
+
+    /**
+     * Mark pool order as locked out of Instantly
+     * This will cancel the order and remove the subscription
+     *
+     * @param int $orderId
+     * @return array
+     */
+    public function lockOutOfInstantly($orderId)
+    {
+        try {
+            $poolOrder = PoolOrder::findOrFail($orderId);
+            
+            // Check if already locked out
+            if ($poolOrder->locked_out_of_instantly) {
+                return [
+                    'success' => false,
+                    'message' => 'This pool order is already marked as locked out of Instantly'
+                ];
+            }
+
+            // Update the pool order
+            $poolOrder->locked_out_of_instantly = true;
+            $poolOrder->locked_out_at = now();
+            $poolOrder->status = 'cancelled';
+            $poolOrder->status_manage_by_admin = 'cancelled';
+            $poolOrder->cancelled_at = now();
+            $poolOrder->reason = 'Locked out of Instantly';
+            $poolOrder->save();
+
+            // Try to cancel the subscription in Chargebee if subscription ID exists
+            if ($poolOrder->chargebee_subscription_id) {
+                try {
+                    \ChargeBee_Environment::configure(
+                        config('services.chargebee.site'),
+                        config('services.chargebee.api_key')
+                    );
+
+                    $subscription = \ChargeBee_Subscription::cancel($poolOrder->chargebee_subscription_id, [
+                        'endOfTerm' => false
+                    ]);
+
+                    Log::info('Chargebee subscription cancelled due to Instantly lockout', [
+                        'pool_order_id' => $poolOrder->id,
+                        'subscription_id' => $poolOrder->chargebee_subscription_id
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to cancel Chargebee subscription for Instantly lockout', [
+                        'pool_order_id' => $poolOrder->id,
+                        'subscription_id' => $poolOrder->chargebee_subscription_id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Pool order marked as locked out of Instantly and cancelled successfully'
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error marking pool order as locked out of Instantly: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error marking pool order as locked out: ' . $e->getMessage()
+            ];
+        }
     }
 }

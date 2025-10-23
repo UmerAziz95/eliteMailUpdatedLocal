@@ -565,4 +565,23 @@ class PoolDomainController extends Controller
             return back()->with('error', 'Error downloading CSV file.');
         }
     }
+
+    /**
+     * Mark pool order as locked out of Instantly
+     */
+    public function lockOutOfInstantly(Request $request)
+    {
+        try {
+            $orderId = $request->input('id');
+            $result = $this->poolOrderService->lockOutOfInstantly($orderId);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            \Log::error('Error locking out of Instantly: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error marking pool order as locked out: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
