@@ -5,15 +5,18 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\PoolDomainService;
+use App\Services\PoolOrderService;
 use Yajra\DataTables\DataTables;
 
 class PoolDomainController extends Controller
 {
     protected $poolDomainService;
+    protected $poolOrderService;
 
-    public function __construct(PoolDomainService $poolDomainService)
+    public function __construct(PoolDomainService $poolDomainService, PoolOrderService $poolOrderService)
     {
         $this->poolDomainService = $poolDomainService;
+        $this->poolOrderService = $poolOrderService;
     }
 
     /**
@@ -248,5 +251,101 @@ class PoolDomainController extends Controller
                 'message' => 'Error updating domain: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get list of assigned pool orders (My Pool Orders)
+     */
+    public function poolOrdersList(Request $request)
+    {
+        if ($request->ajax()) {
+            // Get only orders assigned to the current user
+            $poolOrders = $this->poolOrderService->getAssignedPoolOrders(auth()->id());
+
+            return DataTables::of($poolOrders)
+                ->addIndexColumn()
+                ->addColumn('order_id', function ($row) {
+                    return $row->id;
+                })
+                ->addColumn('customer_name', function ($row) {
+                    return $row->user->name ?? 'N/A';
+                })
+                ->addColumn('customer_email', function ($row) {
+                    return $row->user->email ?? 'N/A';
+                })
+                ->addColumn('status_badge', function ($row) {
+                    return $this->poolOrderService->getStatusBadge($row->status);
+                })
+                ->addColumn('assigned_to_name', function ($row) {
+                    return $this->poolOrderService->getAssignedToBadge($row);
+                })
+                ->addColumn('assigned_at_formatted', function ($row) {
+                    return $this->poolOrderService->formatAssignedAt($row);
+                })
+                ->addColumn('created_at', function ($row) {
+                    return $row->created_at->format('Y-m-d H:i:s');
+                })
+                ->addColumn('actions', function ($row) {
+                    return $this->poolOrderService->getActionsDropdown($row);
+                })
+                ->rawColumns(['status_badge', 'assigned_to_name', 'actions'])
+                ->make(true);
+        }
+
+        return view('admin.pool_domains.index');
+    }
+
+    /**
+     * Get list of in-queue pool orders (not assigned)
+     */
+    public function inQueueOrders(Request $request)
+    {
+        if ($request->ajax()) {
+            $inQueueOrders = $this->poolOrderService->getUnassignedPoolOrders();
+
+            return DataTables::of($inQueueOrders)
+                ->addIndexColumn()
+                ->addColumn('order_id', function ($row) {
+                    return $row->id;
+                })
+                ->addColumn('customer_name', function ($row) {
+                    return $row->user->name ?? 'N/A';
+                })
+                ->addColumn('customer_email', function ($row) {
+                    return $row->user->email ?? 'N/A';
+                })
+                ->addColumn('status_badge', function ($row) {
+                    return $this->poolOrderService->getStatusBadge($row->status);
+                })
+                ->addColumn('created_at', function ($row) {
+                    return $row->created_at->format('Y-m-d H:i:s');
+                })
+                ->addColumn('actions', function ($row) {
+                    return $this->poolOrderService->getActionsDropdown($row);
+                })
+                ->rawColumns(['status_badge', 'actions'])
+                ->make(true);
+        }
+
+        return view('admin.pool_domains.index');
+    }
+
+    /**
+     * Cancel a pool order
+     */
+    public function cancelPoolOrder(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|integer|exists:pool_orders,id'
+        ]);
+
+        $result = $this->poolOrderService->cancelPoolOrder($request->order_id);
+
+        if ($result['success']) {
+            // Clear cache after cancellation
+            $this->poolDomainService->clearCache();
+        }
+
+        return response()->json($result, $result['success'] ? 200 : 400);
     }
 }

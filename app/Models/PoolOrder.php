@@ -70,6 +70,8 @@ class PoolOrder extends Model
         'currency',
         'status',
         'status_manage_by_admin',
+        'assigned_to',
+        'assigned_at',
         'domains',
         'hosting_platform',
         'hosting_platform_data',
@@ -88,6 +90,7 @@ class PoolOrder extends Model
         'hosting_platform_data' => 'array',
         'sending_platform_data' => 'array',
         'paid_at' => 'datetime',
+        'assigned_at' => 'datetime',
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'amount' => 'decimal:2'
@@ -107,6 +110,14 @@ class PoolOrder extends Model
     public function poolPlan(): BelongsTo
     {
         return $this->belongsTo(PoolPlan::class);
+    }
+
+    /**
+     * Get the admin/user assigned to this pool order
+     */
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     /**
