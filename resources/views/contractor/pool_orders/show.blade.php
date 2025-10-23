@@ -22,13 +22,13 @@
         <a href="{{ route('contractor.pool-domains.index') }}" class="btn btn-sm btn-secondary">
             <i class="fa fa-chevron-left me-1"></i> Back to Pool Orders
         </a>
-        <div class="d-flex gap-2">
+        <!-- <div class="d-flex gap-2">
             @if(($poolOrder->status_manage_by_admin ?? $poolOrder->status) !== 'cancelled')
             <button class="btn btn-sm btn-danger" onclick="cancelPoolOrder({{ $poolOrder->id }})">
                 <i class="fa fa-ban me-1"></i> Cancel Order
             </button>
             @endif
-        </div>
+        </div> -->
     </div>
 
     <div class="d-flex align-items-center justify-content-between mb-4">
@@ -375,13 +375,22 @@
                 <div class="col-md-6">
                     <div class="card shadow-sm border-0" style="max-height: 800px;">
                         <div class="card-body">
-                            <h5 class="card-title d-flex align-items-center gap-2 mb-4">
-                                <div class="d-flex align-items-center justify-content-center"
-                                    style="height: 35px; width: 35px; border-radius: 50%; color: #7367ef; border: 1px solid #7367ef">
-                                    <i class="fa fa-globe"></i>
-                                </div>
-                                Domain Configuration
-                            </h5>
+                            <div class="d-flex align-items-center justify-content-between mb-4">
+                                <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                                    <div class="d-flex align-items-center justify-content-center"
+                                        style="height: 35px; width: 35px; border-radius: 50%; color: #7367ef; border: 1px solid #7367ef">
+                                        <i class="fa fa-globe"></i>
+                                    </div>
+                                    Domain Configuration
+                                </h5>
+                                @if($poolOrder->hasDomains())
+                                <a href="{{ route('contractor.pool-orders.download-domains-csv', $poolOrder->id) }}" 
+                                   class="btn btn-sm btn-success" 
+                                   title="Download Domains with Prefixes CSV">
+                                    <i class="fa fa-download me-1"></i>Download CSV
+                                </a>
+                                @endif
+                            </div>
 
                             @if($poolOrder->hasDomains())
                             <div class="row mb-3">

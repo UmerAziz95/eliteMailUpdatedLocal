@@ -552,4 +552,17 @@ class PoolDomainController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Download domains with prefixes as CSV
+     */
+    public function downloadDomainsCsv($id)
+    {
+        try {
+            return $this->poolOrderService->downloadDomainsCsv($id);
+        } catch (\Exception $e) {
+            \Log::error('Error downloading domains CSV: ' . $e->getMessage());
+            return back()->with('error', 'Error downloading CSV file.');
+        }
+    }
 }

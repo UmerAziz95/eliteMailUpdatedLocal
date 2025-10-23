@@ -66,7 +66,7 @@ class PoolOrderService
             $poolOrder = PoolOrder::findOrFail($orderId);
             
             // Only allow cancellation of pending or in_progress orders
-            if (!in_array($poolOrder->status, ['pending', 'in_progress'])) {
+            if (!in_array($poolOrder->status_manage_by_admin, ['pending', 'in-progress'])) {
                 return [
                     'success' => false,
                     'message' => 'Only pending or in-progress orders can be cancelled'
@@ -74,6 +74,7 @@ class PoolOrderService
             }
 
             $poolOrder->status = 'cancelled';
+            $poolOrder->status_manage_by_admin = 'cancelled';
             $poolOrder->cancelled_at = now();
             $poolOrder->save();
 
@@ -279,5 +280,121 @@ class PoolOrderService
             </div>';
         
         return $html;
+    }
+
+    /**
+     * Download domains with prefixes as CSV
+     *
+     * @param int $poolOrderId
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    
+    public function downloadDomainsCsv($poolOrderId)
+    {
+        $poolOrder = PoolOrder::findOrFail($poolOrderId);
+        
+        if (!$poolOrder->hasDomains()) {
+            throw new \Exception('No domains available for this pool order.');
+        }
+
+        $filename = 'pool_order_' . $poolOrder->id . '_domains_' . date('Y-m-d_His') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($poolOrder) {
+            $file = fopen('php://output', 'w');
+            
+            // Add CSV headers matching Google Workspace format
+            fputcsv($file, ['First Name', 'Last Name', 'Email address', 'Password', 'Org Unit Path [Required]']);
+            
+            // Get pool data for first name, last name, and password
+            $pool = $poolOrder->pool;
+            $poolFirstName = $pool->first_name ?? '';
+            $poolLastName = $pool->last_name ?? '';
+            $poolPassword = $pool->email_persona_password ?? $pool->persona_password ?? '';
+            // dd($poolOrder->ready_domains_prefix, $poolFirstName, $poolLastName, $poolPassword);
+            
+            // Add domain data
+            foreach ($poolOrder->ready_domains_prefix as $domain) {
+                $domainName = $domain['domain_name'] ?? 'Unknown';
+                Log::info('Processing domain: ' . $poolOrder->id . ' - ' . $poolOrder->ready_domains_prefix);
+                if (!empty($domain['formatted_prefixes'])) {
+                    Log::info('Processing domain: ' . $domainName . ' with ' . count($domain['formatted_prefixes']) . ' prefixes.');
+                    foreach ($domain['formatted_prefixes'] as $index => $email) {
+                        Log::info('Processing email: ' . $email . ' at index ' . $index);
+                        // Try to get first_name and last_name from pool_info for this specific prefix
+                        $firstName = $poolFirstName;
+                        $lastName = $poolLastName;
+                        $password = $poolPassword;
+                        
+                        // Check if there's specific info for this prefix in pool_info
+                        if (isset($domain['pool_info'])) {
+                            // If pool_info is an array of details per prefix
+                            if (is_array($domain['pool_info']) && isset($domain['pool_info'][$index])) {
+                                $firstName = $domain['pool_info'][$index]['first_name'] ?? $poolFirstName;
+                                $lastName = $domain['pool_info'][$index]['last_name'] ?? $poolLastName;
+                            }
+                            // If pool_info has single values for all prefixes
+                            else if (isset($domain['pool_info']['first_name']) || isset($domain['pool_info']['last_name'])) {
+                                $firstName = $domain['pool_info']['first_name'] ?? $poolFirstName;
+                                $lastName = $domain['pool_info']['last_name'] ?? $poolLastName;
+                            }
+                        }
+                        
+                        // Generate password if not available
+                        if (empty($password)) {
+                            $password = $this->customEncrypt($poolOrder->id, $index);
+                        }
+                        
+                        fputcsv($file, [
+                            $firstName,
+                            $lastName,
+                            $email,
+                            $password,
+                            '/'
+                        ]);
+                    }
+                } else {
+                    // If no prefixes, still add a row with pool data
+                    $password = $poolPassword ?: $this->customEncrypt($poolOrder->id, 0);
+                    
+                    fputcsv($file, [
+                        $poolFirstName,
+                        $poolLastName,
+                        '',
+                        $password,
+                        '/'
+                    ]);
+                }
+            }
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Generate a custom encrypted password based on order ID and index
+     *
+     * @param int $orderId
+     * @param int $index
+     * @return string
+     */
+    private function customEncrypt($orderId, $index = 0)
+    {
+        // Create a hash from order ID and index
+        $hash = md5($orderId . '-' . $index . '-' . config('app.key'));
+        
+        // Take first 8 characters and add a special character prefix
+        $password = '#' . substr($hash, 0, 7);
+        
+        // Make it mixed case
+        $password = ucfirst($password);
+        
+        return $password;
     }
 }

@@ -263,6 +263,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('pool-orders/all', [\App\Http\Controllers\Admin\PoolDomainController::class, 'allPoolOrders'])->name('pool-orders.all');
         Route::get('pool-orders/in-queue', [\App\Http\Controllers\Admin\PoolDomainController::class, 'inQueueOrders'])->name('pool-orders.in-queue');
         Route::get('pool-orders/{id}/view', [\App\Http\Controllers\Admin\PoolDomainController::class, 'viewPoolOrder'])->name('pool-orders.view');
+        Route::get('pool-orders/{id}/download-domains-csv', [\App\Http\Controllers\Admin\PoolDomainController::class, 'downloadDomainsCsv'])->name('pool-orders.download-domains-csv');
         Route::post('pool-orders/cancel', [\App\Http\Controllers\Admin\PoolDomainController::class, 'cancelPoolOrder'])->name('pool-orders.cancel');
         Route::post('pool-orders/assign-to-me', [\App\Http\Controllers\Admin\PoolDomainController::class, 'assignToMe'])->name('pool-orders.assign-to-me');
         Route::post('pool-orders/change-status', [\App\Http\Controllers\Admin\PoolDomainController::class, 'changePoolOrderStatus'])->name('pool-orders.change-status');
@@ -652,6 +653,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('pool-orders/all', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'allPoolOrders'])->name('pool-orders.all');
     Route::get('pool-orders/in-queue', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'inQueueOrders'])->name('pool-orders.in-queue');
     Route::get('pool-orders/{id}/view', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'viewPoolOrder'])->name('pool-orders.view');
+    Route::get('pool-orders/{id}/download-domains-csv', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'downloadDomainsCsv'])->name('pool-orders.download-domains-csv');
     Route::post('pool-orders/cancel', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'cancelPoolOrder'])->name('pool-orders.cancel');
     Route::post('pool-orders/assign-to-me', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'assignToMe'])->name('pool-orders.assign-to-me');
     Route::post('pool-orders/change-status', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'changePoolOrderStatus'])->name('pool-orders.change-status');
