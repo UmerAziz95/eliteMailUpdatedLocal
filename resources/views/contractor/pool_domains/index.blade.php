@@ -91,7 +91,7 @@
                 <i class="fa fa-user-check me-1"></i>My Trial Orders
             </button>
         </li>
-        <li class="nav-item" role="presentation">
+        <li class="nav-item" role="presentation" style="display: none;">
             <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white" 
                     id="all-pool-orders-tab" data-bs-toggle="tab" data-bs-target="#all-pool-orders-tab-pane" type="button" 
                     role="tab" aria-controls="all-pool-orders-tab-pane" aria-selected="false">
