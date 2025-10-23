@@ -106,7 +106,7 @@
                     href="{{ route('contractor.pool-domains.index') }}">
                     <div class="d-flex align-items-center" style="gap: 13px">
                         <div class="icons"><i class="ti ti-database fs-5"></i></div>
-                        <div class="text">Pool Domains</div>
+                        <div class="text">Trial Orders</div>
                     </div>
                 </a>
             </li>

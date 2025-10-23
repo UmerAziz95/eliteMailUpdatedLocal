@@ -205,7 +205,7 @@ class PoolOrderService
     public function getActionsDropdown($poolOrder, $options = [])
     {
         $showView = $options['showView'] ?? true;
-        $showViewDomains = $options['showViewDomains'] ?? true;
+        $showViewDomains = $options['showViewDomains'] ?? false;
         $showCancel = $options['showCancel'] ?? true;
         $showAssignToMe = $options['showAssignToMe'] ?? false;
         $showChangeStatus = $options['showChangeStatus'] ?? false;

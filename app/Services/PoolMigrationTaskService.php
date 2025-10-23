@@ -277,6 +277,7 @@ class PoolMigrationTaskService
                 'hosting_platform' => $metadata['hosting_platform'] ?? ($poolOrder->hosting_platform ?? 'N/A'),
                 'customer_name' => $user ? $user->name : 'N/A',
                 'customer_email' => $user ? $user->email : 'N/A',
+                'has_domains' => $poolOrder && $poolOrder->hasDomains() ? true : false,
             ];
 
             return [

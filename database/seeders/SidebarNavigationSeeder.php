@@ -111,6 +111,15 @@ class SidebarNavigationSeeder extends Seeder
                 'sub_menu' => [],
                 'order' => 8.7
             ],
+            // pool-domains
+            [
+                "name" => "Trial Orders",
+                "icon" => "ti ti-world fs-5",
+                "route" => "admin.pool-domains.index",
+                "permission" => "Pool Domains",
+                'sub_menu' => [],
+                'order' => 8.8
+            ],
             // [
             //     'name' => 'Special Plans',
             //     'icon' => 'ti ti-star fs-5',
@@ -257,15 +266,7 @@ class SidebarNavigationSeeder extends Seeder
                 'sub_menu' => [],
                 'order' => 25
             ],
-            // pool-domains
-            [
-                "name" => "Pool Domains",
-                "icon" => "ti ti-world fs-5",
-                "route" => "admin.pool-domains.index",
-                "permission" => "Pool Domains",
-                'sub_menu' => [],
-                'order' => 26
-            ],
+            
             [
                 "name" => "Team Leader Dashboard",
                 "icon" => "ti ti-dashboard fs-5",

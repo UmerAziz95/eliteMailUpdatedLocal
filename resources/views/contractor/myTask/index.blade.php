@@ -2185,7 +2185,16 @@
                     </div>
                     
                     <div class="mb-4">
-                        <h6 class="text-white-50">Pool Order Details</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-white-50 mb-0">Pool Order Details</h6>
+                            ${order.has_domains ? `
+                                <a href="/contractor/pool-orders/${order.order_id}/download-domains-csv" 
+                                   class="btn btn-sm btn-success" 
+                                   title="Download Domains with Prefixes CSV">
+                                    <i class="fa fa-download me-1"></i>CSV
+                                </a>
+                            ` : ''}
+                        </div>
                         <div class="glass-box mb-2">
                             <div class="d-flex justify-content-between">
                                 <span class="text-white-50">Order ID</span>
