@@ -195,7 +195,7 @@ class PoolOrderService
     }
 
     /**
-     * Get actions dropdown HTML for DataTables
+     * Generate actions dropdown HTML for a pool order
      *
      * @param \App\Models\PoolOrder $poolOrder
      * @param array $options
@@ -208,9 +208,10 @@ class PoolOrderService
         $showCancel = $options['showCancel'] ?? true;
         $showAssignToMe = $options['showAssignToMe'] ?? false;
         $showChangeStatus = $options['showChangeStatus'] ?? false;
+        $routePrefix = $options['routePrefix'] ?? 'admin'; // Default to admin for backward compatibility
         
         $orderId = $poolOrder->id;
-        $viewRoute = route('admin.pool-orders.view', $poolOrder->id);
+        $viewRoute = route($routePrefix . '.pool-orders.view', $poolOrder->id);
         
         $html = '
             <div class="dropdown">

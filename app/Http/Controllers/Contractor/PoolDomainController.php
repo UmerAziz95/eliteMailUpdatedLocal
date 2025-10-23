@@ -287,7 +287,8 @@ class PoolDomainController extends Controller
                 })
                 ->addColumn('actions', function ($row) {
                     return $this->poolOrderService->getActionsDropdown($row, [
-                        'showChangeStatus' => true
+                        'showChangeStatus' => true,
+                        'routePrefix' => 'contractor'
                     ]);
                 })
                 ->rawColumns(['status_badge', 'assigned_to_name', 'actions'])
@@ -330,7 +331,8 @@ class PoolDomainController extends Controller
                 })
                 ->addColumn('actions', function ($row) {
                     return $this->poolOrderService->getActionsDropdown($row, [
-                        'showChangeStatus' => true
+                        'showChangeStatus' => true,
+                        'routePrefix' => 'contractor'
                     ]);
                 })
                 ->rawColumns(['status_badge', 'assigned_to_name', 'actions'])
@@ -367,7 +369,8 @@ class PoolDomainController extends Controller
                 })
                 ->addColumn('actions', function ($row) {
                     return $this->poolOrderService->getActionsDropdown($row, [
-                        'showAssignToMe' => true
+                        'showAssignToMe' => true,
+                        'routePrefix' => 'contractor'
                     ]);
                 })
                 ->rawColumns(['status_badge', 'actions'])
