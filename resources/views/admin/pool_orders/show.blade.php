@@ -23,7 +23,7 @@
             <i class="fa fa-chevron-left me-1"></i> Back to Pool Orders
         </a>
         <div class="d-flex gap-2">
-            @if($poolOrder->status !== 'cancelled')
+            @if(($poolOrder->status_manage_by_admin ?? $poolOrder->status) !== 'cancelled')
             <button class="btn btn-sm btn-danger" onclick="cancelPoolOrder({{ $poolOrder->id }})">
                 <i class="fa fa-ban me-1"></i> Cancel Order
             </button>
@@ -41,16 +41,19 @@
         </div>
         <div class="d-flex gap-2 align-items-center">
             @php
+                // Use status_manage_by_admin if set, otherwise use status
+                $displayStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
                 $statusColors = [
                     'pending' => 'warning',
+                    'in-progress' => 'info',
                     'in_progress' => 'info',
                     'completed' => 'success',
                     'cancelled' => 'danger'
                 ];
-                $statusColor = $statusColors[$poolOrder->status] ?? 'secondary';
+                $statusColor = $statusColors[$displayStatus] ?? 'secondary';
             @endphp
             <span class="badge bg-{{ $statusColor }} px-3 py-2">
-                {{ ucfirst(str_replace('_', ' ', $poolOrder->status)) }}
+                {{ ucfirst(str_replace(['_', '-'], ' ', $displayStatus)) }}
             </span>
         </div>
     </div>

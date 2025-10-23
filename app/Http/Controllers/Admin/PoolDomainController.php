@@ -507,6 +507,23 @@ class PoolDomainController extends Controller
             // Convert status format: underscore to hyphen for database ENUM compatibility
             $statusValue = str_replace('_', '-', $request->status);
             
+            // If changing to cancelled, use the cancellation service to handle subscription cancellation
+            if ($statusValue === 'cancelled') {
+                $cancellationService = new \App\Services\PoolOrderCancelledService();
+                $reason = 'Admin cancelled the order';
+                $result = $cancellationService->cancelSubscription($request->order_id, $poolOrder->user_id, $reason);
+                
+                if ($result['success']) {
+                    \Log::info('Pool order #' . $poolOrder->id . ' cancelled (status_manage_by_admin and subscription) by admin user #' . auth()->id());
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Pool order and subscription cancelled successfully'
+                    ]);
+                } else {
+                    return response()->json($result, 400);
+                }
+            }
+            
             // Use status_manage_by_admin column for admin status changes
             $poolOrder->status_manage_by_admin = $statusValue;
             $poolOrder->save();
