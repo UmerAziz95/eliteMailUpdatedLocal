@@ -208,7 +208,7 @@ class PoolOrderService
         $showCancel = $options['showCancel'] ?? true;
         
         $orderId = $poolOrder->id;
-        $viewRoute = route('admin.pools.show', $poolOrder->id);
+        $viewRoute = route('admin.pool-orders.view', $poolOrder->id);
         
         $html = '
             <div class="dropdown">

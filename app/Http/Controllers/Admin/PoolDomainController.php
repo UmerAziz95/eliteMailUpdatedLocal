@@ -372,6 +372,21 @@ class PoolDomainController extends Controller
     }
 
     /**
+     * View pool order details
+     */
+    public function viewPoolOrder($id)
+    {
+        $poolOrder = \App\Models\PoolOrder::with([
+            'user', 
+            'assignedTo', 
+            'poolPlan',
+            'poolInvoices'
+        ])->findOrFail($id);
+
+        return view('admin.pool_orders.show', compact('poolOrder'));
+    }
+
+    /**
      * Cancel a pool order
      */
     public function cancelPoolOrder(Request $request)
@@ -389,4 +404,32 @@ class PoolDomainController extends Controller
 
         return response()->json($result, $result['success'] ? 200 : 400);
     }
+
+    /**
+     * Download pool invoice as PDF
+     */
+    public function downloadPoolInvoice($invoiceId)
+    {
+        try {
+            // Find the pool invoice by ID (admin can download any invoice)
+            $poolInvoice = \App\Models\PoolInvoice::with(['user', 'poolOrder.poolPlan'])
+                ->where('id', $invoiceId)
+                ->firstOrFail();
+
+            // Generate PDF using dompdf
+            $pdf = \PDF::loadView('customer.pool-invoices.pdf', compact('poolInvoice'));
+            
+            // Generate filename
+            $filename = 'pool_invoice_' . $poolInvoice->chargebee_invoice_id . '.pdf';
+
+            // Return PDF file as download
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            \Log::error('Error downloading pool invoice: ' . $e->getMessage());
+            
+            return redirect()->back()->with('error', 'Error downloading invoice');
+        }
+    }
 }
+

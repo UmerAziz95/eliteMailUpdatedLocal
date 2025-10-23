@@ -262,7 +262,9 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('pool-orders/list', [\App\Http\Controllers\Admin\PoolDomainController::class, 'poolOrdersList'])->name('pool-orders.list');
         Route::get('pool-orders/all', [\App\Http\Controllers\Admin\PoolDomainController::class, 'allPoolOrders'])->name('pool-orders.all');
         Route::get('pool-orders/in-queue', [\App\Http\Controllers\Admin\PoolDomainController::class, 'inQueueOrders'])->name('pool-orders.in-queue');
+        Route::get('pool-orders/{id}/view', [\App\Http\Controllers\Admin\PoolDomainController::class, 'viewPoolOrder'])->name('pool-orders.view');
         Route::post('pool-orders/cancel', [\App\Http\Controllers\Admin\PoolDomainController::class, 'cancelPoolOrder'])->name('pool-orders.cancel');
+        Route::get('pool-orders/invoices/{invoiceId}/download', [\App\Http\Controllers\Admin\PoolDomainController::class, 'downloadPoolInvoice'])->name('pool-orders.invoices.download');
         
         Route::post('special-plans/master-plan', [SpecialPlanController::class, 'storeMasterPlan'])->name('special-plans.master-plan.store');        // Special Plans Static Link Generation
         Route::post('special-plans/generate-static-link', [StaticLinkController::class, 'generateStaticLink'])->name('special-plans.generate-static-link');
