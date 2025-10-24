@@ -114,7 +114,15 @@
                     </div>
                     <div class="stat-item">
                         <div class="text-white-50 small">Total Lines</div>
-                        <div class="text-white fw-bold">{{ number_format($logInfo['total_lines']) }}</div>
+                        <div class="text-white fw-bold">
+                            @if(is_numeric($logInfo['total_lines']))
+                                {{ number_format($logInfo['total_lines']) }}
+                            @elseif(!empty($logInfo['total_lines']))
+                                {{ $logInfo['total_lines'] }}
+                            @else
+                                <span class="text-white-50">Unavailable</span>
+                            @endif
+                        </div>
                     </div>
                     <div class="stat-item">
                         <div class="text-white-50 small">Showing</div>
@@ -127,6 +135,11 @@
                     <div class="text-white-50 small">Last Modified</div>
                     <div class="text-white fw-bold">{{ $logInfo['modified'] }}</div>
                 </div>
+                @if(!empty($logInfo['is_large_file']))
+                    <div class="text-white-50 small mt-2">
+                        Large file detected. Showing the last {{ number_format($logInfo['showing_lines']) }} lines for performance.
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -142,11 +155,11 @@
             <div class="col-md-3">
                 <label class="form-label text-white-50">Lines to show</label>
                 <select name="lines" class="form-control bg-dark text-white border-secondary">
-                    <option value="50" {{ $lines == 50 ? 'selected' : '' }}>Last 50 lines</option>
-                    <option value="100" {{ $lines == 100 ? 'selected' : '' }}>Last 100 lines</option>
-                    <option value="200" {{ $lines == 200 ? 'selected' : '' }}>Last 200 lines</option>
-                    <option value="500" {{ $lines == 500 ? 'selected' : '' }}>Last 500 lines</option>
-                    <option value="1000" {{ $lines == 1000 ? 'selected' : '' }}>Last 1000 lines</option>
+                    @foreach($lineOptions as $option)
+                        <option value="{{ $option }}" {{ $lines == $option ? 'selected' : '' }}>
+                            Last {{ number_format($option) }} lines
+                        </option>
+                    @endforeach
                 </select>
             </div>
             <div class="col-md-3">
