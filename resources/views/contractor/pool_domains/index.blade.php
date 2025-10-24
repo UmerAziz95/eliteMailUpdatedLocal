@@ -81,13 +81,13 @@
             <p class="mb-0">Manage trials orders and domains</p>
         </div>
     </div>
-
+    
     <!-- Tab Navigation -->
     <ul class="nav nav-pills mb-3 border-0" id="poolDomainsTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white" 
+            <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white active" 
                     id="pool-orders-tab" data-bs-toggle="tab" data-bs-target="#pool-orders-tab-pane" type="button" 
-                    role="tab" aria-controls="pool-orders-tab-pane" aria-selected="false">
+                    role="tab" aria-controls="pool-orders-tab-pane" aria-selected="true">
                 <i class="fa fa-user-check me-1"></i>My Trial Orders
             </button>
         </li>
@@ -98,10 +98,10 @@
                 <i class="fa fa-list me-1"></i>All Trial Orders
             </button>
         </li>
-        <li class="nav-item" role="presentation">
-            <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white active" 
+        <li class="nav-item" role="presentation" style="display: none;">
+            <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white" 
                     id="all-domains-tab" data-bs-toggle="tab" data-bs-target="#all-domains-tab-pane" type="button" 
-                    role="tab" aria-controls="all-domains-tab-pane" aria-selected="true">
+                    role="tab" aria-controls="all-domains-tab-pane" aria-selected="false">
                 <i class="fa fa-globe me-1"></i>Trial All Domains
             </button>
         </li>
@@ -116,7 +116,7 @@
 
     <div class="tab-content" id="poolDomainsTabContent">
         <!-- My Pool Orders Tab -->
-        <div class="tab-pane fade" id="pool-orders-tab-pane" role="tabpanel" aria-labelledby="pool-orders-tab" tabindex="0">
+        <div class="tab-pane fade show active" id="pool-orders-tab-pane" role="tabpanel" aria-labelledby="pool-orders-tab" tabindex="0">
             <div class="card py-3 px-4 mb-4 shadow-sm border-0">
                 <div class="table-responsive">
                     <table id="pool-orders-table" class="table table-hover w-100">
@@ -166,7 +166,7 @@
         </div>
 
         <!-- Pool All Domains Tab -->
-        <div class="tab-pane fade show active" id="all-domains-tab-pane" role="tabpanel" aria-labelledby="all-domains-tab" tabindex="0">
+        <div class="tab-pane fade" id="all-domains-tab-pane" role="tabpanel" aria-labelledby="all-domains-tab" tabindex="0">
             <div class="card py-3 px-4 mb-4 shadow-sm border-0">
                 <div class="table-responsive">
                     <table id="pool-domains-table" class="table table-hover w-100">
