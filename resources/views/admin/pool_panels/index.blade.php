@@ -125,6 +125,89 @@
 
 @section('content')
 <section class="py-3">
+    <!-- Pool Awaited Panel Allocation Offcanvas -->
+    <div class="offcanvas offcanvas-start" style="min-width: 70%;  background-color: var(--filter-color); backdrop-filter: blur(5px); border: 3px solid var(--second-primary);" tabindex="-1" id="poolAllocationOffcanvas" aria-labelledby="poolAllocationOffcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="poolAllocationOffcanvasLabel">Pool Awaited Panel Allocation</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="counters mb-3">
+                <div class="p-3 filter">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div class="content-left">
+                                <h6 class="text-heading">Number of Pools</h6>
+                                <div class="d-flex align-items-center my-1">
+                                    <h4 class="mb-0 me-2 fs-2" id="pools_counter">0</h4>
+                                    <p class="text-success mb-0"></p>
+                                </div>
+                                <small class="mb-0"></small>
+                            </div>
+                            <div class="avatar">
+                                <i class="fa-solid fa-water fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 filter">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div class="content-left">
+                                <h6 class="text-heading">Number of Inboxes</h6>
+                                <div class="d-flex align-items-center my-1">
+                                    <h4 class="mb-0 me-2 fs-2" id="pool_inboxes_counter">0</h4>
+                                    <p class="text-success mb-0"></p>
+                                </div>
+                                <small class="mb-0"></small>
+                            </div>
+                            <div class="avatar">
+                                <i class="fa-solid fa-inbox fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 filter">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div class="content-left">
+                                <h6 class="text-heading">Pool Panels Required</h6>
+                                <div class="d-flex align-items-center my-1">
+                                    <h4 class="mb-0 me-2 fs-2" id="pool_panels_counter">0</h4>
+                                    <p class="text-success mb-0"></p>
+                                </div>
+                                <small class="mb-0"></small>
+                            </div>
+                            <div class="avatar">
+                                <i class="fa-solid fa-layer-group fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="poolTable" class="w-100 display">
+                    <thead style="position: sticky; top: 0;">
+                        <tr>
+                            <th>Pool ID</th>
+                            <th>Date</th>
+                            <!-- <th>Plan</th>
+                            <th>Domain URL</th> -->
+                            <th>Total Inboxes</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="overflow-y-auto" id="poolTableBody">
+                        <!-- Dynamic data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Pool Panel Form Offcanvas -->
     <div class="offcanvas offcanvas-end" tabindex="-1" data-bs-backdrop="static" id="poolPanelFormOffcanvas" aria-labelledby="staticBackdropLabel">
         <div class="offcanvas-header">
@@ -161,6 +244,68 @@
             </form>
         </div>
     </div>
+
+    <!-- Pool Panel Capacity Alert -->
+    @php
+        // Get pool panel capacity alert data
+        $pendingPools = \App\Models\Pool::where('status', 'pending')
+            ->where('is_splitting', 0) // Only get pools that are not currently being split
+            ->whereNotNull('total_inboxes')
+            ->where('total_inboxes', '>', 0)
+            ->orderBy('created_at', 'asc') // Process older pools first
+            ->get();
+        
+        $insufficientSpacePools = [];
+        $totalPoolPanelsNeeded = 0;
+        $poolPanelCapacity = env('PANEL_CAPACITY', 1790);
+        $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+        
+        // Helper function to get available pool panel space
+        $getAvailablePoolPanelSpace = function(int $poolSize) use ($poolPanelCapacity, $maxSplitCapacity) {
+            // Get active pool panels with remaining capacity
+            $availablePoolPanels = \App\Models\PoolPanel::where('is_active', 1)
+                                        ->where('remaining_limit', '>', 0)
+                                        ->get();
+            
+            $totalSpace = 0;
+            foreach ($availablePoolPanels as $poolPanel) {
+                $totalSpace += min($poolPanel->remaining_limit, $maxSplitCapacity);
+            }
+            
+            return $totalSpace;
+        };
+        
+        foreach ($pendingPools as $pool) {
+            // Calculate available space for this pool
+            $availableSpace = $getAvailablePoolPanelSpace($pool->total_inboxes);
+            
+            if ($pool->total_inboxes > $availableSpace) {
+                // Calculate pool panels needed for this pool
+                $poolPanelsNeeded = ceil($pool->total_inboxes / $maxSplitCapacity);
+                $insufficientSpacePools[] = $pool;
+                $totalPoolPanelsNeeded += $poolPanelsNeeded;
+            }
+        }
+        
+        // Adjust total pool panels needed based on available pool panels
+        $availablePoolPanelCount = \App\Models\PoolPanel::where('is_active', true)
+            ->where('remaining_limit', '>=', $maxSplitCapacity)
+            ->count();
+        
+        $adjustedPoolPanelsNeeded = max(0, $totalPoolPanelsNeeded - $availablePoolPanelCount);
+    @endphp
+
+    @if($adjustedPoolPanelsNeeded > 0)
+    <div id="poolPanelCapacityAlert" class="alert alert-warning alert-dismissible fade show py-2 rounded-1" role="alert"
+        style="background-color: rgba(255, 193, 7, 0.2); color: #fff; border: 2px solid #ffc107;">
+        <i class="ti ti-layer-group me-2 alert-icon"></i>
+        <strong>Pool Panel Capacity Alert:</strong>
+        {{ $adjustedPoolPanelsNeeded }} new pool panel{{ $adjustedPoolPanelsNeeded != 1 ? 's' : '' }} required for {{ count($insufficientSpacePools) }} pending pool{{ count($insufficientSpacePools) != 1 ? 's' : '' }}.
+        <a href="javascript:void(0)" onclick="showPoolAllocationDetails()" class="text-light alert-link">View Details</a> to see pending pools.
+        <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+            aria-label="Close"></button>
+    </div>
+    @endif
 
     <div class="counters mb-3">
         <div class="card p-3 counter_1">
@@ -234,6 +379,19 @@
                 </div>
             </div>
         </div>
+    </div>
+    
+    <!-- Pool Allocation Button -->
+    <div class="mb-3 d-flex justify-content-end">
+        <button type="button" class="btn btn-warning btn-sm border-0 px-3" 
+                onclick="showPoolAllocationDetails()"
+                title="View pools awaiting panel allocation">
+            <i class="fa-solid fa-water me-2"></i>
+            View Pending Pools
+            @if($adjustedPoolPanelsNeeded > 0)
+                <span class="badge bg-danger ms-2">{{ count($insufficientSpacePools) }}</span>
+            @endif
+        </button>
     </div>
     
     <!-- Advanced Search Filter UI -->
@@ -1139,6 +1297,9 @@ async function archivePoolPanel(poolPanelId) {
             
             // Reload pool panels to reflect changes
             resetAndReload();
+            
+            // Refresh capacity alert
+            refreshPoolPanelCapacityAlert();
         } else {
             // Show error message
             await Swal.fire({
@@ -1223,6 +1384,9 @@ async function unarchivePoolPanel(poolPanelId) {
             
             // Reload pool panels to reflect changes
             resetAndReload();
+            
+            // Refresh capacity alert
+            refreshPoolPanelCapacityAlert();
         } else {
             // Show error message
             await Swal.fire({
@@ -1261,6 +1425,111 @@ function switchTab(tab) {
     
     // Reset and reload with new filter
     resetAndReload();
+}
+
+// Show pool allocation details offcanvas
+function showPoolAllocationDetails() {
+    // Load pool allocation data
+    loadPoolAllocationData();
+    
+    // Show offcanvas
+    const offcanvas = new bootstrap.Offcanvas(document.getElementById('poolAllocationOffcanvas'));
+    offcanvas.show();
+}
+
+// Load pool allocation data
+async function loadPoolAllocationData() {
+    try {
+        const response = await $.ajax({
+            url: '{{ route("admin.pool-panels.capacity-alert") }}',
+            method: 'GET',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            }
+        });
+
+        if (response.success) {
+            // Update counters
+            $('#pools_counter').text(response.insufficient_pools_count || 0);
+            $('#pool_inboxes_counter').text(response.total_inboxes || 0);
+            $('#pool_panels_counter').text(response.total_pool_panels_needed || 0);
+            
+            // Populate table
+            const tbody = $('#poolTableBody');
+            tbody.empty();
+            
+            if (response.insufficient_pools && response.insufficient_pools.length > 0) {
+                response.insufficient_pools.forEach(pool => {
+                    const row = `
+                        <tr>
+                            <td>${pool.id || 'N/A'}</td>
+                            <td>${formatDate(pool.created_at)}</td>
+                            <td>${pool.total_inboxes || 0}</td>
+                            <td><span class="badge bg-warning">Pending</span></td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            } else {
+                tbody.html('<tr><td colspan="6" class="text-center">No pending pools awaiting allocation</td></tr>');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading pool allocation data:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to load pool allocation data. Please try again.',
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// Refresh pool panel capacity alert
+function refreshPoolPanelCapacityAlert() {
+    $.ajax({
+        url: '{{ route("admin.pool-panels.capacity-alert") }}',
+        method: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'Accept': 'application/json'
+        },
+        success: function(response) {
+            if (response.success) {
+                if (response.show_alert) {
+                    // Show/update the alert
+                    const alertHtml = `
+                        <div id="poolPanelCapacityAlert" class="alert alert-warning alert-dismissible fade show py-2 rounded-1" role="alert"
+                            style="background-color: rgba(255, 193, 7, 0.2); color: #fff; border: 2px solid #ffc107;">
+                            <i class="ti ti-layer-group me-2 alert-icon"></i>
+                            <strong>Pool Panel Capacity Alert:</strong>
+                            ${response.total_pool_panels_needed} new pool panel${response.total_pool_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_pools_count} pending pool${response.insufficient_pools_count != 1 ? 's' : ''}.
+                            <a href="javascript:void(0)" onclick="showPoolAllocationDetails()" class="text-light alert-link">View Details</a> to see pending pools.
+                            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    if ($('#poolPanelCapacityAlert').length) {
+                        // Update existing alert
+                        $('#poolPanelCapacityAlert').replaceWith(alertHtml);
+                    } else {
+                        // Insert new alert before counters
+                        $('.counters').first().before(alertHtml);
+                    }
+                } else {
+                    // Hide the alert if no longer needed
+                    $('#poolPanelCapacityAlert').remove();
+                }
+                
+                console.log('Pool panel capacity alert refreshed at:', new Date().toLocaleTimeString());
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error refreshing pool panel capacity alert:', error);
+        }
+    });
 }
 
 function resetForm() {

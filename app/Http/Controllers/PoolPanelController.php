@@ -13,6 +13,7 @@ use DataTables;
 
 // Models
 use App\Models\PoolPanel;
+use App\Models\Pool;
 
 class PoolPanelController extends Controller
 {
@@ -343,6 +344,129 @@ class PoolPanelController extends Controller
                 'message' => 'Failed to archive/unarchive pool panel'
             ], 500);
         }
+    }
+
+    /**
+     * Get pool panel capacity alert data
+     */
+    public function getCapacityAlert(Request $request)
+    {
+        try {
+            // Get pending pools that require pool panel capacity
+            $pendingPools = \App\Models\Pool::where('status', 'pending')
+                ->where('is_splitting', 0) // Only get pools that are not currently being split
+                ->whereNotNull('total_inboxes')
+                ->where('total_inboxes', '>', 0)
+                ->orderBy('created_at', 'asc') // Process older pools first
+                ->get();
+            
+            $insufficientSpacePools = [];
+            $totalPoolPanelsNeeded = 0;
+            $totalInboxes = 0;
+            $poolPanelCapacity = env('PANEL_CAPACITY', 1790);
+            $maxSplitCapacity = 1790;
+            
+            Log::info("Pool panel capacity alert calculation started", [
+                'pending_pools_count' => $pendingPools->count(),
+                'pool_panel_capacity' => $poolPanelCapacity,
+                'max_split_capacity' => $maxSplitCapacity
+            ]);
+            
+            foreach ($pendingPools as $pool) {
+                // Calculate available space for this pool
+                $availableSpace = $this->getAvailablePoolPanelSpace($pool->total_inboxes, $poolPanelCapacity, $maxSplitCapacity);
+                
+                if ($pool->total_inboxes > $availableSpace) {
+                    // Calculate pool panels needed for this pool
+                    $poolPanelsNeeded = ceil($pool->total_inboxes / $maxSplitCapacity);
+                    
+                    $insufficientSpacePools[] = [
+                        'id' => $pool->id,
+                        'created_at' => $pool->created_at,
+                        'plan_name' => $pool->plan->name ?? 'N/A',
+                        'domain_url' => $pool->domain_url ?? 'N/A',
+                        'total_inboxes' => $pool->total_inboxes,
+                        'available_space' => $availableSpace,
+                        'pool_panels_needed' => $poolPanelsNeeded,
+                        'status' => 'pending'
+                    ];
+                    
+                    $totalPoolPanelsNeeded += $poolPanelsNeeded;
+                    $totalInboxes += $pool->total_inboxes;
+                    
+                    Log::warning("Pool requires additional pool panels", [
+                        'pool_id' => $pool->id,
+                        'total_inboxes' => $pool->total_inboxes,
+                        'available_space' => $availableSpace,
+                        'space_deficit' => $pool->total_inboxes - $availableSpace,
+                        'pool_panels_needed' => $poolPanelsNeeded
+                    ]);
+                }
+            }
+            
+            // Adjust total pool panels needed based on available pool panels
+            $availablePoolPanelCount = PoolPanel::where('is_active', true)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->count();
+            
+            $adjustedPoolPanelsNeeded = max(0, $totalPoolPanelsNeeded - $availablePoolPanelCount);
+            
+            Log::info("Pool panel capacity alert calculation completed", [
+                'total_pool_panels_needed_raw' => $totalPoolPanelsNeeded,
+                'available_pool_panel_count' => $availablePoolPanelCount,
+                'adjusted_pool_panels_needed' => $adjustedPoolPanelsNeeded,
+                'insufficient_pools_count' => count($insufficientSpacePools)
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'show_alert' => $adjustedPoolPanelsNeeded > 0,
+                'total_pool_panels_needed' => $adjustedPoolPanelsNeeded,
+                'total_pool_panels_needed_raw' => $totalPoolPanelsNeeded,
+                'available_pool_panel_count' => $availablePoolPanelCount,
+                'insufficient_pools_count' => count($insufficientSpacePools),
+                'insufficient_pools' => $insufficientSpacePools,
+                'total_inboxes' => $totalInboxes,
+                'pool_panel_capacity' => $poolPanelCapacity,
+                'max_split_capacity' => $maxSplitCapacity,
+                'last_updated' => now()->toDateTimeString()
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting pool panel capacity alert data', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error getting capacity alert data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available pool panel space for specific pool size
+     */
+    private function getAvailablePoolPanelSpace(int $poolSize, int $poolPanelCapacity, int $maxSplitCapacity): int
+    {
+        // Get active pool panels with remaining capacity
+        $availablePoolPanels = PoolPanel::where('is_active', 1)
+                                    ->where('remaining_limit', '>', 0)
+                                    ->get();
+        
+        $totalSpace = 0;
+        foreach ($availablePoolPanels as $poolPanel) {
+            $totalSpace += min($poolPanel->remaining_limit, $maxSplitCapacity);
+        }
+
+        Log::info("Available pool panel space calculation", [
+            'pool_size' => $poolSize,
+            'available_pool_panels_count' => $availablePoolPanels->count(),
+            'total_available_space' => $totalSpace
+        ]);
+        
+        return $totalSpace;
     }
 
     /**
