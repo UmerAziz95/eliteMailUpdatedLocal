@@ -52,6 +52,25 @@
         border-left: 3px solid #6c757d;
     }
 
+    .log-render-status {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: rgba(26, 26, 46, 0.95);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(4px);
+        color: #adb5bd;
+        font-size: 0.8rem;
+        padding: 0.35rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .log-render-status .status-text {
+        flex: 1 1 auto;
+    }
+
     .filter-card {
         background: linear-gradient(145deg, #2c2c54, #1a1a2e);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -198,6 +217,10 @@
         let lastModifiedEl;
         let largeFileNotice;
         let largeFileCount;
+        const LARGE_RENDER_THRESHOLD = 20000;
+        const MAX_RENDER_LINES = 500000;
+        const CHUNK_MIN_SIZE = 750;
+        const CHUNK_MAX_SIZE = 4000;
 
         function initElements() {
             form = document.getElementById('log-filter-form');
@@ -288,14 +311,16 @@
             return '';
         }
 
-        function renderLines(lines) {
+        function renderLines(lines, meta = {}) {
             if (!logContainer) {
                 return;
             }
 
             logContainer.innerHTML = '';
 
-            if (!lines || lines.length === 0) {
+            const hasLines = Array.isArray(lines) && lines.length > 0;
+
+            if (!hasLines) {
                 const empty = document.createElement('div');
                 empty.className = 'no-logs';
                 const searchText = searchInput && searchInput.value
@@ -310,7 +335,58 @@
                 return;
             }
 
-            lines.forEach((line) => {
+            const totalFromServer = Number.isFinite(meta.totalFromServer)
+                ? meta.totalFromServer
+                : lines.length;
+
+            let linesToRender = lines;
+            let truncated = false;
+            if (linesToRender.length > MAX_RENDER_LINES) {
+                linesToRender = linesToRender.slice(-MAX_RENDER_LINES);
+                truncated = true;
+            }
+
+            const totalLines = linesToRender.length;
+            const needsChunkRendering = totalLines > LARGE_RENDER_THRESHOLD;
+            const needsStatusBar = truncated || needsChunkRendering;
+
+            let statusTextEl = null;
+            if (needsStatusBar) {
+                const statusBar = document.createElement('div');
+                statusBar.className = 'log-render-status';
+
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-info-circle opacity-75';
+
+                statusTextEl = document.createElement('span');
+                statusTextEl.className = 'status-text';
+
+                statusBar.appendChild(icon);
+                statusBar.appendChild(statusTextEl);
+                logContainer.appendChild(statusBar);
+
+                if (truncated && needsChunkRendering) {
+                    statusTextEl.textContent = `Showing latest ${formatNumber(totalLines)} lines out of ${formatNumber(totalFromServer)}. Rendering...`;
+                } else if (truncated) {
+                    statusTextEl.textContent = `Showing latest ${formatNumber(totalLines)} lines out of ${formatNumber(totalFromServer)}.`;
+                } else if (needsChunkRendering) {
+                    statusTextEl.textContent = `Rendering ${formatNumber(totalLines)} lines...`;
+                }
+            }
+
+            if (needsChunkRendering) {
+                renderLinesInChunks(linesToRender, {
+                    statusTextEl,
+                    truncated,
+                    totalFromServer,
+                    totalLines,
+                });
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            linesToRender.forEach((line) => {
                 if (!line || line.trim() === '') {
                     return;
                 }
@@ -319,10 +395,84 @@
                 const div = document.createElement('div');
                 div.className = `log-line${lineClass ? ` ${lineClass}` : ''}`;
                 div.textContent = line;
-                logContainer.appendChild(div);
+                fragment.appendChild(div);
             });
 
+            logContainer.appendChild(fragment);
             logContainer.scrollTop = logContainer.scrollHeight;
+
+            if (statusTextEl) {
+                const message = truncated
+                    ? `Showing latest ${formatNumber(totalLines)} lines out of ${formatNumber(totalFromServer)}.`
+                    : `Rendered ${formatNumber(totalLines)} lines.`;
+                statusTextEl.textContent = message;
+            }
+        }
+
+        function renderLinesInChunks(lines, options = {}) {
+            const {
+                statusTextEl = null,
+                truncated = false,
+                totalFromServer = lines.length,
+                totalLines = lines.length,
+            } = options;
+
+            let index = 0;
+            const chunkSize = Math.max(
+                CHUNK_MIN_SIZE,
+                Math.min(CHUNK_MAX_SIZE, Math.floor(totalLines / 40) || CHUNK_MIN_SIZE)
+            );
+
+            function updateStatus(renderedCount, isComplete = false) {
+                if (!statusTextEl) {
+                    return;
+                }
+
+                if (isComplete) {
+                    statusTextEl.textContent = truncated
+                        ? `Showing latest ${formatNumber(totalLines)} lines out of ${formatNumber(totalFromServer)}.`
+                        : `Rendered ${formatNumber(totalLines)} lines.`;
+                    return;
+                }
+
+                const baseText = truncated
+                    ? `Showing latest ${formatNumber(totalLines)} lines out of ${formatNumber(totalFromServer)}.`
+                    : `Rendering ${formatNumber(totalLines)} lines...`;
+
+                statusTextEl.textContent = `${baseText} (${formatNumber(renderedCount)} / ${formatNumber(totalLines)})`;
+            }
+
+            function renderChunk() {
+                if (index >= totalLines) {
+                    updateStatus(totalLines, true);
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+                const end = Math.min(index + chunkSize, totalLines);
+
+                for (; index < end; index++) {
+                    const line = lines[index];
+                    if (!line || line.trim() === '') {
+                        continue;
+                    }
+                    const lineClass = classifyLine(line);
+                    const div = document.createElement('div');
+                    div.className = `log-line${lineClass ? ` ${lineClass}` : ''}`;
+                    div.textContent = line;
+                    fragment.appendChild(div);
+                }
+
+                logContainer.appendChild(fragment);
+                logContainer.scrollTop = logContainer.scrollHeight;
+
+                updateStatus(Math.min(index, totalLines), false);
+
+                requestAnimationFrame(renderChunk);
+            }
+
+            updateStatus(0, false);
+            requestAnimationFrame(renderChunk);
         }
 
         function updateStats(logInfo) {
@@ -396,8 +546,12 @@
                     if (!data.success) {
                         throw new Error(data.message || 'Unable to load logs');
                     }
-                    renderLines(data.log_lines || []);
-                    updateStats(data.log_info || {});
+                    const logInfo = data.log_info || {};
+                    const logLines = Array.isArray(data.log_lines) ? data.log_lines : [];
+                    renderLines(logLines, {
+                        totalFromServer: Number(logInfo.showing_lines),
+                    });
+                    updateStats(logInfo);
                 })
                 .catch((error) => {
                     hideLoader();
