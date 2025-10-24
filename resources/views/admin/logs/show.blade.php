@@ -190,6 +190,7 @@
         let form;
         let searchInput;
         let linesSelect;
+        let filterButton;
         let logContainer;
         let fileSizeEl;
         let totalLinesEl;
@@ -213,8 +214,22 @@
             lastModifiedEl = document.getElementById('log-last-modified');
             largeFileNotice = document.getElementById('large-file-notice');
             largeFileCount = document.getElementById('large-file-showing-count');
+            filterButton = form.querySelector('button[type="submit"]');
 
             return true;
+        }
+
+        function setFilterButtonState(isLoading) {
+            if (!filterButton) {
+                return;
+            }
+            if (isLoading) {
+                filterButton.classList.add('btn-loading');
+                filterButton.disabled = true;
+            } else {
+                filterButton.classList.remove('btn-loading');
+                filterButton.disabled = false;
+            }
         }
 
         function showLoader() {
@@ -356,6 +371,7 @@
             }
 
             const requestUrl = buildRequestUrl();
+            setFilterButtonState(true);
 
             if (pushState) {
                 window.history.replaceState({}, '', requestUrl.toString());
@@ -394,6 +410,9 @@
                     } else {
                         alert(error.message || 'Unexpected error occurred');
                     }
+                })
+                .finally(() => {
+                    setFilterButtonState(false);
                 });
         }
 

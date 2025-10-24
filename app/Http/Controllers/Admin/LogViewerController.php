@@ -195,55 +195,119 @@ class LogViewerController extends Controller
         return $this->streamTailLogLines($logPath, $lines);
     }
 
-    private function streamTailLogLines(string $logPath, int $lines): array
+    private function streamTailLogLines(string $logPath, int $linesToReturn): array
     {
+        if ($linesToReturn <= 0) {
+            return [
+                'lines' => [],
+                'total_lines' => $this->countFileLines($logPath),
+                'is_large_file' => true,
+            ];
+        }
+
         $handle = fopen($logPath, 'rb');
 
         if ($handle === false) {
             return [
                 'lines' => [],
-                'total_lines' => 'Unavailable for large files',
+                'total_lines' => null,
                 'is_large_file' => true,
             ];
         }
 
-        $chunkSize = 8192;
-        $buffer = '';
+        $chunkSize = 256 * 1024; // 256 KB chunks
+        $bufferRemainder = '';
+        $tailBuffer = new \SplDoublyLinkedList();
+        $tailBuffer->setIteratorMode(\SplDoublyLinkedList::IT_MODE_FIFO);
+        $totalLines = 0;
 
-        fseek($handle, 0, SEEK_END);
-        $position = ftell($handle);
-        $lineCount = 0;
+        while (!feof($handle)) {
+            $chunk = fread($handle, $chunkSize);
 
-        while ($position > 0 && $lineCount <= $lines) {
-            $seek = max($position - $chunkSize, 0);
-            $bytesToRead = $position - $seek;
+            if ($chunk === false) {
+                break;
+            }
 
-            fseek($handle, $seek);
-            $chunk = fread($handle, $bytesToRead);
+            if ($chunk === '') {
+                continue;
+            }
 
-            $buffer = $chunk . $buffer;
-            $lineCount = substr_count($buffer, "\n");
-            $position = $seek;
+            $combined = $bufferRemainder . $chunk;
+            $lines = explode("\n", $combined);
+            $bufferRemainder = array_pop($lines);
+
+            foreach ($lines as $line) {
+                $totalLines++;
+                $normalizedLine = rtrim($line, "\r");
+                $tailBuffer->push($normalizedLine);
+
+                if ($tailBuffer->count() > $linesToReturn) {
+                    $tailBuffer->shift();
+                }
+            }
+        }
+
+        if ($bufferRemainder !== '') {
+            $totalLines++;
+            $normalizedLine = rtrim($bufferRemainder, "\r");
+            $tailBuffer->push($normalizedLine);
+
+            if ($tailBuffer->count() > $linesToReturn) {
+                $tailBuffer->shift();
+            }
         }
 
         fclose($handle);
 
-        $linesArray = explode("\n", $buffer);
-
-        if (end($linesArray) === '') {
-            array_pop($linesArray);
+        $linesArray = [];
+        for ($tailBuffer->rewind(); $tailBuffer->valid(); $tailBuffer->next()) {
+            $linesArray[] = $tailBuffer->current();
         }
-
-        $linesArray = array_slice($linesArray, -$lines);
-        $linesArray = array_map(function ($line) {
-            return rtrim($line, "\r\n");
-        }, $linesArray);
 
         return [
             'lines' => $linesArray,
-            'total_lines' => 'Unavailable for large files',
+            'total_lines' => $totalLines,
             'is_large_file' => true,
         ];
+    }
+
+    private function countFileLines(string $logPath): ?int
+    {
+        $handle = fopen($logPath, 'rb');
+
+        if ($handle === false) {
+            return null;
+        }
+
+        $chunkSize = 256 * 1024;
+        $lineCount = 0;
+        $bufferRemainder = '';
+
+        while (!feof($handle)) {
+            $chunk = fread($handle, $chunkSize);
+
+            if ($chunk === false) {
+                break;
+            }
+
+            if ($chunk === '') {
+                continue;
+            }
+
+            $combined = $bufferRemainder . $chunk;
+            $lines = explode("\n", $combined);
+            $bufferRemainder = array_pop($lines);
+
+            $lineCount += count($lines);
+        }
+
+        if ($bufferRemainder !== '') {
+            $lineCount++;
+        }
+
+        fclose($handle);
+
+        return $lineCount;
     }
 
     private function streamSearchLogLines(string $logPath, string $search, int $lines): array
