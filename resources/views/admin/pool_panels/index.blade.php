@@ -203,7 +203,7 @@
             <div>
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="content-left">
-                        <h6 class="text-heading">Inactive Pool Panels</h6>
+                        <h6 class="text-heading">Archived Pool Panels</h6>
                         <div class="d-flex align-items-center my-1">
                             <h4 class="mb-0 me-2 fs-2" id="inactive_counter">0</h4>
                             <p class="text-danger mb-0"></p>
@@ -296,8 +296,26 @@
         </div>
     </div>
 
-    {{-- create pool panel button --}}
-    <div class="col-12 text-end mb-4">
+    {{-- Tabs for Active and Archived Pool Panels --}}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <ul class="nav nav-pills" id="poolPanelTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="active-tab" data-bs-toggle="pill" data-bs-target="#active-pool-panels" 
+                        type="button" role="tab" aria-controls="active-pool-panels" aria-selected="true"
+                        onclick="switchTab('active')">
+                    <i class="fa-solid fa-check-circle me-1"></i> Active Pool Panels
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="archived-tab" data-bs-toggle="pill" data-bs-target="#archived-pool-panels" 
+                        type="button" role="tab" aria-controls="archived-pool-panels" aria-selected="false"
+                        onclick="switchTab('archived')">
+                    <i class="fa-solid fa-archive me-1"></i> Archived Pool Panels
+                </button>
+            </li>
+        </ul>
+        
+        {{-- create pool panel button --}}
         <button type="button" class="btn btn-primary btn-sm border-0 px-3" 
                 data-bs-toggle="offcanvas" data-bs-target="#poolPanelFormOffcanvas" 
                 onclick="openCreateForm();">
@@ -347,6 +365,9 @@ let currentFilters = {};
 let charts = {}; // Store chart instances
 
 $(document).ready(function() {
+    // Set initial filter to show only active pool panels
+    currentFilters.status = 1;
+    
     // Load initial data
     loadPoolPanels();
     updateCounters();
@@ -667,14 +688,30 @@ function createPoolPanelCard(poolPanel) {
                     title="Delete Pool Panel">
                 <i class="fas fa-trash"></i>
             </button>
+            ${poolPanel.is_active ? `
+                <button class="btn btn-sm btn-outline-secondary px-2 py-1" 
+                        onclick="archivePoolPanel(${poolPanel.id})" 
+                        title="Archive Pool Panel">
+                    <i class="fas fa-archive"></i>
+                </button>
+            ` : `
+                <button class="btn btn-sm btn-outline-success px-2 py-1" 
+                        onclick="unarchivePoolPanel(${poolPanel.id})" 
+                        title="Unarchive Pool Panel">
+                    <i class="fas fa-undo"></i>
+                </button>
+            `}
         </div>
     `;
     
+    // Add archived styling for inactive pool panels
+    const archivedStyle = !poolPanel.is_active ? 'background-color: #334761;' : '';
+    
     return `
-        <div class="card p-3 d-flex flex-column gap-1">                    
+        <div class="card p-3 d-flex flex-column gap-1" style="${archivedStyle}">                    
             <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
                 <small class="mb-0 opacity-75">${poolPanel.auto_generated_id || 'PPN-' + poolPanel.id}</small>
-                <h6>Title: ${poolPanel.title || 'N/A'}</h6>
+                <h6>Title: ${poolPanel.title || 'N/A'} ${!poolPanel.is_active ? '<span class="badge bg-secondary ms-2">Archived</span>' : ''}</h6>
                 <div>${statusBadge}</div>
             </div>
 
@@ -1043,6 +1080,187 @@ function deletePoolPanel(id) {
             });
         }
     });
+}
+
+// Archive pool panel function
+async function archivePoolPanel(poolPanelId) {
+    try {
+        // Show SweetAlert confirmation dialog
+        const confirmResult = await Swal.fire({
+            title: 'Archive Pool Panel?',
+            text: `Are you sure you want to archive pool panel ${poolPanelId}? Archived pool panels will not be used for new orders.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Archive',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#6c757d',
+            cancelButtonColor: '#3085d6',
+            reverseButtons: true
+        });
+
+        // If user cancels, exit the function
+        if (!confirmResult.isConfirmed) {
+            return;
+        }
+        
+        // Show loading dialog with SweetAlert
+        Swal.fire({
+            title: 'Archiving Pool Panel',
+            text: 'Please wait while we archive the pool panel...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Send archive request (set is_active to false)
+        const response = await $.ajax({
+            url: `/admin/pool-panels/${poolPanelId}/archive`,
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            },
+            data: {
+                is_active: false
+            }
+        });
+
+        if (response.success) {
+            // Close loading dialog and show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Archived!',
+                text: response.message || 'Pool Panel archived successfully!',
+                confirmButtonText: 'OK'
+            });
+            
+            // Reload pool panels to reflect changes
+            resetAndReload();
+        } else {
+            // Show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: response.message || 'Failed to archive pool panel',
+                confirmButtonText: 'OK'
+            });
+        }
+    } catch (xhr) {
+        console.log('Error response:', xhr.responseJSON);
+        
+        let errorMessage = 'Failed to archive pool panel. Please try again.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            errorMessage = xhr.responseJSON.message;
+        }
+        
+        // Show error message
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: errorMessage,
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// Unarchive pool panel function
+async function unarchivePoolPanel(poolPanelId) {
+    try {
+        // Show SweetAlert confirmation dialog
+        const confirmResult = await Swal.fire({
+            title: 'Unarchive Pool Panel?',
+            text: `Are you sure you want to unarchive pool panel ${poolPanelId}? This will make it available for new orders.`,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Unarchive',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#3085d6',
+            reverseButtons: true
+        });
+
+        // If user cancels, exit the function
+        if (!confirmResult.isConfirmed) {
+            return;
+        }
+        
+        // Show loading dialog with SweetAlert
+        Swal.fire({
+            title: 'Unarchiving Pool Panel',
+            text: 'Please wait while we unarchive the pool panel...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Send unarchive request (set is_active to true)
+        const response = await $.ajax({
+            url: `/admin/pool-panels/${poolPanelId}/archive`,
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            },
+            data: {
+                is_active: true
+            }
+        });
+
+        if (response.success) {
+            // Close loading dialog and show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Unarchived!',
+                text: response.message || 'Pool Panel unarchived successfully!',
+                confirmButtonText: 'OK'
+            });
+            
+            // Reload pool panels to reflect changes
+            resetAndReload();
+        } else {
+            // Show error message
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: response.message || 'Failed to unarchive pool panel',
+                confirmButtonText: 'OK'
+            });
+        }
+    } catch (xhr) {
+        console.log('Error response:', xhr.responseJSON);
+        
+        let errorMessage = 'Failed to unarchive pool panel. Please try again.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            errorMessage = xhr.responseJSON.message;
+        }
+        
+        // Show error message
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: errorMessage,
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// Tab switching function
+function switchTab(tab) {
+    // Update current filters based on tab
+    if (tab === 'active') {
+        currentFilters.status = 1;
+    } else if (tab === 'archived') {
+        currentFilters.status = 0;
+    }
+    
+    // Reset and reload with new filter
+    resetAndReload();
 }
 
 function resetForm() {

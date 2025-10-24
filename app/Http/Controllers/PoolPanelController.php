@@ -283,6 +283,69 @@ class PoolPanelController extends Controller
     }
 
     /**
+     * Archive/Unarchive pool panel
+     */
+    public function archive(Request $request, $id)
+    {
+        try {
+            $poolPanel = PoolPanel::findOrFail($id);
+            
+            // Validate the request - accept both boolean and string values
+            $validated = $request->validate([
+                'is_active' => 'required|in:0,1,true,false'
+            ]);
+            
+            // Convert to boolean
+            $isActive = filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            
+            // If conversion failed, try to convert from string/int
+            if ($isActive === null) {
+                $isActive = in_array($request->input('is_active'), [1, '1', 'true', true], true);
+            }
+            
+            $action = $isActive ? 'unarchived' : 'archived';
+            
+            // Update pool panel status
+            $poolPanel->is_active = $isActive ? 1 : 0;
+            $poolPanel->updated_by = Auth::id();
+            $poolPanel->save();
+            
+            Log::info("Pool Panel {$action} successfully", [
+                'pool_panel_id' => $id,
+                'is_active' => $poolPanel->is_active,
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Pool Panel {$action} successfully",
+                'pool_panel' => $poolPanel
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error: ' . collect($e->errors())->flatten()->implode(', ')
+            ], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pool Panel not found'
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Pool Panel Archive Error: ' . $e->getMessage(), [
+                'pool_panel_id' => $id,
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to archive/unarchive pool panel'
+            ], 500);
+        }
+    }
+
+    /**
      * Generate a unique pool panel ID
      */
     private function generatePoolPanelId()
