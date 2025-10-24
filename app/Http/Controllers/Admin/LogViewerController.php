@@ -11,15 +11,21 @@ class LogViewerController extends Controller
 {
     private const LARGE_LOG_THRESHOLD_BYTES = 50 * 1024 * 1024; // 50 MB
     private const LINE_COUNT_OPTIONS = [
-        50,
+        10, 25, 50,
         100,
         200,
         500,
         1000,
-        15000,
-        20000,
+        5000,
+        10000,
         25000,
-        30000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        1000000,
     ];
 
     public function index(Request $request)
