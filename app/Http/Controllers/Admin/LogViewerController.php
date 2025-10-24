@@ -66,19 +66,40 @@ class LogViewerController extends Controller
         $search = trim((string) $request->get('search', ''));
 
         $fileSize = File::size($logPath);
-        $logData = $this->prepareLogLines($logPath, $lines, $search, $fileSize);
-        $logLines = $logData['lines'];
+        $lastModified = Carbon::createFromTimestamp(File::lastModified($logPath))->format('Y-m-d H:i:s');
+        $isLargeFile = $fileSize >= self::LARGE_LOG_THRESHOLD_BYTES;
+
+        if ($request->ajax()) {
+            $logData = $this->prepareLogLines($logPath, $lines, $search, $fileSize);
+            $logLines = $logData['lines'];
+
+            $logInfo = [
+                'name' => $filename,
+                'size' => $this->formatBytes($fileSize),
+                'modified' => $lastModified,
+                'total_lines' => $logData['total_lines'],
+                'showing_lines' => count($logLines),
+                'is_large_file' => $logData['is_large_file'],
+            ];
+
+            return response()->json([
+                'success' => true,
+                'log_lines' => $logLines,
+                'log_info' => $logInfo,
+            ]);
+        }
+
         $logInfo = [
             'name' => $filename,
             'size' => $this->formatBytes($fileSize),
-            'modified' => Carbon::createFromTimestamp(File::lastModified($logPath))->format('Y-m-d H:i:s'),
-            'total_lines' => $logData['total_lines'],
-            'showing_lines' => count($logLines),
-            'is_large_file' => $logData['is_large_file'],
+            'modified' => $lastModified,
+            'total_lines' => null,
+            'showing_lines' => 0,
+            'is_large_file' => $isLargeFile,
         ];
-        
+
         return view('admin.logs.show', [
-            'logLines' => $logLines,
+            'logLines' => [],
             'logInfo' => $logInfo,
             'search' => $search,
             'lines' => $lines,
