@@ -584,7 +584,7 @@
                             Fix Order
                         @else
                         <i class="fa-solid fa-cart-shopping"></i>
-                            Purchase Inboxes
+                            Submit
                         @endif
                     </button>
                 </div>
