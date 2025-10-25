@@ -103,6 +103,12 @@
         pointer-events: all;
     }
 
+    .card:focus-within .button-container {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: all;
+    }
+
     /* Offcanvas custom styling */
     .offcanvas-end {
         width: 400px;
@@ -825,9 +831,11 @@ function appendPoolPanels(poolPanels) {
 
 // Create pool panel card HTML
 function createPoolPanelCard(poolPanel) {
-    const total = poolPanel.limit || 1790;
-    const used = poolPanel.used_limit || 0;
-    const remaining = poolPanel.remaining_limit || 0;
+    const total = Number(poolPanel.limit) || 1790;
+    const used = Number(poolPanel.used_limit) || 0;
+    const remainingValue = Number(poolPanel.remaining_limit);
+    const remaining = Number.isFinite(remainingValue) ? remainingValue : total;
+    const isFullCapacity = Math.abs(remaining - total) < 0.0001;
     const totalOrders = 0; // Pool panels don't have orders like regular panels
     
     const statusBadge = poolPanel.is_active 
@@ -836,16 +844,18 @@ function createPoolPanelCard(poolPanel) {
     
     const actionButtons = `
         <div class="d-flex flex-column gap-2">
-            <button class="btn btn-sm btn-outline-primary px-2 py-1" 
-                    onclick="openEditForm(${poolPanel.id})" 
-                    title="Edit Pool Panel">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger px-2 py-1" 
-                    onclick="deletePoolPanel(${poolPanel.id})" 
-                    title="Delete Pool Panel">
-                <i class="fas fa-trash"></i>
-            </button>
+            ${isFullCapacity ? `
+                <button class="btn btn-sm btn-outline-primary px-2 py-1" 
+                        onclick="openEditForm(${poolPanel.id})" 
+                        title="Edit Pool Panel">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger px-2 py-1" 
+                        onclick="deletePoolPanel(${poolPanel.id})" 
+                        title="Delete Pool Panel">
+                    <i class="fas fa-trash"></i>
+                </button>
+            ` : ''}
             ${poolPanel.is_active ? `
                 <button class="btn btn-sm btn-outline-secondary px-2 py-1" 
                         onclick="archivePoolPanel(${poolPanel.id})" 
