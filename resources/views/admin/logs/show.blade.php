@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 @section('title', 'Log Viewer - ' . $logInfo['name'])
-<!--  -->
+
 @push('styles')
 <style>
     .log-header {
@@ -641,17 +641,26 @@
                 const targetMark = matchElements[normalizedIndex];
                 const lineEl = targetMark.closest('.log-line');
                 if (lineEl) {
-                    const targetOffset = Math.max(
-                        lineEl.offsetTop - (logContainer.clientHeight / 2),
+                    const containerRect = logContainer.getBoundingClientRect();
+                    const containerHeight = logContainer.clientHeight || containerRect.height;
+                    const lineRect = lineEl.getBoundingClientRect();
+                    const relativeTop = lineRect.top - containerRect.top;
+                    const desiredCenterOffset = relativeTop - (containerHeight / 2) + (lineRect.height / 2);
+                    const targetScrollTop = Math.max(
+                        Math.min(
+                            logContainer.scrollTop + desiredCenterOffset,
+                            logContainer.scrollHeight - containerHeight,
+                        ),
                         0,
                     );
+
                     if (typeof logContainer.scrollTo === 'function') {
                         logContainer.scrollTo({
-                            top: targetOffset,
+                            top: targetScrollTop,
                             behavior: 'smooth',
                         });
                     } else {
-                        logContainer.scrollTop = targetOffset;
+                        logContainer.scrollTop = targetScrollTop;
                     }
                 } else {
                     targetMark.scrollIntoView({ behavior: 'smooth', block: 'center' });
