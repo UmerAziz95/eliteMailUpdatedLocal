@@ -22,8 +22,7 @@ class PanelController extends Controller
     // getNextId
     public function getNextId()
     {
-        $nextId = Panel::max('id');
-        $nextId = $nextId ? $nextId + 1 : 1;
+        $nextId = Panel::getNextAvailableId();
         return response()->json(['next_id' => 'PNL-' . $nextId]);
     }
     public function index(Request $request)
