@@ -15,11 +15,17 @@
         background: #1a1a2e;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 8px;
+        padding: 0;
+    }
+
+    .log-lines {
         max-height: 70vh;
         overflow-y: auto;
         font-family: 'Courier New', monospace;
         font-size: 0.85rem;
         line-height: 1.4;
+        border-radius: inherit;
+        scroll-behavior: smooth;
     }
 
     .log-line {
@@ -94,6 +100,54 @@
         text-align: center;
         padding: 3rem;
         color: #6c757d;
+    }
+
+    .log-quick-search {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+    }
+
+    .log-quick-search .input-group-text,
+    .log-quick-search .form-control,
+    .log-quick-search .btn {
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .log-quick-search .input-group-text {
+        background: rgba(26, 26, 46, 0.8);
+        color: #f8f9fa;
+    }
+
+    .log-quick-search .form-control {
+        background: rgba(17, 17, 32, 0.9);
+        color: #f8f9fa;
+    }
+
+    .log-quick-search .form-control::placeholder {
+        color: rgba(248, 249, 250, 0.5);
+    }
+
+    .log-quick-search .btn {
+        background: rgba(26, 26, 46, 0.7);
+        color: #f8f9fa;
+    }
+
+    .log-line-match mark.log-highlight {
+        background: rgba(255, 193, 7, 0.3);
+        color: #fff;
+        padding: 0 0.15rem;
+        border-radius: 3px;
+    }
+
+    mark.log-highlight-active {
+        background: #ffc107;
+        color: #212529;
+    }
+
+    .log-line-active-match {
+        box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.6);
     }
 </style>
 @endpush
@@ -184,12 +238,40 @@
         </form>
     </div>
 
+    <!-- Client-Side Quick Search -->
+    <div class="log-quick-search mb-3">
+        <label class="form-label text-white-50 mb-2" for="log-client-search-input">
+            Quick find in current results (highlights without reloading)
+        </label>
+        <div class="input-group input-group-sm">
+            <span class="input-group-text">
+                <i class="fas fa-highlighter"></i>
+            </span>
+            <input type="text" id="log-client-search-input" class="form-control border-secondary"
+                   placeholder="Type to highlight within the loaded log lines..." autocomplete="off">
+            <button class="btn btn-outline-secondary" type="button" id="log-client-search-prev" title="Previous match" disabled>
+                <i class="fas fa-chevron-up"></i>
+            </button>
+            <button class="btn btn-outline-secondary" type="button" id="log-client-search-next" title="Next match" disabled>
+                <i class="fas fa-chevron-down"></i>
+            </button>
+            <button class="btn btn-outline-secondary" type="button" id="log-client-search-clear" title="Clear quick search" disabled>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="text-white-50 small mt-2" id="log-client-search-status">
+            Client-side search highlights within loaded lines. Use Enter to jump between matches.
+        </div>
+    </div>
+
     <!-- Log Content -->
-    <div class="log-content" id="log-lines-container">
-        <div class="no-logs" id="log-loading-state">
-            <i class="fas fa-sync fa-spin fa-2x mb-3 opacity-50"></i>
-            <h5 class="text-white-50">Loading Logs</h5>
-            <p class="text-white-50 mb-0">Fetching the latest entries...</p>
+    <div class="log-content">
+        <div class="log-lines" id="log-lines-container">
+            <div class="no-logs" id="log-loading-state">
+                <i class="fas fa-sync fa-spin fa-2x mb-3 opacity-50"></i>
+                <h5 class="text-white-50">Loading Logs</h5>
+                <p class="text-white-50 mb-0">Fetching the latest entries...</p>
+            </div>
         </div>
     </div>
     <noscript>
@@ -211,16 +293,25 @@
         let linesSelect;
         let filterButton;
         let logContainer;
+        let clientSearchInput;
+        let clientSearchStatus;
+        let clientSearchNextBtn;
+        let clientSearchPrevBtn;
+        let clientSearchClearBtn;
         let fileSizeEl;
         let totalLinesEl;
         let showingLinesEl;
         let lastModifiedEl;
         let largeFileNotice;
         let largeFileCount;
+        let clientSearchTerm = '';
+        let clientSearchTermLower = '';
+        let clientSearchIndex = -1;
         const LARGE_RENDER_THRESHOLD = 20000;
         const MAX_RENDER_LINES = 500000;
         const CHUNK_MIN_SIZE = 750;
         const CHUNK_MAX_SIZE = 4000;
+        const CLIENT_SEARCH_HELP_TEXT = 'Client-side search highlights within loaded lines. Use Enter to jump between matches.';
 
         function initElements() {
             form = document.getElementById('log-filter-form');
@@ -231,6 +322,11 @@
             searchInput = form.querySelector('input[name="search"]');
             linesSelect = form.querySelector('select[name="lines"]');
             logContainer = document.getElementById('log-lines-container');
+            clientSearchInput = document.getElementById('log-client-search-input');
+            clientSearchStatus = document.getElementById('log-client-search-status');
+            clientSearchNextBtn = document.getElementById('log-client-search-next');
+            clientSearchPrevBtn = document.getElementById('log-client-search-prev');
+            clientSearchClearBtn = document.getElementById('log-client-search-clear');
             fileSizeEl = document.getElementById('log-file-size');
             totalLinesEl = document.getElementById('log-total-lines');
             showingLinesEl = document.getElementById('log-showing-lines');
@@ -238,6 +334,8 @@
             largeFileNotice = document.getElementById('large-file-notice');
             largeFileCount = document.getElementById('large-file-showing-count');
             filterButton = form.querySelector('button[type="submit"]');
+
+            setClientSearchStatusDefault();
 
             return true;
         }
@@ -309,6 +407,311 @@
                 return 'debug';
             }
             return '';
+        }
+
+        function setClientSearchStatus(message) {
+            if (clientSearchStatus) {
+                clientSearchStatus.textContent = message;
+            }
+        }
+
+        function setClientSearchControlsState(totalMatches) {
+            const hasTerm = clientSearchTerm.length > 0;
+            const hasMatches = hasTerm && totalMatches > 0;
+
+            if (clientSearchNextBtn) {
+                clientSearchNextBtn.disabled = !hasMatches;
+            }
+            if (clientSearchPrevBtn) {
+                clientSearchPrevBtn.disabled = !hasMatches;
+            }
+            if (clientSearchClearBtn) {
+                clientSearchClearBtn.disabled = !hasTerm;
+            }
+        }
+
+        function setClientSearchStatusDefault() {
+            setClientSearchStatus(CLIENT_SEARCH_HELP_TEXT);
+            setClientSearchControlsState(0);
+        }
+
+        function getClientSearchMarks() {
+            if (!logContainer) {
+                return [];
+            }
+            return Array.from(logContainer.querySelectorAll('mark.log-highlight'));
+        }
+
+        function clearClientSearchFocus(marks = null) {
+            const activeMarks = marks || getClientSearchMarks();
+            activeMarks.forEach((mark) => {
+                mark.classList.remove('log-highlight-active');
+            });
+
+            if (logContainer) {
+                logContainer
+                    .querySelectorAll('.log-line-active-match')
+                    .forEach((line) => line.classList.remove('log-line-active-match'));
+            }
+
+            clientSearchIndex = -1;
+        }
+
+        function applyHighlight(element) {
+            const stored = typeof element.dataset.rawLine === 'string'
+                ? element.dataset.rawLine
+                : element.textContent || '';
+            element.dataset.rawLine = stored;
+
+            if (!clientSearchTerm) {
+                element.textContent = stored;
+                element.classList.remove('log-line-match', 'log-line-active-match');
+                return 0;
+            }
+
+            const lowerSource = stored.toLowerCase();
+            const termLength = clientSearchTerm.length;
+            const lowerTerm = clientSearchTermLower;
+
+            if (!lowerTerm || !lowerSource.includes(lowerTerm)) {
+                element.textContent = stored;
+                element.classList.remove('log-line-match', 'log-line-active-match');
+                return 0;
+            }
+
+            let index = lowerSource.indexOf(lowerTerm);
+            let lastIndex = 0;
+            let matchCount = 0;
+            const fragment = document.createDocumentFragment();
+
+            while (index !== -1) {
+                if (index > lastIndex) {
+                    fragment.append(stored.slice(lastIndex, index));
+                }
+
+                const mark = document.createElement('mark');
+                mark.className = 'log-highlight';
+                mark.textContent = stored.slice(index, index + termLength);
+                fragment.append(mark);
+
+                lastIndex = index + termLength;
+                matchCount += 1;
+                index = lowerSource.indexOf(lowerTerm, lastIndex);
+            }
+
+            if (lastIndex < stored.length) {
+                fragment.append(stored.slice(lastIndex));
+            }
+
+            element.innerHTML = '';
+            element.appendChild(fragment);
+            element.classList.add('log-line-match');
+            element.classList.remove('log-line-active-match');
+
+            return matchCount;
+        }
+
+        function createLineElement(line) {
+            if (!line || line.trim() === '') {
+                return null;
+            }
+
+            const lineClass = classifyLine(line);
+            const div = document.createElement('div');
+            div.className = `log-line${lineClass ? ` ${lineClass}` : ''}`;
+            div.dataset.rawLine = line;
+            if (clientSearchTerm) {
+                applyHighlight(div);
+            } else {
+                div.textContent = line;
+            }
+
+            return div;
+        }
+
+        function focusClientMatch(index, marks = null, options = {}) {
+            const { scroll = true } = options;
+            const matchElements = marks || getClientSearchMarks();
+
+            if (!matchElements.length) {
+                clientSearchIndex = -1;
+                updateClientSearchStatus(0);
+                return;
+            }
+
+            const normalizedIndex = ((index % matchElements.length) + matchElements.length) % matchElements.length;
+            clientSearchIndex = normalizedIndex;
+
+            matchElements.forEach((mark, idx) => {
+                const isActive = idx === normalizedIndex;
+                mark.classList.toggle('log-highlight-active', isActive);
+                const line = mark.closest('.log-line');
+                if (line) {
+                    line.classList.toggle('log-line-active-match', isActive);
+                }
+            });
+
+            if (scroll && logContainer) {
+                const targetMark = matchElements[normalizedIndex];
+                const lineEl = targetMark.closest('.log-line');
+                if (lineEl) {
+                    const targetOffset = Math.max(
+                        lineEl.offsetTop - (logContainer.clientHeight / 2),
+                        0,
+                    );
+                    if (typeof logContainer.scrollTo === 'function') {
+                        logContainer.scrollTo({
+                            top: targetOffset,
+                            behavior: 'smooth',
+                        });
+                    } else {
+                        logContainer.scrollTop = targetOffset;
+                    }
+                } else {
+                    targetMark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+
+            updateClientSearchStatus(matchElements.length);
+        }
+
+        function focusNextClientMatch() {
+            if (!clientSearchTerm) {
+                return;
+            }
+
+            const marks = getClientSearchMarks();
+            if (!marks.length) {
+                updateClientSearchStatus(0);
+                return;
+            }
+
+            const nextIndex = clientSearchIndex + 1;
+            focusClientMatch(nextIndex, marks);
+        }
+
+        function focusPreviousClientMatch() {
+            if (!clientSearchTerm) {
+                return;
+            }
+
+            const marks = getClientSearchMarks();
+            if (!marks.length) {
+                updateClientSearchStatus(0);
+                return;
+            }
+
+            const previousIndex = clientSearchIndex === -1 ? marks.length - 1 : clientSearchIndex - 1;
+            focusClientMatch(previousIndex, marks);
+        }
+
+        function updateClientSearchStatus(totalMatches) {
+            if (!clientSearchStatus) {
+                return;
+            }
+
+            if (!clientSearchTerm) {
+                setClientSearchStatusDefault();
+                return;
+            }
+
+            if (!totalMatches) {
+                setClientSearchStatus(`No matches for "${clientSearchTerm}".`);
+                setClientSearchControlsState(0);
+                return;
+            }
+
+            const current = clientSearchIndex >= 0 ? clientSearchIndex + 1 : 1;
+            setClientSearchStatus(`Match ${current} of ${totalMatches} for "${clientSearchTerm}".`);
+            setClientSearchControlsState(totalMatches);
+        }
+
+        function applyClientSearch(term, options = {}) {
+            const { focusFirst = true } = options;
+            clientSearchTerm = term ? term.trim() : '';
+            clientSearchTermLower = clientSearchTerm.toLowerCase();
+
+            if (!logContainer) {
+                return;
+            }
+
+            clearClientSearchFocus();
+
+            if (!clientSearchTerm) {
+                const logLines = logContainer.querySelectorAll('.log-line');
+                logLines.forEach((line) => {
+                    if (line.dataset.rawLine) {
+                        line.textContent = line.dataset.rawLine;
+                    }
+                    line.classList.remove('log-line-match');
+                });
+                setClientSearchStatusDefault();
+                return;
+            }
+
+            const logLines = logContainer.querySelectorAll('.log-line');
+            logLines.forEach((line) => {
+                const matches = applyHighlight(line);
+                line.classList.toggle('log-line-match', matches > 0);
+            });
+
+            const marks = getClientSearchMarks();
+            if (!marks.length) {
+                updateClientSearchStatus(0);
+                return;
+            }
+
+            const targetIndex = focusFirst
+                ? 0
+                : (clientSearchIndex >= 0 && clientSearchIndex < marks.length ? clientSearchIndex : 0);
+
+            focusClientMatch(targetIndex, marks, { scroll: focusFirst });
+        }
+
+        function refreshClientSearchStatus(options = {}) {
+            const {
+                preserveIndex = true,
+                ensureFocus = false,
+            } = options;
+
+            if (!clientSearchTerm) {
+                setClientSearchStatusDefault();
+                return;
+            }
+
+            const marks = getClientSearchMarks();
+            if (!marks.length) {
+                updateClientSearchStatus(0);
+                return;
+            }
+
+            if (preserveIndex && clientSearchIndex >= 0) {
+                const clampedIndex = Math.min(clientSearchIndex, marks.length - 1);
+                focusClientMatch(clampedIndex, marks, { scroll: false });
+                return;
+            }
+
+            const fallbackIndex = ensureFocus || clientSearchIndex < 0
+                ? 0
+                : Math.min(clientSearchIndex, marks.length - 1);
+            focusClientMatch(fallbackIndex, marks, { scroll: ensureFocus });
+        }
+
+        function handleClientSearchKeydown(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (event.shiftKey) {
+                    focusPreviousClientMatch();
+                } else {
+                    focusNextClientMatch();
+                }
+            } else if (event.key === 'Escape') {
+                event.preventDefault();
+                if (clientSearchInput) {
+                    clientSearchInput.value = '';
+                }
+                applyClientSearch('');
+            }
         }
 
         function renderLines(lines, meta = {}) {
@@ -387,19 +790,19 @@
             const fragment = document.createDocumentFragment();
 
             linesToRender.forEach((line) => {
-                if (!line || line.trim() === '') {
-                    return;
+                const element = createLineElement(line);
+                if (element) {
+                    fragment.appendChild(element);
                 }
-
-                const lineClass = classifyLine(line);
-                const div = document.createElement('div');
-                div.className = `log-line${lineClass ? ` ${lineClass}` : ''}`;
-                div.textContent = line;
-                fragment.appendChild(div);
             });
 
             logContainer.appendChild(fragment);
             logContainer.scrollTop = logContainer.scrollHeight;
+
+            refreshClientSearchStatus({
+                preserveIndex: clientSearchIndex >= 0,
+                ensureFocus: clientSearchIndex === -1,
+            });
 
             if (statusTextEl) {
                 const message = truncated
@@ -445,6 +848,10 @@
             function renderChunk() {
                 if (index >= totalLines) {
                     updateStatus(totalLines, true);
+                    refreshClientSearchStatus({
+                        preserveIndex: clientSearchIndex >= 0,
+                        ensureFocus: clientSearchIndex === -1,
+                    });
                     return;
                 }
 
@@ -453,14 +860,10 @@
 
                 for (; index < end; index++) {
                     const line = lines[index];
-                    if (!line || line.trim() === '') {
-                        continue;
+                    const element = createLineElement(line);
+                    if (element) {
+                        fragment.appendChild(element);
                     }
-                    const lineClass = classifyLine(line);
-                    const div = document.createElement('div');
-                    div.className = `log-line${lineClass ? ` ${lineClass}` : ''}`;
-                    div.textContent = line;
-                    fragment.appendChild(div);
                 }
 
                 logContainer.appendChild(fragment);
@@ -607,6 +1010,42 @@
                         linesSelect.value = defaultLines;
                     }
                     fetchLogs();
+                });
+            }
+
+            if (clientSearchInput) {
+                clientSearchInput.addEventListener('input', function (event) {
+                    applyClientSearch(event.target.value);
+                });
+                clientSearchInput.addEventListener('keydown', handleClientSearchKeydown);
+            }
+
+            if (clientSearchNextBtn) {
+                clientSearchNextBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    focusNextClientMatch();
+                });
+            }
+
+            if (clientSearchPrevBtn) {
+                clientSearchPrevBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    focusPreviousClientMatch();
+                });
+            }
+
+            if (clientSearchClearBtn) {
+                clientSearchClearBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    if (clientSearchInput) {
+                        clientSearchInput.value = '';
+                        try {
+                            clientSearchInput.focus({ preventScroll: true });
+                        } catch (error) {
+                            clientSearchInput.focus();
+                        }
+                    }
+                    applyClientSearch('');
                 });
             }
 
