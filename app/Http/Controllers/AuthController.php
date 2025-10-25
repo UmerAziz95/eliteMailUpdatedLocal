@@ -176,6 +176,19 @@ class AuthController extends Controller
             return redirect()->to('/static-plans/' . $encrypted);
         }
         $userSubsc=Subscription::where('user_id',$userCheck->id)->first();
+        // fallback to plans/public if no subscription then get form pool_invoices
+        if (!$userSubsc && $userCheck->role_id == 3) {
+            $poolInvoice = \App\Models\PoolInvoice::where('user_id', $userCheck->id)
+                ->where('status', 'paid')
+                ->first();
+
+            if ($poolInvoice) {
+                $userSubsc = true; // Treat as having a subscription
+            }
+        }
+
+         // If no subscription and is customer, redirect to plans/public
+        
        if (!$userSubsc && $userCheck->role_id == 3) {
             
             
