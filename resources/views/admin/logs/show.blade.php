@@ -308,6 +308,7 @@
         let clientSearchIndex = -1;
         let clientSearchProcessing = false;
         let clientSearchProcessingToken = 0;
+        let clientSearchPendingNav = null;
         const LARGE_RENDER_THRESHOLD = 20000;
         const MAX_RENDER_LINES = 500000;
         const CHUNK_MIN_SIZE = 750;
@@ -438,6 +439,7 @@
         function setClientSearchStatusDefault() {
             setClientSearchStatus(CLIENT_SEARCH_HELP_TEXT);
             setClientSearchControlsState(0);
+            clientSearchPendingNav = null;
         }
 
         function getClientSearchMarks() {
@@ -460,6 +462,7 @@
             }
 
             clientSearchIndex = -1;
+            clientSearchPendingNav = null;
         }
 
         function applyHighlight(element) {
@@ -544,6 +547,7 @@
 
             if (!logLines || totalLines === 0) {
                 clientSearchProcessing = false;
+                clientSearchPendingNav = null;
                 if (typeof onComplete === 'function') {
                     onComplete({ totalMatches: 0, totalLines: 0 });
                 }
@@ -588,9 +592,17 @@
                 }
 
                 clientSearchProcessing = false;
+                const pendingNav = clientSearchPendingNav;
+                clientSearchPendingNav = null;
 
                 if (typeof onComplete === 'function') {
                     onComplete({ totalMatches, totalLines });
+                }
+
+                if (pendingNav === 'next') {
+                    focusNextClientMatch();
+                } else if (pendingNav === 'prev') {
+                    focusPreviousClientMatch();
                 }
             }
 
@@ -671,7 +683,12 @@
         }
 
         function focusNextClientMatch() {
-            if (!clientSearchTerm || clientSearchProcessing) {
+            if (!clientSearchTerm) {
+                return;
+            }
+
+            if (clientSearchProcessing) {
+                clientSearchPendingNav = 'next';
                 return;
             }
 
@@ -686,7 +703,12 @@
         }
 
         function focusPreviousClientMatch() {
-            if (!clientSearchTerm || clientSearchProcessing) {
+            if (!clientSearchTerm) {
+                return;
+            }
+
+            if (clientSearchProcessing) {
+                clientSearchPendingNav = 'prev';
                 return;
             }
 
@@ -851,9 +873,6 @@
         function handleClientSearchKeydown(event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                if (clientSearchProcessing) {
-                    return;
-                }
                 if (event.shiftKey) {
                     focusPreviousClientMatch();
                 } else {
