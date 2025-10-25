@@ -1,7 +1,6 @@
 @extends('admin.layouts.app')
-
 @section('title', 'Log Viewer - ' . $logInfo['name'])
-
+<!--  -->
 @push('styles')
 <style>
     .log-header {
@@ -307,11 +306,15 @@
         let clientSearchTerm = '';
         let clientSearchTermLower = '';
         let clientSearchIndex = -1;
+        let clientSearchProcessing = false;
+        let clientSearchProcessingToken = 0;
         const LARGE_RENDER_THRESHOLD = 20000;
         const MAX_RENDER_LINES = 500000;
         const CHUNK_MIN_SIZE = 750;
         const CHUNK_MAX_SIZE = 4000;
         const CLIENT_SEARCH_HELP_TEXT = 'Client-side search highlights within loaded lines. Use Enter to jump between matches.';
+        const CLIENT_SEARCH_CHUNK_THRESHOLD = 6000;
+        const CLIENT_SEARCH_CHUNK_SIZE = 600;
 
         function initElements() {
             form = document.getElementById('log-filter-form');
@@ -415,18 +418,20 @@
             }
         }
 
-        function setClientSearchControlsState(totalMatches) {
+        function setClientSearchControlsState(totalMatches, options = {}) {
+            const { forceDisable = false } = options;
             const hasTerm = clientSearchTerm.length > 0;
             const hasMatches = hasTerm && totalMatches > 0;
+            const disableNav = forceDisable || !hasMatches;
 
             if (clientSearchNextBtn) {
-                clientSearchNextBtn.disabled = !hasMatches;
+                clientSearchNextBtn.disabled = disableNav;
             }
             if (clientSearchPrevBtn) {
-                clientSearchPrevBtn.disabled = !hasMatches;
+                clientSearchPrevBtn.disabled = disableNav;
             }
             if (clientSearchClearBtn) {
-                clientSearchClearBtn.disabled = !hasTerm;
+                clientSearchClearBtn.disabled = forceDisable || !hasTerm;
             }
         }
 
@@ -511,6 +516,87 @@
             return matchCount;
         }
 
+        function restoreLineContent(element) {
+            if (!element) {
+                return 0;
+            }
+
+            const stored = typeof element.dataset.rawLine === 'string'
+                ? element.dataset.rawLine
+                : element.textContent || '';
+
+            element.dataset.rawLine = stored;
+            element.textContent = stored;
+            element.classList.remove('log-line-match', 'log-line-active-match');
+
+            return 0;
+        }
+
+        function processClientSearchLines(options = {}) {
+            const {
+                logLines = null,
+                totalLines = 0,
+                processLine = () => 0,
+                onComplete = null,
+                processingText = '',
+                token = 0,
+            } = options;
+
+            if (!logLines || totalLines === 0) {
+                clientSearchProcessing = false;
+                if (typeof onComplete === 'function') {
+                    onComplete({ totalMatches: 0, totalLines: 0 });
+                }
+                return;
+            }
+
+            const useChunks = totalLines > CLIENT_SEARCH_CHUNK_THRESHOLD;
+            const batchSize = useChunks ? CLIENT_SEARCH_CHUNK_SIZE : totalLines;
+            let processed = 0;
+            let totalMatches = 0;
+
+            clientSearchProcessing = true;
+
+            if (useChunks && processingText) {
+                setClientSearchStatus(`${processingText} (0 / ${formatNumber(totalLines)})`);
+            }
+
+            function processBatch() {
+                if (token !== clientSearchProcessingToken) {
+                    return;
+                }
+
+                const end = Math.min(processed + batchSize, totalLines);
+
+                for (let index = processed; index < end; index++) {
+                    const line = logLines[index];
+                    if (!line) {
+                        continue;
+                    }
+                    totalMatches += processLine(line) || 0;
+                }
+
+                processed = end;
+
+                if (useChunks && processingText) {
+                    setClientSearchStatus(`${processingText} (${formatNumber(processed)} / ${formatNumber(totalLines)})`);
+                }
+
+                if (processed < totalLines) {
+                    requestAnimationFrame(processBatch);
+                    return;
+                }
+
+                clientSearchProcessing = false;
+
+                if (typeof onComplete === 'function') {
+                    onComplete({ totalMatches, totalLines });
+                }
+            }
+
+            requestAnimationFrame(processBatch);
+        }
+
         function createLineElement(line) {
             if (!line || line.trim() === '') {
                 return null;
@@ -576,7 +662,7 @@
         }
 
         function focusNextClientMatch() {
-            if (!clientSearchTerm) {
+            if (!clientSearchTerm || clientSearchProcessing) {
                 return;
             }
 
@@ -591,7 +677,7 @@
         }
 
         function focusPreviousClientMatch() {
-            if (!clientSearchTerm) {
+            if (!clientSearchTerm || clientSearchProcessing) {
                 return;
             }
 
@@ -635,37 +721,89 @@
                 return;
             }
 
+            clientSearchProcessingToken += 1;
+            const processingToken = clientSearchProcessingToken;
+
             clearClientSearchFocus();
 
-            if (!clientSearchTerm) {
-                const logLines = logContainer.querySelectorAll('.log-line');
-                logLines.forEach((line) => {
-                    if (line.dataset.rawLine) {
-                        line.textContent = line.dataset.rawLine;
-                    }
-                    line.classList.remove('log-line-match');
-                });
-                setClientSearchStatusDefault();
-                return;
-            }
-
             const logLines = logContainer.querySelectorAll('.log-line');
-            logLines.forEach((line) => {
-                const matches = applyHighlight(line);
-                line.classList.toggle('log-line-match', matches > 0);
-            });
+            const totalLines = logLines.length;
 
-            const marks = getClientSearchMarks();
-            if (!marks.length) {
-                updateClientSearchStatus(0);
+            if (!clientSearchTerm) {
+                if (!totalLines) {
+                    setClientSearchStatusDefault();
+                    return;
+                }
+
+                setClientSearchStatus(
+                    totalLines > CLIENT_SEARCH_CHUNK_THRESHOLD
+                        ? 'Clearing highlights...'
+                        : CLIENT_SEARCH_HELP_TEXT,
+                );
+                setClientSearchControlsState(0, { forceDisable: true });
+
+                processClientSearchLines({
+                    logLines,
+                    totalLines,
+                    processLine: restoreLineContent,
+                    onComplete: () => {
+                        setClientSearchStatusDefault();
+                    },
+                    processingText: 'Clearing highlights...',
+                    token: processingToken,
+                });
+
                 return;
             }
 
-            const targetIndex = focusFirst
-                ? 0
-                : (clientSearchIndex >= 0 && clientSearchIndex < marks.length ? clientSearchIndex : 0);
+            if (!totalLines) {
+                setClientSearchStatus(`No log entries loaded to search for "${clientSearchTerm}".`);
+                setClientSearchControlsState(0);
+                return;
+            }
 
-            focusClientMatch(targetIndex, marks, { scroll: focusFirst });
+            setClientSearchStatus(
+                totalLines > CLIENT_SEARCH_CHUNK_THRESHOLD
+                    ? `Highlighting matches for "${clientSearchTerm}"...`
+                    : `Searching for "${clientSearchTerm}"...`,
+            );
+            setClientSearchControlsState(0, { forceDisable: true });
+
+            processClientSearchLines({
+                logLines,
+                totalLines,
+                processLine: (line) => {
+                    const matches = applyHighlight(line);
+                    line.classList.toggle('log-line-match', matches > 0);
+                    return matches;
+                },
+                onComplete: ({ totalMatches }) => {
+                    if (!clientSearchTerm) {
+                        setClientSearchStatusDefault();
+                        return;
+                    }
+
+                    if (!totalMatches) {
+                        updateClientSearchStatus(0);
+                        return;
+                    }
+
+                    const marks = getClientSearchMarks();
+                    if (!marks.length) {
+                        updateClientSearchStatus(0);
+                        return;
+                    }
+
+                    const existingIndex = clientSearchIndex >= 0 ? clientSearchIndex : 0;
+                    const targetIndex = focusFirst
+                        ? 0
+                        : Math.min(existingIndex, marks.length - 1);
+
+                    focusClientMatch(targetIndex, marks, { scroll: focusFirst });
+                },
+                processingText: `Highlighting matches for "${clientSearchTerm}"...`,
+                token: processingToken,
+            });
         }
 
         function refreshClientSearchStatus(options = {}) {
@@ -673,6 +811,10 @@
                 preserveIndex = true,
                 ensureFocus = false,
             } = options;
+
+            if (clientSearchProcessing) {
+                return;
+            }
 
             if (!clientSearchTerm) {
                 setClientSearchStatusDefault();
@@ -700,6 +842,9 @@
         function handleClientSearchKeydown(event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
+                if (clientSearchProcessing) {
+                    return;
+                }
                 if (event.shiftKey) {
                     focusPreviousClientMatch();
                 } else {
@@ -718,6 +863,9 @@
             if (!logContainer) {
                 return;
             }
+
+            clientSearchProcessingToken += 1;
+            clientSearchProcessing = false;
 
             logContainer.innerHTML = '';
 
