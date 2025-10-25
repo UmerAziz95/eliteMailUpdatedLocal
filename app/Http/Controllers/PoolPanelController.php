@@ -39,7 +39,7 @@ class PoolPanelController extends Controller
                 // Handle next ID request
                 if ($request->has('next_id')) {
                     // Generate a preview ID similar to what will be created
-                    $nextId = $this->generatePoolPanelId();
+                    $nextId = 'PPN-' . PoolPanel::getNextAvailableId();
                     return response()->json(['next_id' => $nextId]);
                 }
 
@@ -474,11 +474,7 @@ class PoolPanelController extends Controller
      */
     private function generatePoolPanelId()
     {
-        // Get the next database ID to make it more predictable
-        $lastPoolPanel = PoolPanel::orderBy('id', 'desc')->first();
-        $nextDbId = $lastPoolPanel ? $lastPoolPanel->id + 1 : 1;
-        
-        // Generate ID with format: PP_[NEXT_DB_ID]_[TIMESTAMP]
-        return 'PP_' . str_pad($nextDbId, 6, '0', STR_PAD_LEFT);
+        return 'PPN-' . PoolPanel::getNextAvailableId();
     }
 }
+

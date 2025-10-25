@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class PoolPanel extends Model
 {
@@ -20,6 +21,17 @@ class PoolPanel extends Model
         'created_by',
         'updated_by',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (PoolPanel $poolPanel) {
+            if ($poolPanel->getKey()) {
+                return;
+            }
+
+            $poolPanel->setAttribute($poolPanel->getKeyName(), static::getNextAvailableId());
+        });
+    }
 
     protected $casts = [
         'is_active' => 'boolean',
@@ -98,5 +110,32 @@ class PoolPanel extends Model
     public function isAvailable()
     {
         return $this->is_active && $this->remaining_limit > 0;
+    }
+
+    /**
+     * Determine the smallest positive pool panel ID that is not yet used.
+     */
+    public static function getNextAvailableId(): int
+    {
+        $keyName = (new static())->getKeyName();
+
+        /** @var Collection<int,int> $ids */
+        $ids = static::query()
+            ->orderBy($keyName)
+            ->pluck($keyName);
+
+        $candidate = 1;
+
+        foreach ($ids as $id) {
+            if ($id > $candidate) {
+                break;
+            }
+
+            if ($id === $candidate) {
+                $candidate++;
+            }
+        }
+
+        return $candidate;
     }
 }
