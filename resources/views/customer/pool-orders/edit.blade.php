@@ -935,6 +935,29 @@
                                         <input type="hidden" id="hasDisclaimer" value="0">
                                         @endif
 
+                                        <!-- Save Preconditions -->
+                                        <div class="mt-3">
+                                            <div class="form-check text-start mb-2">
+                                                <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmInstantlyAccess">
+                                                <label class="form-check-label small text-light" for="confirmInstantlyAccess">
+                                                    Instantly login details for their account.
+                                                </label>
+                                            </div>
+                                            <div class="form-check text-start mb-2">
+                                                <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmInstantlySubscription">
+                                                <label class="form-check-label small text-light" for="confirmInstantlySubscription">
+                                                    I confirm the Instantly subscription is active and paid.
+                                                </label>
+                                            </div>
+                                            <div class="form-check text-start">
+                                                <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmLoginAccuracy">
+                                                <label class="form-check-label small text-light" for="confirmLoginAccuracy">
+                                                    I confirm the provided login details are correct.
+                                                    <span class="text-warning fw-semibold">Incorrect details will cause delays.</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
                                         <!-- Save Button -->
                                         <button type="submit" class="btn btn-save w-100 mt-3" id="saveBtn" disabled>
                                             <i class="ti ti-device-floppy me-2"></i>Save Configuration
@@ -1025,6 +1048,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const paginationControls = document.getElementById('paginationControls');
     const domainsPerPageSelect = document.getElementById('domainsPerPage');
     const form = document.getElementById('domainSelectionForm');
+    const saveBtn = document.getElementById('saveBtn');
+    const requirementCheckboxes = Array.from(document.querySelectorAll('.save-requirement-checkbox'));
+    const hasDisclaimerInput = document.getElementById('hasDisclaimer');
+    
+    requirementCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => updateSaveButtonState());
+    });
+    
+    if (!hasDisclaimerInput || hasDisclaimerInput.value !== '1') {
+        disclaimerAcknowledged = true;
+    }
+    
+    updateSaveButtonState();
     
     // Initialize
     loadDomainsFromServer(currentPage, searchTerm);
@@ -1351,6 +1387,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    function updateSaveButtonState({ selectedCount, totalInboxes } = {}) {
+        if (!saveBtn) {
+            return;
+        }
+        
+        const effectiveSelectedCount = typeof selectedCount === 'number'
+            ? selectedCount
+            : selectedDomains.size;
+        
+        const effectiveTotalInboxes = typeof totalInboxes === 'number'
+            ? totalInboxes
+            : Array.from(selectedDomains.values()).reduce((sum, domain) => sum + domain.inboxes, 0);
+        
+        const overLimit = effectiveTotalInboxes > maxQuantity;
+        const hasSelection = effectiveSelectedCount > 0;
+        const requirementsMet = requirementCheckboxes.length === 0
+            ? true
+            : requirementCheckboxes.every(cb => cb.checked);
+        
+        saveBtn.disabled = !hasSelection || overLimit || !requirementsMet;
+    }
+    
     // Update summary function
     function updateSummary() {
         const selectedArray = Array.from(selectedDomains.values());
@@ -1451,8 +1509,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Enable/disable save button
-        const saveBtn = document.getElementById('saveBtn');
-        saveBtn.disabled = selectedArray.length === 0 || totalInboxes > maxQuantity;
+        updateSaveButtonState({ selectedCount: selectedArray.length, totalInboxes });
+        
+        if (!saveBtn) {
+            return;
+        }
         
         // Update button text based on validation
         if (totalInboxes > maxQuantity) {
@@ -1794,6 +1855,16 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        if (requirementCheckboxes.length && requirementCheckboxes.some(cb => !cb.checked)) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Confirm Requirements',
+                text: 'Please confirm all required checkboxes before saving your configuration.',
+                confirmButtonColor: '#0d6efd'
+            });
+            return;
+        }
+        
         // Check if disclaimer needs to be shown
         const hasDisclaimer = document.getElementById('hasDisclaimer');
         const disclaimerContent = document.getElementById('disclaimerContent');
@@ -1852,10 +1923,7 @@ document.addEventListener('DOMContentLoaded', function() {
         hideDisclaimerCanvas(() => {
             // Mark disclaimer as acknowledged and enable save button
             disclaimerAcknowledged = true;
-            const saveBtn = document.getElementById('saveBtn');
-            if (saveBtn) {
-                saveBtn.disabled = false;
-            }
+            updateSaveButtonState();
             // Proceed to submit order
             submitOrder();
         });
@@ -1866,10 +1934,7 @@ document.addEventListener('DOMContentLoaded', function() {
         hideDisclaimerCanvas(() => {
             // Enable save button when closed (user can review and try again)
             disclaimerAcknowledged = true;
-            const saveBtn = document.getElementById('saveBtn');
-            if (saveBtn) {
-                saveBtn.disabled = false;
-            }
+            updateSaveButtonState();
         });
     });
     
@@ -1877,10 +1942,7 @@ document.addEventListener('DOMContentLoaded', function() {
         hideDisclaimerCanvas(() => {
             // Enable save button when closed
             disclaimerAcknowledged = true;
-            const saveBtn = document.getElementById('saveBtn');
-            if (saveBtn) {
-                saveBtn.disabled = false;
-            }
+            updateSaveButtonState();
         });
     });
     
@@ -1889,10 +1951,7 @@ document.addEventListener('DOMContentLoaded', function() {
         hideDisclaimerCanvas(() => {
             // Enable save button when closed
             disclaimerAcknowledged = true;
-            const saveBtn = document.getElementById('saveBtn');
-            if (saveBtn) {
-                saveBtn.disabled = false;
-            }
+            updateSaveButtonState();
         });
     });
     
@@ -1913,10 +1972,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        const saveBtn = document.getElementById('saveBtn');
-        const originalText = saveBtn.innerHTML;
-        saveBtn.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Saving...';
-        saveBtn.disabled = true;
+        let originalText = '';
+        if (saveBtn) {
+            originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Saving...';
+            saveBtn.disabled = true;
+        }
         
         // Collect hosting platform data (only if enabled)
         const formData = new FormData(form);
@@ -1999,8 +2060,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         })
         .finally(() => {
-            saveBtn.innerHTML = originalText;
-            saveBtn.disabled = false;
+            if (saveBtn) {
+                saveBtn.innerHTML = originalText;
+            }
+            updateSaveButtonState();
         });
     }
 });
