@@ -610,15 +610,21 @@
                     @endpush
                     @endif
 
-                    <!-- @if($poolOrder->poolPlan && $poolOrder->poolPlan->features)
-                    <hr>
-                    <h6 class="mb-3">Plan Features</h6>
-                    <ul class="list-unstyled">
-                        @foreach(json_decode($poolOrder->poolPlan->features, true) ?? [] as $feature)
-                            <li class="mb-1"><i class="fa-solid fa-check text-success me-2"></i>{{ $feature }}</li>
-                        @endforeach
-                    </ul>
-                    @endif -->
+                    @if($poolOrder->poolPlan && $poolOrder->poolPlan->features->isNotEmpty())
+                        <hr>
+                        <h6 class="mb-3">Plan Features</h6>
+                        <ul class="list-unstyled">
+                            @foreach($poolOrder->poolPlan->features as $feature)
+                                <li class="mb-1 d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-check text-success"></i>
+                                    <span>{{ $feature->title }}</span>
+                                    @if($feature->pivot && !is_null($feature->pivot->value) && $feature->pivot->value !== '')
+                                        <span class="text-muted">{{ $feature->pivot->value }}</span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
                 </div>
             </div>
         </div>
