@@ -88,7 +88,7 @@
                     href="{{ route('customer.pool-orders.index') }}">
                     <div class="d-flex align-items-center" style="gap: 13px">
                         <div class="icons"><i class="ti ti-package fs-5"></i></div>
-                        <div class="text">Pool Orders</div>
+                        <div class="text">Trial Orders</div>
                     </div>
                 </a>
             </li>

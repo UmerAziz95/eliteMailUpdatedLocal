@@ -592,7 +592,7 @@
                                 ${{ number_format($poolPlan->price, 2) }}
                                 <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
                                     /{{ $poolPlan->duration == 'monthly' ? 'mo' : $poolPlan->duration }}
-                                    per Pool
+                                    per Inboxes
                                 </span>
                             </h2>
                             @if($poolPlan->is_chargebee_synced && $poolPlan->chargebee_plan_id)
