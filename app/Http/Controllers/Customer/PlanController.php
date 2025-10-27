@@ -1313,6 +1313,7 @@ class PlanController extends Controller
         $normalSubscription = UserSubscription::where('chargebee_subscription_id', $subscriptionId)->first();
         if ($normalSubscription) {
             return [
+                // 'type' => 'pool',
                 'type' => 'normal',
                 'subscription' => $normalSubscription,
                 'order_id' => $normalSubscription->order_id,
@@ -1342,6 +1343,7 @@ class PlanController extends Controller
     private function handlePoolOrderInvoice($eventType, $invoiceData, $content)
     {
         $subscriptionId = $invoiceData['subscription_id'] ?? null;
+        // $subscriptionId = "";
         $customerId = $invoiceData['customer_id'] ?? null;
 
         switch ($eventType) {
@@ -1504,7 +1506,7 @@ class PlanController extends Controller
             // Check if this is a pool order or normal order
             $invoiceData = $content['invoice'] ?? null;
             $subscriptionId = $invoiceData['subscription_id'] ?? null;
-            
+            // $subscriptionId = "";
             if ($subscriptionId) {
                 $subscriptionInfo = $this->getSubscriptionType($subscriptionId);
                 
