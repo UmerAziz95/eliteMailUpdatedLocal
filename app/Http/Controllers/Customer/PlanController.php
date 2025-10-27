@@ -1303,6 +1303,7 @@ class PlanController extends Controller
             ], 500);
         }
     }
+
     public function handleInvoiceWebhook(Request $request)
     {
         try {
@@ -1319,29 +1320,6 @@ class PlanController extends Controller
             }
             // Process based on event type
             switch ($eventType) {
-                case 'invoice_created':
-                case 'invoice_paid':
-                    //  case 'invoice_payment_succeeded':
-                    // $invoiceData = $webhookData['content']['invoice'] ?? [];
-
-                    // $subscriptionId = $invoiceData['subscription_id'] ?? null;
-                    // $customerId = $invoiceData['customer_id'] ?? null;
-
-                    // // Attempt to remove any failure records for this subscription
-                    // try {
-                    //     DB::table('payment_failures')
-                    //         ->where('chargebee_subscription_id', $subscriptionId)
-                    //         ->where('chargebee_customer_id', $customerId)
-                    //         ->where('created_at', '>=', now('UTC')->subHours(72)) // Only remove if it's within 72 hours
-                    //         ->delete();
-
-                    //     Log::info("✅ Cleared payment failure for subscription: $subscriptionId");
-                    // } catch (\Exception $e) {
-                    //     Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
-                    // }
-
-                    // break;
-                
                 case 'invoice_updated':
                     $invoiceData = $content['invoice'] ?? null;
                     $subscriptionId = $invoiceData['subscription_id'] ?? null;
