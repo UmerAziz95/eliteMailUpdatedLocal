@@ -1118,8 +1118,8 @@ class PanelController extends Controller
                 ->selectRaw('SUM(CASE WHEN `remaining_limit` <= `limit` THEN `limit` - `remaining_limit` ELSE 0 END) as used')
                 ->value('used') ?? 0;
             
-            // Closed panels count (inactive panels)
-            $closedPanels = Panel::where('is_active', false)->count();
+            // Archived panels count (inactive panels)
+            $archivedPanels = Panel::where('is_active', false)->count();
             
             // Additional statistics
             $activePanels = Panel::where('is_active', true)->count();
@@ -1131,7 +1131,8 @@ class PanelController extends Controller
                     'total_panels' => $totalPanels,
                     'available_capacity' => $availableCapacity,
                     'used_capacity' => $usedCapacity,
-                    'closed_panels' => $closedPanels,
+                    'archived_panels' => $archivedPanels,
+                    'closed_panels' => $archivedPanels,
                     'active_panels' => $activePanels,
                     'total_capacity' => $totalCapacity,
                     'utilization_percentage' => $totalCapacity > 0 ? round(($usedCapacity / $totalCapacity) * 100, 2) : 0,

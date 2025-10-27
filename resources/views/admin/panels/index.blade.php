@@ -74,6 +74,11 @@
         margin-bottom: 1rem;
     }
 
+    .counters {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
     /* Loading state styling */
     #loadingState {
         width: 100%;
@@ -664,7 +669,6 @@
                 aria-label="Close"></button>
         </div>
         @endif
-
         <div class="counters mb-3">
             <div class="card p-3 counter_1">
                 <div>
@@ -673,9 +677,16 @@
                             <h6 class="text-heading">Total Panels</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
-                                <p class="text-success mb-0"></p>
                             </div>
-                            <small class="mb-0"></small>
+                            <small class="mb-0 d-flex align-items-center gap-2">
+                                <span class="text-success">
+                                    <span class="fw-semibold" id="active_panels_counter">0</span> active
+                                </span>
+                                <span class="text-muted">•</span>
+                                <span class="text-warning">
+                                    <span class="fw-semibold" id="archived_panels_counter">0</span> archived
+                                </span>
+                            </small>
                         </div>
                         <div class="avatar">
                             <i class="fa-solid fa-solar-panel fs-2"></i>
@@ -690,7 +701,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Available Capacity</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2" id="active_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="available_capacity_counter">0</h4>
                                 <p class="text-danger mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -709,26 +720,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Used Capacity</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2" id="used_counter">0</h4>
-                                <p class="text-success mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
-                        </div>
-                        <div class="avatar">
-                            <i class="fa-solid fa-solar-panel fs-2"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-    
-            <div class="card p-3 counter_2">
-                <div>
-                    <!-- {{-- //card body --}} -->
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Closed Panels</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2" id="closed_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="used_capacity_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -1127,9 +1119,12 @@
                     
                     // Update the main panel counters
                     $('#total_counter').text(result.statistics.total_panels || 0);
-                    $('#active_counter').text((result.statistics.available_capacity || 0).toLocaleString());
-                    $('#used_counter').text((result.statistics.used_capacity || 0).toLocaleString());
-                    $('#closed_counter').text(result.statistics.closed_panels || 0);
+                    $('#available_capacity_counter').text((result.statistics.available_capacity || 0).toLocaleString());
+                    $('#used_capacity_counter').text((result.statistics.used_capacity || 0).toLocaleString());
+                    $('#active_panels_counter').text(result.statistics.active_panels || 0);
+                    $('#archived_panels_counter').text(
+                        (result.statistics.archived_panels ?? result.statistics.closed_panels) || 0
+                    );
                     
                     return;
                 }
@@ -1143,13 +1138,16 @@
                 let totalVisible = panels.length;
                 let availableCapacity = 0;
                 let usedCapacity = 0;
-                let closedVisible = 0;
+                let activeVisible = 0;
+                let archivedVisible = 0;
                 
                 panels.forEach(panel => {
                     availableCapacity += panel.remaining_limit || 0;
                     usedCapacity += (panel.limit || 0) - (panel.remaining_limit || 0);
-                    if (!panel.is_active) {
-                        closedVisible++;
+                    if (panel.is_active) {
+                        activeVisible++;
+                    } else {
+                        archivedVisible++;
                     }
                 });
                 
@@ -1157,14 +1155,16 @@
                     totalVisible,
                     availableCapacity, 
                     usedCapacity,
-                    closedVisible
+                    activeVisible,
+                    archivedVisible
                 });
                 
                 // Update counters (note: these are based on filtered/paginated results)
                 $('#total_counter').text(totalVisible);
-                $('#active_counter').text(availableCapacity.toLocaleString());
-                $('#used_counter').text(usedCapacity.toLocaleString());
-                $('#closed_counter').text(closedVisible);
+                $('#available_capacity_counter').text(availableCapacity.toLocaleString());
+                $('#used_capacity_counter').text(usedCapacity.toLocaleString());
+                $('#active_panels_counter').text(activeVisible);
+                $('#archived_panels_counter').text(archivedVisible);
             } else {
                 console.log('No panels data available for calculation');
                 // Keep existing values if no data available
@@ -1177,20 +1177,24 @@
             if (panels && panels.length > 0) {
                 let availableCapacity = 0;
                 let usedCapacity = 0;
-                let closedVisible = 0;
+                let activeVisible = 0;
+                let archivedVisible = 0;
                 
                 panels.forEach(panel => {
                     availableCapacity += panel.remaining_limit || 0;
                     usedCapacity += (panel.limit || 0) - (panel.remaining_limit || 0);
-                    if (!panel.is_active) {
-                        closedVisible++;
+                    if (panel.is_active) {
+                        activeVisible++;
+                    } else {
+                        archivedVisible++;
                     }
                 });
                 
                 $('#total_counter').text(panels.length);
-                $('#active_counter').text(availableCapacity.toLocaleString());
-                $('#used_counter').text(usedCapacity.toLocaleString());
-                $('#closed_counter').text(closedVisible);
+                $('#available_capacity_counter').text(availableCapacity.toLocaleString());
+                $('#used_capacity_counter').text(usedCapacity.toLocaleString());
+                $('#active_panels_counter').text(activeVisible);
+                $('#archived_panels_counter').text(archivedVisible);
             }
         }
     }
