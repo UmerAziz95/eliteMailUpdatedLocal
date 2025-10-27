@@ -1304,6 +1304,188 @@ class PlanController extends Controller
         }
     }
 
+    /**
+     * Helper function to determine if a subscription belongs to a pool order or normal order
+     */
+    private function getSubscriptionType($subscriptionId)
+    {
+        // Check in subscriptions table (normal orders)
+        $normalSubscription = UserSubscription::where('chargebee_subscription_id', $subscriptionId)->first();
+        if ($normalSubscription) {
+            return [
+                'type' => 'normal',
+                'subscription' => $normalSubscription,
+                'order_id' => $normalSubscription->order_id,
+                'user_id' => $normalSubscription->user_id,
+                'plan_id' => $normalSubscription->plan_id
+            ];
+        }
+
+        // Check in pool_orders table (pool orders)
+        $poolOrder = \App\Models\PoolOrder::where('chargebee_subscription_id', $subscriptionId)->first();
+        if ($poolOrder) {
+            return [
+                'type' => 'pool',
+                'pool_order' => $poolOrder,
+                'pool_order_id' => $poolOrder->id,
+                'user_id' => $poolOrder->user_id,
+                'plan_id' => $poolOrder->pool_plan_id
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Handle pool order invoice webhook events
+     */
+    private function handlePoolOrderInvoice($eventType, $invoiceData, $content)
+    {
+        $subscriptionId = $invoiceData['subscription_id'] ?? null;
+        $customerId = $invoiceData['customer_id'] ?? null;
+
+        switch ($eventType) {
+            case 'invoice_updated':
+                $existingPoolInvoice = \App\Models\PoolInvoice::where('chargebee_invoice_id', $invoiceData['id'])->first();
+                
+                if ($existingPoolInvoice) {
+                    $oldStatus = $existingPoolInvoice->status;
+                    
+                    $existingPoolInvoice->update([
+                        'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'failed', $eventType),
+                        'paid_at' => isset($invoiceData['paid_at']) 
+                            ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
+                            : null,
+                        'amount' => isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : $existingPoolInvoice->amount,
+                        'meta' => json_encode(['invoice' => $invoiceData]),
+                        'updated_at' => now('UTC'),
+                    ]);
+                    
+                    // Remove payment failure records if invoice is now paid
+                    // if ($existingPoolInvoice->status === 'paid' && $subscriptionId && $customerId) {
+                    //     try {
+                    //         DB::table('payment_failures')
+                    //             ->where('chargebee_subscription_id', $subscriptionId)
+                    //             ->where('chargebee_customer_id', $customerId)
+                    //             ->where('created_at', '>=', now('UTC')->subHours(72))
+                    //             ->delete();
+
+                    //         Log::info("✅ Cleared payment failure for pool subscription: $subscriptionId");
+                    //     } catch (\Exception $e) {
+                    //         Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                    //     }
+                    // }
+                    
+                    Log::info('Pool invoice status updated successfully', [
+                        'invoice_id' => $existingPoolInvoice->id,
+                        'chargebee_invoice_id' => $invoiceData['id'],
+                        'old_status' => $oldStatus,
+                        'new_status' => $existingPoolInvoice->status,
+                        'event_type' => $eventType
+                    ]);
+                }
+                break;
+
+            case 'invoice_payment_failed':
+                $poolOrder = \App\Models\PoolOrder::where('chargebee_subscription_id', $subscriptionId)->first();
+                $user_id = $poolOrder ? $poolOrder->user_id : null;
+                $plan_id = $poolOrder ? $poolOrder->pool_plan_id : null;
+
+                // DB::table('payment_failures')->updateOrInsert(
+                //     [
+                //         'chargebee_subscription_id' => $subscriptionId,
+                //         'chargebee_customer_id' => $customerId,
+                //     ],
+                //     [
+                //         'type' => 'invoice',
+                //         'status' => 'failed',
+                //         'user_id' => $user_id,
+                //         'plan_id' => $plan_id,
+                //         'failed_at' => now('UTC'),
+                //         'invoice_data' => json_encode($invoiceData),
+                //         'updated_at' => now('UTC'),
+                //         'created_at' => now('UTC'),
+                //     ]
+                // );
+
+                Log::info('Pool payment failure recorded successfully', [
+                    'subscription_id' => $subscriptionId,
+                    'user_id' => $user_id,
+                    'plan_id' => $plan_id,
+                ]);
+                break;
+
+            case 'invoice_generated':
+                Log::info('Processing pool invoice event: invoice_generated', ['event_type' => $eventType]);
+                
+                // Calculate amount in dollars (Chargebee sends amount in cents)
+                $amount = isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : 0;
+                if($amount <= 0){
+                    $amount = isset($invoiceData['total']) ? ($invoiceData['total'] / 100) : 0;
+                }
+                if($amount <= 0){
+                    $amount = isset($invoiceData['amount_due']) ? ($invoiceData['amount_due'] / 100) : 0;
+                }
+
+                // Get pool order details
+                $poolOrder = \App\Models\PoolOrder::where('chargebee_subscription_id', $subscriptionId)->first();
+                
+                if (!$poolOrder) {
+                    Log::warning('Pool order not found for subscription', ['subscription_id' => $subscriptionId]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Pool order not found for subscription'
+                    ], 404);
+                }
+
+                // Prepare metadata
+                $metadata = json_encode(['invoice' => $invoiceData]);
+
+                // Find or create pool invoice record
+                $poolInvoice = \App\Models\PoolInvoice::updateOrCreate(
+                    ['chargebee_invoice_id' => $invoiceData['id']],
+                    [
+                        'chargebee_customer_id' => $invoiceData['customer_id'] ?? null,
+                        'user_id' => $poolOrder->user_id,
+                        'pool_order_id' => $poolOrder->id,
+                        'amount' => $amount,
+                        'currency' => $invoiceData['currency_code'] ?? 'USD',
+                        'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'failed', $eventType),
+                        'paid_at' => isset($invoiceData['paid_at']) 
+                            ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
+                            : null,
+                        'meta' => $metadata,
+                    ]
+                );
+                
+                // Remove any payment failure records if invoice is paid
+                // if ($poolInvoice->status == 'paid') {
+                //     try {
+                //         DB::table('payment_failures')
+                //             ->where('chargebee_subscription_id', $subscriptionId)
+                //             ->where('chargebee_customer_id', $customerId)
+                //             ->where('created_at', '>=', now('UTC')->subHours(72))
+                //             ->delete();
+
+                //         Log::info("✅ Cleared payment failure for pool subscription: $subscriptionId");
+                //     } catch (\Exception $e) {
+                //         Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                //     }
+                // }
+
+                Log::info('Pool invoice processed successfully', [
+                    'invoice_id' => $poolInvoice->id,
+                    'chargebee_invoice_id' => $invoiceData['id'],
+                    'status' => $poolInvoice->status,
+                    'event_type' => $eventType,
+                    'pool_order_id' => $poolOrder->id
+                ]);
+                break;
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     public function handleInvoiceWebhook(Request $request)
     {
         try {
@@ -1318,6 +1500,25 @@ class PlanController extends Controller
             if (!$eventType || !$content) {
                 throw new \Exception('Invalid webhook data received');
             }
+            
+            // Check if this is a pool order or normal order
+            $invoiceData = $content['invoice'] ?? null;
+            $subscriptionId = $invoiceData['subscription_id'] ?? null;
+            
+            if ($subscriptionId) {
+                $subscriptionInfo = $this->getSubscriptionType($subscriptionId);
+                
+                // If it's a pool order, handle it separately
+                if ($subscriptionInfo && $subscriptionInfo['type'] === 'pool') {
+                    Log::info('Routing to pool order invoice handler', [
+                        'subscription_id' => $subscriptionId,
+                        'event_type' => $eventType
+                    ]);
+                    return $this->handlePoolOrderInvoice($eventType, $invoiceData, $content);
+                }
+            }
+            
+            // Process normal order invoices
             // Process based on event type
             switch ($eventType) {
                 case 'invoice_updated':
