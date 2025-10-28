@@ -30,7 +30,8 @@ class TaskQueueController extends Controller
             if ($type === 'pending') {
                 $query->whereNull('assigned_to')
                       ->where('status', 'pending')
-                      ->whereDate('started_queue_date', '<=', now());
+                    //   ->whereDate('started_queue_date', '<=', now());
+                      ->where('started_queue_date', '<=', Carbon::now());
             } elseif ($type === 'in-progress') {
                 $query->where('status', 'in-progress')
                       ->whereNotNull('assigned_to');

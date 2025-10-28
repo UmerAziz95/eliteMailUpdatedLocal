@@ -34,12 +34,12 @@ class TaskQueueController extends Controller
                 return $this->getShiftedTasks($request);
             }
             $query = DomainRemovalTask::with(['user', 'order.reorderInfo', 'order.orderPanels.orderPanelSplits', 'assignedTo']);
-
+            
             // Filter based on requirements: assigned_to = null and status = pending and started_queue_date >= now()
             if ($type === 'pending') {
                 $query->whereNull('assigned_to')
-                      ->where('status', 'pending')
-                      ->whereDate('started_queue_date', '<=', now());
+                    ->where('status', 'pending')
+                    ->where('started_queue_date', '<=', Carbon::now());
             } elseif ($type === 'in-progress') {
                 $query->where('status', 'in-progress')
                       ->whereNotNull('assigned_to');
