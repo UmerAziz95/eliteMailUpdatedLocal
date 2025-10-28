@@ -1627,6 +1627,18 @@ class PlanController extends Controller
                     ]);
                     return $this->handlePoolOrderInvoice($eventType, $invoiceData, $content);
                 }
+                // subscriptionInfo can be null if subscription not found
+                if (!$subscriptionInfo) {
+                    
+                    Log::warning('Subscription not found for invoice webhook', [
+                        'subscription_id' => $subscriptionId,
+                        'event_type' => $eventType
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Subscription not found for invoice webhook'
+                    ]);
+                }
             }
             
             // Process normal order invoices
