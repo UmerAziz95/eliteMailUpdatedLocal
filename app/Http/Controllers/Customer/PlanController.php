@@ -206,16 +206,96 @@ class PlanController extends Controller
     {
         try {
             $hostedPageId = $request->input('id');
+            Log::info('Subscription success called', ['hosted_page_id' => $hostedPageId, 'request_data' => $request->all()]);
+            
             if (!$hostedPageId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Missing hosted page ID in request.'
                 ]);
             }
+            
+            // Log initial request data for better tracking when hosted_page_id exists
+            $initialRequestLogData = [
+                'user_id' => Auth::check() ? auth()->id() : null,
+                'chargebee_invoice_id' => null,
+                'chargebee_subscription_id' => null,
+                'customer_id' => null,
+                'plan_id' => null,
+                'amount' => null,
+                'invoice_data' => null,
+                'customer_data' => null,
+                'subscription_data' => null,
+                'response' => [
+                    'hosted_page_id' => $hostedPageId,
+                    'request_data' => $request->all(),
+                    'request_url' => $request->fullUrl(),
+                    'request_ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'timestamp' => now()->toISOString(),
+                    'stage' => 'initial_request'
+                ]
+            ];
+            // First check if log already exists for this hosted_page_id to avoid update
+            $checkExistingLog = OrderPaymentLog::where('hosted_page_id', $hostedPageId)->first();
+            if(!$checkExistingLog) {
+                $this->logInitialPaymentData($hostedPageId, $initialRequestLogData, 'pending');
+            }
 
             $result = \ChargeBee\ChargeBee\Models\HostedPage::retrieve($hostedPageId);
             $hostedPage = $result->hostedPage();
+            
+            if (!$hostedPage) {
+                Log::error('Hosted page not found', ['hosted_page_id' => $hostedPageId]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hosted page not found.'
+                ], 404);
+            }
+            
             $content = $hostedPage->content();
+            
+            // Retry mechanism: If content is null, retry up to 2 times with 3-second delays
+            $retryCount = 0;
+            $maxRetries = 2;
+            
+            while (!$content && $retryCount < $maxRetries) {
+                $retryCount++;
+                Log::warning('Hosted page content is null, retrying...', [
+                    'hosted_page_id' => $hostedPageId, 
+                    'user_id' => auth()->id(),
+                    'retry_attempt' => $retryCount,
+                    'max_retries' => $maxRetries
+                ]);
+                
+                sleep(3); // Wait 3 seconds before retry
+                
+                // Retrieve hosted page again
+                $result = \ChargeBee\ChargeBee\Models\HostedPage::retrieve($hostedPageId);
+                $hostedPage = $result->hostedPage();
+                
+                if ($hostedPage) {
+                    $content = $hostedPage->content();
+                }
+            }
+            
+            // If still null after retries, return error
+            if (!$content) {
+                Log::error('Hosted page content is null after retries', [
+                    'hosted_page_id' => $hostedPageId, 
+                    'user_id' => auth()->id(),
+                    'total_retries' => $retryCount
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid hosted page content. Please try again or contact support.'
+                ], 400);
+            }
+            
+            Log::info('Hosted page content retrieved successfully', [
+                'hosted_page_id' => $hostedPageId,
+                'retries_needed' => $retryCount
+            ]);
 
             $subscription = $content->subscription() ?? null;
             $customer = $content->customer() ?? null;
@@ -244,8 +324,9 @@ class PlanController extends Controller
                 }
             }
             
-            // Log initial payment data
+            // Log initial payment data with complete details
             $initialLogData = [
+                'user_id' => Auth::check() ? auth()->id() : null,
                 'chargebee_invoice_id' => $invoice ? $invoice->id : null,
                 'chargebee_subscription_id' => $subscription ? $subscription->id : null,
                 'customer_id' => $customer ? $customer->id : null,
@@ -256,12 +337,34 @@ class PlanController extends Controller
                 'response' => [
                     'hosted_page_status' => $hostedPage->status ?? null,
                     'hosted_page_type' => $hostedPage->type ?? null,
-                    'timestamp' => now()->toISOString()
+                    'hosted_page_state' => $hostedPage->state ?? null,
+                    'request_data' => $request->all(),
+                    'request_url' => $request->fullUrl(),
+                    'request_ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'timestamp' => now()->toISOString(),
+                    'stage' => 'data_retrieved',
+                    'retries_needed' => $retryCount ?? 0
                 ]
             ];
             
             $paymentStatus = $invoice ? $invoice->status : 'unknown';
+            
             $this->logInitialPaymentData($hostedPageId, $initialLogData, $paymentStatus);
+            
+            // Check if subscription exists before accessing shipping address
+            if (!$subscription) {
+                Log::error('Subscription is null in subscriptionSuccess', [
+                    'hosted_page_id' => $hostedPageId,
+                    'user_id' => auth()->id(),
+                    'has_customer' => !is_null($customer),
+                    'has_invoice' => !is_null($invoice)
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Subscription data not found.'
+                ], 400);
+            }
             
             $shippingAddress = $subscription->getValues()['shipping_address'] ?? null;
             //shipping address
@@ -767,14 +870,14 @@ class PlanController extends Controller
     }
 
     /**
-     * Log initial payment data to order_payment_logs table (called once at start)
+     * Log initial payment data to order_payment_logs table 
+     * Uses updateOrCreate to prevent duplicate entries for same hosted_page_id
      */
     private function logInitialPaymentData($hostedPageId, $data = [], $paymentStatus = null)
     {
         try {
-            // Build complete initial data
-            $initialData = [
-                'hosted_page_id' => $hostedPageId,
+            // Build complete data for update/create
+            $logData = [
                 'user_id' => $data['user_id'] ?? null,
                 'is_exception' => true,
                 'chargebee_invoice_id' => $data['chargebee_invoice_id'] ?? null,
@@ -789,19 +892,25 @@ class PlanController extends Controller
                 'response' => $data['response'] ?? null,
             ];
 
-            // Create initial log entry
-            $paymentLog = OrderPaymentLog::create($initialData);
+            // Use updateOrCreate based on hosted_page_id to prevent duplicates
+            $paymentLog = OrderPaymentLog::updateOrCreate(
+                ['hosted_page_id' => $hostedPageId], // Match condition
+                $logData // Data to update or create with
+            );
             
-            \Log::info('Initial payment data logged successfully', [
+            \Log::info('Payment data logged successfully', [
                 'hosted_page_id' => $hostedPageId,
                 'payment_status' => $paymentStatus,
-                'log_id' => $paymentLog->id
+                'log_id' => $paymentLog->id,
+                'was_recently_created' => $paymentLog->wasRecentlyCreated,
+                'stage' => $data['response']['stage'] ?? 'unknown'
             ]);
             
         } catch (\Exception $e) {
-            \Log::error('Failed to log initial payment data: ' . $e->getMessage(), [
+            \Log::error('Failed to log payment data: ' . $e->getMessage(), [
                 'hosted_page_id' => $hostedPageId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }

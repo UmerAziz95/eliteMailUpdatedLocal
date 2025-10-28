@@ -27,7 +27,7 @@ class PoolPlanController extends Controller
     {
         try {
             $hostedPageId = $request->query('id');
-            
+            Log::info('Pool Subscription Success called', ['hosted_page_id' => $hostedPageId, 'request_data' => $request->all()]);
             if (!$hostedPageId) {
                 return redirect()->route('login')->withErrors(['error' => 'Invalid subscription response']);
             }
