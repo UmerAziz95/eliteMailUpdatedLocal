@@ -1452,7 +1452,6 @@ class PlanController extends Controller
     private function handlePoolOrderInvoice($eventType, $invoiceData, $content)
     {
         $subscriptionId = $invoiceData['subscription_id'] ?? null;
-        // $subscriptionId = "";
         $customerId = $invoiceData['customer_id'] ?? null;
 
         switch ($eventType) {
@@ -1615,7 +1614,8 @@ class PlanController extends Controller
             // Check if this is a pool order or normal order
             $invoiceData = $content['invoice'] ?? null;
             $subscriptionId = $invoiceData['subscription_id'] ?? null;
-            // $subscriptionId = "";
+            // $invoiceData['subscription_id'] = "AzywlcV0uqfj74sa"; // For testing pool order routing
+            // $invoiceData['customer_id'] = "AzywlcV0uqckV4ot"; // For testing pool order routing
             if ($subscriptionId) {
                 $subscriptionInfo = $this->getSubscriptionType($subscriptionId);
                 
