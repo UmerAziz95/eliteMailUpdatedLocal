@@ -69,11 +69,13 @@ class OrderCancelledService
                         // Assume monthly billing - subtract 1 month to get last billing date
                         $lastBillingDate = $nextBillingDate->copy()->subMonth();
                         $endDate = $nextBillingDate->copy()->subDay(); // End date is day before next billing
+                        Log::info("Calculated end date from next billing date: {$endDate->toDateString()} for Subscription ID {$subscription->id}");
                     }else{
                         // get last billing date from subscription
                         $lastBillingDate = $subscription->last_billing_date ? Carbon::parse($subscription->last_billing_date) : null;
                         if ($lastBillingDate) {
-                            $endDate = $lastBillingDate->copy()->addMonth()->subDay(); // End date is last billing date + 1 month - 1 day
+                            Log::info("Calculated end date from last billing date: " . $lastBillingDate->toDateString() . " for Subscription ID {$subscription->id}");
+                            $endDate = $lastBillingDate->copy()->addMonth(); // End date is last billing date + 1 month - 1 day
                         }
                     }
                 }
@@ -87,6 +89,7 @@ class OrderCancelledService
                     'is_cancelled_force' => $force_cancel,
                 ]);
                 Log::info("Updated local subscription record to cancelled: Subscription ID {$subscription->id}, User ID {$user_id}");
+                Log::info("Cancellation end date set to: {$endDate->toDateString()} for Subscription ID {$subscription->id}");
                 if ($user) {
                     $user->update([
                         'subscription_status' => 'cancelled',
@@ -131,7 +134,7 @@ class OrderCancelledService
                     } else {
                         $queueStartDate = $endDate->copy()->addHours(72);
                     }
-                    
+                    Log::info("Creating domain removal task with queue start date: {$queueStartDate->toDateTimeString()} for Subscription ID {$subscription->id}");
                     DomainRemovalTask::create([
                         'started_queue_date' => $queueStartDate,
                         'user_id' => $user_id,
