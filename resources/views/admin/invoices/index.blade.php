@@ -4,6 +4,35 @@
 
 @push('styles')
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css" />
+<style>
+    /* Ensure consistent styling for both DataTables */
+    #normalInvoicesTable_wrapper,
+    #trialInvoicesTable_wrapper {
+        width: 100%;
+    }
+
+    #normalInvoicesTable,
+    #trialInvoicesTable {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    .dataTables_wrapper {
+        padding: 0 !important;
+    }
+
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        padding: 0.5rem 0;
+    }
+
+    table.dataTable thead th,
+    table.dataTable tbody td {
+        padding: 0.75rem !important;
+    }
+</style>
 @endpush
 
 @section('content')
@@ -170,26 +199,75 @@
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body overflow-hidden">
-            <div class="">
-                <table id="invoicesTable">
-                    <thead>
-                        <tr>
-                            <th>Invoice #</th>
-                            <th>Order ID #</th>
-                            <th>Date</th>
-                            <th>Due Date</th>
-                            <th>Price</th>
-                            <th>Customer Name</th>
-                            <th>Paid At</th>
-                            <th>Subscription ID</th>
-                            <th>Status</th>
-                            <th>Order Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                </table>
+    <!-- Tab Navigation -->
+    <ul class="nav nav-pills mb-3 border-0" id="invoicesTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white active" 
+                    id="normal-tab" data-bs-toggle="tab" data-bs-target="#normal-tab-pane" type="button" 
+                    role="tab" aria-controls="normal-tab-pane" aria-selected="true">
+                <i class="fa fa-file-invoice me-1"></i>Normal Invoices
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white" 
+                    id="trial-tab" data-bs-toggle="tab" data-bs-target="#trial-tab-pane" type="button" 
+                    role="tab" aria-controls="trial-tab-pane" aria-selected="false">
+                <i class="fa fa-flask me-1"></i>Trial Invoices
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="invoicesTabContent">
+        <!-- Normal Invoices Tab -->
+        <div class="tab-pane fade show active" id="normal-tab-pane" role="tabpanel" aria-labelledby="normal-tab" tabindex="0">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="normalInvoicesTable" class="table table-hover w-100">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Order ID #</th>
+                                    <th>Date</th>
+                                    <th>Due Date</th>
+                                    <th>Price</th>
+                                    <th>Customer Name</th>
+                                    <th>Paid At</th>
+                                    <th>Subscription ID</th>
+                                    <th>Status</th>
+                                    <th>Order Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trial Invoices Tab -->
+        <div class="tab-pane fade" id="trial-tab-pane" role="tabpanel" aria-labelledby="trial-tab" tabindex="0">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="trialInvoicesTable" class="table table-hover w-100">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Order ID #</th>
+                                    <th>Date</th>
+                                    <th>Due Date</th>
+                                    <th>Price</th>
+                                    <th>Customer Name</th>
+                                    <th>Paid At</th>
+                                    <th>Subscription ID</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -199,8 +277,12 @@
 @push('scripts')
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script>
+    let normalInvoicesTable = null;
+    let trialInvoicesTable = null;
+
     $(document).ready(function() {
-        var table = $('#invoicesTable').DataTable({
+        // Initialize Normal Invoices DataTable
+        normalInvoicesTable = $('#normalInvoicesTable').DataTable({
             responsive: true,
             processing: true,
             serverSide: true,
@@ -213,6 +295,7 @@
                     toastr.error('Error loading invoice data');
                 },
                 data: function(d) {
+                    d.invoice_type = 'normal';
                     d.status = $('#statusFilter').val();
                     d.startDate = $('#startDate').val();
                     d.endDate = $('#endDate').val();
@@ -318,9 +401,129 @@
             }
         });
 
+        // Initialize Trial Invoices DataTable
+        trialInvoicesTable = $('#trialInvoicesTable').DataTable({
+            responsive: true,
+            processing: true,
+            serverSide: true,
+            dom: '<"top"f>rt<"bottom"lip><"clear">',
+            ajax: {
+                url: "{{ route('admin.invoices.index') }}",
+                type: "GET",
+                error: function(xhr, error, thrown) {
+                    console.error('Error:', error);
+                    toastr.error('Error loading trial invoice data');
+                },
+                data: function(d) {
+                    d.invoice_type = 'trial';
+                    d.status = $('#statusFilter').val();
+                    d.startDate = $('#startDate').val();
+                    d.endDate = $('#endDate').val();
+                    d.priceRange = $('#priceRange').val();
+                    d.orderId = $('#orderIdFilter').val();
+                    return d;
+                }
+            },
+            columns: [{
+                    data: 'id',
+                    name: 'id'
+                },
+                {
+                    data: 'pool_order_id',
+                    name: 'pool_order_id'
+                },
+                {
+                    data: 'created_at',
+                    name: 'created_at',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="ti ti-calendar-month fs-6"></i>
+                                <span class="text-nowrap">${data}</span>
+                            </div>
+                        `;
+                    }
+                },
+
+                {
+                    data: 'created_at',
+                    name: 'created_at',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="ti ti-calendar-month fs-6"></i>
+                                <span class="text-nowrap">${data}</span>
+                            </div>
+                        `;
+                    }
+                },
+
+                {
+                    data: 'amount',
+                    name: 'amount',
+                    render: function(data, type, row) {
+                        return `
+                            <span class="text-warning">${data}</span>
+                        `;
+                    }
+                },
+                {
+                    data: 'customer_name',
+                    name: 'customer_name',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex align-items-center gap-1">
+                                <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" style="width: 25px" alt="">
+                                <span>${data}</span>    
+                            </div>
+                        `;
+                    }
+                },
+                {
+                    data: 'paid_at',
+                    name: 'paid_at',
+                    render: function(data, type, row) {
+                        return `
+                            <span style="color: #00FF77">${data}</span>
+                        `;
+                    }
+                },
+                {
+                    data: 'chargebee_invoice_id',
+                    name: 'chargebee_invoice_id'
+                },
+                {
+                    data: 'status',
+                    name: 'status'
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false
+                }
+            ],
+            order: [
+                [1, 'desc']
+            ],
+            drawCallback: function(settings) {
+                if (settings.json && settings.json.counters) {
+                    $('#totalInvoices').text(settings.json.counters.total);
+                    $('#paidInvoices').text(settings.json.counters.paid);
+                    $('#pendingInvoices').text(settings.json.counters.pending);
+                    $('#failedInvoices').text(settings.json.counters.failed);
+                }
+            }
+        });
+
         // Apply filters when clicking the Filter button
         $('#applyFilters').on('click', function() {
-            table.draw();
+            if (normalInvoicesTable) {
+                normalInvoicesTable.draw();
+            }
+            if (trialInvoicesTable) {
+                trialInvoicesTable.draw();
+            }
         });
 
         // Clear invoice filters when clicking the Clear button 
@@ -331,7 +534,12 @@
             $('#priceRange').val('');
             $('#orderIdFilter').val('');
             $('#orderStatusFilter').val('');
-            table.draw();
+            if (normalInvoicesTable) {
+                normalInvoicesTable.draw();
+            }
+            if (trialInvoicesTable) {
+                trialInvoicesTable.draw();
+            }
         });
     });
 

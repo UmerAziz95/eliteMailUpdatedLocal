@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Invoice;
+use App\Models\PoolInvoice;
 use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -30,6 +31,14 @@ class AdminInvoiceController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
+            // Check if this is for trial invoices (pool_invoices)
+            $invoiceType = $request->get('invoice_type', 'normal');
+            
+            if ($invoiceType === 'trial') {
+                return $this->getTrialInvoices($request);
+            }
+            
+            // Normal invoices
             $query = Invoice::with(['order.user']);
     
             // Apply filters
@@ -242,6 +251,88 @@ class AdminInvoiceController extends Controller
             Log::error('Error in getInvoices: ' . $e->getMessage());
             return response()->json(['error' => 'Error loading invoices'], 500);
         }
+    }
+    
+    // Get trial invoices from pool_invoices table
+    private function getTrialInvoices(Request $request)
+    {
+        $query = PoolInvoice::with(['user', 'poolOrder']);
+
+        // Apply filters
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->startDate) {
+            $query->whereDate('created_at', '>=', $request->startDate);
+        }
+
+        if ($request->endDate) {
+            $query->whereDate('created_at', '<=', $request->endDate);
+        }
+
+        if ($request->priceRange) {
+            list($min, $max) = explode('-', $request->priceRange);
+            if ($max === '+') {
+                $query->where('amount', '>=', $min);
+            } else {
+                $query->whereBetween('amount', [$min, $max]);
+            }
+        }
+
+        if ($request->orderId) {
+            $query->where('pool_order_id', $request->orderId);
+        }
+
+        $data = $query->select([
+            'pool_invoices.id',
+            'pool_invoices.user_id',
+            'pool_invoices.pool_order_id',
+            'pool_invoices.amount',
+            'pool_invoices.status',
+            'pool_invoices.paid_at',
+            'pool_invoices.chargebee_invoice_id',
+            'pool_invoices.created_at',
+            'pool_invoices.updated_at',
+        ]);
+
+        return DataTables::of($data)
+            ->addColumn('customer_name', function ($row) {
+                return $row->user->name ?? 'N/A';
+            })
+            ->addColumn('action', function ($row) {
+                return view('admin.invoices.actions', ['row' => $row, 'isTrial' => true])->render();
+            })
+            ->editColumn('created_at', function ($row) {
+                return $row->created_at ? $row->created_at->format('d F, Y') : '';
+            })
+            ->editColumn('paid_at', function ($row) {
+                return $row->paid_at ? date('d F, Y', strtotime($row->paid_at)) : '';
+            })
+            ->editColumn('amount', function ($row) {
+                return '$' . number_format($row->amount, 2);
+            })
+            ->editColumn('status', function ($row) {
+                $statusClass = $row->status == 'paid' ? 'success' : 'warning';
+                return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' .
+                    ucfirst($row->status) . '</span>';
+            })
+            ->filterColumn('customer_name', function ($query, $keyword) {
+                $query->whereHas('user', function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%{$keyword}%");
+                });
+            })
+            ->rawColumns(['action', 'status'])
+            ->addIndexColumn()
+            ->with([
+                'counters' => [
+                    'total' => PoolInvoice::count(),
+                    'paid' => PoolInvoice::where('status', 'paid')->count(),
+                    'pending' => PoolInvoice::where('status', 'pending')->count(),
+                    'failed' => PoolInvoice::where('status', 'failed')->count(),
+                ]
+            ])
+            ->make(true);
     }
     
     public function show($invoiceId)
