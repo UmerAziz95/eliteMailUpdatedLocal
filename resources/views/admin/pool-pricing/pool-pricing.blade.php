@@ -603,6 +603,19 @@
                                     per Inboxes
                                 </span>
                             </h2>
+                            
+                            <!-- Display Pricing Model and Billing Cycle -->
+                            <div class="mb-2">
+                                <small class="text-white-50">
+                                    <i class="fa-solid fa-tag"></i> 
+                                    {{ ucfirst(str_replace('_', ' ', $poolPlan->pricing_model ?? 'per_unit')) }}
+                                </small>
+                                <small class="text-white-50 ms-2">
+                                    <i class="fa-solid fa-repeat"></i> 
+                                    Billing: {{ $poolPlan->billing_cycle ?? '1' }}{{ ($poolPlan->billing_cycle ?? '1') == 'unlimited' ? '' : ' cycle' . (($poolPlan->billing_cycle ?? '1') > 1 ? 's' : '') }}
+                                </small>
+                            </div>
+                            
                             @if($poolPlan->is_chargebee_synced && $poolPlan->chargebee_plan_id)
                                 <p class="text-white-50 small mb-2">
                                     <i class="fa-solid fa-id-card"></i> {{ $poolPlan->chargebee_plan_id }}
@@ -666,6 +679,7 @@
                                 <div class="col-md-6">
                                     <label for="duration{{ $poolPlan->id }}" class="required-field">Duration:</label>
                                     <select class="form-control mb-3" id="duration{{ $poolPlan->id }}"
+                                        disabled
                                         name="duration" required>
                                         <option value="monthly" {{ $poolPlan->duration == 'monthly' ? 'selected' : '' }}>Monthly</option>
                                         <option value="weekly" {{ $poolPlan->duration == 'weekly' ? 'selected' : '' }}>Weekly</option>
@@ -673,13 +687,17 @@
                                         <option value="yearly" {{ $poolPlan->duration == 'yearly' ? 'selected' : '' }}>Yearly</option>
                                     </select>
                                 </div>
+                                
                                 <div class="col-md-6">
                                     <label for="pricing_model{{ $poolPlan->id }}" class="required-field">Pricing Model:</label>
                                     <select class="form-control mb-3" id="pricing_model{{ $poolPlan->id }}"
-                                        name="pricing_model" required>
+                                        name="pricing_model" required disabled>
                                         <option value="per_unit" {{ ($poolPlan->pricing_model ?? 'per_unit') == 'per_unit' ? 'selected' : '' }}>Per Unit</option>
                                         <option value="flat_fee" {{ ($poolPlan->pricing_model ?? 'per_unit') == 'flat_fee' ? 'selected' : '' }}>Flat Fee</option>
                                     </select>
+                                    <small class="text-muted">
+                                        <i class="fa-solid fa-lock"></i> Pricing model cannot be changed after creation
+                                    </small>
                                 </div>
                             </div>
 
@@ -692,19 +710,22 @@
                                 <div class="col-md-6">
                                     <label for="billing_cycle{{ $poolPlan->id }}" class="required-field">Billing Cycle:</label>
                                     <select class="form-control mb-3" id="billing_cycle{{ $poolPlan->id }}"
-                                        name="billing_cycle" required>
-                                        <option value="1" {{ ($poolPlan->billing_cycle ?? '1') == '1' ? 'selected' : '' }}>1</option>
-                                        <option value="2" {{ ($poolPlan->billing_cycle ?? '1') == '2' ? 'selected' : '' }}>2</option>
-                                        <option value="3" {{ ($poolPlan->billing_cycle ?? '1') == '3' ? 'selected' : '' }}>3</option>
-                                        <option value="4" {{ ($poolPlan->billing_cycle ?? '1') == '4' ? 'selected' : '' }}>4</option>
-                                        <option value="5" {{ ($poolPlan->billing_cycle ?? '1') == '5' ? 'selected' : '' }}>5</option>
-                                        <option value="6" {{ ($poolPlan->billing_cycle ?? '1') == '6' ? 'selected' : '' }}>6</option>
-                                        <option value="7" {{ ($poolPlan->billing_cycle ?? '1') == '7' ? 'selected' : '' }}>7</option>
-                                        <option value="8" {{ ($poolPlan->billing_cycle ?? '1') == '8' ? 'selected' : '' }}>8</option>
-                                        <option value="9" {{ ($poolPlan->billing_cycle ?? '1') == '9' ? 'selected' : '' }}>9</option>
-                                        <option value="10" {{ ($poolPlan->billing_cycle ?? '1') == '10' ? 'selected' : '' }}>10</option>
-                                        <option value="unlimited" {{ ($poolPlan->billing_cycle ?? '1') == 'unlimited' ? 'selected' : '' }}>Unlimited</option>
+                                        name="billing_cycle" required disabled>
+                                        <option value="1" {{ (string)($poolPlan->billing_cycle ?? '1') === '1' ? 'selected' : '' }}>1</option>
+                                        <option value="2" {{ (string)($poolPlan->billing_cycle ?? '1') === '2' ? 'selected' : '' }}>2</option>
+                                        <option value="3" {{ (string)($poolPlan->billing_cycle ?? '1') === '3' ? 'selected' : '' }}>3</option>
+                                        <option value="4" {{ (string)($poolPlan->billing_cycle ?? '1') === '4' ? 'selected' : '' }}>4</option>
+                                        <option value="5" {{ (string)($poolPlan->billing_cycle ?? '1') === '5' ? 'selected' : '' }}>5</option>
+                                        <option value="6" {{ (string)($poolPlan->billing_cycle ?? '1') === '6' ? 'selected' : '' }}>6</option>
+                                        <option value="7" {{ (string)($poolPlan->billing_cycle ?? '1') === '7' ? 'selected' : '' }}>7</option>
+                                        <option value="8" {{ (string)($poolPlan->billing_cycle ?? '1') === '8' ? 'selected' : '' }}>8</option>
+                                        <option value="9" {{ (string)($poolPlan->billing_cycle ?? '1') === '9' ? 'selected' : '' }}>9</option>
+                                        <option value="10" {{ (string)($poolPlan->billing_cycle ?? '1') === '10' ? 'selected' : '' }}>10</option>
+                                        <option value="unlimited" {{ (string)($poolPlan->billing_cycle ?? '1') === 'unlimited' ? 'selected' : '' }}>Unlimited</option>
                                     </select>
+                                    <small class="text-muted">
+                                        <i class="fa-solid fa-lock"></i> Billing cycle cannot be changed after creation
+                                    </small>
                                 </div>
                             </div>
 
@@ -810,7 +831,7 @@
                     </div>
                     
                     <!-- Template Selection -->
-                    <div class="mb-4">
+                    <div class="mb-4 d-none">
                         <label class="form-label">Quick Start Options:</label>
                         <div class="row">
                             <div class="col-4">
@@ -847,7 +868,7 @@
                                     <option value="monthly">Monthly</option>
                                     <option value="weekly">Weekly</option>
                                     <option value="daily">Daily</option>
-                                    <option value="yearly">Yearly</option>
+                                    <!-- <option value="yearly">Yearly</option> -->
                                 </select>
                             </div>
                             <div class="col-md-6">

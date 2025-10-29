@@ -491,7 +491,7 @@ class PoolPlanController extends Controller
                     'currency_code' => $data['currency_code'],
                     'status' => 'active',
                     'channel' => 'web',
-                    'is_taxable' => true,
+                    // 'is_taxable' => true,
                     'metadata' => [
                         'plan_type' => 'pool_plan',
                         'customer_facing_description' => $data['description'],
