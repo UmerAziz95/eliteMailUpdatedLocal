@@ -24,6 +24,8 @@ class PoolPlanController extends Controller
                 'price' => 'required|numeric|min:0',
                 'duration' => 'required|string',
                 'description' => 'required|string',
+                'pricing_model' => 'required|string|in:per_unit,flat_fee',
+                'billing_cycle' => 'required|string',
                 'feature_ids' => 'nullable|array',
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
@@ -32,6 +34,30 @@ class PoolPlanController extends Controller
 
             // Set default currency code if not provided
             $currencyCode = $request->currency_code ?? 'USD';
+            
+            // Get pricing model and billing cycle from request
+            $pricingModel = $request->pricing_model;
+            $billingCycle = $request->billing_cycle;
+            
+            // Set billing period unit based on duration
+            $periodUnit = 'month'; // default
+            $period = ($billingCycle === 'unlimited') ? 0 : (int)$billingCycle; // 0 means unlimited in ChargeBee
+            
+            switch(strtolower($request->duration)) {
+                case 'monthly':
+                    $periodUnit = 'month';
+                    break;
+                case 'weekly':
+                    $periodUnit = 'week';
+                    break;
+                case 'daily':
+                    $periodUnit = 'day';
+                    break;
+                case 'yearly':
+                    $periodUnit = 'year';
+                    break;
+            }
+            
             // dd($request->all());
             // ChargeBee Pool Plan Creation
             $chargeBeePlan = $this->createChargeBeeItem([
@@ -39,7 +65,9 @@ class PoolPlanController extends Controller
                 'description' => $request->description,
                 'price' => $request->price,
                 'period' => $request->duration,
-                'period_unit' => 1,
+                'period_unit' => $periodUnit,
+                'billing_cycles' => $period,
+                'pricing_model' => $pricingModel,
                 'currency_code' => $currencyCode,
                 'item_family_id' => config('services.chargebee.item_family_id'),
             ]);
@@ -54,6 +82,8 @@ class PoolPlanController extends Controller
                 'price' => $request->price,
                 'duration' => $request->duration,
                 'description' => $request->description,
+                'pricing_model' => $pricingModel,
+                'billing_cycle' => $billingCycle,
                 'currency_code' => $currencyCode,
                 'chargebee_plan_id' => $chargeBeePlan['data']['price_id'],
                 'is_chargebee_synced' => true,
@@ -105,6 +135,8 @@ class PoolPlanController extends Controller
                 'price' => 'required|numeric|min:0',
                 'duration' => 'required|string',
                 'description' => 'required|string',
+                'pricing_model' => 'required|string|in:per_unit,flat_fee',
+                'billing_cycle' => 'required|string',
                 'feature_ids' => 'nullable|array',
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
@@ -113,6 +145,10 @@ class PoolPlanController extends Controller
 
             // Set default currency code if not provided
             $currencyCode = $request->currency_code ?? 'USD';
+            
+            // Get pricing model and billing cycle from request
+            $pricingModel = $request->pricing_model;
+            $billingCycle = $request->billing_cycle;
 
             // ChargeBee Pool Plan Update (if synced)
             if ($poolPlan->is_chargebee_synced && $poolPlan->chargebee_plan_id) {
@@ -120,6 +156,7 @@ class PoolPlanController extends Controller
                     'name' => $request->name,
                     'description' => $request->description,
                     'price' => $request->price,
+                    'pricing_model' => $pricingModel,
                     'currency_code' => $currencyCode,
                 ]);
 
@@ -134,6 +171,8 @@ class PoolPlanController extends Controller
                 'price' => $request->price,
                 'duration' => $request->duration,
                 'description' => $request->description,
+                'pricing_model' => $pricingModel,
+                'billing_cycle' => $billingCycle,
                 'currency_code' => $currencyCode
             ]);
 
@@ -227,13 +266,35 @@ class PoolPlanController extends Controller
                     continue;
                 }
                 
+                // Set billing period unit based on duration
+                $periodUnit = 'month'; // default
+                $billingCycle = $poolPlan->billing_cycle ?? '1';
+                $period = ($billingCycle === 'unlimited') ? 0 : (int)$billingCycle;
+                
+                switch(strtolower($poolPlan->duration)) {
+                    case 'monthly':
+                        $periodUnit = 'month';
+                        break;
+                    case 'weekly':
+                        $periodUnit = 'week';
+                        break;
+                    case 'daily':
+                        $periodUnit = 'day';
+                        break;
+                    case 'yearly':
+                        $periodUnit = 'year';
+                        break;
+                }
+                
                 // Create ChargeBee plan
                 $chargeBeePlan = $this->createChargeBeeItem([
                     'name' => $poolPlan->name,
                     'description' => $poolPlan->description,
                     'price' => $poolPlan->price,
                     'period' => $poolPlan->duration,
-                    'period_unit' => 1,
+                    'period_unit' => $periodUnit,
+                    'billing_cycles' => $period,
+                    'pricing_model' => $poolPlan->pricing_model ?? 'per_unit',
                     'currency_code' => $poolPlan->currency_code,
                     'item_family_id' => config('services.chargebee.item_family_id'),
                 ]);
@@ -299,12 +360,34 @@ class PoolPlanController extends Controller
                 $isChargebeeSynced = false;
                 
                 if ($originalPlan->is_chargebee_synced) {
+                    // Set billing period unit based on duration
+                    $periodUnit = 'month'; // default
+                    $billingCycle = $originalPlan->billing_cycle ?? '1';
+                    $period = ($billingCycle === 'unlimited') ? 0 : (int)$billingCycle;
+                    
+                    switch(strtolower($originalPlan->duration)) {
+                        case 'monthly':
+                            $periodUnit = 'month';
+                            break;
+                        case 'weekly':
+                            $periodUnit = 'week';
+                            break;
+                        case 'daily':
+                            $periodUnit = 'day';
+                            break;
+                        case 'yearly':
+                            $periodUnit = 'year';
+                            break;
+                    }
+                    
                     $chargeBeePlan = $this->createChargeBeeItem([
                         'name' => $duplicatedName,
                         'description' => $originalPlan->description,
                         'price' => $originalPlan->price,
                         'period' => $originalPlan->duration,
-                        'period_unit' => 1,
+                        'period_unit' => $periodUnit,
+                        'billing_cycles' => $period,
+                        'pricing_model' => $originalPlan->pricing_model ?? 'per_unit',
                         'currency_code' => $originalPlan->currency_code,
                         'item_family_id' => config('services.chargebee.item_family_id'),
                     ]);
@@ -321,6 +404,8 @@ class PoolPlanController extends Controller
                     'price' => $originalPlan->price,
                     'duration' => $originalPlan->duration,
                     'description' => $originalPlan->description,
+                    'pricing_model' => $originalPlan->pricing_model ?? 'per_unit',
+                    'billing_cycle' => $originalPlan->billing_cycle ?? '1',
                     'currency_code' => $originalPlan->currency_code,
                     'chargebee_plan_id' => $chargebeePlanId,
                     'is_chargebee_synced' => $isChargebeeSynced,
@@ -382,10 +467,8 @@ class PoolPlanController extends Controller
                 'enabled_in_portal' => true,
                 'item_family_id' => $data['item_family_id'],
                 'status' => 'active',
-                'customer_facing_description' => $data['description'],
-                'show_description_in_invoices' => true,
-                'show_description_in_quotes' => false,
-                'internal_name' => $data['name'] . time(),
+                'is_shippable' => false,
+                'is_giftable' => false,
                 'metadata' => [
                     'plan_type' => 'pool_plan',
                     'customer_facing_description' => $data['description'],
@@ -400,17 +483,15 @@ class PoolPlanController extends Controller
                     'id' => $priceId,
                     'name' => $data['name'] . ' ' . ucfirst($data['period']),
                     'item_id' => $result->item()->id,
-                    'pricing_model' => 'per_unit',
+                    'pricing_model' => $data['pricing_model'], // Use pricing_model from data
                     'price' => $data['price'] * 100, // Convert to cents
                     'external_name' => $data['name'] . ' ' . ucfirst($data['period']),
-                    'period_unit' => strtolower($data['period']) === 'monthly' ? 'month' : 'year',
-                    'period' => 1,
+                    'period_unit' => $data['period_unit'], // Use the period_unit from data
+                    'period' => 1, // Always 1, billing_cycles controls total duration
                     'currency_code' => $data['currency_code'],
                     'status' => 'active',
                     'channel' => 'web',
-                    'customer_facing_description' => $data['description'],
-                    'show_description_in_invoices' => true,
-                    'show_description_in_quotes' => false,
+                    'is_taxable' => true,
                     'metadata' => [
                         'plan_type' => 'pool_plan',
                         'customer_facing_description' => $data['description'],
@@ -418,6 +499,11 @@ class PoolPlanController extends Controller
                         'show_on_portal' => 'true'
                     ]
                 ];
+                
+                // Add billing_cycles only if it's not 0 (unlimited)
+                if ($data['billing_cycles'] > 0) {
+                    $priceParams['billing_cycles'] = $data['billing_cycles'];
+                }
 
                 $priceResult = \ChargeBee\ChargeBee\Models\ItemPrice::create($priceParams);
 
@@ -478,8 +564,7 @@ class PoolPlanController extends Controller
     private function updateChargeBeeItem($chargebeeItemId, $data)
     {
         try {
-            // Update the item in ChargeBee
-            $result = \ChargeBee\ChargeBee\Models\ItemPrice::update($chargebeeItemId, [
+            $updateParams = [
                 'name' => $data['name'] . ' Pool Price',
                 'price' => $data['price'] * 100, // Convert to cents
                 'external_name' => $data['name'] . ' Pool Plan',
@@ -490,7 +575,15 @@ class PoolPlanController extends Controller
                     'show_on_checkout' => 'true',
                     'show_on_portal' => 'true'
                 ]
-            ]);
+            ];
+            
+            // Add pricing_model if provided
+            if (isset($data['pricing_model'])) {
+                $updateParams['pricing_model'] = $data['pricing_model'];
+            }
+            
+            // Update the item in ChargeBee
+            $result = \ChargeBee\ChargeBee\Models\ItemPrice::update($chargebeeItemId, $updateParams);
 
             if ($result && $result->itemPrice()) {
                 return [

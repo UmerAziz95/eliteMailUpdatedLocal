@@ -13,6 +13,8 @@ class PoolPlan extends Model
         'description',
         'price',
         'duration',
+        'pricing_model',
+        'billing_cycle',
         'is_active',
         'currency_code',
         'chargebee_plan_id',

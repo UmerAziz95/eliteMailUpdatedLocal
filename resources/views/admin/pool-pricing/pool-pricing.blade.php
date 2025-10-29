@@ -591,7 +591,15 @@
                             <h2 class="fw-semibold text-white plan-name text-capitalize fs-4">
                                 ${{ number_format($poolPlan->price, 2) }}
                                 <span class="fw-light text-white pt-3 opacity-75" style="font-size: 13px">
-                                    /{{ $poolPlan->duration == 'monthly' ? 'mo' : $poolPlan->duration }}
+                                    /@if($poolPlan->duration == 'monthly')
+                                        mo
+                                    @elseif($poolPlan->duration == 'weekly')
+                                        week
+                                    @elseif($poolPlan->duration == 'daily')
+                                        day
+                                    @else
+                                        {{ $poolPlan->duration }}
+                                    @endif
                                     per Inboxes
                                 </span>
                             </h2>
@@ -655,26 +663,48 @@
                                     <input type="text" class="form-control mb-3" id="name{{ $poolPlan->id }}"
                                         name="name" value="{{ $poolPlan->name }}" required>
                                 </div>
-                                <div class="col-md-6 d-none">
+                                <div class="col-md-6">
                                     <label for="duration{{ $poolPlan->id }}" class="required-field">Duration:</label>
                                     <select class="form-control mb-3" id="duration{{ $poolPlan->id }}"
                                         name="duration" required>
                                         <option value="monthly" {{ $poolPlan->duration == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                                        <option value="weekly" {{ $poolPlan->duration == 'weekly' ? 'selected' : '' }}>Weekly</option>
+                                        <option value="daily" {{ $poolPlan->duration == 'daily' ? 'selected' : '' }}>Daily</option>
                                         <option value="yearly" {{ $poolPlan->duration == 'yearly' ? 'selected' : '' }}>Yearly</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="pricing_model{{ $poolPlan->id }}" class="required-field">Pricing Model:</label>
+                                    <select class="form-control mb-3" id="pricing_model{{ $poolPlan->id }}"
+                                        name="pricing_model" required>
+                                        <option value="per_unit" {{ ($poolPlan->pricing_model ?? 'per_unit') == 'per_unit' ? 'selected' : '' }}>Per Unit</option>
+                                        <option value="flat_fee" {{ ($poolPlan->pricing_model ?? 'per_unit') == 'flat_fee' ? 'selected' : '' }}>Flat Fee</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div class="row">
-                                <div class="col-md-12">
+                                <div class="col-md-6">
                                     <label for="price{{ $poolPlan->id }}" class="required-field">Price ($):</label>
                                     <input type="number" class="form-control mb-3" id="price{{ $poolPlan->id }}"
                                         name="price" value="{{ $poolPlan->price }}" min="0" step="0.01" required>
                                 </div>
-                                <div class="col-md-6 d-none">
-                                    <label for="currency_code{{ $poolPlan->id }}">Currency Code:</label>
-                                    <input type="text" class="form-control mb-3" id="currency_code{{ $poolPlan->id }}"
-                                        name="currency_code" value="{{ $poolPlan->currency_code ?? 'USD' }}" maxlength="3">
+                                <div class="col-md-6">
+                                    <label for="billing_cycle{{ $poolPlan->id }}" class="required-field">Billing Cycle:</label>
+                                    <select class="form-control mb-3" id="billing_cycle{{ $poolPlan->id }}"
+                                        name="billing_cycle" required>
+                                        <option value="1" {{ ($poolPlan->billing_cycle ?? '1') == '1' ? 'selected' : '' }}>1</option>
+                                        <option value="2" {{ ($poolPlan->billing_cycle ?? '1') == '2' ? 'selected' : '' }}>2</option>
+                                        <option value="3" {{ ($poolPlan->billing_cycle ?? '1') == '3' ? 'selected' : '' }}>3</option>
+                                        <option value="4" {{ ($poolPlan->billing_cycle ?? '1') == '4' ? 'selected' : '' }}>4</option>
+                                        <option value="5" {{ ($poolPlan->billing_cycle ?? '1') == '5' ? 'selected' : '' }}>5</option>
+                                        <option value="6" {{ ($poolPlan->billing_cycle ?? '1') == '6' ? 'selected' : '' }}>6</option>
+                                        <option value="7" {{ ($poolPlan->billing_cycle ?? '1') == '7' ? 'selected' : '' }}>7</option>
+                                        <option value="8" {{ ($poolPlan->billing_cycle ?? '1') == '8' ? 'selected' : '' }}>8</option>
+                                        <option value="9" {{ ($poolPlan->billing_cycle ?? '1') == '9' ? 'selected' : '' }}>9</option>
+                                        <option value="10" {{ ($poolPlan->billing_cycle ?? '1') == '10' ? 'selected' : '' }}>10</option>
+                                        <option value="unlimited" {{ ($poolPlan->billing_cycle ?? '1') == 'unlimited' ? 'selected' : '' }}>Unlimited</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -810,30 +840,52 @@
                                 <label for="name" class="required-field">Pool Plan Name:</label>
                                 <input type="text" class="form-control mb-3" id="name" name="name" required>
                             </div>
-                            <div class="col-md-6 d-none">
+                            <div class="col-md-6">
                                 <label for="duration" class="required-field">Duration:</label>
                                 <select class="form-control mb-3" id="duration" name="duration" required>
                                     <option value="">Select Duration</option>
                                     <option value="monthly">Monthly</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="daily">Daily</option>
                                     <option value="yearly">Yearly</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="pricing_model" class="required-field">Pricing Model:</label>
+                                <select class="form-control mb-3" id="pricing_model" name="pricing_model" required>
+                                    <option value="">Select Pricing Model</option>
+                                    <option value="per_unit">Per Unit</option>
+                                    <option value="flat_fee">Flat Fee</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
                                 <label for="price" class="required-field">Price ($):</label>
                                 <input type="number" class="form-control mb-3" id="price" name="price" 
                                        min="0" step="0.01" required>
                             </div>
-                            <div class="col-md-6 d-none">
-                                <label for="currency_code">Currency Code:</label>
-                                <input type="text" class="form-control mb-3 d-none" id="currency_code" 
-                                       name="currency_code" value="USD" maxlength="3">
+                            <div class="col-md-6">
+                                <label for="billing_cycle" class="required-field">Billing Cycle:</label>
+                                <select class="form-control mb-3" id="billing_cycle" name="billing_cycle" required>
+                                    <option value="">Select Billing Cycle</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="unlimited">Unlimited</option>
+                                </select>
                             </div>
                         </div>
 
-
+                        <input type="hidden" id="currency_code" name="currency_code" value="USD">
 
                         <label for="description" class="required-field">Description:</label>
                         <textarea class="form-control mb-3" id="description" name="description" rows="3" required></textarea>
@@ -899,6 +951,8 @@ let planTemplates = {
         name: 'Basic Pool Plan',
         price: 5.00,
         duration: 'monthly',
+        pricing_model: 'per_unit',
+        billing_cycle: '1',
         currency_code: 'USD',
         description: 'Perfect for small teams and individual users',
         features: []
@@ -906,7 +960,9 @@ let planTemplates = {
     premium: {
         name: 'Premium Pool Plan',
         price: 7.00,
-        duration: 'monthly',
+        duration: 'weekly',
+        pricing_model: 'per_unit',
+        billing_cycle: '3',
         currency_code: 'USD',
         description: 'Ideal for growing businesses with advanced features',
         features: []
@@ -914,7 +970,9 @@ let planTemplates = {
     enterprise: {
         name: 'Enterprise Pool Plan',
         price: 10.00,
-        duration: 'monthly',
+        duration: 'daily',
+        pricing_model: 'flat_fee',
+        billing_cycle: 'unlimited',
         currency_code: 'USD',
         description: 'Comprehensive solution for large organizations',
         features: []
@@ -1525,6 +1583,8 @@ function loadTemplate(templateType) {
     $('#name').val(template.name);
     $('#price').val(template.price);
     $('#duration').val(template.duration);
+    $('#pricing_model').val(template.pricing_model);
+    $('#billing_cycle').val(template.billing_cycle);
     $('#currency_code').val(template.currency_code);
     $('#description').val(template.description);
     
