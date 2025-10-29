@@ -543,14 +543,20 @@
         });
     });
 
-    function downloadInvoice(invoiceId) {
-        
-
-        window.location.href = `/admin/invoices/${invoiceId}/download`;
+    function downloadInvoice(invoiceId, isTrial = false) {
+        if (isTrial) {
+            window.location.href = `/admin/pool-invoices/${invoiceId}/download`;
+        } else {
+            window.location.href = `/admin/invoices/${invoiceId}/download`;
+        }
     }
 
-    function viewInvoice(invoiceId) {
-        window.location.href = `/admin/invoices/${invoiceId}`;
+    function viewInvoice(invoiceId, isTrial = false) {
+        if (isTrial) {
+            window.location.href = `/admin/pool-invoices/${invoiceId}`;
+        } else {
+            window.location.href = `/admin/invoices/${invoiceId}`;
+        }
     }
 </script>
 @endpush

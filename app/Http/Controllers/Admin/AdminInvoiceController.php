@@ -396,4 +396,68 @@ class AdminInvoiceController extends Controller
             return back()->with('error', 'Error downloading invoice');
         }
     }
+
+    // Show pool invoice
+    public function showPoolInvoice($invoiceId)
+    {
+        try {
+            $invoice = PoolInvoice::with(['user', 'poolOrder'])
+                ->where('chargebee_invoice_id', $invoiceId)
+                ->firstOrFail();
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $invoice
+                ]);
+            }
+
+            // You can create a separate view for pool invoices or reuse the same view
+            return view('admin.invoices.show-pool', compact('invoice'));
+        } catch (Exception $e) {
+            Log::error('Error showing pool invoice: ' . $e->getMessage());
+            
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pool invoice not found or access denied'
+                ], 404);
+            }
+
+            return abort(404);
+        }
+    }
+
+    // Download pool invoice (redirect to existing pool domain controller method)
+    public function downloadPoolInvoice($invoiceId)
+    {
+        try {
+            // Find the pool invoice by chargebee_invoice_id
+            $poolInvoice = PoolInvoice::with(['user', 'poolOrder.poolPlan'])
+                ->where('chargebee_invoice_id', $invoiceId)
+                ->firstOrFail();
+
+            // Generate PDF using dompdf
+            $pdf = \PDF::loadView('customer.pool-invoices.pdf', compact('poolInvoice'));
+            
+            // Generate filename
+            $filename = 'pool_invoice_' . $poolInvoice->chargebee_invoice_id . '.pdf';
+
+            // Return PDF file as download
+            return $pdf->download($filename);
+
+        } catch (Exception $e) {
+            Log::error('Error downloading pool invoice: ' . $e->getMessage());
+            
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error downloading invoice'
+                ], 500);
+            }
+
+            return back()->with('error', 'Error downloading invoice');
+        }
+    }
 }
+

@@ -3,6 +3,7 @@
     $invoiceId = isset($isTrial) && $isTrial 
         ? $row->chargebee_invoice_id 
         : ($row->chargebee_invoice_id ?? $row->order->chargebee_invoice_id ?? null);
+    $isTrialParam = isset($isTrial) && $isTrial ? 'true' : 'false';
 @endphp
 
 <div class="dropdown">
@@ -12,12 +13,12 @@
     <ul class="dropdown-menu">
         @if($invoiceId)
             <li>
-                <a class="dropdown-item" href="javascript:void(0)" onclick="viewInvoice('{{ $invoiceId }}')">
+                <a class="dropdown-item" href="javascript:void(0)" onclick="viewInvoice('{{ $invoiceId }}', {{ $isTrialParam }})">
                     View
                 </a>
             </li>
             <li>
-                <a class="dropdown-item" href="javascript:void(0)" onclick="downloadInvoice('{{ $invoiceId }}')">
+                <a class="dropdown-item" href="javascript:void(0)" onclick="downloadInvoice('{{ $invoiceId }}', {{ $isTrialParam }})">
                     Download
                 </a>
             </li>

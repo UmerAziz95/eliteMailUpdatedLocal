@@ -357,6 +357,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/invoices/{invoiceId}', [AdminInvoiceController::class, 'show'])->name('invoices.show');
         Route::get('/invoices/{invoiceId}/download', [AdminInvoiceController::class, 'download'])->name('invoices.download');
         Route::get('/invoices', [AdminInvoiceController::class, 'index'])->name('invoices.index');
+        
+        // Pool invoices
+        Route::get('/pool-invoices/{invoiceId}', [AdminInvoiceController::class, 'showPoolInvoice'])->name('pool-invoices.show');
+        Route::get('/pool-invoices/{invoiceId}/download', [AdminInvoiceController::class, 'downloadPoolInvoice'])->name('pool-invoices.download');
+        
         // roles permission 
         Route::get('/role',[CustomRolePermissionController::class,'index'])->name('role.index');
         Route::get('/role/create',[CustomRolePermissionController::class,'index'])->name('role.create');
