@@ -300,6 +300,9 @@ class AdminInvoiceController extends Controller
             ->addColumn('customer_name', function ($row) {
                 return $row->user->name ?? 'N/A';
             })
+            ->addColumn('order_id', function ($row) {
+                return $row->pool_order_id;
+            })
             ->addColumn('action', function ($row) {
                 return view('admin.invoices.actions', ['row' => $row, 'isTrial' => true])->render();
             })
