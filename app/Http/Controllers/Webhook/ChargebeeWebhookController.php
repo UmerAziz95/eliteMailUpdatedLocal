@@ -302,7 +302,7 @@ class ChargebeeWebhookController extends Controller
      * @param array $content
      * @return \Illuminate\Http\JsonResponse
      */
-    // use this service for app\Services\PoolOrderCancelledService.php
+
     protected function handleSubscriptionCancelled(array $content)
     {
         try {
@@ -322,54 +322,27 @@ class ChargebeeWebhookController extends Controller
                 ], 400);
             }
 
-            // Update local database status
+            // Check if this is a pool order subscription
             $poolOrder = PoolOrder::where('chargebee_subscription_id', $subscriptionId)->first();
             
             if ($poolOrder) {
-                $poolOrder->update([
-                    'status' => 'cancelled',
-                    'status_manage_by_admin' => 'cancelled',
-                    'cancelled_at' => now()
-                ]);
-
-                Log::channel('chargebee_webhook')->info('Pool order updated from Chargebee cancellation webhook', [
+                Log::channel('chargebee_webhook')->info('Pool order found for subscription_cancelled event', [
                     'pool_order_id' => $poolOrder->id,
-                    'subscription_id' => $subscriptionId
+                    'subscription_id' => $subscriptionId,
+                    'current_status' => $poolOrder->status
                 ]);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Pool order status updated',
-                    'pool_order_id' => $poolOrder->id
-                ], 200);
+                // Use the cancellation service for proper handling
+                return $this->cancelPoolOrderSubscription($poolOrder);
             }
 
-            $regularOrder = Order::where('chargebee_subscription_id', $subscriptionId)->first();
-            
-            if ($regularOrder) {
-                $regularOrder->update([
-                    'status_manage_by_admin' => 'cancelled'
-                ]);
-
-                Log::channel('chargebee_webhook')->info('Regular order updated from Chargebee cancellation webhook', [
-                    'order_id' => $regularOrder->id,
-                    'subscription_id' => $subscriptionId
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Regular order status updated',
-                    'order_id' => $regularOrder->id
-                ], 200);
-            }
-
-            Log::channel('chargebee_webhook')->warning('No order found for cancelled subscription', [
+            Log::channel('chargebee_webhook')->warning('No pool order found for cancelled subscription', [
                 'subscription_id' => $subscriptionId
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'No order found for this subscription'
+                'message' => 'No pool order found for this subscription'
             ], 404);
 
         } catch (\Exception $e) {
