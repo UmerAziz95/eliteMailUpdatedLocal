@@ -677,6 +677,19 @@ class OrderController extends Controller
             // for edit order
             if($request->edit_id && $request->order_id){
                 $temp_order = Order::with('reorderInfo')->findOrFail($request->order_id);
+                
+                // Check if order status allows editing (same as edit method)
+                $allowedStatuses = ['draft', 'reject'];
+                if (!in_array(strtolower($temp_order->status_manage_by_admin), $allowedStatuses)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Order cannot be edited. Only orders with Draft or Reject status can be modified.',
+                        'errors' => [
+                            'status' => ['Order cannot be edited. Only orders with Draft or Reject status can be modified.']
+                        ]
+                    ], 422);
+                }
+                
                 $TOTAL_INBOXES = $temp_order->reorderInfo->first()->total_inboxes;
                 
                 // Validate against order's total_inboxes limit
