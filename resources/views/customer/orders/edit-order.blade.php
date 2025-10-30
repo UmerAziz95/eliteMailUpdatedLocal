@@ -2810,6 +2810,44 @@ $(document).ready(function() {
             error: function(xhr) {
                 Swal.close();
                 if (xhr.status === 422 && xhr.responseJSON.errors) {
+                    // Check if this is a status validation error
+                    if (xhr.responseJSON.errors.status && xhr.responseJSON.current_status) {
+                        const currentStatus = xhr.responseJSON.current_status;
+                        const allowedStatuses = xhr.responseJSON.allowed_statuses || ['draft', 'reject'];
+                        const canEdit = xhr.responseJSON.can_edit || false;
+                        
+                        console.log('Status validation error:', {
+                            current_status: currentStatus,
+                            allowed_statuses: allowedStatuses,
+                            can_edit: canEdit
+                        });
+                        
+                        Swal.fire({
+                            title: 'Cannot Edit Order',
+                            html: `
+                                <div class="text-start">
+                                    <p class="mb-3">${xhr.responseJSON.message}</p>
+                                    <div class="alert alert-warning">
+                                        <strong>Current Status:</strong> 
+                                        <span class="badge bg-warning text-dark">${currentStatus.toUpperCase()}</span>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        <strong>Allowed Statuses:</strong> 
+                                        ${allowedStatuses.map(s => `<span class="badge bg-info">${s.toUpperCase()}</span>`).join(' ')}
+                                    </div>
+                                </div>
+                            `,
+                            icon: 'warning',
+                            confirmButtonText: 'Go Back to Orders',
+                            allowOutsideClick: false
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.location.href = '{{ route("customer.orders") }}';
+                            }
+                        });
+                        return;
+                    }
+                    
                     // Handle validation errors from server
                     let firstErrorField = null;
                     Object.keys(xhr.responseJSON.errors).forEach(key => {
