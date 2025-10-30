@@ -869,10 +869,8 @@ Route::get('/settings', function () {
 Route::get('/notification', function () {
     return view('admin/notification/notification');
 });
-// Removed: This GET route conflicts with POST route in webhook.php
-// Route::get('/chargebee/webhook', function () {
-//     Log::info('Chargebee Webhook Triggered');
-// });
+// Chargebee webhook handler (handles both /chargebee/webhook and /webhook/chargebee/webhook)
+Route::post('/chargebee/webhook', [App\Http\Controllers\Webhook\ChargebeeWebhookController::class, 'handle'])->name('chargebee.webhook.direct');
 
 Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('webhook.invoice');
 Route::post('/webhook/payment/done', [App\Http\Controllers\Customer\PlanController::class, 'handlePaymentWebhook'])->name('webhook.payment.done');

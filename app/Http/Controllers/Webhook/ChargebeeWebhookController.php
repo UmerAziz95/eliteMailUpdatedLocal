@@ -24,11 +24,19 @@ class ChargebeeWebhookController extends Controller
     public function handle(Request $request)
     {
         try {
+            // Create log directory if it doesn't exist
+            $logPath = storage_path('logs/webhooks');
+            if (!file_exists($logPath)) {
+                mkdir($logPath, 0755, true);
+            }
+            
             // Log the incoming webhook to dedicated channel
             Log::channel('chargebee_webhook')->info('Chargebee Webhook Received', [
                 'event_type' => $request->input('event_type'),
                 'timestamp' => now()->toDateTimeString(),
-                'payload' => $request->all()
+                'payload' => $request->all(),
+                'url' => $request->fullUrl(),
+                'method' => $request->method()
             ]);
 
             // Get the event type
