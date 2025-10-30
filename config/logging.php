@@ -133,6 +133,27 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
         ],
+
+        'webhook' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/webhooks/webhook.log'),
+            'level' => env('WEBHOOK_LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'chargebee_webhook' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/webhooks/chargebee.log'),
+            'level' => env('WEBHOOK_LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'ghl_webhook' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/webhooks/ghl.log'),
+            'level' => env('WEBHOOK_LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
     ],
 
 ];
