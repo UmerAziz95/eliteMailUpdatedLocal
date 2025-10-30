@@ -18,6 +18,8 @@ class VerifyCsrfToken extends Middleware
         '/webhook/invoice/',
         '/webhook/payment/done',
         // GHL webhook routes
-        '/webhook/ghl/*'
+        '/webhook/ghl/*',
+        // Chargebee webhook routes
+        '/webhook/chargebee/*'
     ];
 }
