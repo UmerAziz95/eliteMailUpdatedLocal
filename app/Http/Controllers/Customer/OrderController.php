@@ -680,13 +680,25 @@ class OrderController extends Controller
                 
                 // Check if order status allows editing (same as edit method)
                 $allowedStatuses = ['draft', 'reject'];
-                if (!in_array(strtolower($temp_order->status_manage_by_admin), $allowedStatuses)) {
+                $currentStatus = strtolower($temp_order->status_manage_by_admin);
+                
+                if (!in_array($currentStatus, $allowedStatuses)) {
+                    Log::warning('Order edit blocked - invalid status', [
+                        'order_id' => $temp_order->id,
+                        'current_status' => $currentStatus,
+                        'user_id' => auth()->id(),
+                        'allowed_statuses' => $allowedStatuses
+                    ]);
+                    
                     return response()->json([
                         'success' => false,
                         'message' => 'Order cannot be edited. Only orders with Draft or Reject status can be modified.',
                         'errors' => [
                             'status' => ['Order cannot be edited. Only orders with Draft or Reject status can be modified.']
-                        ]
+                        ],
+                        'current_status' => $currentStatus,
+                        'allowed_statuses' => $allowedStatuses,
+                        'can_edit' => false
                     ], 422);
                 }
                 
