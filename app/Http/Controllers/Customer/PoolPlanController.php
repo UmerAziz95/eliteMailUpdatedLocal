@@ -95,6 +95,11 @@ class PoolPlanController extends Controller
             $quantity = $subscriptionItems[0]->quantity ?? 1;
             $poolPlan = PoolPlan::where('chargebee_plan_id', $chargebeePlanId)->first();
             
+            // pool plan pricing model is flat then then set quantity to 10
+            if ($poolPlan && $poolPlan->pricing_model === 'flat_fee') {
+                $quantity = env('PLAN_FLAT_QUANTITY', 10);
+            }
+            
             if (!$poolPlan) {
                 Log::error('Pool plan not found for ChargeBee plan ID: ' . $chargebeePlanId);
                 return redirect()->route('login')->withErrors(['error' => 'Pool plan not found']);
@@ -160,6 +165,11 @@ class PoolPlanController extends Controller
                     break; // Use the first item's quantity
                 }
             }
+        }
+
+        // Pool plan pricing model is flat then set quantity to 10
+        if ($poolPlan && $poolPlan->pricing_model === 'flat_fee') {
+            $quantity = env('PLAN_FLAT_QUANTITY', 10);
         }
 
         // Create new pool order
