@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="text-white mb-0">My Pool Orders</h2>
+                <h2 class="text-white mb-0">My Trial Orders</h2>
                 <a href="{{ route('customer.dashboard') }}" class="btn btn-outline-primary">
                     <i class="ti ti-arrow-left me-2"></i>Back to Dashboard
                 </a>

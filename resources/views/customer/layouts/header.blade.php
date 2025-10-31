@@ -80,13 +80,14 @@
     </button> --}}
 
     <div class="d-flex align-items-center gap-3">
-
-        <div class="d-none d-md-block">
-            <a href="{{ url('customer/pricing') }}"
-                class="btn btn-primary animate-gradient btn-sm d-flex align-items-center gap-1"><i
-                    class="ti ti-building-store"></i>
-                Buy More Inboxes</a>
-        </div>
+        @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
+            <div class="d-none d-md-block">
+                <a href="{{ url('customer/pricing') }}"
+                    class="btn btn-primary animate-gradient btn-sm d-flex align-items-center gap-1"><i
+                        class="ti ti-building-store"></i>
+                    Buy More Inboxes</a>
+            </div>
+        @endif
 
 
         {{-- <div class="dropdown">
@@ -302,16 +303,17 @@
                     </a>
                 </li>
             </ul>
-
-            <div style="background-color: var(--second-primary)" class="p-4 rounded-3 mt-5">
-                <div class="d-flex flex-column mb-3">
-                    <h6 class="mb-1 text-white">Do you want to buy more inboxes from here?</h6>
-                    <small class="text-white">Click here to buy more inboxes</small>
+            @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
+                <div style="background-color: var(--second-primary)" class="p-4 rounded-3 mt-5">
+                    <div class="d-flex flex-column mb-3">
+                        <h6 class="mb-1 text-white">Do you want to buy more inboxes from here?</h6>
+                        <small class="text-white">Click here to buy more inboxes</small>
+                    </div>
+                    <a style="background-color: #1D2239; font-size: 12px;"
+                        class="mt-1 border-0 rounded-2 py-2 px-4 text-white animate-gradient"
+                        href="{{ route('customer.pricing') }}">Buy Now</a>
                 </div>
-                <a style="background-color: #1D2239; font-size: 12px;"
-                    class="mt-1 border-0 rounded-2 py-2 px-4 text-white animate-gradient"
-                    href="{{ route('customer.pricing') }}">Buy Now</a>
-            </div>
+            @endif
         </aside>
     </div>
 </div>
