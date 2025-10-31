@@ -114,7 +114,7 @@
 
                     @if($poolOrder->pool_id && $poolOrder->pool)
                     <!-- Pool Details Card -->
-                    <div class="card p-3 mt-3">
+                    <div class="card p-3 mt-3 d-none">
                         <h6 class="d-flex align-items-center gap-2">
                             <div class="d-flex align-items-center justify-content-center"
                                 style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
@@ -473,9 +473,12 @@
                             <i class="fa-solid fa-info-circle me-2"></i>
                             <strong>Domain Configuration Required</strong><br>
                             This pool order hasn't been configured with domains yet. 
-                            <a href="{{ route('customer.pool-orders.edit', $poolOrder->id) }}" class="btn btn-sm btn-primary ms-2">
-                                <i class="fa-solid fa-edit me-1"></i>Configure Domains
-                            </a>
+                            <!-- added check pending status then shows button -->
+                            @if($poolOrder->status_manage_by_admin === 'pending')
+                                <a href="{{ route('customer.pool-orders.edit', $poolOrder->id) }}" class="btn btn-sm btn-primary ms-2">
+                                    <i class="fa-solid fa-edit me-1"></i>Configure Domains
+                                </a>
+                            @endif
                         </div>
                         @endif
                     </div>

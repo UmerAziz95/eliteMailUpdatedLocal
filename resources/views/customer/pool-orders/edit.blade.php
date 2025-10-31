@@ -142,6 +142,7 @@
     /* Enhanced sidebar summary card */
     .card.summary-card {
         background: linear-gradient(145deg, #2d3748, #1a202c) !important;
+        background: #4a3aff36 !important;
         border: 1px solid rgba(99, 102, 241, 0.3) !important;
         box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15) !important;
     }
@@ -909,8 +910,8 @@
                                         <hr class="border-white-50">
 
                                         <div class="summary-section mb-3">
-                                            <small class="opacity-75 d-block mb-2">Total Inboxes</small>
-                                            <span class="inbox-count-badge badge px-3 py-2 bg-white text-success">{{ $poolOrder->quantity ?? 1 }}</span>
+                                            <small class="opacity-75 mb-2">Total Inboxes</small>
+                                            <span class="inbox-count-badge badge px-3 py-2 bg-white text-success text-right" style="float: right;">{{ $poolOrder->quantity ?? 1 }}</span>
                                         </div>
 
                                         <hr class="border-white-50">

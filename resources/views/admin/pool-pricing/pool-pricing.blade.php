@@ -807,7 +807,7 @@
     </div>
 
     <!-- Add New Pool Plan Button -->
-    <div class="text-center mt-5">
+    <div class="text-center mt-5 d-none">
         <div class="d-flex justify-content-center gap-3 flex-wrap">
             <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createPoolPlanModal">
                 <i class="fa-solid fa-plus me-2"></i>Create New Pool Plan

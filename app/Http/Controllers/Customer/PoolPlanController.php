@@ -414,6 +414,11 @@ class PoolPlanController extends Controller
                 ->where('id', $id)
                 ->with(['poolPlan'])
                 ->firstOrFail();
+            // order status_manage_by_admin is pending then can edit
+            if ($poolOrder->status_manage_by_admin !== 'pending') {
+                return redirect()->route('customer.pool-orders.show', $poolOrder->id)
+                    ->with('error', 'Only orders with pending status can be edited.');
+            }
         }
 
         // Check if order can be edited based on status
@@ -573,6 +578,13 @@ class PoolPlanController extends Controller
             $poolOrder = PoolOrder::where('user_id', $user->id)
                 ->where('id', $id)
                 ->firstOrFail();
+            // when status is is not pending then cannot update
+            if ($poolOrder->status_manage_by_admin !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only orders with pending status can be updated.'
+                ], 403);
+            }
         }
 
         // Check if order can be updated based on status
