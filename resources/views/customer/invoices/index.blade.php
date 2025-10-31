@@ -167,6 +167,7 @@
     <div class="card">
         <div class="card-body">
             <ul class="nav nav-pills mb-3" role="tablist">
+                @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="pills-normal-tab" data-bs-toggle="pill"
                         data-bs-target="#pills-normal" type="button" role="tab"
@@ -175,16 +176,20 @@
                         Normal Invoices
                     </button>
                 </li>
+                @endif
+                @if(auth()->user()->customer_access === 'trial')
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="pills-trial-tab" data-bs-toggle="pill"
+                    <button class="nav-link {{ in_array(auth()->user()->customer_access, ['full', 'normal']) ? '' : 'active' }}" id="pills-trial-tab" data-bs-toggle="pill"
                         data-bs-target="#pills-trial" type="button" role="tab"
-                        aria-controls="pills-trial" aria-selected="false" tabindex="-1">
+                        aria-controls="pills-trial" aria-selected="{{ in_array(auth()->user()->customer_access, ['full', 'normal']) ? 'false' : 'true' }}" tabindex="{{ in_array(auth()->user()->customer_access, ['full', 'normal']) ? '-1' : '0' }}">
                         <i class="fa-solid fa-flask me-1"></i>
                         Trial Invoices
                     </button>
                 </li>
+                @endif
             </ul>
             <div class="tab-content" id="pills-tabContent">
+                @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
                 <div class="tab-pane fade show active" id="pills-normal" role="tabpanel" aria-labelledby="pills-normal-tab" tabindex="0">
                     <div class="table-responsive">
                         <table id="normalInvoicesTable" class="w-100">
@@ -201,7 +206,9 @@
                         </table>
                     </div>
                 </div>
-                <div class="tab-pane fade" id="pills-trial" role="tabpanel" aria-labelledby="pills-trial-tab" tabindex="0">
+                @endif
+                @if(auth()->user()->customer_access === 'trial')
+                <div class="tab-pane fade {{ in_array(auth()->user()->customer_access, ['full', 'normal']) ? '' : 'show active' }}" id="pills-trial" role="tabpanel" aria-labelledby="pills-trial-tab" tabindex="0">
                     <div class="table-responsive">
                         <table id="trialInvoicesTable" class="w-100">
                             <thead>
@@ -217,6 +224,7 @@
                         </table>
                     </div>
                 </div>
+                @endif
             </div>
         </div>
     </div>
@@ -244,6 +252,7 @@
         `);
 
         // Normal Invoices DataTable
+        @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
         var normalTable = $('#normalInvoicesTable').DataTable({
             responsive: {
                 details: {
@@ -308,8 +317,10 @@
                 }
             }
         });
+        @endif
 
         // Trial Invoices DataTable
+        @if(auth()->user()->customer_access === 'trial')
         var trialTable = $('#trialInvoicesTable').DataTable({
             responsive: {
                 details: {
@@ -374,11 +385,16 @@
                 }
             }
         });
+        @endif
 
         // Apply filters when clicking the Filter button
         $('#applyFilters').on('click', function() {
+            @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
             normalTable.draw();
+            @endif
+            @if(auth()->user()->customer_access === 'trial')
             trialTable.draw();
+            @endif
         });
 
         // Clear filters when clicking the Clear button
@@ -389,8 +405,12 @@
             $('#priceRange').val('');
             $('#orderIdFilter').val('');
             $('#orderStatusFilter').val('');
+            @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
             normalTable.draw();
+            @endif
+            @if(auth()->user()->customer_access === 'trial')
             trialTable.draw();
+            @endif
         });
     });
 

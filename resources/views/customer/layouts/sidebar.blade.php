@@ -93,6 +93,7 @@
 
             <!-- Support -->
             {{-- <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">organization</p> --}}
+            @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.support') ? 'active' : '' }}"
                     href="{{ route('customer.support') }}">
@@ -102,6 +103,7 @@
                     </div>
                 </a>
             </li>
+            @endif
         </ul>
     </div>
     @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
