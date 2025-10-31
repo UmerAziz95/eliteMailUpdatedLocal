@@ -915,10 +915,10 @@
 
                                         <hr class="border-white-50">
 
-                                        <div class="alert alert-info mb-3" style="background-color: rgba(13, 202, 240, 0.1); border: 1px solid rgba(13, 202, 240, 0.3); color: #0dcaf0;">
+                                        <!-- <div class="alert alert-info mb-3" style="background-color: rgba(13, 202, 240, 0.1); border: 1px solid rgba(13, 202, 240, 0.3); color: #0dcaf0;">
                                             <i class="ti ti-info-circle me-2"></i>
                                             <small>Update your hosting and sending platform credentials below.</small>
-                                        </div>
+                                        </div> -->
                                         @else
                                         <!-- Admin/Contractor Summary - Full Details -->
                                         <h5 class="summary-title mb-3">
@@ -981,8 +981,9 @@
                                         <input type="hidden" id="hasDisclaimer" value="0">
                                         @endif
 
-                                        @if(!$isCustomer)
-                                        <!-- Save Preconditions -->
+                                        @if($isCustomer)
+                                        
+                                        <!-- Save Preconditions (Customer Only) -->
                                         <div class="mt-3">
                                             <div class="form-check text-start mb-2">
                                                 <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmInstantlyAccess">
@@ -1007,7 +1008,7 @@
                                         @endif
 
                                         <!-- Save Button -->
-                                        <button type="submit" class="btn btn-save w-100 mt-3" id="saveBtn" @if($isCustomer) @else disabled @endif>
+                                        <button type="submit" class="btn btn-save w-100 mt-3" id="saveBtn" @if($isCustomer) disabled @else disabled @endif>
                                             <i class="ti ti-device-floppy me-2"></i>Save Configuration
                                         </button>
                                     </div>
@@ -1480,12 +1481,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const isCustomer = {{ $isCustomer ? 'true' : 'false' }};
         
-        // For customers, only check if button exists (they don't need domain selection)
+        // For customers, check if all requirement checkboxes are checked
         if (isCustomer) {
-            saveBtn.disabled = false;
+            const requirementsMet = requirementCheckboxes.length === 0
+                ? true
+                : requirementCheckboxes.every(cb => cb.checked);
+            saveBtn.disabled = !requirementsMet;
             return;
         }
         
+        // For non-customers (admin/contractor), check domain selection
         const effectiveSelectedCount = typeof selectedCount === 'number'
             ? selectedCount
             : selectedDomains.size;
@@ -1496,11 +1501,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const overLimit = effectiveTotalInboxes > maxQuantity;
         const hasSelection = effectiveSelectedCount > 0;
-        const requirementsMet = requirementCheckboxes.length === 0
-            ? true
-            : requirementCheckboxes.every(cb => cb.checked);
         
-        saveBtn.disabled = !hasSelection || overLimit || !requirementsMet;
+        saveBtn.disabled = !hasSelection || overLimit;
     }
     
     // Update summary function
