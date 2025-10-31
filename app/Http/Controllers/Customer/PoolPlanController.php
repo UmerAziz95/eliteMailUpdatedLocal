@@ -33,6 +33,7 @@ class PoolPlanController extends Controller
     /**
      * Handle successful pool plan subscription
      */
+    
     public function subscriptionSuccess(Request $request)
     {
         try {
@@ -88,6 +89,24 @@ class PoolPlanController extends Controller
                 $user->status = 1;
                 $user->save();
             }
+            
+            // Determine customer access level based on previous invoices
+            // Check if user has any previous invoices
+            $hasPreviousInvoices = Invoice::where('user_id', $user->id)->exists();
+            $customerAccess = $hasPreviousInvoices ? 'full' : 'trial';
+            
+            // Update user's customer_access
+            if ($user->customer_access !== $customerAccess) {
+                $user->customer_access = $customerAccess;
+                $user->save();
+                
+                Log::info('Updated user customer access level', [
+                    'user_id' => $user->id,
+                    'has_previous_invoices' => $hasPreviousInvoices,
+                    'customer_access' => $customerAccess
+                ]);
+            }
+            
             // dd($subscription, $customer, $invoice, $user);
             // Get pool plan from ChargeBee subscription plan ID
             $subscriptionItems = $subscription->subscriptionItems;
