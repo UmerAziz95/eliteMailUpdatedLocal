@@ -230,13 +230,17 @@ class PoolOrderService
                     </li>';
         }
         
-        // Add Edit option for pending orders
+        // Add Edit option for editable status orders
         $user = auth()->user();
-        // allowed role first admin, sub-admin = 2, contractor = 4
-        if (in_array($user->role_id, [1, 2, 4])) {
-            // allowed status
-            $allowedStatuses = ['pending', 'in-progress', 'completed'];
-            if (in_array($poolOrder->status_manage_by_admin ?? $poolOrder->status, $allowedStatuses)) {
+        // Check if user role is allowed to edit
+        $editableRoles = config('pool_orders.editable_roles', [1, 2, 4]);
+        
+        if (in_array($user->role_id, $editableRoles)) {
+            // Get editable statuses from config
+            $editableStatuses = config('pool_orders.editable_statuses', ['pending']);
+            $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
+            
+            if (in_array($currentStatus, $editableStatuses)) {
                 $editRoute = route($routePrefix . '.pool-orders.edit', $poolOrder->id);
                 $html .= '
                         <li>

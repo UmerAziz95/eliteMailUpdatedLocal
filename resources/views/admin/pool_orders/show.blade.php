@@ -23,7 +23,11 @@
             <i class="fa fa-chevron-left me-1"></i> Back to Pool Orders
         </a>
         <div class="d-flex gap-2">
-            @if(($poolOrder->status_manage_by_admin ?? $poolOrder->status) === 'pending')
+            @php
+                $editableStatuses = config('pool_orders.editable_statuses', ['pending']);
+                $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
+            @endphp
+            @if(in_array($currentStatus, $editableStatuses))
             <a href="{{ route('admin.pool-orders.edit', $poolOrder->id) }}" class="btn btn-sm btn-primary">
                 <i class="fa fa-edit me-1"></i> Edit Pool Order
             </a>
