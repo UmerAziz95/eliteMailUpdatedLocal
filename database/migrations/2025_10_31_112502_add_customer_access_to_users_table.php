@@ -15,7 +15,7 @@ return new class extends Migration
             $table->enum('customer_access', ['normal', 'trial', 'full'])
                   ->default('normal')
                   ->after('type')
-                  ->comment('Customer access level: normal for regular customers, trial for first-time customers, full for all customers');
+                  ->comment('Customer access level: normal for regular customers, trial for first-time customers, full access shows all menu options for customers');
         });
     }
 
