@@ -836,6 +836,7 @@
                                 </div>
                                 @endif
 
+                                @if(!$isCustomer)
                                 <!-- Search and Filter Controls -->
                                 <div class="mb-4">
                                     <div class="row g-3">
@@ -887,12 +888,39 @@
                                     <h5 class="mt-2">No domains found</h5>
                                     <p>Try adjusting your search terms</p>
                                 </div>
+                                @endif
                             </div>
 
                             <div class="col-lg-4">
                                 <!-- Selection Summary -->
                                 <div class="card summary-card">
                                     <div class="card-body">
+                                        @if($isCustomer)
+                                        <!-- Customer Summary - Platform Credentials Only -->
+                                        <h5 class="summary-title mb-3">
+                                            <i class="ti ti-list-check me-2"></i>Platform Configuration
+                                        </h5>
+                                        
+                                        <div class="summary-section mb-3">
+                                            <small class="opacity-75 d-block mb-2">Pool Plan</small>
+                                            <div class="domain-name">{{ $poolOrder->poolPlan->name ?? 'N/A' }}</div>
+                                        </div>
+
+                                        <hr class="border-white-50">
+
+                                        <div class="summary-section mb-3">
+                                            <small class="opacity-75 d-block mb-2">Total Inboxes</small>
+                                            <span class="inbox-count-badge badge px-3 py-2 bg-white text-success">{{ $poolOrder->quantity ?? 1 }}</span>
+                                        </div>
+
+                                        <hr class="border-white-50">
+
+                                        <div class="alert alert-info mb-3" style="background-color: rgba(13, 202, 240, 0.1); border: 1px solid rgba(13, 202, 240, 0.3); color: #0dcaf0;">
+                                            <i class="ti ti-info-circle me-2"></i>
+                                            <small>Update your hosting and sending platform credentials below.</small>
+                                        </div>
+                                        @else
+                                        <!-- Admin/Contractor Summary - Full Details -->
                                         <h5 class="summary-title mb-3">
                                             <i class="ti ti-list-check me-2"></i>Selection Summary
                                             <small class="opacity-75 d-block"> <span class="badge px-3 py-2 bg-white text-success" style="position: absolute;right: 40px;top: 36px;">Inboxes {{ $poolOrder->quantity ?? 1 }}</span></small>
@@ -934,7 +962,7 @@
                                             </div>
                                         </div>
 
-                                    <hr class="border-white-50">
+                                        <hr class="border-white-50">
 
                                         <!-- Selected Domains List -->
                                         <div class="summary-section selected-domains">
@@ -943,6 +971,7 @@
                                                 <small class="opacity-75">No domains selected yet</small>
                                             </div>
                                         </div>
+                                        @endif
 
                                         <!-- Hidden disclaimer content for canvas -->
                                         @if(isset($trialNewOrderDisclaimer) && $trialNewOrderDisclaimer)
@@ -952,6 +981,7 @@
                                         <input type="hidden" id="hasDisclaimer" value="0">
                                         @endif
 
+                                        @if(!$isCustomer)
                                         <!-- Save Preconditions -->
                                         <div class="mt-3">
                                             <div class="form-check text-start mb-2">
@@ -974,9 +1004,10 @@
                                                 </label>
                                             </div>
                                         </div>
+                                        @endif
 
                                         <!-- Save Button -->
-                                        <button type="submit" class="btn btn-save w-100 mt-3" id="saveBtn" disabled>
+                                        <button type="submit" class="btn btn-save w-100 mt-3" id="saveBtn" @if($isCustomer) @else disabled @endif>
                                             <i class="ti ti-device-floppy me-2"></i>Save Configuration
                                         </button>
                                     </div>
@@ -1080,13 +1111,23 @@ document.addEventListener('DOMContentLoaded', function() {
     updateSaveButtonState();
     
     // Initialize
-    loadDomainsFromServer(currentPage, searchTerm);
+    const isCustomer = {{ $isCustomer ? 'true' : 'false' }};
+    
+    // Only load domains for non-customers
+    if (!isCustomer) {
+        loadDomainsFromServer(currentPage, searchTerm);
+    }
     
     // Load existing selections first
     loadExistingSelections();
     
     // Load domains with server-side pagination
     async function loadDomainsFromServer(page = 1, search = '') {
+        // Check if required elements exist (they won't for customers)
+        if (!loadingSpinner || !domainsContainer || !paginationControls) {
+            return;
+        }
+        
         try {
             loadingSpinner.style.display = 'flex';
             domainsContainer.style.display = 'none';
@@ -1165,26 +1206,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Search functionality with debouncing
+    // Search functionality with debouncing (only for non-customers)
     let searchTimeout;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            searchTerm = this.value.toLowerCase();
-            currentPage = 1; // Reset to first page on search
-            loadDomainsFromServer(currentPage, searchTerm);
-        }, 500);
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchTerm = this.value.toLowerCase();
+                currentPage = 1; // Reset to first page on search
+                loadDomainsFromServer(currentPage, searchTerm);
+            }, 500);
+        });
+    }
     
-    // Domains per page change
-    domainsPerPageSelect.addEventListener('change', function() {
-        domainsPerPage = parseInt(this.value);
-        currentPage = 1; // Reset to first page
-        loadDomainsFromServer(currentPage, searchTerm);
-    });
+    // Domains per page change (only for non-customers)
+    if (domainsPerPageSelect) {
+        domainsPerPageSelect.addEventListener('change', function() {
+            domainsPerPage = parseInt(this.value);
+            currentPage = 1; // Reset to first page
+            loadDomainsFromServer(currentPage, searchTerm);
+        });
+    }
     
     // Render domains on current page
     function renderDomainsOnPage() {
+        if (!domainsContainer) {
+            return;
+        }
+        
         domainsContainer.innerHTML = currentPageDomains.map(domain => 
             createDomainCard(domain)
         ).join('');
@@ -1356,6 +1405,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const pageNumbers = document.getElementById('pageNumbers');
         const pageInfo = document.getElementById('pageInfo');
         
+        // Check if elements exist (they won't for customers)
+        if (!prevBtn || !nextBtn || !pageNumbers || !pageInfo) {
+            return;
+        }
+        
         // Update current page reference
         currentPage = current;
         
@@ -1406,6 +1460,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update search results
     function updateSearchResults() {
+        if (!searchResults) {
+            return;
+        }
+        
         const { total } = paginationData;
         
         if (searchTerm) {
@@ -1417,6 +1475,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function updateSaveButtonState({ selectedCount, totalInboxes } = {}) {
         if (!saveBtn) {
+            return;
+        }
+        
+        const isCustomer = {{ $isCustomer ? 'true' : 'false' }};
+        
+        // For customers, only check if button exists (they don't need domain selection)
+        if (isCustomer) {
+            saveBtn.disabled = false;
             return;
         }
         
@@ -1442,32 +1508,41 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedArray = Array.from(selectedDomains.values());
         const totalInboxes = selectedArray.reduce((sum, domain) => sum + domain.inboxes, 0);
         
-        document.getElementById('selectedCount').textContent = selectedArray.length;
+        const selectedCountElement = document.getElementById('selectedCount');
+        const totalInboxesElement = document.getElementById('totalInboxes');
+        const listContainer = document.getElementById('selectedDomainsList');
+        const summaryCard = document.querySelector('.summary-card');
+        
+        // Check if elements exist (they won't for customers)
+        if (!selectedCountElement || !totalInboxesElement || !listContainer) {
+            return;
+        }
+        
+        selectedCountElement.textContent = selectedArray.length;
         
         // Update inbox count with visual indicators
-        const totalInboxesElement = document.getElementById('totalInboxes');
         totalInboxesElement.textContent = totalInboxes;
         
         // Reset classes
         totalInboxesElement.className = 'badge px-3 py-2';
-        const summaryCard = document.querySelector('.summary-card');
-        summaryCard.className = 'summary-card';
+        if (summaryCard) {
+            summaryCard.className = 'summary-card';
+        }
         
         // Add visual indicators based on inbox count
         if (totalInboxes > maxQuantity) {
             totalInboxesElement.classList.add('inbox-count-error');
-            summaryCard.classList.add('summary-error');
+            if (summaryCard) summaryCard.classList.add('summary-error');
         } else if (totalInboxes === maxQuantity) {
             totalInboxesElement.classList.add('bg-white', 'text-success');
         } else if (totalInboxes > maxQuantity * 0.8) {
             totalInboxesElement.classList.add('inbox-count-warning');
-            summaryCard.classList.add('summary-warning');
+            if (summaryCard) summaryCard.classList.add('summary-warning');
         } else {
             totalInboxesElement.classList.add('bg-white', 'text-success');
         }
     
         // Update selected domains list in sidebar
-        const listContainer = document.getElementById('selectedDomainsList');
         if (selectedArray.length === 0) {
             listContainer.innerHTML = '<small class="opacity-75">No domains selected yet</small>';
         } else {
@@ -1555,6 +1630,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load existing selections
     function loadExistingSelections() {
+        const isCustomer = {{ $isCustomer ? 'true' : 'false' }};
+        
+        // Skip domain loading for customers
+        if (isCustomer) {
+            console.log('Customer role detected - skipping domain loading');
+            return;
+        }
+        
         @if(isset($existingDomainDetails) && !empty($existingDomainDetails))
             const existingDomainDetails = @json($existingDomainDetails);
             
@@ -1849,48 +1932,53 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const selectedArray = Array.from(selectedDomains.keys());
-        const totalInboxes = Array.from(selectedDomains.values())
-            .reduce((sum, domain) => sum + domain.inboxes, 0);
+        const isCustomer = {{ $isCustomer ? 'true' : 'false' }};
         
-        if (selectedArray.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No Domains Selected',
-                text: 'Please select at least one domain to continue.',
-                confirmButtonColor: '#0d6efd'
-            });
-            return;
-        }
+        // Skip domain validation for customers
+        if (!isCustomer) {
+            const selectedArray = Array.from(selectedDomains.keys());
+            const totalInboxes = Array.from(selectedDomains.values())
+                .reduce((sum, domain) => sum + domain.inboxes, 0);
         
-        if (selectedArray.length > maxQuantity) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Domain Limit Exceeded',
-                text: `You can only select up to ${maxQuantity} domains based on your order quantity.`,
-                confirmButtonColor: '#0d6efd'
-            });
-            return;
-        }
+            if (selectedArray.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Domains Selected',
+                    text: 'Please select at least one domain to continue.',
+                    confirmButtonColor: '#0d6efd'
+                });
+                return;
+            }
         
-        if (totalInboxes > maxQuantity) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Inbox Limit Exceeded',
-                text: `Total inboxes (${totalInboxes}) cannot exceed your order quantity (${maxQuantity}). Please adjust your domain selection.`,
-                confirmButtonColor: '#0d6efd'
-            });
-            return;
-        }
+            if (selectedArray.length > maxQuantity) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Domain Limit Exceeded',
+                    text: `You can only select up to ${maxQuantity} domains based on your order quantity.`,
+                    confirmButtonColor: '#0d6efd'
+                });
+                return;
+            }
         
-        if (requirementCheckboxes.length && requirementCheckboxes.some(cb => !cb.checked)) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Confirm Requirements',
-                text: 'Please confirm all required checkboxes before saving your configuration.',
-                confirmButtonColor: '#0d6efd'
-            });
-            return;
+            if (totalInboxes > maxQuantity) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Inbox Limit Exceeded',
+                    text: `Total inboxes (${totalInboxes}) cannot exceed your order quantity (${maxQuantity}). Please adjust your domain selection.`,
+                    confirmButtonColor: '#0d6efd'
+                });
+                return;
+            }
+        
+            if (requirementCheckboxes.length && requirementCheckboxes.some(cb => !cb.checked)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Confirm Requirements',
+                    text: 'Please confirm all required checkboxes before saving your configuration.',
+                    confirmButtonColor: '#0d6efd'
+                });
+                return;
+            }
         }
         
         // Check if disclaimer needs to be shown
@@ -1985,7 +2073,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to handle the actual order submission
     function submitOrder() {
-        const selectedArray = Array.from(selectedDomains.keys());
+        const isCustomer = {{ $isCustomer ? 'true' : 'false' }};
+        const selectedArray = isCustomer ? [] : Array.from(selectedDomains.keys());
         
         // Show loading alert
         Swal.fire({
@@ -2060,7 +2149,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
-                domains: selectedArray,
+                ...(!isCustomer && { domains: selectedArray }),
                 ...hostingPlatformData,
                 ...sendingPlatformData
             })

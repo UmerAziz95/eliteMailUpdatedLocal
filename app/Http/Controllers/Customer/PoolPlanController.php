@@ -400,11 +400,8 @@ class PoolPlanController extends Controller
     public function editPoolOrder($id, Request $request)
     {
         $user = Auth::user();
-        // not allowed if role = 3
-        // if ($user->role_id == 3) {
-        //     return redirect()->route('customer.pool-orders.show', $id)
-        //         ->with('error', 'You do not have permission to perform this action.');
-        // }
+        $isCustomer = $user->role_id == 3;
+        
         // Allow admin and contractor to access any pool order, customer only their own , sub-admin = 2
         if ($user->role_id == 1 || $user->role_id == 4 || $user->role_id == 2) {
             // Admin or Contractor - can access any pool order
@@ -544,6 +541,8 @@ class PoolPlanController extends Controller
         // For regular page load, don't load all domains immediately
         // Pass empty array for initial load to avoid template errors
         $availableDomains = [];
+        
+        // Pass isCustomer flag to view
         return view('customer.pool-orders.edit', compact(
             'poolOrder', 
             'availableDomains', 
@@ -552,7 +551,8 @@ class PoolPlanController extends Controller
             'existingDomainDetails',
             'enableHostingPlatform',
             'enableSendingPlatform',
-            'trialNewOrderDisclaimer'
+            'trialNewOrderDisclaimer',
+            'isCustomer'
         ));
     }
 
@@ -562,13 +562,8 @@ class PoolPlanController extends Controller
     public function updatePoolOrder(Request $request, $id)
     {
         $user = Auth::user();
-        // if role = 3 then not allowed
-        // if ($user->role_id == 3) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'You do not have permission to perform this action.'
-        //     ], 403);
-        // }
+        $isCustomer = $user->role_id == 3;
+        
         // Allow admin and contractor to update any pool order, customer only their own , sub-admin = 2
         if ($user->role_id == 1 || $user->role_id == 4 || $user->role_id == 2) {
             // Admin or Contractor - can access any pool order
@@ -600,87 +595,102 @@ class PoolPlanController extends Controller
         // Store previously selected domains BEFORE any processing
         $previousDomains = $poolOrder->domains ?? [];
 
-        // Validation rules
-        $rules = [
-            'domains' => 'required|array|min:1',
-            'domains.*' => 'required|string',
-            'hosting_platform' => 'nullable|string|max:255',
-        ];
+        // Validation rules - different for customer vs admin/contractor
+        if ($isCustomer) {
+            // Customer can only update platform credentials
+            $rules = [
+                'hosting_platform' => 'nullable|string|max:255',
+                'sending_platform' => 'nullable|string|max:255',
+            ];
+        } else {
+            // Admin/Contractor can update domains and platforms
+            $rules = [
+                'domains' => 'required|array|min:1',
+                'domains.*' => 'required|string',
+                'hosting_platform' => 'nullable|string|max:255',
+                'sending_platform' => 'nullable|string|max:255',
+            ];
+        }
 
         // Validate
         $validated = $request->validate($rules);
 
-        // Check if selected domains count exceeds quantity
-        if (count($request->domains) > $poolOrder->quantity) {
-            return response()->json([
-                'success' => false,
-                'message' => "You can only select up to {$poolOrder->quantity} domains (your order quantity)."
-            ], 422);
-        }
+        // Skip domain processing for customers
+        if (!$isCustomer) {
+            // Check if selected domains count exceeds quantity
+            if (count($request->domains) > $poolOrder->quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "You can only select up to {$poolOrder->quantity} domains (your order quantity)."
+                ], 422);
+            }
 
-        // Get available domains to map selected IDs to actual pool data
-        $availableDomains = $this->getAvailableDomainsOptimized();
-        $selectedDomainIds = $request->domains;
-        // dd($availableDomains, $selectedDomainIds);
-        // Map selected domain IDs to their corresponding pool data
-        $selectedDomains = [];
-        $poolIds = [];
-        $totalInboxes = 0;
+            // Get available domains to map selected IDs to actual pool data
+            $availableDomains = $this->getAvailableDomainsOptimized();
+            $selectedDomainIds = $request->domains ?? [];
         
-        Log::info('Selected domain IDs:', $selectedDomainIds);
-        Log::info('Available domains count:', ['count' => count($availableDomains)]);
+            // Map selected domain IDs to their corresponding pool data
+            $selectedDomains = [];
+            $poolIds = [];
+            $totalInboxes = 0;
         
-        foreach ($selectedDomainIds as $domainId) {
-            foreach ($availableDomains as $domain) {
-                // Compare as strings since domain IDs are strings like "1000_1"
-                if ((string)$domain['id'] === (string)$domainId) {
-                    $selectedDomains[] = $domain;
-                    $poolIds[] = $domain['pool_id'];
-                    $totalInboxes += $domain['available_inboxes'];
-                    Log::info('Found matching domain:', ['domain_id' => $domainId, 'domain_name' => $domain['name']]);
-                    break;
+            Log::info('Selected domain IDs:', $selectedDomainIds);
+            Log::info('Available domains count:', ['count' => count($availableDomains)]);
+        
+            foreach ($selectedDomainIds as $domainId) {
+                foreach ($availableDomains as $domain) {
+                    // Compare as strings since domain IDs are strings like "1000_1"
+                    if ((string)$domain['id'] === (string)$domainId) {
+                        $selectedDomains[] = $domain;
+                        $poolIds[] = $domain['pool_id'];
+                        $totalInboxes += $domain['available_inboxes'];
+                        Log::info('Found matching domain:', ['domain_id' => $domainId, 'domain_name' => $domain['name']]);
+                        break;
+                    }
                 }
             }
-        }
         
-        Log::info('Selected domains found:', ['count' => count($selectedDomains)]);
+            Log::info('Selected domains found:', ['count' => count($selectedDomains)]);
         
-        // Check if no domains were found
-        if (empty($selectedDomains)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No valid domains found for the selected IDs. Please refresh the page and try again.'
-            ], 422);
-        }
+            // Check if no domains were found
+            if (empty($selectedDomains)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No valid domains found for the selected IDs. Please refresh the page and try again.'
+                ], 422);
+            }
         
-        // Check if total inboxes exceed quantity limit
-        if ($totalInboxes > $poolOrder->quantity) {
-            return response()->json([
-                'success' => false,
-                'message' => "Total inboxes ({$totalInboxes}) cannot exceed your order quantity ({$poolOrder->quantity}). Please select domains with fewer inboxes."
-            ], 422);
+            // Check if total inboxes exceed quantity limit
+            if ($totalInboxes > $poolOrder->quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Total inboxes ({$totalInboxes}) cannot exceed your order quantity ({$poolOrder->quantity}). Please select domains with fewer inboxes."
+                ], 422);
+            }
         }
 
         try {
-            // Prepare domains data for saving
-            $domainsData = [];
-            foreach ($selectedDomains as $domain) {
-                $domainsData[] = [
-                    'domain_id' => $domain['id'], // Use unique domain ID
-                    'pool_id' => $domain['pool_id'], // Store pool reference
-                    'domain_name' => $domain['name'], // Store domain name
-                    'per_inbox' => $domain['available_inboxes'],
-                    'status' => $domain['status'] ?? 'subscribed' // Save domain status
-                ];
+            // Prepare domains data for saving (only for non-customers)
+            if (!$isCustomer) {
+                $domainsData = [];
+                foreach ($selectedDomains as $domain) {
+                    $domainsData[] = [
+                        'domain_id' => $domain['id'], // Use unique domain ID
+                        'pool_id' => $domain['pool_id'], // Store pool reference
+                        'domain_name' => $domain['name'], // Store domain name
+                        'per_inbox' => $domain['available_inboxes'],
+                        'status' => $domain['status'] ?? 'subscribed' // Save domain status
+                    ];
+                }
+
+                Log::info('Domains data prepared for saving:', $domainsData);
+
+                // Update domain usage in pools using previously stored domain selection
+                $this->updateDomainUsageInPools($previousDomains, $selectedDomains);
+
+                // Set domains from form data
+                $poolOrder->setDomainsFromForm($domainsData);
             }
-
-            Log::info('Domains data prepared for saving:', $domainsData);
-
-            // Update domain usage in pools using previously stored domain selection
-            $this->updateDomainUsageInPools($previousDomains, $selectedDomains);
-
-            // Set domains from form data
-            $poolOrder->setDomainsFromForm($domainsData);
             
             // Save hosting platform data
             if ($request->has('hosting_platform')) {
