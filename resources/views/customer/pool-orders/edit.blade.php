@@ -1,4 +1,21 @@
-@extends('customer.layouts.app')
+@php
+    $user = auth()->user();
+    $isAdmin = $user && $user->role_id == 1;
+    $isSubAdmin = $user && $user->role_id == 2;
+    $isContractor = $user && $user->role_id == 4;
+    $isCustomer = $user && $user->role_id == 3;
+    
+    // Determine which layout to extend
+    if ($isAdmin || $isSubAdmin) {
+        $layout = 'admin.layouts.app';
+    } elseif ($isContractor) {
+        $layout = 'contractor.layouts.app';
+    } else {
+        $layout = 'customer.layouts.app';
+    }
+@endphp
+
+@extends($layout)
 
 @section('title', 'Edit Pool Order - Domain Selection')
 
@@ -1082,7 +1099,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 search: search
             });
             
-            const response = await fetch(`{{ route('customer.pool-orders.edit', $poolOrder->id) }}?${params}`, {
+            @php
+                // Determine the correct edit route for AJAX based on user role
+                if ($isAdmin) {
+                    $ajaxEditRoute = route('admin.pool-orders.edit', $poolOrder->id);
+                } elseif ($isContractor) {
+                    $ajaxEditRoute = route('contractor.pool-orders.edit', $poolOrder->id);
+                } else {
+                    $ajaxEditRoute = route('customer.pool-orders.edit', $poolOrder->id);
+                }
+            @endphp
+            
+            const response = await fetch(`{{ $ajaxEditRoute }}?${params}`, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
@@ -2014,7 +2042,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        fetch(`{{ route('customer.pool-orders.update', $poolOrder->id) }}`, {
+        @php
+            // Determine the correct update route based on user role
+            if ($isAdmin) {
+                $updateRoute = route('admin.pool-orders.update', $poolOrder->id);
+            } elseif ($isContractor) {
+                $updateRoute = route('contractor.pool-orders.update', $poolOrder->id);
+            } else {
+                $updateRoute = route('customer.pool-orders.update', $poolOrder->id);
+            }
+        @endphp
+        
+        fetch(`{{ $updateRoute }}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -2040,8 +2079,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     showConfirmButton: true,
                     confirmButtonText: 'Continue'
                 }).then((result) => {
-                    // Redirect to pool order details page
-                    window.location.href = '{{ route('customer.pool-orders.show', $poolOrder->id) }}';
+                    // Redirect to pool order details page based on user role
+                    @php
+                        if ($isAdmin) {
+                            $showRoute = route('admin.pool-orders.view', $poolOrder->id);
+                        } elseif ($isContractor) {
+                            $showRoute = route('contractor.pool-orders.view', $poolOrder->id);
+                        } else {
+                            $showRoute = route('customer.pool-orders.show', $poolOrder->id);
+                        }
+                    @endphp
+                    window.location.href = '{{ $showRoute }}';
                 });
             } else {
                 throw new Error(data.message || 'Failed to save');

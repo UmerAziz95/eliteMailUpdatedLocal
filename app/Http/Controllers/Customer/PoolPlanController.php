@@ -390,13 +390,28 @@ class PoolPlanController extends Controller
     public function editPoolOrder($id, Request $request)
     {
         $user = Auth::user();
-        $poolOrder = PoolOrder::where('user_id', $user->id)
-            ->where('id', $id)
-            ->with(['poolPlan'])
-            ->firstOrFail();
-
+        // not allowed if role = 3
+        if ($user->role_id == 3) {
+            return redirect()->route('customer.pool-orders.show', $id)
+                ->with('error', 'You do not have permission to perform this action.');
+        }
+        // Allow admin and contractor to access any pool order, customer only their own , sub-admin = 2
+        if ($user->role_id == 1 || $user->role_id == 4 || $user->role_id == 2) {
+            // Admin or Contractor - can access any pool order
+            $poolOrder = PoolOrder::where('id', $id)
+                ->with(['poolPlan'])
+                ->firstOrFail();
+        } else {
+            // Customer - only their own orders
+            $poolOrder = PoolOrder::where('user_id', $user->id)
+                ->where('id', $id)
+                ->with(['poolPlan'])
+                ->firstOrFail();
+        }
+        // allowed statuses: pending, in-progress, completed
+        $allowedStatuses = ['pending', 'in-progress', 'completed'];
         // Check if order status is pending - only pending orders can be edited
-        if ($poolOrder->status_manage_by_admin !== 'pending') {
+        if (!in_array($poolOrder->status_manage_by_admin, $allowedStatuses)) {
             Log::warning('Attempt to edit non-pending pool order', [
                 'pool_order_id' => $poolOrder->id,
                 'status' => $poolOrder->status,
@@ -404,11 +419,19 @@ class PoolPlanController extends Controller
                 'user_id' => $user->id
             ]);
 
+            // Determine the correct redirect route based on user role
+            $redirectRoute = 'customer.pool-orders.show';
+            if ($user->role_id == 1 || $user->role_id == 2) {
+                $redirectRoute = 'admin.pool-orders.view';
+            } elseif ($user->role_id == 4) {
+                $redirectRoute = 'contractor.pool-orders.view';
+            }
+
             return redirect()
-                ->route('customer.pool-orders.show', $poolOrder->id)
+                ->route($redirectRoute, $poolOrder->id)
                 ->with('error', 'This order cannot be edited. Only pending orders are editable.');
         }
-
+        
         // Handle AJAX request for domains with server-side pagination
         if ($request->ajax() || $request->wantsJson()) {
             $page = $request->get('page', 1);
@@ -528,9 +551,23 @@ class PoolPlanController extends Controller
     public function updatePoolOrder(Request $request, $id)
     {
         $user = Auth::user();
-        $poolOrder = PoolOrder::where('user_id', $user->id)
-            ->where('id', $id)
-            ->firstOrFail();
+        // if role = 3 then not allowed
+        if ($user->role_id == 3) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to perform this action.'
+            ], 403);
+        }
+        // Allow admin and contractor to update any pool order, customer only their own , sub-admin = 2
+        if ($user->role_id == 1 || $user->role_id == 4 || $user->role_id == 2) {
+            // Admin or Contractor - can access any pool order
+            $poolOrder = PoolOrder::where('id', $id)->firstOrFail();
+        } else {
+            // Customer - only their own orders
+            $poolOrder = PoolOrder::where('user_id', $user->id)
+                ->where('id', $id)
+                ->firstOrFail();
+        }
 
         // Check if order status is pending - only pending orders can be updated
         if ($poolOrder->status_manage_by_admin !== 'pending') {

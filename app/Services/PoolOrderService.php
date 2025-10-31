@@ -230,6 +230,23 @@ class PoolOrderService
                     </li>';
         }
         
+        // Add Edit option for pending orders
+        $user = auth()->user();
+        // allowed role first admin, sub-admin = 2, contractor = 4
+        if (in_array($user->role_id, [1, 2, 4])) {
+            // allowed status
+            $allowedStatuses = ['pending', 'in-progress', 'completed'];
+            if (in_array($poolOrder->status_manage_by_admin ?? $poolOrder->status, $allowedStatuses)) {
+                $editRoute = route($routePrefix . '.pool-orders.edit', $poolOrder->id);
+                $html .= '
+                        <li>
+                            <a class="dropdown-item text-primary" href="' . $editRoute . '">
+                                <i class="fa-solid fa-edit me-1"></i>Edit Pool Order
+                            </a>
+                        </li>';
+            }
+        }
+
         if ($showAssignToMe && !$poolOrder->assigned_to) {
             $html .= '
                     <li>

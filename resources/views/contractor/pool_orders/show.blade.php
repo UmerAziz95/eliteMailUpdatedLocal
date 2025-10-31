@@ -22,13 +22,18 @@
         <a href="{{ route('contractor.pool-domains.index') }}" class="btn btn-sm btn-secondary">
             <i class="fa fa-chevron-left me-1"></i> Back to Pool Orders
         </a>
-        <!-- <div class="d-flex gap-2">
-            @if(($poolOrder->status_manage_by_admin ?? $poolOrder->status) !== 'cancelled')
+        <div class="d-flex gap-2">
+            @if(($poolOrder->status_manage_by_admin ?? $poolOrder->status) === 'pending')
+            <a href="{{ route('contractor.pool-orders.edit', $poolOrder->id) }}" class="btn btn-sm btn-primary">
+                <i class="fa fa-edit me-1"></i> Edit Pool Order
+            </a>
+            @endif
+            <!-- @if(($poolOrder->status_manage_by_admin ?? $poolOrder->status) !== 'cancelled')
             <button class="btn btn-sm btn-danger" onclick="cancelPoolOrder({{ $poolOrder->id }})">
                 <i class="fa fa-ban me-1"></i> Cancel Order
             </button>
-            @endif
-        </div> -->
+            @endif -->
+        </div>
     </div>
 
     <div class="d-flex align-items-center justify-content-between mb-4">
