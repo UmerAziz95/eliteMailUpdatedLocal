@@ -12,7 +12,7 @@ class PoolMigrationTaskService
      * Validate domain statuses before completing a task
      * 
      * @param PoolOrderMigrationTask $task
-     * @return array|null Returns array with error response data if validation fails, null if all domains are subscribed
+     * @return array|null Returns array with error response data if validation fails, null if all domains are in-progress or used
      */
     public function validateDomainStatuses(PoolOrderMigrationTask $task): ?array
     {
@@ -30,34 +30,35 @@ class PoolMigrationTaskService
             return null;
         }
         
-        $nonSubscribedDomains = [];
+        $nonValidDomains = [];
+        $validStatuses = ['in-progress', 'used'];
         
         foreach ($domains as $domain) {
             // Get status, default to 'warming' if not set
-            $domainStatus = $domain['status'] ?? 'subscribed';
+            $domainStatus = $domain['status'] ?? 'warming';
             
-            // Only flag if status is not 'subscribed'
-            if ($domainStatus !== 'subscribed') {
+            // Only flag if status is not 'in-progress' or 'used'
+            if (!in_array($domainStatus, $validStatuses)) {
                 $domainName = $this->resolveDomainName($domain);
                 
-                $nonSubscribedDomains[] = [
+                $nonValidDomains[] = [
                     'name' => $domainName,
                     'status' => $domainStatus
                 ];
             }
         }
         
-        if (empty($nonSubscribedDomains)) {
+        if (empty($nonValidDomains)) {
             return null;
         }
         
         return [
             'success' => false,
             'requiresConfirmation' => true,
-            'message' => 'Some domains are not in subscribed status',
-            'nonSubscribedDomains' => $nonSubscribedDomains,
+            'message' => 'Some domains are not in valid status for completion',
+            'nonSubscribedDomains' => $nonValidDomains, // Keep the same key for frontend compatibility
             'totalDomains' => count($domains),
-            'nonSubscribedCount' => count($nonSubscribedDomains)
+            'nonSubscribedCount' => count($nonValidDomains) // Keep the same key for frontend compatibility
         ];
     }
     
@@ -134,6 +135,9 @@ class PoolMigrationTaskService
             // Set timestamps based on status
             if ($status === 'completed') {
                 $updates['completed_at'] = now();
+                
+                // Update domain statuses from 'in-progress' to 'used'
+                $this->updateDomainStatusesToUsed($task);
             } elseif ($status === 'in-progress' && !$task->started_at) {
                 $updates['started_at'] = now();
             }
@@ -295,6 +299,124 @@ class PoolMigrationTaskService
                 'message' => 'Failed to fetch task details: ' . $e->getMessage(),
                 'statusCode' => 500
             ];
+        }
+    }
+
+    /**
+     * Update domain statuses from 'in-progress' to 'used' when task is completed
+     * 
+     * @param PoolOrderMigrationTask $task
+     * @return void
+     */
+    private function updateDomainStatusesToUsed(PoolOrderMigrationTask $task): void
+    {
+        try {
+            $poolOrder = $task->poolOrder;
+            
+            if (!$poolOrder || !$poolOrder->domains) {
+                Log::info("Pool migration task {$task->id}: No domains to update");
+                return;
+            }
+            
+            $domains = is_string($poolOrder->domains) 
+                ? json_decode($poolOrder->domains, true) 
+                : $poolOrder->domains;
+            
+            if (!is_array($domains)) {
+                Log::warning("Pool migration task {$task->id}: Invalid domains format");
+                return;
+            }
+            
+            $domainsUpdated = false;
+            $updateCount = 0;
+            
+            // Update domains in pool_orders table
+            foreach ($domains as &$domain) {
+                if (isset($domain['status']) && $domain['status'] === 'in-progress') {
+                    $domain['status'] = 'used';
+                    $domain['is_used'] = true;
+                    $domainsUpdated = true;
+                    $updateCount++;
+                    
+                    Log::info("Pool migration task {$task->id}: Updated domain " . 
+                        ($domain['domain_name'] ?? $domain['name'] ?? 'Unknown') . 
+                        " from in-progress to used");
+                }
+            }
+            
+            if ($domainsUpdated) {
+                $poolOrder->domains = $domains;
+                $poolOrder->save();
+                Log::info("Pool migration task {$task->id}: Updated {$updateCount} domains in pool_orders table");
+            }
+            
+            // Also update domains in pools table if they exist
+            $this->updatePoolDomainStatuses($domains);
+            
+        } catch (\Exception $e) {
+            Log::error("Error updating domain statuses for task {$task->id}: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Update domain statuses in the pools table
+     * 
+     * @param array $orderDomains Domains from pool_orders
+     * @return void
+     */
+    private function updatePoolDomainStatuses(array $orderDomains): void
+    {
+        try {
+            // Extract domain IDs and pool IDs from order domains
+            $domainUpdates = [];
+            
+            foreach ($orderDomains as $orderDomain) {
+                $domainId = $orderDomain['domain_id'] ?? $orderDomain['id'] ?? null;
+                $poolId = $orderDomain['pool_id'] ?? null;
+                
+                if ($domainId && $poolId) {
+                    if (!isset($domainUpdates[$poolId])) {
+                        $domainUpdates[$poolId] = [];
+                    }
+                    $domainUpdates[$poolId][] = $domainId;
+                }
+            }
+            
+            // Update domains in each affected pool
+            foreach ($domainUpdates as $poolId => $domainIds) {
+                $pool = Pool::find($poolId);
+                
+                if (!$pool || !is_array($pool->domains)) {
+                    continue;
+                }
+                
+                $poolDomains = $pool->domains;
+                $poolDomainsUpdated = false;
+                $poolUpdateCount = 0;
+                
+                foreach ($poolDomains as &$poolDomain) {
+                    if (isset($poolDomain['id']) && in_array($poolDomain['id'], $domainIds)) {
+                        if (isset($poolDomain['status']) && $poolDomain['status'] === 'in-progress') {
+                            $poolDomain['status'] = 'used';
+                            $poolDomain['is_used'] = true;
+                            $poolDomainsUpdated = true;
+                            $poolUpdateCount++;
+                            
+                            Log::info("Updated domain " . ($poolDomain['name'] ?? 'Unknown') . 
+                                " in pool {$poolId} from in-progress to used");
+                        }
+                    }
+                }
+                
+                if ($poolDomainsUpdated) {
+                    $pool->domains = $poolDomains;
+                    $pool->save();
+                    Log::info("Updated {$poolUpdateCount} domains in pool {$poolId}");
+                }
+            }
+            
+        } catch (\Exception $e) {
+            Log::error("Error updating domain statuses in pools table: " . $e->getMessage());
         }
     }
 

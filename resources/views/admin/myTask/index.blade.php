@@ -742,7 +742,7 @@
             
             const data = await response.json();
             
-            // Handle case where domains are not all subscribed
+            // Handle case where domains are not in valid status
             if (response.status === 422 && data.requiresConfirmation && data.nonSubscribedDomains) {
                 const domainsList = data.nonSubscribedDomains
                     .map(d => `<tr>
@@ -752,10 +752,10 @@
                     .join('');
                 
                 const result = await Swal.fire({
-                    title: 'Warning: Domains Not Subscribed',
+                    title: 'Warning: Invalid Domain Status',
                     html: `
                         <div class="text-start">
-                            <p class="mb-3"><strong>${data.nonSubscribedCount} out of ${data.totalDomains} domains</strong> are not in subscribed status:</p>
+                            <p class="mb-3"><strong>${data.nonSubscribedCount} out of ${data.totalDomains} domains</strong> are not in valid status for completion:</p>
                             <div style="max-height: 300px; overflow-y: auto;">
                                 <table class="table table-sm table-bordered">
                                     <thead class="">
@@ -771,7 +771,7 @@
                             </div>
                             <p class="mt-3 text-muted small">
                                 <i class="fas fa-info-circle me-1"></i>
-                                All domains should be in "subscribed" status before completing this task.
+                                All domains should be in "In Progress" or "Used" status before completing this task.
                             </p>
                         </div>
                     `,
