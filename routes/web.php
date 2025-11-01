@@ -259,6 +259,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('pool-domains/test', [\App\Http\Controllers\Admin\PoolDomainController::class, 'test'])->name('pool-domains.test');
         Route::post('pool-domains/refresh-cache', [\App\Http\Controllers\Admin\PoolDomainController::class, 'refreshCache'])->name('pool-domains.refresh-cache');
         Route::post('pool-domains/update', [\App\Http\Controllers\Admin\PoolDomainController::class, 'update'])->name('pool-domains.update');
+        Route::post('pool-domains/update-status', [\App\Http\Controllers\Admin\PoolDomainController::class, 'updateStatus'])->name('pool-domains.update-status');
         
         // Pool Orders Management
         Route::get('pool-orders/list', [\App\Http\Controllers\Admin\PoolDomainController::class, 'poolOrdersList'])->name('pool-orders.list');
@@ -661,6 +662,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('pool-domains/test', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'test'])->name('pool-domains.test');
     Route::post('pool-domains/refresh-cache', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'refreshCache'])->name('pool-domains.refresh-cache');
     Route::post('pool-domains/update', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'update'])->name('pool-domains.update');
+    Route::post('pool-domains/update-status', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'updateStatus'])->name('pool-domains.update-status');
     
     // Pool Orders Management
     Route::get('pool-orders/list', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'poolOrdersList'])->name('pool-orders.list');
