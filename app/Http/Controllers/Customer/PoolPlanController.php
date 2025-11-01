@@ -797,11 +797,15 @@ class PoolPlanController extends Controller
             
             Log::info('Before saving pool order - domains:', ['domains' => $poolOrder->domains]);
             
-            // Update status from draft to in-progress when configuration is saved
-            // Status flow: draft (initial) -> in-progress (configured) -> completed (by admin)
+            // Update status based on who is updating and what is being updated
+            // Status flow: draft (initial) -> pending (customer updates) -> in-progress (admin/contractor sets domains) -> completed (by admin)
             // Observer will handle Slack notification automatically
-            if ($poolOrder->status_manage_by_admin === 'draft') {
+            if ($isCustomer && $poolOrder->status_manage_by_admin === 'draft') {
+                // Customer updating platform credentials - set to pending
                 $poolOrder->status_manage_by_admin = 'pending';
+            } elseif (!$isCustomer && ($poolOrder->status_manage_by_admin === 'pending' || $poolOrder->status_manage_by_admin === 'draft')) {
+                // Admin/Contractor setting domains - set to in-progress
+                $poolOrder->status_manage_by_admin = 'in-progress';
             }
             
             $poolOrder->save();
