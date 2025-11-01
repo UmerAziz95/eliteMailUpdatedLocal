@@ -569,8 +569,8 @@ class PoolOrderCancelledService
                 $previousIsUsed = $this->safeGet($poolDomain, 'is_used', false);
                 
                 // Update domain status
-                $poolDomain['is_used'] = false;
-                $poolDomain['status'] = 'available';
+                // $poolDomain['is_used'] = false;
+                $poolDomain['status'] = 'warming';
                 
                 $hasChanges = true;
                 
@@ -579,9 +579,9 @@ class PoolOrderCancelledService
                     'pool_id' => $poolId,
                     'domain_name' => $this->safeGet($poolDomain, 'name', $domainName),
                     'previous_status' => $previousStatus,
-                    'new_status' => 'available',
+                    'new_status' => 'warming',
                     'previous_is_used' => $previousIsUsed,
-                    'new_is_used' => false
+                    // 'new_is_used' => false
                 ]);
             }
             
