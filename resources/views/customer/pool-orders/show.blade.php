@@ -54,24 +54,24 @@
 
     <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
+            <button class="nav-link fs-6 px-5 d-none" id="configuration-tab" data-bs-toggle="tab"
                 data-bs-target="#configuration-tab-pane" type="button" role="tab"
                 aria-controls="configuration-tab-pane" aria-selected="true">Configuration</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link fs-6 px-5" id="subscription-tab" data-bs-toggle="tab"
+            <button class="nav-link fs-6 px-5 active" id="subscription-tab" data-bs-toggle="tab"
                 data-bs-target="#subscription-tab-pane" type="button" role="tab"
-                aria-controls="subscription-tab-pane" aria-selected="false">Subscription</button>
+                aria-controls="subscription-tab-pane" aria-selected="false">Payments</button>
         </li>
         <li class="nav-item d-none" role="presentation">
-            <button class="nav-link fs-6 px-5" id="tickets-tab" data-bs-toggle="tab"
+            <button class="nav-link fs-6 px-5 " id="tickets-tab" data-bs-toggle="tab"
                 data-bs-target="#tickets-tab-pane" type="button" role="tab"
                 aria-controls="tickets-tab-pane" aria-selected="false">Tickets</button>
         </li>
     </ul>
 
     <div class="tab-content mt-3" id="myTabContent">
-        <div class="tab-pane fade show active" id="configuration-tab-pane" role="tabpanel"
+        <div class="tab-pane fade" id="configuration-tab-pane" role="tabpanel"
             aria-labelledby="configuration-tab" tabindex="0">
             <div class="row">
                 <div class="col-md-6">
@@ -486,7 +486,7 @@
             </div>
         </div>
 
-        <div class="tab-pane fade" id="subscription-tab-pane" role="tabpanel" aria-labelledby="subscription-tab"
+        <div class="tab-pane fade show active" id="subscription-tab-pane" role="tabpanel" aria-labelledby="subscription-tab"
             tabindex="0">
             <div class="col-12">
                 <div class="card p-3">
@@ -495,13 +495,13 @@
                             style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                             <i class="fa-solid fa-credit-card"></i>
                         </div>
-                        Subscription Details
+                        Invoice Details
                     </h6>
 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="d-flex flex-column mb-3">
-                                <span class="opacity-50">Subscription ID</span>
+                                <span class="opacity-50">ChargeBee ID</span>
                                 <span>{{ $poolOrder->chargebee_subscription_id ?? 'N/A' }}</span>
                             </div>
 
@@ -527,7 +527,7 @@
                     <hr>
 
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="mb-0">Pool Invoices</h6>
+                        <h6 class="mb-0">Trial Invoice(s)</h6>
                         <div>
                             <button id="exportPoolInvoicesBtn" class="btn btn-sm btn-outline-primary">
                                 <i class="fa-solid fa-download me-1"></i>Export
