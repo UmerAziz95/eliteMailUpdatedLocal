@@ -716,7 +716,7 @@ class PoolPlanController extends Controller
                         'pool_id' => $domain['pool_id'], // Store pool reference
                         'domain_name' => $domain['name'], // Store domain name
                         'per_inbox' => $domain['available_inboxes'],
-                        'status' => $domain['status'] ?? 'subscribed' // Save domain status
+                        'status' => 'in-progress' // Set status to in-progress when assigned to pool order
                     ];
                 }
 
@@ -1246,25 +1246,34 @@ class PoolPlanController extends Controller
                         if (is_array($domain) && isset($domain['id'])) {
                             $domainId = $domain['id'];
                             
-                            // Mark deselected domains as unused
+                            // Mark deselected domains as unused and revert status
                             if (in_array($domainId, $deselectedDomainIds)) {
                                 $updatedDomain['is_used'] = false;
-                                // Set status based on usage - when not used, revert to available (or warming if not set)
-                                $updatedDomain['status'] = $updatedDomain['status'] ?? 'warming';
-                                if ($updatedDomain['status'] === 'subscribed') {
+                                // Revert status based on previous state - remove 'in-progress' status
+                                // Default to 'available' when unused, unless it was in 'warming'
+                                $currentStatus = $updatedDomain['status'] ?? 'available';
+                                if ($currentStatus === 'in-progress') {
                                     $updatedDomain['status'] = 'available';
                                 }
                                 $hasChanges = true;
-                                Log::info('Marking domain as unused:', ['domain_id' => $domainId, 'pool_id' => $pool->id]);
+                                Log::info('Marking domain as unused:', [
+                                    'domain_id' => $domainId, 
+                                    'pool_id' => $pool->id,
+                                    'status' => $updatedDomain['status']
+                                ]);
                             }
                             
-                            // Mark newly selected domains as used
+                            // Mark newly selected domains as used and set status to in-progress
                             if (in_array($domainId, $newlySelectedDomainIds)) {
                                 $updatedDomain['is_used'] = true;
-                                // Set status to subscribed when used
-                                $updatedDomain['status'] = 'subscribed';
+                                // Set status to in-progress when domain is assigned to pool order
+                                $updatedDomain['status'] = 'in-progress';
                                 $hasChanges = true;
-                                Log::info('Marking domain as used and subscribed:', ['domain_id' => $domainId, 'pool_id' => $pool->id]);
+                                Log::info('Marking domain as used and in-progress:', [
+                                    'domain_id' => $domainId, 
+                                    'pool_id' => $pool->id,
+                                    'status' => 'in-progress'
+                                ]);
                             }
                         }
                         

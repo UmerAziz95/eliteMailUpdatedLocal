@@ -36,7 +36,7 @@ class PoolDomainController extends Controller
                 ->addColumn('status_badge', function ($row) {
                     $colorMap = [
                         'available' => 'success',
-                        'subscribed' => 'primary',
+                        'in-progress' => 'primary',
                         'used' => 'warning',
                         'inactive' => 'secondary',
                         'unknown' => 'dark',
@@ -177,7 +177,7 @@ class PoolDomainController extends Controller
             'pool_order_id' => 'nullable|integer',
             'domain_id' => 'required',
             'domain_name' => 'required|string',
-            'status' => 'required|in:warming,available,subscribed'
+            'status' => 'required|in:warming,available,in-progress'
         ]);
 
         try {

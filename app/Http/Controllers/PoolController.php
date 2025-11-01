@@ -281,9 +281,9 @@ class PoolController extends Controller
                         $isUsed = $domain['is_used'] ?? false;
                         $status = $domain['status'] ?? 'warming';
                         
-                        // If domain is used, set status to subscribed
-                        if ($isUsed) {
-                            $status = 'subscribed';
+                        // If domain is used, set status to in-progress
+                        if ($isUsed && $status !== 'in-progress') {
+                            $status = 'in-progress';
                         }
                         
                         $processedDomains[] = [
@@ -463,9 +463,9 @@ class PoolController extends Controller
                             if (!isset($domainData['status'])) {
                                 $domainData['status'] = 'warming';
                             }
-                            // If domain is used, set status to subscribed
+                            // If domain is used, set status to in-progress
                             if (isset($domainData['is_used']) && $domainData['is_used']) {
-                                $domainData['status'] = 'subscribed';
+                                $domainData['status'] = 'in-progress';
                             }
                             $usedProtectedIds[] = $domainData['id'];
                         }
@@ -475,9 +475,9 @@ class PoolController extends Controller
                             $isUsed = $existingAtPosition['is_used'] ?? false;
                             $status = $existingAtPosition['status'] ?? 'warming';
                             
-                            // If domain is used, set status to subscribed
+                            // If domain is used, set status to in-progress
                             if ($isUsed) {
-                                $status = 'subscribed';
+                                $status = 'in-progress';
                             }
                             
                             $domainData = [
@@ -515,9 +515,9 @@ class PoolController extends Controller
                             $isUsed = $domain['is_used'] ?? $existingDomain['is_used'] ?? false;
                             $status = $domain['status'] ?? $existingDomain['status'] ?? 'warming';
                             
-                            // If domain is used, set status to subscribed
+                            // If domain is used, set status to in-progress
                             if ($isUsed) {
-                                $status = 'subscribed';
+                                $status = 'in-progress';
                             }
                             
                             $domainData = [
@@ -540,9 +540,9 @@ class PoolController extends Controller
                             $isUsed = $domain['is_used'] ?? $existingDomain['is_used'] ?? false;
                             $status = $domain['status'] ?? $existingDomain['status'] ?? 'warming';
                             
-                            // If domain is used, set status to subscribed
+                            // If domain is used, set status to in-progress
                             if ($isUsed) {
-                                $status = 'subscribed';
+                                $status = 'in-progress';
                             }
                             
                             $domainData = [
@@ -564,9 +564,9 @@ class PoolController extends Controller
                             if (isset($domain['is_used'])) {
                                 $domainData['is_used'] = $domain['is_used'];
                             }
-                            // If domain is used, set status to subscribed
+                            // If domain is used, set status to in-progress
                             if (isset($domainData['is_used']) && $domainData['is_used']) {
-                                $domainData['status'] = 'subscribed';
+                                $domainData['status'] = 'in-progress';
                             }
                             $usedProtectedIds[] = $domainData['id'];
                         }
@@ -576,9 +576,9 @@ class PoolController extends Controller
                             $isUsed = $domain['is_used'] ?? $existingAtPosition['is_used'] ?? false;
                             $status = $domain['status'] ?? $existingAtPosition['status'] ?? 'warming';
                             
-                            // If domain is used, set status to subscribed
+                            // If domain is used, set status to in-progress
                             if ($isUsed) {
-                                $status = 'subscribed';
+                                $status = 'in-progress';
                             }
                             
                             $domainData = [
@@ -594,9 +594,9 @@ class PoolController extends Controller
                             $isUsed = $domain['is_used'] ?? false;
                             $status = $domain['status'] ?? 'warming';
                             
-                            // If domain is used, set status to subscribed
+                            // If domain is used, set status to in-progress
                             if ($isUsed) {
-                                $status = 'subscribed';
+                                $status = 'in-progress';
                             }
                             
                             $domainData = [
@@ -620,11 +620,11 @@ class PoolController extends Controller
                     if (isset($existingDomain['is_used']) && $existingDomain['is_used'] === true) {
                         // If this used domain wasn't included in the submitted form, preserve it
                         if (!in_array($existingDomain['id'], $submittedDomainIds)) {
-                            // Ensure status is subscribed for used domains
+                            // Ensure status is in-progress for used domains
                             if (!isset($existingDomain['status'])) {
-                                $existingDomain['status'] = 'subscribed';
-                            } elseif ($existingDomain['status'] !== 'subscribed') {
-                                $existingDomain['status'] = 'subscribed';
+                                $existingDomain['status'] = 'in-progress';
+                            } elseif ($existingDomain['status'] !== 'in-progress') {
+                                $existingDomain['status'] = 'in-progress';
                             }
                             $processedDomains[] = $existingDomain;
                         }

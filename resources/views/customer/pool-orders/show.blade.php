@@ -45,11 +45,11 @@
             <h5 class="mb-3">Pool Order #{{ $poolOrder->id ?? 'N/A' }}</h5>
             <h6><span class="opacity-50 fs-6">Order Date:</span> {{ $poolOrder->created_at ? $poolOrder->created_at->format('M d, Y') : 'N/A' }}</h6>
         </div>
-        <div class="d-flex gap-2">
+        <!-- <div class="d-flex gap-2">
             <div class="border border-{{ $poolOrder->status_color }} rounded-2 py-1 px-2 text-{{ $poolOrder->status_color }} bg-transparent">
                 {{ $poolOrder->status_label }}
             </div>
-        </div>
+        </div> -->
     </div>
 
     <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
@@ -613,7 +613,7 @@
                     @endpush
                     @endif
 
-                    @if($poolOrder->poolPlan && $poolOrder->poolPlan->features->isNotEmpty())
+                    <!-- @if($poolOrder->poolPlan && $poolOrder->poolPlan->features->isNotEmpty())
                         <hr>
                         <h6 class="mb-3">Plan Features</h6>
                         <ul class="list-unstyled">
@@ -627,7 +627,7 @@
                                 </li>
                             @endforeach
                         </ul>
-                    @endif
+                    @endif -->
                 </div>
             </div>
         </div>
