@@ -11,11 +11,12 @@ return [
     | When a pool order has one of these statuses, users with appropriate
     | permissions can edit the order configuration and domains.
     |
-    | Available statuses: 'pending', 'in-progress', 'completed', 'cancelled'
+    | Available statuses: 'draft', 'pending', 'in-progress', 'completed', 'cancelled'
     |
     */
 
     'editable_statuses' => [
+        'draft',        // New orders start as draft
         'pending',
         'in-progress',  // Uncomment to allow editing in-progress orders
         'completed',    // Uncomment to allow editing completed orders

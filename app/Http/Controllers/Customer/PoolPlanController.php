@@ -26,7 +26,7 @@ class PoolPlanController extends Controller
     private function canEditPoolOrder($poolOrder)
     {
         $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
-        $editableStatuses = config('pool_orders.editable_statuses', ['pending']);
+        $editableStatuses = config('pool_orders.editable_statuses', ['draft', 'pending']);
         return in_array($currentStatus, $editableStatuses);
     }
 
@@ -202,7 +202,7 @@ class PoolPlanController extends Controller
             'amount' => $invoice->total / 100, // Convert cents to dollars
             'currency' => $invoice->currencyCode,
             'status' => 'completed',
-            'status_manage_by_admin' => 'pending', // Default status
+            'status_manage_by_admin' => 'draft', // Default status - first time save as draft
             'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
             'meta' => json_encode([
                 'subscription_data' => [
@@ -374,9 +374,9 @@ class PoolPlanController extends Controller
                 
                 // Check if order can be cancelled (not already cancelled)
                 $canCancel = $order->status !== 'cancelled' && $order->status_manage_by_admin !== 'cancelled';
-                
-                // Check if order can be edited (only pending orders)
-                $canEdit = $order->status_manage_by_admin === 'pending';
+                $canCancel = 0;
+                // Check if order can be edited (draft, pending, or in-progress orders)
+                $canEdit = in_array($order->status_manage_by_admin, ['draft']);
                 
                 $cancelButton = '';
                 if ($canCancel) {
@@ -408,11 +408,6 @@ class PoolPlanController extends Controller
                             </a>
                         </li>
                         ' . $editButton . '
-                        <li>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="downloadInvoice(\'' . $order->id . '\')">
-                                <i class="ti ti-download me-1"></i>Download
-                            </a>
-                        </li>
                         ' . $cancelButton . '
                     </ul>
                 </div>
@@ -443,10 +438,10 @@ class PoolPlanController extends Controller
                 ->where('id', $id)
                 ->with(['poolPlan'])
                 ->firstOrFail();
-            // order status_manage_by_admin is pending then can edit
-            if ($poolOrder->status_manage_by_admin !== 'pending') {
+            // order status_manage_by_admin is draft or pending then can edit
+            if (!in_array($poolOrder->status_manage_by_admin, ['draft'])) {
                 return redirect()->route('customer.pool-orders.show', $poolOrder->id)
-                    ->with('error', 'Only orders with pending status can be edited.');
+                    ->with('error', 'Only orders with draft or pending status can be edited.');
             }
         }
 
@@ -457,7 +452,7 @@ class PoolPlanController extends Controller
                 'status' => $poolOrder->status,
                 'status_manage_by_admin' => $poolOrder->status_manage_by_admin,
                 'user_id' => $user->id,
-                'allowed_statuses' => config('pool_orders.editable_statuses', ['pending'])
+                'allowed_statuses' => config('pool_orders.editable_statuses', ['draft', 'pending'])
             ]);
 
             // Determine the correct redirect route based on user role
@@ -607,11 +602,11 @@ class PoolPlanController extends Controller
             $poolOrder = PoolOrder::where('user_id', $user->id)
                 ->where('id', $id)
                 ->firstOrFail();
-            // when status is is not pending then cannot update
-            if ($poolOrder->status_manage_by_admin !== 'pending') {
+            // when status is not draft or pending then cannot update
+            if (!in_array($poolOrder->status_manage_by_admin, ['draft', 'pending'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only orders with pending status can be updated.'
+                    'message' => 'Only orders with draft or pending status can be updated.'
                 ], 403);
             }
         }
@@ -711,6 +706,7 @@ class PoolPlanController extends Controller
         }
 
         try {
+            
             // Prepare domains data for saving (only for non-customers)
             if (!$isCustomer) {
                 $domainsData = [];
@@ -801,9 +797,12 @@ class PoolPlanController extends Controller
             
             Log::info('Before saving pool order - domains:', ['domains' => $poolOrder->domains]);
             
-            // Update status to in-progress when configuration is saved
+            // Update status from draft to in-progress when configuration is saved
+            // Status flow: draft (initial) -> in-progress (configured) -> completed (by admin)
             // Observer will handle Slack notification automatically
-            $poolOrder->status_manage_by_admin = 'in-progress';
+            if ($poolOrder->status_manage_by_admin === 'draft') {
+                $poolOrder->status_manage_by_admin = 'pending';
+            }
             
             $poolOrder->save();
             
