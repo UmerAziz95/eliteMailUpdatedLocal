@@ -240,11 +240,7 @@
                     
                     <div class="mb-3">
                         <label for="edit_status" class="form-label">Status</label>
-                        <select class="form-select" id="edit_status" name="status" required>
-                            <option value="warming">Warming</option>
-                            <option value="available">Available</option>
-                            <option value="subscribed">Subscribed</option>
-                        </select>
+                        <x-domain-status-select name="edit_status" id="edit_status" :required="true" />
                     </div>
                 </div>
                 <div class="modal-footer">

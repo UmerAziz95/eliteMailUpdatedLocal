@@ -70,7 +70,7 @@ if (!function_exists('get_domain_status_style')) {
         $color = $config['color'] ?? '#000';
         $bgColor = $config['bg_color'] ?? '#fff';
         
-        return "color: {$color}; background-color: {$bgColor};";
+        return "color: {$color};";
     }
 }
 
