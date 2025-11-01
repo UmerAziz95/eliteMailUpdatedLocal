@@ -187,7 +187,10 @@ class PoolDomainController extends Controller
                         if (isset($domain['id']) && $domain['id'] == $request->domain_id) {
                             $domain['name'] = $request->domain_name;
                             $domain['status'] = $request->status;
+                            // is_used updated based on status
+                            $domain['is_used'] = $request->status === 'available' ? false : true;
                             $updated = true;
+                            Log::info('Domain updated', ['domain' => $domain]);
                             break;
                         }
                     }
@@ -211,6 +214,8 @@ class PoolDomainController extends Controller
                         if ($domainIdKey && $domain[$domainIdKey] == $request->domain_id) {
                             $domain['domain_name'] = $request->domain_name;
                             $domain['status'] = $request->status;
+                            // is_used updated based on status
+                            $domain['is_used'] = $request->status === 'available' ? false : true;
                             $updated = true;
                             break;
                         }
@@ -270,6 +275,8 @@ class PoolDomainController extends Controller
                     foreach ($domains as &$domain) {
                         if (isset($domain['id']) && $domain['id'] == $domainId) {
                             $domain['status'] = $newStatus;
+                            // is_used updated based on status
+                            $domain['is_used'] = $newStatus === 'available' ? false : true;
                             $updated = true;
                         }
                     }
@@ -289,6 +296,8 @@ class PoolDomainController extends Controller
                         $domainIdKey = isset($domain['domain_id']) ? 'domain_id' : (isset($domain['id']) ? 'id' : null);
                         if ($domainIdKey && $domain[$domainIdKey] == $domainId) {
                             $domain['status'] = $newStatus;
+                            // is_used updated based on status
+                            $domain['is_used'] = $newStatus === 'available' ? false : true;
                             $updated = true;
                         }
                     }

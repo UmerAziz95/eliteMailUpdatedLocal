@@ -164,14 +164,14 @@ class PoolDomainController extends Controller
      */
     public function update(Request $request)
     {
-        $editableStatuses = implode(',', array_keys(config('domain_statuses.editable', ['warming', 'available', 'in-progress'])));
+        $editableStatuses = config('domain_statuses.editable', ['warming', 'available', 'in-progress', 'used']);
         
         $request->validate([
             'pool_id' => 'nullable|integer',
             'pool_order_id' => 'nullable|integer',
             'domain_id' => 'required',
             'domain_name' => 'required|string',
-            'status' => 'required|in:' . $editableStatuses
+            'status' => 'required|in:' . implode(',', array_keys($editableStatuses))
         ]);
 
         try {
@@ -187,6 +187,8 @@ class PoolDomainController extends Controller
                         if (isset($domain['id']) && $domain['id'] == $request->domain_id) {
                             $domain['name'] = $request->domain_name;
                             $domain['status'] = $request->status;
+                            // is_used updated based on status
+                            $domain['is_used'] = $request->status === 'available' ? false : true;
                             $updated = true;
                             break;
                         }
@@ -211,6 +213,8 @@ class PoolDomainController extends Controller
                         if ($domainIdKey && $domain[$domainIdKey] == $request->domain_id) {
                             $domain['domain_name'] = $request->domain_name;
                             $domain['status'] = $request->status;
+                            // is_used updated based on status
+                            $domain['is_used'] = $request->status === 'available' ? false : true;
                             $updated = true;
                             break;
                         }
@@ -270,6 +274,8 @@ class PoolDomainController extends Controller
                     foreach ($domains as &$domain) {
                         if (isset($domain['id']) && $domain['id'] == $domainId) {
                             $domain['status'] = $newStatus;
+                            // is_used updated based on status
+                            $domain['is_used'] = $newStatus === 'available' ? false : true;
                             $updated = true;
                         }
                     }
@@ -289,6 +295,8 @@ class PoolDomainController extends Controller
                         $domainIdKey = isset($domain['domain_id']) ? 'domain_id' : (isset($domain['id']) ? 'id' : null);
                         if ($domainIdKey && $domain[$domainIdKey] == $domainId) {
                             $domain['status'] = $newStatus;
+                            // is_used updated based on status
+                            $domain['is_used'] = $newStatus === 'available' ? false : true;
                             $updated = true;
                         }
                     }
