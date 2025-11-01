@@ -573,7 +573,7 @@ class PoolDomainController extends Controller
             $poolOrder = \App\Models\PoolOrder::findOrFail($request->order_id);
 
             // Check if order is already cancelled
-            if ($poolOrder->status === 'cancelled') {
+            if ($poolOrder->status_manage_by_admin === 'cancelled') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot change status of a cancelled order'

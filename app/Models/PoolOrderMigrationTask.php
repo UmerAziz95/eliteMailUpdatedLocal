@@ -21,12 +21,14 @@ class PoolOrderMigrationTask extends Model
         'metadata',
         'started_at',
         'completed_at',
+        'domains_processed_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'domains_processed_at' => 'datetime',
     ];
 
     /**

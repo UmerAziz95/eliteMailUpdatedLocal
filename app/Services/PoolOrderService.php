@@ -263,7 +263,7 @@ class PoolOrderService
         
         if ($showChangeStatus) {
             // Only allow status change if order is not cancelled
-            if ($poolOrder->status !== 'cancelled') {
+            if ($poolOrder->status_manage_by_admin !== 'cancelled') {
                 // Use status_manage_by_admin if set, otherwise use status
                 $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
                 $html .= '
