@@ -138,6 +138,16 @@ class PoolMigrationTaskService
                 
                 // Update domain statuses from 'in-progress' to 'used'
                 $this->updateDomainStatusesToUsed($task);
+                
+                // Update pool order status and completed_at
+                $poolOrder = $task->poolOrder;
+                if ($poolOrder) {
+                    $poolOrder->status_manage_by_admin = 'completed';
+                    $poolOrder->completed_at = now();
+                    $poolOrder->save();
+                    
+                    Log::info("Pool order {$poolOrder->id} status set to completed for task {$task->id}");
+                }
             } elseif ($status === 'in-progress' && !$task->started_at) {
                 $updates['started_at'] = now();
             }
