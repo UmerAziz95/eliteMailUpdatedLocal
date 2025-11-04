@@ -1069,9 +1069,9 @@ function renderPoolPanelPools(pools, poolPanel) {
             <h6 class="mb-1">${poolPanel.auto_generated_id || ('PPN-' + (poolPanel.id ?? ''))}</h6>
             <p class="mb-0 text-light small">${poolPanel.title || ''}</p>
             <div class="d-flex flex-wrap gap-2 mt-2">
-                <span class="badge bg-primary bg-opacity-25 text-light">Limit: ${poolPanel.limit ?? 0}</span>
-                <span class="badge bg-warning bg-opacity-25 text-dark">Remaining: ${poolPanel.remaining_limit ?? 0}</span>
-                <span class="badge bg-success bg-opacity-25 text-light">Used: ${(poolPanel.limit ?? 0) - (poolPanel.remaining_limit ?? 0)}</span>
+                <span class="badge bg-primary text-light">Limit: ${poolPanel.limit ?? 0}</span>
+                <span class="badge bg-warning text-dark">Remaining: ${poolPanel.remaining_limit ?? 0}</span>
+                <span class="badge bg-success text-light">Used: ${(poolPanel.limit ?? 0) - (poolPanel.remaining_limit ?? 0)}</span>
             </div>
         </div>
     `;
@@ -1138,12 +1138,12 @@ function renderPoolPanelPools(pools, poolPanel) {
                             <small class="text-light"><i class="fas fa-diagram-project me-1"></i>Splits: ${pool.total_splits ?? splits.length}</small>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel ID: ${headerPanel?.auto_generated_id || (headerPanel?.id ? `PPN-${headerPanel.id}` : poolPanel.auto_generated_id || (poolPanel.id ? `PPN-${poolPanel.id}` : 'N/A'))}</span>
-                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel: ${headerPanel?.title || poolPanel.title || 'N/A'}</span>
+                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold; display:none;">Panel ID: ${headerPanel?.auto_generated_id || (headerPanel?.id ? `PPN-${headerPanel.id}` : poolPanel.auto_generated_id || (poolPanel.id ? `PPN-${poolPanel.id}` : 'N/A'))}</span>
+                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold; display:none;">Panel: ${headerPanel?.title || poolPanel.title || 'N/A'}</span>
                             <span class="badge ${poolStatusClass}" style="font-size: 10px;">${poolStatusLabel}</span>
-                            <span class="badge bg-info bg-opacity-25 text-light" style="font-size: 10px;">Total Inboxes: ${totalInboxes}</span>
-                            <span class="badge bg-success bg-opacity-25 text-light" style="font-size: 10px;">Assigned: ${assignedSpace}</span>
-                            <span class="badge bg-warning bg-opacity-25 text-dark" style="font-size: 10px;">Available: ${availableSpace}</span>
+                            <span class="badge bg-info bg-opacity-25 text-light" style="font-size: 10px;  display:none;">Total Inboxes: ${totalInboxes}</span>
+                            <span class="badge bg-success bg-opacity-25 text-light" style="font-size: 10px; display:none;">Assigned: ${assignedSpace}</span>
+                            <span class="badge bg-warning bg-opacity-25 text-dark" style="font-size: 10px; display:none;">Available: ${availableSpace}</span>
                             <i class="fas fa-chevron-down transition-transform" id="${iconId}" style="font-size: 12px;"></i>
                         </div>
                     </div>
@@ -1647,8 +1647,8 @@ function renderPoolDomainsList(poolInfo, splits, poolPanel) {
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel ID: ${panelId}</span>
                             <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel: ${panelTitle}</span>
-                            <small class="text-white">${domainCount} domain${domainCount === 1 ? '' : 's'}</small>
-                            <small class="text-white">Inboxes: ${totalInboxes}</small>
+                            <small class="text-white d-none">${domainCount} domain${domainCount === 1 ? '' : 's'}</small>
+                            <small class="text-white d-none">Inboxes: ${totalInboxes}</small>
                         </div>
                         <i class="fa-solid fa-layer-group text-white" style="font-size: 12px;"></i>
                     </div>
