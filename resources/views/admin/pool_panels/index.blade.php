@@ -952,10 +952,10 @@ function createPoolPanelCard(poolPanel) {
                     <span class="badge bg-primary bg-opacity-25 text-light">
                         <i class="fa-solid fa-water me-1"></i> Pools: ${totalPools}
                     </span>
-                    <span class="badge bg-secondary bg-opacity-25 text-light">
+                    <span class="badge bg-secondary bg-opacity-25 text-light d-none">
                         <i class="fa-solid fa-layer-group me-1"></i> Splits: ${totalSplits}
                     </span>
-                    <span class="badge bg-info bg-opacity-25 text-light">
+                    <span class="badge bg-info bg-opacity-25 text-light d-none">
                         <i class="fa-solid fa-chart-simple me-1"></i> Assigned: ${totalAssigned}
                     </span>
                 </div>
@@ -1094,11 +1094,11 @@ function renderPoolPanelPools(pools, poolPanel) {
         }
 
         if (poolInfo.inboxes_per_domain) {
-            detailBadges.push(`<span class="badge bg-primary bg-opacity-25 text-light">Inboxes/Domain: ${poolInfo.inboxes_per_domain}</span>`);
+            // detailBadges.push(`<span class="badge bg-primary bg-opacity-25 text-light">Inboxes/Domain: ${poolInfo.inboxes_per_domain}</span>`);
         }
 
         if (poolInfo.created_at) {
-            detailBadges.push(`<span class="badge bg-dark bg-opacity-25 text-light">Created: ${formatDate(poolInfo.created_at)}</span>`);
+            // detailBadges.push(`<span class="badge bg-dark bg-opacity-25 text-light">Created: ${formatDate(poolInfo.created_at)}</span>`);
         }
 
         const headerPanel = pool.panel || poolInfo.panel || poolPanel || {};
@@ -1135,7 +1135,7 @@ function renderPoolPanelPools(pools, poolPanel) {
                         onclick="togglePoolAccordion('${collapseId}', this, event)">
                         <div class="d-flex flex-column">
                             <small>POOL ID: #${pool.pool_id ?? 'N/A'}</small>
-                            <small class="text-light"><i class="fas fa-diagram-project me-1"></i>Splits: ${pool.total_splits ?? splits.length}</small>
+                            <small class="text-light">Splits: ${pool.total_splits ?? splits.length}</small>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
                             <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold; display:none;">Panel ID: ${headerPanel?.auto_generated_id || (headerPanel?.id ? `PPN-${headerPanel.id}` : poolPanel.auto_generated_id || (poolPanel.id ? `PPN-${poolPanel.id}` : 'N/A'))}</span>
