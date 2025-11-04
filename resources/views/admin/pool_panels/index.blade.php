@@ -126,6 +126,34 @@
         border-color: var(--primary-color);
         color: var(--light-color);
     }
+
+    .domain-split-container {
+        transition: all 0.2s ease;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .domain-split-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+    }
+
+    .domain-list-content {
+        background-color: rgba(87, 80, 191, 0.12);
+    }
+
+    .domain-list-content .badge {
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #1d2239;
+    }
+
+    .split-header {
+        transition: all 0.2s ease;
+    }
+
+    .split-header:hover {
+        filter: brightness(1.05);
+    }
 </style>
 @endpush
 
@@ -248,8 +276,29 @@
                     </button>
                 </div>
             </form>
+    </div>
+</div>
+
+<!-- Pool Panel Pools Offcanvas -->
+<div class="offcanvas offcanvas-end" style="width: 100%;" tabindex="-1" id="poolPanelPoolsOffcanvas"
+    aria-labelledby="poolPanelPoolsOffcanvasLabel" data-bs-backdrop="true" data-bs-scroll="false">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="poolPanelPoolsOffcanvasLabel">Pool Panel Pools</h5>
+        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="offcanvas" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="poolPanelPoolsContainer">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading pools...</span>
+                </div>
+                <p class="mt-2 mb-0">Loading pools...</p>
+            </div>
         </div>
     </div>
+</div>
 
     <!-- Pool Panel Capacity Alert -->
     @php
@@ -526,6 +575,7 @@ let currentPage = 1;
 let hasMorePages = true;
 let isLoading = false;
 let currentFilters = {};
+let poolPanels = [];
 let charts = {}; // Store chart instances
 
 $(document).ready(function() {
@@ -705,7 +755,6 @@ $(document).ready(function() {
     // Load more button
     $('#loadMoreBtn').on('click', function() {
         if (!isLoading && hasMorePages) {
-            currentPage++;
             loadPoolPanels(false);
         }
     });
@@ -713,10 +762,13 @@ $(document).ready(function() {
 
 // Load pool panels with pagination
 async function loadPoolPanels(resetData = true) {
-    if (isLoading) return;
-    
+    if (isLoading) {
+        return;
+    }
+
+    const pageToFetch = resetData ? 1 : currentPage + 1;
     isLoading = true;
-    
+
     if (resetData) {
         currentPage = 1;
         hasMorePages = true;
@@ -735,12 +787,12 @@ async function loadPoolPanels(resetData = true) {
 
     try {
         const params = new URLSearchParams({
-            page: currentPage,
+            page: pageToFetch,
             per_page: 12,
             ...currentFilters
         });
 
-        const response = await fetch(`{{ route("admin.pool-panels.index") }}?${params}`, {
+        const response = await fetch(`{{ route("admin.pool-panels.data") }}?${params}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json',
@@ -748,32 +800,40 @@ async function loadPoolPanels(resetData = true) {
             }
         });
 
-        if (!response.ok) throw new Error('Failed to fetch pool panels');
-        
-        const data = await response.json();
-        
-        if (resetData) {
-            renderPoolPanels(data.data);
-        } else {
-            appendPoolPanels(data.data);
+        if (!response.ok) {
+            throw new Error('Failed to fetch pool panels');
         }
-        
-        // Update pagination info
-        updatePaginationInfo(data);
-        
-        // Check if there are more pages
-        hasMorePages = data.current_page < data.last_page;
-        
-        // Show/hide load more button
+
+        const payload = await response.json();
+
+        if (payload.success === false) {
+            throw new Error(payload.message || 'Failed to fetch pool panels');
+        }
+
+        const fetchedPanels = payload.data || [];
+        const pagination = payload.pagination || {};
+
+        currentPage = pagination.current_page ?? pageToFetch;
+        hasMorePages = Boolean(pagination.has_more_pages);
+
+        if (resetData) {
+            poolPanels = fetchedPanels;
+            renderPoolPanels();
+        } else {
+            poolPanels = poolPanels.concat(fetchedPanels);
+            appendPoolPanels(fetchedPanels);
+        }
+
+        updatePaginationInfo(pagination);
+
         if (hasMorePages) {
             $('#loadMoreContainer').show();
         } else {
             $('#loadMoreContainer').hide();
         }
-
     } catch (error) {
         console.error('Error loading pool panels:', error);
-        showErrorState();
+        showErrorState(error.message);
     } finally {
         isLoading = false;
         $('#loadMoreSpinner').hide();
@@ -782,9 +842,9 @@ async function loadPoolPanels(resetData = true) {
 }
 
 // Render pool panels
-function renderPoolPanels(poolPanels) {
+function renderPoolPanels() {
     const container = document.getElementById('poolPanelsContainer');
-    
+
     if (!poolPanels || poolPanels.length === 0) {
         container.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
@@ -796,91 +856,109 @@ function renderPoolPanels(poolPanels) {
         return;
     }
 
-    const poolPanelsHtml = poolPanels.map(poolPanel => createPoolPanelCard(poolPanel)).join('');
+    const poolPanelsHtml = poolPanels.map(panel => createPoolPanelCard(panel)).join('');
     container.innerHTML = poolPanelsHtml;
-    
-    // Initialize charts after rendering
+
     setTimeout(() => {
-        poolPanels.forEach(poolPanel => {
-            initChart(poolPanel);
+        poolPanels.forEach(panel => {
+            initChart(panel);
         });
     }, 100);
 }
 
 // Append pool panels for load more
-function appendPoolPanels(poolPanels) {
+function appendPoolPanels(newPanels) {
     const container = document.getElementById('poolPanelsContainer');
     const loadingState = document.getElementById('loadingState');
-    
+
     if (loadingState) {
         loadingState.remove();
     }
-    
-    if (poolPanels && poolPanels.length > 0) {
-        const poolPanelsHtml = poolPanels.map(poolPanel => createPoolPanelCard(poolPanel)).join('');
-        container.insertAdjacentHTML('beforeend', poolPanelsHtml);
-        
-        // Initialize charts for new panels
-        setTimeout(() => {
-            poolPanels.forEach(poolPanel => {
-                initChart(poolPanel);
-            });
-        }, 100);
+
+    if (!newPanels || newPanels.length === 0) {
+        return;
     }
+
+    const poolPanelsHtml = newPanels.map(panel => createPoolPanelCard(panel)).join('');
+    container.insertAdjacentHTML('beforeend', poolPanelsHtml);
+
+    setTimeout(() => {
+        newPanels.forEach(panel => {
+            initChart(panel);
+        });
+    }, 100);
 }
 
 // Create pool panel card HTML
 function createPoolPanelCard(poolPanel) {
     const total = Number(poolPanel.limit) || 1790;
-    const used = Number(poolPanel.used_limit) || 0;
-    const remainingValue = Number(poolPanel.remaining_limit);
-    const remaining = Number.isFinite(remainingValue) ? remainingValue : total;
-    const isFullCapacity = Math.abs(remaining - total) < 0.0001;
-    const totalOrders = 0; // Pool panels don't have orders like regular panels
-    
-    const statusBadge = poolPanel.is_active 
-        ? '<span class="badge bg-success">Active</span>' 
+    const remaining = Number(poolPanel.remaining_limit ?? total);
+    const used = Number(poolPanel.used ?? (total - remaining));
+    const totalPools = poolPanel.total_pools ?? 0;
+    const totalSplits = poolPanel.total_splits ?? 0;
+    const totalAssigned = poolPanel.total_assigned_space ?? used;
+
+    const statusBadge = poolPanel.is_active
+        ? '<span class="badge bg-success">Active</span>'
         : '<span class="badge bg-danger">Inactive</span>';
-    
-    const actionButtons = `
+
+    let actionButtons = `
         <div class="d-flex flex-column gap-2">
-            ${isFullCapacity ? `
-                <button class="btn btn-sm btn-outline-primary px-2 py-1" 
-                        onclick="openEditForm(${poolPanel.id})" 
-                        title="Edit Pool Panel">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger px-2 py-1" 
-                        onclick="deletePoolPanel(${poolPanel.id})" 
-                        title="Delete Pool Panel">
-                    <i class="fas fa-trash"></i>
-                </button>
+            ${poolPanel.show_edit_delete_buttons ? `
+                ${poolPanel.can_edit ? `
+                    <button class="btn btn-sm btn-outline-primary px-2 py-1"
+                            onclick="openEditForm(${poolPanel.id})"
+                            title="Edit Pool Panel">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                ` : ''}
+                ${poolPanel.can_delete ? `
+                    <button class="btn btn-sm btn-outline-danger px-2 py-1"
+                            onclick="deletePoolPanel(${poolPanel.id})"
+                            title="Delete Pool Panel">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                ` : ''}
             ` : ''}
             ${poolPanel.is_active ? `
-                <button class="btn btn-sm btn-outline-secondary px-2 py-1" 
-                        onclick="archivePoolPanel(${poolPanel.id})" 
+                <button class="btn btn-sm btn-outline-secondary px-2 py-1"
+                        onclick="archivePoolPanel(${poolPanel.id})"
                         title="Archive Pool Panel">
                     <i class="fas fa-archive"></i>
                 </button>
             ` : `
-                <button class="btn btn-sm btn-outline-success px-2 py-1" 
-                        onclick="unarchivePoolPanel(${poolPanel.id})" 
+                <button class="btn btn-sm btn-outline-success px-2 py-1"
+                        onclick="unarchivePoolPanel(${poolPanel.id})"
                         title="Unarchive Pool Panel">
                     <i class="fas fa-undo"></i>
                 </button>
             `}
         </div>
     `;
-    
-    // Add archived styling for inactive pool panels
+
     const archivedStyle = !poolPanel.is_active ? 'background-color: #334761;' : '';
-    
+
     return `
-        <div class="card p-3 d-flex flex-column gap-1" style="${archivedStyle}">                    
-            <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
-                <small class="mb-0 opacity-75">${poolPanel.auto_generated_id || 'PPN-' + poolPanel.id}</small>
-                <h6>Title: ${poolPanel.title || 'N/A'} ${!poolPanel.is_active ? '<span class="badge bg-secondary ms-2">Archived</span>' : ''}</h6>
-                <div>${statusBadge}</div>
+        <div class="card p-3 d-flex flex-column gap-2 position-relative" style="${archivedStyle}">
+            <div class="d-flex flex-column gap-1">
+                <small class="opacity-75">${poolPanel.auto_generated_id || 'PPN-' + poolPanel.id}</small>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h6 class="mb-0">Title: ${poolPanel.title || 'N/A'}</h6>
+                    ${!poolPanel.is_active ? '<span class="badge bg-secondary">Archived</span>' : ''}
+                    ${statusBadge}
+                </div>
+                <p class="small mb-0 text-light">${poolPanel.description ? poolPanel.description : ''}</p>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <span class="badge bg-primary bg-opacity-25 text-light">
+                        <i class="fa-solid fa-water me-1"></i> Pools: ${totalPools}
+                    </span>
+                    <span class="badge bg-secondary bg-opacity-25 text-light">
+                        <i class="fa-solid fa-layer-group me-1"></i> Splits: ${totalSplits}
+                    </span>
+                    <span class="badge bg-info bg-opacity-25 text-light">
+                        <i class="fa-solid fa-chart-simple me-1"></i> Assigned: ${totalAssigned}
+                    </span>
+                </div>
             </div>
 
             <div class="d-flex gap-3 justify-content-between">
@@ -890,16 +968,269 @@ function createPoolPanelCard(poolPanel) {
             </div>
 
             <div id="chart-${poolPanel.id}"></div>
-            
-            <div class="mt-2">
+
+            <div class="d-flex align-items-center justify-content-between gap-2">
                 <small class="opacity-75">Created by: ${poolPanel.creator ? poolPanel.creator.name : 'Unknown'}</small>
+                <button style="font-size: 12px"
+                        onclick="viewPoolPanelPools(${poolPanel.id})"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#poolPanelPoolsOffcanvas"
+                        class="btn border-0 btn-sm py-0 px-3 rounded-1 btn-primary">
+                    View Pools
+                </button>
             </div>
-            
+
             <div class="button-container p-2 rounded-2" style="background-color: var(--filter-color);">
-                ${actionButtons}    
+                ${actionButtons}
             </div>
         </div>
     `;
+}
+
+// Load pool details into offcanvas
+async function viewPoolPanelPools(poolPanelId) {
+    const safePoolPanelId = Number(poolPanelId);
+    if (Number.isNaN(safePoolPanelId)) {
+        console.error('Invalid pool panel id supplied to viewPoolPanelPools:', poolPanelId);
+        return;
+    }
+
+    const container = document.getElementById('poolPanelPoolsContainer');
+    if (container) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading pools...</span>
+                </div>
+                <p class="mt-2 mb-0">Loading pools...</p>
+            </div>
+        `;
+    }
+
+    const offcanvasElement = document.getElementById('poolPanelPoolsOffcanvas');
+    const offcanvasInstance = bootstrap.Offcanvas.getOrCreateInstance(offcanvasElement);
+    offcanvasInstance.show();
+
+    try {
+        const url = '{{ route("admin.pool-panels.pools", "__POOL_PANEL_ID__") }}'.replace('__POOL_PANEL_ID__', safePoolPanelId);
+        const response = await fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load pool data');
+        }
+
+        const data = await response.json();
+        if (data.success === false) {
+            throw new Error(data.message || 'Failed to load pool data');
+        }
+
+        renderPoolPanelPools(data.pools || [], data.pool_panel || {});
+    } catch (error) {
+        console.error('Error loading pool panel pools:', error);
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle text-danger fs-3 mb-3"></i>
+                    <h5>Failed to load pools</h5>
+                    <p>${error.message || 'Please try again later.'}</p>
+                    <button class="btn btn-primary" onclick="viewPoolPanelPools(${safePoolPanelId})">Retry</button>
+                </div>
+            `;
+        }
+    }
+}
+
+// Render pools and splits inside offcanvas
+function renderPoolPanelPools(pools, poolPanel) {
+    const container = document.getElementById('poolPanelPoolsContainer');
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(pools) || pools.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-database text-muted fs-3 mb-3"></i>
+                <h5>No Pools Assigned</h5>
+                <p class="mb-0">This pool panel does not have any pools allocated yet.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const headerHtml = `
+        <div class="mb-4">
+            <h6 class="mb-1">${poolPanel.auto_generated_id || ('PPN-' + (poolPanel.id ?? ''))}</h6>
+            <p class="mb-0 text-light small">${poolPanel.title || ''}</p>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <span class="badge bg-primary bg-opacity-25 text-light">Limit: ${poolPanel.limit ?? 0}</span>
+                <span class="badge bg-warning bg-opacity-25 text-dark">Remaining: ${poolPanel.remaining_limit ?? 0}</span>
+                <span class="badge bg-success bg-opacity-25 text-light">Used: ${(poolPanel.limit ?? 0) - (poolPanel.remaining_limit ?? 0)}</span>
+            </div>
+        </div>
+    `;
+
+    const accordionHtml = pools.map((pool, index) => {
+        const collapseId = `pool-collapse-${pool.pool_id}`;
+        const iconId = `pool-accordion-icon-${pool.pool_id}`;
+        const poolInfo = pool.pool || {};
+        const splits = pool.splits || [];
+        const totalInboxes = pool.total_inboxes ?? 0;
+        const assignedSpace = pool.assigned_space ?? 0;
+        const availableSpace = pool.available_space ?? Math.max(totalInboxes - assignedSpace, 0);
+        const poolStatus = poolInfo.status || 'unknown';
+        const poolStatusClass = getPoolStatusBadgeClass(poolStatus);
+        const poolStatusLabel = (poolStatus || 'Unknown').toString().replace(/_/g, ' ');
+        const detailBadges = [];
+
+        if (poolInfo.plan_name) {
+            detailBadges.push(`<span class="badge bg-secondary bg-opacity-25 text-light">Plan: ${poolInfo.plan_name}</span>`);
+        }
+
+        if (poolInfo.inboxes_per_domain) {
+            detailBadges.push(`<span class="badge bg-primary bg-opacity-25 text-light">Inboxes/Domain: ${poolInfo.inboxes_per_domain}</span>`);
+        }
+
+        if (poolInfo.created_at) {
+            detailBadges.push(`<span class="badge bg-dark bg-opacity-25 text-light">Created: ${formatDate(poolInfo.created_at)}</span>`);
+        }
+
+        const headerPanel = pool.panel || poolInfo.panel || poolPanel || {};
+
+        const splitsRows = splits.length
+            ? splits.map((split, splitIndex) => {
+                return `
+                    ${(() => {
+                        const splitPanel = split.panel || headerPanel;
+                        const panelId = splitPanel?.auto_generated_id || (splitPanel?.id ? `PPN-${splitPanel.id}` : poolPanel.auto_generated_id || (poolPanel.id ? `PPN-${poolPanel.id}` : 'N/A'));
+                        const panelTitle = splitPanel?.title || poolPanel.title || 'N/A';
+
+                        return `
+                            <tr>
+                                <td>${splitIndex + 1}</td>
+                                <td>${panelId}</td>
+                                <td>${panelTitle}</td>
+                                <td>${split.inboxes_per_domain ?? 0}</td>
+                                <td>${split.total_inboxes ?? 0}</td>
+                                <td>${split.created_at ? formatDate(split.created_at) : 'N/A'}</td>
+                            </tr>
+                        `;
+                    })()}
+                `;
+            }).join('')
+            : `<tr><td colspan="6" class="text-center text-muted">No splits recorded for this pool.</td></tr>`;
+
+        return `
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <div class="button p-3 collapsed d-flex align-items-center justify-content-between" type="button"
+                        aria-expanded="false"
+                        aria-controls="${collapseId}"
+                        onclick="togglePoolAccordion('${collapseId}', this, event)">
+                        <div class="d-flex flex-column">
+                            <small>POOL ID: #${pool.pool_id ?? 'N/A'}</small>
+                            <small class="text-light"><i class="fas fa-diagram-project me-1"></i>Splits: ${pool.total_splits ?? splits.length}</small>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel ID: ${headerPanel?.auto_generated_id || (headerPanel?.id ? `PPN-${headerPanel.id}` : poolPanel.auto_generated_id || (poolPanel.id ? `PPN-${poolPanel.id}` : 'N/A'))}</span>
+                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel: ${headerPanel?.title || poolPanel.title || 'N/A'}</span>
+                            <span class="badge ${poolStatusClass}" style="font-size: 10px;">${poolStatusLabel}</span>
+                            <span class="badge bg-info bg-opacity-25 text-light" style="font-size: 10px;">Total Inboxes: ${totalInboxes}</span>
+                            <span class="badge bg-success bg-opacity-25 text-light" style="font-size: 10px;">Assigned: ${assignedSpace}</span>
+                            <span class="badge bg-warning bg-opacity-25 text-dark" style="font-size: 10px;">Available: ${availableSpace}</span>
+                            <i class="fas fa-chevron-down transition-transform" id="${iconId}" style="font-size: 12px;"></i>
+                        </div>
+                    </div>
+                </h2>
+                <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#poolPanelPoolsAccordion">
+                    <div class="accordion-body">
+        ${detailBadges.length ? `<div class="mb-3 d-flex flex-wrap gap-2">${detailBadges.join('')}</div>` : ''}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Panel ID</th>
+                        <th>Panel Name</th>
+                        <th>Inboxes/Domain</th>
+                        <th>Total Inboxes</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${splitsRows}
+                                </tbody>
+                            </table>
+                        </div>
+                        ${renderPoolDetailSections(poolInfo, splits, poolPanel)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        ${headerHtml}
+        <div class="accordion accordion-flush" id="poolPanelPoolsAccordion">
+            ${accordionHtml}
+        </div>
+    `;
+}
+
+// Toggle pool accordions and rotate icon
+function togglePoolAccordion(targetId, buttonElement, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const target = document.getElementById(targetId);
+    if (!target) {
+        return;
+    }
+
+    const poolId = targetId.replace('pool-collapse-', '');
+    const arrowIcon = document.getElementById(`pool-accordion-icon-${poolId}`);
+    const isExpanded = target.classList.contains('show');
+
+    if (isExpanded) {
+        target.classList.remove('show');
+        target.classList.add('collapse');
+        buttonElement.setAttribute('aria-expanded', 'false');
+        buttonElement.classList.add('collapsed');
+        if (arrowIcon) {
+            arrowIcon.style.transform = 'rotate(0deg)';
+        }
+    } else {
+        // Close other accordions
+        document.querySelectorAll('#poolPanelPoolsAccordion .accordion-collapse.show').forEach(openItem => {
+            openItem.classList.remove('show');
+            openItem.classList.add('collapse');
+            const btn = openItem.previousElementSibling?.querySelector('.button');
+            if (btn) {
+                btn.setAttribute('aria-expanded', 'false');
+                btn.classList.add('collapsed');
+            }
+            const icon = openItem.previousElementSibling?.querySelector('.fas.fa-chevron-down');
+            if (icon) {
+                icon.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        target.classList.add('show');
+        target.classList.remove('collapse');
+        buttonElement.setAttribute('aria-expanded', 'true');
+        buttonElement.classList.remove('collapsed');
+        if (arrowIcon) {
+            arrowIcon.style.transform = 'rotate(180deg)';
+        }
+    }
 }
 
 // Initialize chart for a pool panel
@@ -1017,20 +1348,20 @@ async function updateCounters() {
 }
 
 // Update pagination info
-function updatePaginationInfo(data) {
-    $('#showingFrom').text(data.from || 0);
-    $('#showingTo').text(data.to || 0);
-    $('#totalPoolPanels').text(data.total || 0);
+function updatePaginationInfo(pagination) {
+    $('#showingFrom').text(pagination?.from ?? 0);
+    $('#showingTo').text(pagination?.to ?? 0);
+    $('#totalPoolPanels').text(pagination?.total ?? 0);
 }
 
 // Show error state
-function showErrorState() {
+function showErrorState(message = 'Failed to load pool panels. Please try again later.') {
     const container = document.getElementById('poolPanelsContainer');
     container.innerHTML = `
         <div class="empty-state" style="grid-column: 1 / -1;">
             <i class="ti ti-alert-circle"></i>
             <h5>Error Loading Pool Panels</h5>
-            <p>Please try again later.</p>
+            <p>${message}</p>
             <button class="btn btn-primary" onclick="resetAndReload()">Retry</button>
         </div>
     `;
@@ -1039,7 +1370,7 @@ function showErrorState() {
     Swal.fire({
         icon: 'error',
         title: 'Loading Error',
-        text: 'Failed to load pool panels. Please check your connection and try again.',
+        text: message,
         confirmButtonText: 'OK'
     });
 }
@@ -1066,6 +1397,389 @@ function formatDate(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+function renderPoolDetailSections(poolInfo, splits, poolPanel) {
+    const emailCard = buildEmailConfigurationsCard(poolInfo, splits);
+    const domainCard = buildDomainsConfigurationCard(poolInfo, splits, poolPanel);
+
+    return `
+        <div class="row mt-4">
+            <div class="col-md-6">${emailCard}</div>
+            <div class="col-md-6">${domainCard}</div>
+        </div>
+    `;
+}
+
+function buildEmailConfigurationsCard(poolInfo, splits) {
+    const { summaryText, breakdownHtml } = computePoolSplitSummary(poolInfo, splits);
+
+    return `
+        <div class="card p-3 mb-3">
+            <h6 class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                    <i class="fa-regular fa-envelope"></i>
+                </div>
+                Email configurations
+            </h6>
+            <div class="d-flex align-items-center justify-content-between">
+                <span>${summaryText}</span>
+            </div>
+            ${breakdownHtml ? `<div class="mt-3 text-white small">${breakdownHtml}</div>` : ''}
+            <hr>
+            <div class="d-flex flex-column">
+                <span class="opacity-50">Prefix Variants</span>
+                ${renderPrefixVariantsFromPool(poolInfo)}
+            </div>
+            <div class="d-flex flex-column mt-3">
+                <span class="opacity-50">Profile Picture URL</span>
+                <span>${formatLinkValue(poolInfo?.profile_picture_link)}</span>
+            </div>
+            <div class="d-flex flex-column mt-3">
+                <span class="opacity-50">Email Persona Picture URL</span>
+                <span>${formatLinkValue(poolInfo?.email_persona_picture_link)}</span>
+            </div>
+            <div class="d-flex flex-column mt-3">
+                <span class="opacity-50">Email Persona Password</span>
+                <span>${formatValue(poolInfo?.email_persona_password)}</span>
+            </div>
+            <div class="d-flex flex-column mt-3">
+                <span class="opacity-50">Persona Password</span>
+                <span>${formatValue(poolInfo?.persona_password)}</span>
+            </div>
+        </div>
+    `;
+}
+
+function computePoolSplitSummary(poolInfo, splits) {
+    if (!Array.isArray(splits) || splits.length === 0) {
+        const totalInboxes = Number(poolInfo?.total_inboxes) || 0;
+        return {
+            summaryText: totalInboxes ? `<strong>Total Inboxes: ${totalInboxes}</strong>` : 'N/A',
+            breakdownHtml: ''
+        };
+    }
+
+    const inboxesPerDomain = Number(poolInfo?.inboxes_per_domain) || 0;
+    let totalDomains = 0;
+    let totalInboxes = 0;
+
+    const breakdownHtml = splits.map((split, index) => {
+        const domainsCount = Number(split.domains_count ?? (Array.isArray(split.domain_names) ? split.domain_names.length : 0));
+        const splitTotalInboxes = Number(split.total_inboxes ?? (domainsCount * inboxesPerDomain));
+
+        totalDomains += domainsCount;
+        totalInboxes += splitTotalInboxes;
+
+        return `
+            <div class="text-white">
+                <span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Pool Split ${String(index + 1).padStart(2, '0')}</span>
+                Inboxes: ${splitTotalInboxes} (${domainsCount} domains${inboxesPerDomain ? ` x ${inboxesPerDomain}` : ''})
+            </div>
+        `;
+    }).join('');
+
+    if (!totalInboxes && Number(poolInfo?.total_inboxes)) {
+        totalInboxes = Number(poolInfo.total_inboxes);
+    }
+
+    return {
+        summaryText: totalInboxes
+            ? `<strong>Total Inboxes: ${totalInboxes}${totalDomains ? ` (${totalDomains} domains)` : ''}</strong>`
+            : 'N/A',
+        breakdownHtml
+    };
+}
+
+function renderPrefixVariantsFromPool(poolInfo) {
+    if (!poolInfo) {
+        return '<span>N/A</span>';
+    }
+
+    const variants = [];
+
+    if (poolInfo.prefix_variants) {
+        try {
+            const prefixVariants = typeof poolInfo.prefix_variants === 'string'
+                ? JSON.parse(poolInfo.prefix_variants)
+                : poolInfo.prefix_variants;
+
+            if (prefixVariants && typeof prefixVariants === 'object') {
+                Object.values(prefixVariants).forEach((value, index) => {
+                    if (value) {
+                        variants.push(`<span>Variant ${index + 1}: ${value}</span>`);
+                    }
+                });
+            }
+        } catch (error) {
+            console.warn('Unable to parse pool prefix variants', error);
+        }
+    }
+
+    if (variants.length === 0) {
+        if (poolInfo.prefix_variant_1) {
+            variants.push(`<span>Variant 1: ${poolInfo.prefix_variant_1}</span>`);
+        }
+        if (poolInfo.prefix_variant_2) {
+            variants.push(`<span>Variant 2: ${poolInfo.prefix_variant_2}</span>`);
+        }
+    }
+
+    if (variants.length === 0 && poolInfo.prefix_variants_details) {
+        try {
+            const details = typeof poolInfo.prefix_variants_details === 'string'
+                ? JSON.parse(poolInfo.prefix_variants_details)
+                : poolInfo.prefix_variants_details;
+
+            if (Array.isArray(details)) {
+                details.forEach((detail, index) => {
+                    if (detail) {
+                        variants.push(`<span>Variant ${index + 1}: ${detail}</span>`);
+                    }
+                });
+            }
+        } catch (error) {
+            console.warn('Unable to parse pool prefix variant details', error);
+        }
+    }
+
+    return variants.length > 0 ? variants.join('') : '<span>N/A</span>';
+}
+
+function buildDomainsConfigurationCard(poolInfo, splits, poolPanel) {
+    return `
+        <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
+            <h6 class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                    <i class="fa-solid fa-earth-europe"></i>
+                </div>
+                Domains &amp; Configuration
+            </h6>
+
+            <div class="d-flex flex-column mb-3">
+                <span class="opacity-50">Hosting Platform</span>
+                <span>${formatValue(poolInfo?.hosting_platform || poolInfo?.other_platform)}</span>
+            </div>
+
+            <div class="d-flex flex-column mb-3">
+                <span class="opacity-50">Platform Login</span>
+                <span>${formatValue(poolInfo?.platform_login)}</span>
+            </div>
+
+            <div class="d-flex flex-column mb-3">
+                <span class="opacity-50">Platform Password</span>
+                <span>${formatValue(poolInfo?.platform_password)}</span>
+            </div>
+
+            <div class="d-flex flex-column mb-3">
+                <span class="opacity-50">Domain Forwarding Destination URL</span>
+                <span>${formatLinkValue(poolInfo?.forwarding_url)}</span>
+            </div>
+
+            <div class="d-flex flex-column mb-3">
+                <span class="opacity-50">Sending Platform</span>
+                <span>${formatValue(poolInfo?.sending_platform)}</span>
+            </div>
+
+            <div class="d-flex flex-column mb-3">
+                <span class="opacity-50">Cold email platform - Login</span>
+                <span>${formatValue(poolInfo?.sequencer_login)}</span>
+            </div>
+
+            <div class="d-flex flex-column mb-3">
+                <span class="opacity-50">Cold email platform - Password</span>
+                <span>${formatValue(poolInfo?.sequencer_password)}</span>
+            </div>
+
+            <div class="d-flex flex-column">
+                <span class="opacity-50 mb-3">
+                    <i class="fa-solid fa-globe me-2"></i>All Domains & Pool Splits
+                </span>
+                ${renderPoolDomainsList(poolInfo, splits, poolPanel)}
+            </div>
+
+            <div class="d-flex flex-column mt-3">
+                <span class="opacity-50">Additional Notes</span>
+                <span>${formatValue(poolInfo?.additional_info)}</span>
+            </div>
+
+            <div class="d-flex flex-column mt-3">
+                <span class="opacity-50">Master Inbox Email</span>
+                <span>${formatValue(poolInfo?.master_inbox_email)}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderPoolDomainsList(poolInfo, splits, poolPanel) {
+    if (Array.isArray(splits) && splits.length > 0) {
+        const inboxesPerDomain = Number(poolInfo?.inboxes_per_domain) || Number(poolPanel?.inboxes_per_domain) || 0;
+
+        return splits.map((split, index) => {
+            const domainDetails = Array.isArray(split.domain_details) ? split.domain_details : [];
+            const fallbackDomains = Array.isArray(split.domain_names) ? split.domain_names : [];
+            const normalizedDomains = domainDetails.length
+                ? domainDetails.map(detail => detail.name).filter(Boolean)
+                : fallbackDomains.map(normalizeDomainValue).filter(Boolean);
+            const domainCount = normalizedDomains.length;
+            const totalInboxes = Number(split.total_inboxes ?? (domainCount * inboxesPerDomain));
+            const splitPanel = split.panel || poolPanel || {};
+            const panelId = splitPanel.auto_generated_id || (splitPanel.id ? `PPN-${splitPanel.id}` : poolPanel?.auto_generated_id || (poolPanel?.id ? `PPN-${poolPanel.id}` : 'N/A'));
+            const panelTitle = splitPanel.title || poolPanel?.title || 'N/A';
+
+            const domainBadges = domainDetails.length
+                ? domainDetails.map(detail => `
+                        <span class="badge bg-white text-dark me-2 mb-2 d-inline-flex align-items-center gap-2">
+                            <span>${detail.name || 'N/A'}</span>
+                            ${detail.status_badge ?? ''}
+                        </span>
+                    `).join('')
+                : (normalizedDomains.length
+                    ? normalizedDomains.map(domain => `
+                            <span class="badge bg-white text-dark me-2 mb-2">${domain}</span>
+                        `).join('')
+                    : '<span class="text-muted">No domains listed for this split.</span>');
+
+            return `
+                <div class="domain-split-container mb-3">
+                    <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top"
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel ID: ${panelId}</span>
+                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel: ${panelTitle}</span>
+                            <small class="text-white">${domainCount} domain${domainCount === 1 ? '' : 's'}</small>
+                            <small class="text-white">Inboxes: ${totalInboxes}</small>
+                        </div>
+                        <i class="fa-solid fa-layer-group text-white" style="font-size: 12px;"></i>
+                    </div>
+                    <div class="domain-list-content border border-top-0 rounded-bottom p-3">
+                        ${domainBadges}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    const fallbackDomains = extractDomainArray(poolInfo?.domains);
+    if (fallbackDomains.length === 0) {
+        return '<span>N/A</span>';
+    }
+
+    const fallbackBadges = fallbackDomains
+        .map(domain => `<span class="badge bg-white text-dark me-2 mb-2">${domain}</span>`)
+        .join('');
+
+    return `
+        <div class="domain-list-content border rounded p-3">
+            ${fallbackBadges}
+        </div>
+    `;
+}
+
+function extractDomainArray(domains) {
+    if (!domains) {
+        return [];
+    }
+
+    if (Array.isArray(domains)) {
+        return domains.map(normalizeDomainValue).filter(Boolean);
+    }
+
+    if (typeof domains === 'string') {
+        return domains.split(/[\n,;]+/).map(value => value.trim()).filter(Boolean);
+    }
+
+    return [];
+}
+
+function formatValue(value) {
+    if (value === null || value === undefined) {
+        return 'N/A';
+    }
+
+    const stringValue = value.toString().trim();
+    return stringValue.length ? stringValue : 'N/A';
+}
+
+function formatLinkValue(value) {
+    if (!value) {
+        return 'N/A';
+    }
+
+    const stringValue = value.toString().trim();
+    if (!stringValue) {
+        return 'N/A';
+    }
+
+    const hasProtocol = /^https?:\/\//i.test(stringValue);
+    const href = hasProtocol ? stringValue : `https://${stringValue}`;
+
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-decoration-underline">${stringValue}</a>`;
+}
+
+function renderDomainBadges(domainNames) {
+    if (!Array.isArray(domainNames) || domainNames.length === 0) {
+        return '<span class="badge bg-secondary bg-opacity-25 text-light">No domains</span>';
+    }
+
+    const badges = domainNames
+        .map(normalizeDomainValue)
+        .filter(Boolean)
+        .map(name => `<span class="badge bg-primary bg-opacity-25 text-light">${name}</span>`);
+
+    return badges.length ? badges.join(' ') : '<span class="badge bg-secondary bg-opacity-25 text-light">No domains</span>';
+}
+
+function normalizeDomainValue(domain) {
+    if (domain === null || domain === undefined) {
+        return '';
+    }
+
+    if (typeof domain === 'string' || typeof domain === 'number') {
+        return domain.toString().trim();
+    }
+
+    if (typeof domain === 'object' && domain !== null) {
+        const candidates = [
+            'domain',
+            'domain_name',
+            'name',
+            'domain_url',
+            'url',
+            'value',
+            'label',
+            'text',
+            'id'
+        ];
+
+        for (const key of candidates) {
+            if (domain[key]) {
+                return domain[key].toString().trim();
+            }
+        }
+    }
+
+    return '';
+}
+
+function getPoolStatusBadgeClass(status) {
+    const normalized = (status || '').toString().toLowerCase();
+    switch (normalized) {
+        case 'available':
+        case 'active':
+        case 'completed':
+            return 'bg-success';
+        case 'pending':
+        case 'warming':
+        case 'in_progress':
+            return 'bg-warning text-dark';
+        case 'cancelled':
+        case 'archived':
+        case 'inactive':
+            return 'bg-danger';
+        default:
+            return 'bg-secondary';
+    }
 }
 
 // Reset filter button states

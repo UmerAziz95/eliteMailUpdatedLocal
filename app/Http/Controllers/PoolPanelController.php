@@ -14,6 +14,7 @@ use DataTables;
 // Models
 use App\Models\PoolPanel;
 use App\Models\Pool;
+use App\Models\PoolPanelSplit;
 
 class PoolPanelController extends Controller
 {
@@ -76,6 +77,117 @@ class PoolPanelController extends Controller
         }
 
         return view('admin.pool_panels.index');
+    }
+
+    /**
+     * Provide pool panel listings for asynchronous requests.
+     */
+    public function getPoolPanelsData(Request $request)
+    {
+        try {
+            $query = PoolPanel::with(['creator', 'poolPanelSplits'])->withCount('poolPanelSplits as total_splits');
+
+            if ($request->filled('panel_id')) {
+                $panelId = trim($request->panel_id);
+                if (Str::startsWith($panelId, 'PPN-')) {
+                    $panelId = substr($panelId, 4);
+                }
+                $query->where(function ($innerQuery) use ($panelId) {
+                    $innerQuery->where('auto_generated_id', 'like', '%' . $panelId . '%')
+                        ->orWhere('id', 'like', '%' . $panelId . '%');
+                });
+            }
+
+            if ($request->filled('title')) {
+                $query->where('title', 'like', '%' . $request->title . '%');
+            }
+
+            if ($request->filled('status')) {
+                $query->where('is_active', (int) $request->status);
+            }
+
+            $orderDirection = strtolower($request->get('order', 'desc'));
+            if (! in_array($orderDirection, ['asc', 'desc'], true)) {
+                $orderDirection = 'desc';
+            }
+            $query->orderBy('created_at', $orderDirection);
+
+            $perPage = (int) $request->get('per_page', 12);
+            if ($perPage <= 0) {
+                $perPage = 12;
+            }
+
+            $paginatedPanels = $query->paginate($perPage);
+
+            $panelsData = $paginatedPanels->getCollection()->map(function (PoolPanel $panel) {
+                $splits = $panel->poolPanelSplits;
+
+                $distinctPoolIds = $splits->pluck('pool_id')->filter()->unique();
+
+                $totalInboxesAssigned = $splits->sum(function (PoolPanelSplit $split) {
+                    $domainCount = is_array($split->domains) ? count($split->domains) : 0;
+                    return ($split->inboxes_per_domain ?? 0) * $domainCount;
+                });
+
+                $totalAssignedSpace = $splits->sum(function (PoolPanelSplit $split) {
+                    return $split->assigned_space ?? 0;
+                });
+
+                $used = ($panel->limit ?? 0) - ($panel->remaining_limit ?? 0);
+                $hasFullCapacity = ($panel->remaining_limit ?? 0) === ($panel->limit ?? 0);
+
+                return [
+                    'id' => $panel->id,
+                    'auto_generated_id' => $panel->auto_generated_id ?? ('PPN-' . $panel->id),
+                    'title' => $panel->title,
+                    'description' => $panel->description,
+                    'limit' => $panel->limit,
+                    'remaining_limit' => $panel->remaining_limit,
+                    'used_limit' => $panel->used_limit,
+                    'used' => $used,
+                    'is_active' => (bool) $panel->is_active,
+                    'total_pools' => $distinctPoolIds->count(),
+                    'total_splits' => $panel->total_splits ?? $splits->count(),
+                    'total_inboxes_assigned' => $totalInboxesAssigned,
+                    'total_assigned_space' => $totalAssignedSpace,
+                    'show_edit_delete_buttons' => $hasFullCapacity,
+                    'can_edit' => $hasFullCapacity,
+                    'can_delete' => $hasFullCapacity,
+                    'created_at' => optional($panel->created_at)->toDateTimeString(),
+                    'creator' => $panel->creator ? [
+                        'id' => $panel->creator->id,
+                        'name' => $panel->creator->name,
+                    ] : null,
+                    'usage_percentage' => ($panel->limit ?? 0) > 0
+                        ? round(($used / $panel->limit) * 100, 2)
+                        : 0,
+                ];
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => $panelsData,
+                'pagination' => [
+                    'current_page' => $paginatedPanels->currentPage(),
+                    'last_page' => $paginatedPanels->lastPage(),
+                    'per_page' => $paginatedPanels->perPage(),
+                    'total' => $paginatedPanels->total(),
+                    'has_more_pages' => $paginatedPanels->hasMorePages(),
+                    'from' => $paginatedPanels->firstItem(),
+                    'to' => $paginatedPanels->lastItem(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PoolPanel data fetch error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching pool panels data: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -244,6 +356,165 @@ class PoolPanelController extends Controller
         } catch (\Exception $e) {
             Log::error('PoolPanel Delete Error: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to delete pool panel'], 500);
+        }
+    }
+
+    /**
+     * Return pools and splits associated with the given pool panel.
+     */
+    public function getPoolPanelPools(Request $request, PoolPanel $poolPanel)
+    {
+        try {
+            $poolPanel->load([
+                'poolPanelSplits.pool.plan',
+                'poolPanelSplits.panel',
+                'poolPanelSplits.poolPanel',
+            ]);
+            $splits = $poolPanel->poolPanelSplits;
+
+            if ($splits->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'pool_panel' => [
+                        'id' => $poolPanel->id,
+                        'auto_generated_id' => $poolPanel->auto_generated_id ?? ('PPN-' . $poolPanel->id),
+                        'title' => $poolPanel->title,
+                        'description' => $poolPanel->description,
+                        'limit' => $poolPanel->limit,
+                        'remaining_limit' => $poolPanel->remaining_limit,
+                        'used_limit' => $poolPanel->used_limit,
+                    ],
+                    'pools' => [],
+                ]);
+            }
+
+            $groupedSplits = $splits->groupBy('pool_id')->filter(function ($group, $poolId) {
+                return ! empty($poolId);
+            });
+
+            $poolsData = $groupedSplits->map(function ($poolSplits, $poolId) {
+                /** @var PoolPanelSplit|null $firstSplit */
+                $firstSplit = $poolSplits->first();
+                $pool = $firstSplit?->pool;
+                $panelForPool = $poolSplits->map(function (PoolPanelSplit $split) {
+                    return $split->panel ?? $split->poolPanel;
+                })->filter()->first();
+
+                $splitsData = $poolSplits->map(function (PoolPanelSplit $split) {
+                    $domainNames = $split->getDomainNames();
+                    $domainCount = count($domainNames);
+
+                    if ($domainCount === 0 && is_array($split->domains)) {
+                        $domainCount = count($split->domains);
+                        $domainNames = collect($split->domains)->map(function ($domain) {
+                            if (is_array($domain)) {
+                                return $domain['name']
+                                    ?? $domain['domain']
+                                    ?? $domain['id']
+                                    ?? '';
+                            }
+
+                            return (string) $domain;
+                        })->filter()->values()->all();
+                    }
+
+                    $totalInboxes = ($split->inboxes_per_domain ?? 0) * $domainCount;
+                    $assignedSpace = $split->assigned_space ?? 0;
+                    $availableSpace = max($totalInboxes - $assignedSpace, 0);
+
+                    return [
+                        'id' => $split->id,
+                        'inboxes_per_domain' => $split->inboxes_per_domain,
+                        'domains_count' => $domainCount,
+                        'domain_names' => $domainNames,
+                        'domain_details' => $split->getDomainDetails(),
+                        'total_inboxes' => $totalInboxes,
+                        'assigned_space' => $assignedSpace,
+                        'available_space' => $availableSpace,
+                        'uploaded_file_path' => $split->uploaded_file_path,
+                        'created_at' => optional($split->created_at)->toDateTimeString(),
+                        'panel' => $split->panel ? [
+                            'id' => $split->panel->id,
+                            'auto_generated_id' => $split->panel->auto_generated_id ?? ('PPN-' . $split->panel->id),
+                            'title' => $split->panel->title,
+                            'is_active' => (bool) $split->panel->is_active,
+                        ] : null,
+                    ];
+                });
+
+                $totalInboxes = $splitsData->sum('total_inboxes');
+                $totalAssigned = $splitsData->sum('assigned_space');
+                $totalAvailable = $splitsData->sum('available_space');
+
+                return [
+                    'pool_id' => $poolId,
+                    'pool' => $pool ? [
+                        'id' => $pool->id,
+                        'plan_name' => optional($pool->plan)->name,
+                        'status' => $pool->status_manage_by_admin ?? $pool->status,
+                        'total_inboxes' => $pool->total_inboxes,
+                        'inboxes_per_domain' => $pool->inboxes_per_domain,
+                        'created_at' => optional($pool->created_at)->toDateTimeString(),
+                        'prefix_variants' => $pool->prefix_variants,
+                        'prefix_variants_details' => $pool->prefix_variants_details,
+                        'prefix_variant_1' => $pool->prefix_variant_1,
+                        'prefix_variant_2' => $pool->prefix_variant_2,
+                        'profile_picture_link' => $pool->profile_picture_link,
+                        'email_persona_password' => $pool->email_persona_password,
+                        'persona_password' => $pool->persona_password,
+                        'email_persona_picture_link' => $pool->email_persona_picture_link,
+                        'additional_info' => $pool->additional_info,
+                        'master_inbox_email' => $pool->master_inbox_email,
+                        'forwarding_url' => $pool->forwarding_url,
+                        'hosting_platform' => $pool->hosting_platform,
+                        'other_platform' => $pool->other_platform,
+                        'platform_login' => $pool->platform_login,
+                        'platform_password' => $pool->platform_password,
+                        'sending_platform' => $pool->sending_platform,
+                        'sequencer_login' => $pool->sequencer_login,
+                        'sequencer_password' => $pool->sequencer_password,
+                        'backup_codes' => $pool->backup_codes,
+                        'domains' => $pool->domains,
+                    ] : null,
+                    'panel' => $panelForPool ? [
+                        'id' => $panelForPool->id,
+                        'auto_generated_id' => $panelForPool->auto_generated_id ?? ('PPN-' . $panelForPool->id),
+                        'title' => $panelForPool->title,
+                        'is_active' => (bool) $panelForPool->is_active,
+                    ] : null,
+                    'total_splits' => $splitsData->count(),
+                    'total_domains' => $splitsData->sum('domains_count'),
+                    'total_inboxes' => $totalInboxes,
+                    'assigned_space' => $totalAssigned,
+                    'available_space' => max($totalAvailable, 0),
+                    'splits' => $splitsData->values(),
+                ];
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'pool_panel' => [
+                    'id' => $poolPanel->id,
+                    'auto_generated_id' => $poolPanel->auto_generated_id ?? ('PPN-' . $poolPanel->id),
+                    'title' => $poolPanel->title,
+                    'description' => $poolPanel->description,
+                    'limit' => $poolPanel->limit,
+                    'remaining_limit' => $poolPanel->remaining_limit,
+                    'used_limit' => $poolPanel->used_limit,
+                ],
+                'pools' => $poolsData,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PoolPanel pools fetch error', [
+                'pool_panel_id' => $poolPanel->id ?? null,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching pool panel pools: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -477,4 +748,3 @@ class PoolPanelController extends Controller
         return 'PPN-' . PoolPanel::getNextAvailableId();
     }
 }
-
