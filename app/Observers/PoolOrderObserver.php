@@ -37,10 +37,25 @@ class PoolOrderObserver
     /**
      * Handle the PoolOrder "updated" event.
      */
+    
     public function updated(PoolOrder $poolOrder): void
     {
         // Clear caches
         $this->clearRelatedCaches($poolOrder);
+        
+        // Check if status changed from 'draft' to 'pending'
+        if ($poolOrder->isDirty('status_manage_by_admin') && 
+            $poolOrder->getOriginal('status_manage_by_admin') === 'draft' && 
+            $poolOrder->status_manage_by_admin === 'pending') {
+
+            Log::info('PoolOrder status changed from draft to pending, sending Slack notification', [
+                'pool_order_id' => $poolOrder->id,
+                'previous_status' => $poolOrder->getOriginal('status'),
+                'new_status' => $poolOrder->status
+            ]);
+            
+            $this->sendDraftToPendingNotification($poolOrder);
+        }
         
         // Check if status_manage_by_admin changed to 'in-progress'
         if ($poolOrder->isDirty('status_manage_by_admin') && 
@@ -141,10 +156,10 @@ class PoolOrderObserver
             }
 
             $message = [
-                'text' => '🎯 *Pool Order Configuration Completed*',
+                'text' => '🎯 *Pool Order Status Updated: Pending → In-Progress*',
                 'attachments' => [
                     [
-                        'color' => '#28a745',
+                        'color' => '#007bff',
                         'fields' => [
                             [
                                 'title' => 'Order ID',
@@ -153,14 +168,14 @@ class PoolOrderObserver
                             ],
                             [
                                 'title' => 'Status',
-                                'value' => '✅ In-Progress',
+                                'value' => 'In-Progress',
                                 'short' => true
                             ],
-                            [
-                                'title' => 'Customer Email',
-                                'value' => $user->email,
-                                'short' => true
-                            ],
+                            // [
+                            //     'title' => 'Customer Email',
+                            //     'value' => $user->email,
+                            //     'short' => true
+                            // ],
                             [
                                 'title' => 'Plan',
                                 'value' => $poolOrder->poolPlan->name,
@@ -302,11 +317,11 @@ class PoolOrderObserver
                                 'value' => '❌ Cancelled',
                                 'short' => true
                             ],
-                            [
-                                'title' => 'Customer Email',
-                                'value' => $user->email,
-                                'short' => true
-                            ],
+                            // [
+                            //     'title' => 'Customer Email',
+                            //     'value' => $user->email,
+                            //     'short' => true
+                            // ],
                             [
                                 'title' => 'Plan',
                                 'value' => $poolOrder->poolPlan->name,
@@ -446,7 +461,7 @@ class PoolOrderObserver
                             ],
                             [
                                 'title' => 'Status',
-                                'value' => '🔵 ' . ucfirst($poolOrder->status_manage_by_admin),
+                                'value' => ucfirst($poolOrder->status_manage_by_admin),
                                 'short' => true
                             ],
                             [
@@ -454,11 +469,11 @@ class PoolOrderObserver
                                 'value' => $user->name,
                                 'short' => true
                             ],
-                            [
-                                'title' => 'Customer Email',
-                                'value' => $user->email,
-                                'short' => true
-                            ],
+                            // [
+                            //     'title' => 'Customer Email',
+                            //     'value' => $user->email,
+                            //     'short' => true
+                            // ],
                             [
                                 'title' => 'Plan',
                                 'value' => $poolOrder->poolPlan->name ?? 'N/A',
@@ -504,6 +519,134 @@ class PoolOrderObserver
         } catch (\Exception $e) {
             // Non-critical, just log the error
             Log::error('Exception sending Slack notification for new pool order', [
+                'error' => $e->getMessage(),
+                'pool_order_id' => $poolOrder->id,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Send Slack notification when pool order status changes from draft to pending
+     * 
+     * @param \App\Models\PoolOrder $poolOrder
+     * @return void
+     */
+    private function sendDraftToPendingNotification(PoolOrder $poolOrder): void
+    {
+        try {
+            $user = $poolOrder->user;
+            
+            if (!$user) {
+                Log::warning('User not found for draft to pending pool order', [
+                    'pool_order_id' => $poolOrder->id
+                ]);
+                return;
+            }
+
+            // Prepare domain list for notification
+            $domainsList = 'N/A';
+            if ($poolOrder->domains && is_array($poolOrder->domains) && count($poolOrder->domains) > 0) {
+                $domainNames = array_map(function($domain) {
+                    return $domain['domain_name'] ?? 'Unknown';
+                }, array_slice($poolOrder->domains, 0, 5)); // Show first 5 domains
+                
+                $domainsList = implode(', ', $domainNames);
+                
+                if (count($poolOrder->domains) > 5) {
+                    $remaining = count($poolOrder->domains) - 5;
+                    $domainsList .= " (and {$remaining} more)";
+                }
+            }
+
+            $message = [
+                'text' => '✅ *Pool Order Status Updated: Draft → Pending*',
+                'attachments' => [
+                    [
+                        'color' => '#ffc107',
+                        'fields' => [
+                            [
+                                'title' => 'Order ID',
+                                'value' => '#' . $poolOrder->id,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Status',
+                                'value' => '⏳ Pending',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Customer Name',
+                                'value' => $user->name,
+                                'short' => true
+                            ],
+                            // [
+                            //     'title' => 'Customer Email',
+                            //     'value' => $user->email,
+                            //     'short' => true
+                            // ],
+                            [
+                                'title' => 'Plan',
+                                'value' => $poolOrder->poolPlan->name ?? 'N/A',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Quantity',
+                                'value' => $poolOrder->quantity . ' inboxes',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Amount',
+                                'value' => '$' . number_format($poolOrder->amount, 2),
+                                'short' => true
+                            ],
+                            // [
+                            //     'title' => 'Domains Selected',
+                            //     'value' => $poolOrder->selected_domains_count ?? 0,
+                            //     'short' => true
+                            // ],
+                            // [
+                            //     'title' => 'Total Inboxes',
+                            //     'value' => $poolOrder->total_inboxes ?? 0,
+                            //     'short' => true
+                            // ],
+                            [
+                                'title' => 'ChargeBee Subscription',
+                                'value' => $poolOrder->chargebee_subscription_id ?? 'Pending',
+                                'short' => true
+                            ],
+                            // [
+                            //     'title' => 'Domains',
+                            //     'value' => $domainsList,
+                            //     'short' => false
+                            // ]
+                        ],
+                        'footer' => config('app.name', 'ProjectInbox') . ' - Pool Order Status Update',
+                        'ts' => time()
+                    ]
+                ]
+            ];
+
+            // Send to Slack
+            $result = SlackNotificationService::send('inbox-trial-setup', $message);
+            
+            if ($result) {
+                Log::info('Slack notification sent successfully for draft to pending status change', [
+                    'pool_order_id' => $poolOrder->id,
+                    'user_email' => $user->email,
+                    'amount' => $poolOrder->amount
+                ]);
+            } else {
+                Log::warning('Slack notification failed to send for draft to pending status change', [
+                    'pool_order_id' => $poolOrder->id
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            // Non-critical, just log the error
+            Log::error('Exception sending Slack notification for draft to pending status change', [
                 'error' => $e->getMessage(),
                 'pool_order_id' => $poolOrder->id,
                 'file' => $e->getFile(),

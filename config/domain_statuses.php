@@ -18,7 +18,7 @@ return [
             'color' => '#856404',
             'bg_color' => '#fff3cd',
             'badge_class' => 'warning',
-            'icon' => 'ti-flame',
+            'icon' => 'fa fa-fire',
             'description' => 'Domain is in warming phase'
         ],
         'available' => [
@@ -26,7 +26,7 @@ return [
             'color' => '#155724',
             'bg_color' => '#d4edda',
             'badge_class' => 'success',
-            'icon' => 'ti-check-circle',
+            'icon' => 'fa fa-check-circle',
             'description' => 'Domain is available for assignment'
         ],
         'in-progress' => [
@@ -34,7 +34,7 @@ return [
             'color' => '#004085',
             'bg_color' => '#cce5ff',
             'badge_class' => 'primary',
-            'icon' => 'ti-clock',
+            'icon' => 'fa fa-clock',
             'description' => 'Domain is assigned to an active order'
         ],
         'used' => [
@@ -42,7 +42,7 @@ return [
             'color' => '#721c24',
             'bg_color' => '#f8d7da',
             'badge_class' => 'danger',
-            'icon' => 'ti-lock',
+            'icon' => 'fa fa-lock',
             'description' => 'Domain is currently in use'
         ],
     ],
@@ -73,7 +73,7 @@ return [
             'color' => '#856404',
             'bg_color' => '#fff3cd',
             'badge_class' => 'warning',
-            'icon' => 'ti-flame',
+            'icon' => 'fa fa-fire',
             'description' => 'Domain is in warming phase'
         ],
         'available' => [
@@ -81,7 +81,7 @@ return [
             'color' => '#155724',
             'bg_color' => '#d4edda',
             'badge_class' => 'success',
-            'icon' => 'ti-check-circle',
+            'icon' => 'fa fa-check-circle',
             'description' => 'Domain is available for assignment'
         ],
         'in-progress' => [
@@ -89,7 +89,7 @@ return [
             'color' => '#004085',
             'bg_color' => '#cce5ff',
             'badge_class' => 'primary',
-            'icon' => 'ti-clock',
+            'icon' => 'fa fa-clock',
             'description' => 'Domain is assigned to an active order'
         ],
         'used' => [
@@ -97,7 +97,7 @@ return [
             'color' => '#721c24',
             'bg_color' => '#f8d7da',
             'badge_class' => 'danger',
-            'icon' => 'ti-lock',
+            'icon' => 'fa fa-lock',
             'description' => 'Domain is currently in use'
         ],
     ],

@@ -66,7 +66,7 @@
             
             
             <!-- Pool Orders - Show for trial customer_access users -->
-            @if(auth()->user()->customer_access === 'trial')
+            @if(auth()->user()->customer_access === 'trial' || auth()->user()->customer_access === 'full')
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.pool-orders.index') ? 'active' : '' }}"
                     href="{{ route('customer.pool-orders.index') }}">

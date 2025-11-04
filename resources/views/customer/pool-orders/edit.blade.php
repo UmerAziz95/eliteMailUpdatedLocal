@@ -989,19 +989,19 @@
                                             <div class="form-check text-start mb-2">
                                                 <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmInstantlyAccess">
                                                 <label class="form-check-label small text-light" for="confirmInstantlyAccess">
-                                                    Instantly login details for their account.
+                                                    I confirm that the login credentials provided are accurate. Incorrect details will result in delays.
                                                 </label>
                                             </div>
                                             <div class="form-check text-start mb-2">
                                                 <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmInstantlySubscription">
                                                 <label class="form-check-label small text-light" for="confirmInstantlySubscription">
-                                                    I confirm the Instantly subscription is active and paid.
+                                                    I confirm that this is a one-time purchase for a one-week inbox rental only. After the one-week rental period has concluded, all rented email accounts will be removed from my Instantly workspace.
                                                 </label>
                                             </div>
                                             <div class="form-check text-start">
                                                 <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmLoginAccuracy">
                                                 <label class="form-check-label small text-light" for="confirmLoginAccuracy">
-                                                    I confirm the provided login details are correct.
+                                                    I confirm that I will not change the Instantly account password. Changing the password will incur a $500 penalty, as it prevents us from removing the rented email accounts from your Instantly workspace once the one-week rental period has ended. This would require full deactivation and replacement of all mailboxes, including complete set-up and warm-up from scratch. This discounted service is only possible due to our shared-domain infrastructure and the ability to maintain inboxes in a warm, active state for the next user.
                                                     <span class="text-warning fw-semibold">Incorrect details will cause delays.</span>
                                                 </label>
                                             </div>

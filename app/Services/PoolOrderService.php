@@ -240,7 +240,7 @@ class PoolOrderService
             $editableStatuses = config('pool_orders.editable_statuses', ['pending']);
             $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
             
-            if (in_array($currentStatus, $editableStatuses)) {
+            if (in_array($currentStatus, $editableStatuses) && $poolOrder->assigned_to != null) {
                 $editRoute = route($routePrefix . '.pool-orders.edit', $poolOrder->id);
                 $html .= '
                         <li>
@@ -297,7 +297,7 @@ class PoolOrderService
         }
         
         // Add "Locked Out of Instantly" option for non-cancelled orders
-        if (!$poolOrder->locked_out_of_instantly && $poolOrder->status !== 'cancelled') {
+        if (!$poolOrder->locked_out_of_instantly && $poolOrder->status !== 'cancelled' && $poolOrder->assigned_to != null) {
             $html .= '
                     <li>
                         <a class="dropdown-item text-warning" href="javascript:void(0)" 

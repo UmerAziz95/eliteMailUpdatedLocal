@@ -94,6 +94,7 @@ class PoolPlanController extends Controller
             // Check if user has any previous invoices
             $hasPreviousInvoices = Invoice::where('user_id', $user->id)->exists();
             $customerAccess = $hasPreviousInvoices ? 'full' : 'trial';
+            $access_type = $hasPreviousInvoices ? 'full' : 'trial';
             
             // Update user's customer_access
             if ($user->customer_access !== $customerAccess) {
@@ -105,6 +106,10 @@ class PoolPlanController extends Controller
                     'has_previous_invoices' => $hasPreviousInvoices,
                     'customer_access' => $customerAccess
                 ]);
+            }
+            if ($user->access_type !== $access_type) {
+                $user->access_type = $access_type;
+                $user->save();
             }
             
             // dd($subscription, $customer, $invoice, $user);
