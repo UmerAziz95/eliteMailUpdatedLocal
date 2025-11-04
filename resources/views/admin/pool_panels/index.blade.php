@@ -147,12 +147,51 @@
         color: #1d2239;
     }
 
+    .domain-list-content.collapse {
+        display: none;
+    }
+
+    .domain-list-content.collapse.show {
+        display: block;
+    }
+
     .split-header {
         transition: all 0.2s ease;
     }
 
     .split-header:hover {
         filter: brightness(1.05);
+    }
+
+    .domains-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .domains-grid .domain-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.95);
+        color: #1d2239;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .domains-grid .domain-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .domains-grid .domain-badge .badge {
+        font-size: 9px;
+        margin-left: 4px;
+        margin-right: 0;
     }
 </style>
 @endpush
@@ -1102,7 +1141,7 @@ function renderPoolPanelPools(pools, poolPanel) {
         }
 
         const headerPanel = pool.panel || poolInfo.panel || poolPanel || {};
-
+        
         const splitsRows = splits.length
             ? splits.map((split, splitIndex) => {
                 return `
@@ -1169,6 +1208,7 @@ function renderPoolPanelPools(pools, poolPanel) {
                             </table>
                         </div>
                         ${renderPoolDetailSections(poolInfo, splits, poolPanel)}
+                        ${renderOtherPanelSplits(pool.other_panel_splits || [], poolPanel)}
                     </div>
                 </div>
             </div>
@@ -1181,6 +1221,10 @@ function renderPoolPanelPools(pools, poolPanel) {
             ${accordionHtml}
         </div>
     `;
+
+    setTimeout(() => {
+        initializePoolSplitAccordions();
+    }, 0);
 }
 
 // Toggle pool accordions and rotate icon
@@ -1627,33 +1671,48 @@ function renderPoolDomainsList(poolInfo, splits, poolPanel) {
             const panelId = splitPanel.auto_generated_id || (splitPanel.id ? `PPN-${splitPanel.id}` : poolPanel?.auto_generated_id || (poolPanel?.id ? `PPN-${poolPanel.id}` : 'N/A'));
             const panelTitle = splitPanel.title || poolPanel?.title || 'N/A';
 
+            const collapseId = `domains-split-${poolPanel?.id ?? 'panel'}-${split.id ?? index}`;
+            const iconId = `icon-${collapseId}`;
+            const domainsForCopy = normalizedDomains;
+            const encodedDomains = encodeURIComponent(JSON.stringify(domainsForCopy));
+
             const domainBadges = domainDetails.length
                 ? domainDetails.map(detail => `
-                        <span class="badge bg-white text-dark me-2 mb-2 d-inline-flex align-items-center gap-2">
+                        <span class="domain-badge">
                             <span>${detail.name || 'N/A'}</span>
                             ${detail.status_badge ?? ''}
                         </span>
                     `).join('')
                 : (normalizedDomains.length
                     ? normalizedDomains.map(domain => `
-                            <span class="badge bg-white text-dark me-2 mb-2">${domain}</span>
+                            <span class="domain-badge">
+                                <span>${domain}</span>
+                            </span>
                         `).join('')
                     : '<span class="text-muted">No domains listed for this split.</span>');
 
             return `
                 <div class="domain-split-container mb-3">
                     <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top"
-                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
+                        onclick="toggleSplit('${collapseId}', '${iconId}')">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel ID: ${panelId}</span>
                             <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel: ${panelTitle}</span>
-                            <small class="text-white d-none">${domainCount} domain${domainCount === 1 ? '' : 's'}</small>
-                            <small class="text-white d-none">Inboxes: ${totalInboxes}</small>
+                            <small class="text-white">${domainCount} domain${domainCount === 1 ? '' : 's'}</small>
+                            <small class="text-white">Inboxes: ${totalInboxes}</small>
                         </div>
-                        <i class="fa-solid fa-layer-group text-white" style="font-size: 12px;"></i>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-copy text-white" style="font-size: 11px; cursor: pointer; opacity: 0.85;"
+                                title="Copy domain list"
+                                onclick="event.stopPropagation(); copyDomainsToClipboardFromEncoded('${encodedDomains}');"></i>
+                            <i class="fa-solid fa-chevron-down text-white transition-transform" id="${iconId}" style="font-size: 12px;"></i>
+                        </div>
                     </div>
-                    <div class="domain-list-content border border-top-0 rounded-bottom p-3">
-                        ${domainBadges}
+                    <div class="domain-list-content border border-top-0 rounded-bottom p-3 collapse" id="${collapseId}">
+                        <div class="domains-grid">
+                            ${domainBadges}
+                        </div>
                     </div>
                 </div>
             `;
@@ -1666,14 +1725,156 @@ function renderPoolDomainsList(poolInfo, splits, poolPanel) {
     }
 
     const fallbackBadges = fallbackDomains
-        .map(domain => `<span class="badge bg-white text-dark me-2 mb-2">${domain}</span>`)
+        .map(domain => `<span class="domain-badge"><span>${domain}</span></span>`)
         .join('');
 
     return `
         <div class="domain-list-content border rounded p-3">
-            ${fallbackBadges}
+            <div class="domains-grid">
+                ${fallbackBadges}
+            </div>
         </div>
     `;
+}
+
+function renderOtherPanelSplits(otherPanels, currentPanel) {
+    if (!Array.isArray(otherPanels) || otherPanels.length === 0) {
+        return '';
+    }
+
+    return `
+        <div class="mt-4">
+            <span class="opacity-50 mb-3 d-block">
+                <i class="fa-solid fa-layer-group me-2"></i>Other Pool Panel Splits
+            </span>
+            ${otherPanels.map((panelData, index) => renderOtherPanelCard(panelData, currentPanel, index)).join('')}
+        </div>
+    `;
+}
+
+function renderOtherPanelCard(panelData, currentPanel, index) {
+    const panelInfo = panelData.panel || {};
+    const panelId = panelInfo.auto_generated_id || (panelInfo.id ? `PPN-${panelInfo.id}` : 'N/A');
+    const panelTitle = panelInfo.title || 'N/A';
+    const panelStatus = panelInfo.is_active ? 'Active' : 'Inactive';
+    const statusBadgeClass = panelInfo.is_active ? 'bg-success' : 'bg-secondary';
+
+    const splitsHtml = renderPoolDomainsList(panelInfo, panelData.splits || [], panelInfo);
+
+    return `
+        <div class="card bg-transparent border border-secondary-subtle mb-3">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel ID: ${panelId}</span>
+                    <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel: ${panelTitle}</span>
+                    <span class="badge ${statusBadgeClass}" style="font-size: 10px;">${panelStatus}</span>
+                    <span class="badge bg-info bg-opacity-25 text-light" style="font-size: 10px;">Splits: ${panelData.total_splits ?? (panelData.splits ? panelData.splits.length : 0)}</span>
+                    <span class="badge bg-warning bg-opacity-25 text-dark" style="font-size: 10px;">Domains: ${panelData.total_domains ?? 0}</span>
+                    <span class="badge bg-primary bg-opacity-25 text-light" style="font-size: 10px;">Total Inboxes: ${panelData.total_inboxes ?? 0}</span>
+                </div>
+                <div class="mt-3">
+                    ${splitsHtml}
+                </div>
+            </div>
+        </div>
+    `;
+}
+function copyDomainsToClipboardFromEncoded(encodedDomains) {
+    try {
+        const decoded = decodeURIComponent(encodedDomains);
+        const domains = JSON.parse(decoded);
+        copyDomainsArrayToClipboard(Array.isArray(domains) ? domains : []);
+    } catch (error) {
+        console.error('Failed to decode domains for copying:', error);
+        copyDomainsArrayToClipboard([]);
+    }
+}
+
+function copyDomainsArrayToClipboard(domains) {
+    const text = domains.length ? domains.join('\n') : 'No domains available';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => showCopyNotification(domains.length))
+            .catch(error => {
+                console.error('Clipboard write failed:', error);
+                fallbackCopyToClipboard(text);
+            });
+    } else {
+        fallbackCopyToClipboard(text);
+    }
+}
+
+function fallbackCopyToClipboard(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        showCopyNotification(text ? text.split('\n').length : 0);
+    } catch (error) {
+        console.error('Fallback copy failed:', error);
+    } finally {
+        document.body.removeChild(textarea);
+    }
+}
+
+function showCopyNotification(count) {
+    const message = count > 0
+        ? `${count} domain${count === 1 ? '' : 's'} copied to clipboard`
+        : 'No domains to copy';
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Copied!',
+            text: message,
+            timer: 1500,
+            showConfirmButton: false
+        });
+    } else {
+        console.log(message);
+    }
+}
+
+function toggleSplit(contentId, iconId) {
+    const content = document.getElementById(contentId);
+    const icon = document.getElementById(iconId);
+    if (!content) {
+        return;
+    }
+
+    const isOpen = content.classList.contains('show');
+    if (isOpen) {
+        content.classList.remove('show');
+        if (icon) {
+            icon.style.transform = 'rotate(0deg)';
+        }
+    } else {
+        content.classList.add('show');
+        if (icon) {
+            icon.style.transform = 'rotate(180deg)';
+        }
+    }
+}
+
+function initializePoolSplitAccordions() {
+    const containers = document.querySelectorAll('#poolPanelPoolsContainer .domain-list-content.collapse');
+    containers.forEach((content, index) => {
+        const iconId = content.getAttribute('id') ? `icon-${content.getAttribute('id')}` : null;
+        const icon = iconId ? document.getElementById(iconId) : null;
+
+        if (index === 0) {
+            content.classList.add('show');
+            if (icon) {
+                icon.style.transform = 'rotate(180deg)';
+            }
+        } else if (icon) {
+            icon.style.transform = 'rotate(0deg)';
+        }
+    });
 }
 
 function extractDomainArray(domains) {

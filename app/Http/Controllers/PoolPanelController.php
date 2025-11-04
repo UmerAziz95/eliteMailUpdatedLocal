@@ -392,7 +392,7 @@ class PoolPanelController extends Controller
                 return ! empty($poolId);
             });
 
-            $poolsData = $groupedSplits->map(function ($poolSplits, $poolId) {
+            $poolsData = $groupedSplits->map(function ($poolSplits, $poolId) use ($poolPanel) {
                 /** @var PoolPanelSplit|null $firstSplit */
                 $firstSplit = $poolSplits->first();
                 $pool = $firstSplit?->pool;
@@ -488,6 +488,7 @@ class PoolPanelController extends Controller
                     'assigned_space' => $totalAssigned,
                     'available_space' => max($totalAvailable, 0),
                     'splits' => $splitsData->values(),
+                    'other_panel_splits' => $this->getOtherPoolPanelSplits($poolId, $poolPanel->id),
                 ];
             })->values();
 
@@ -746,5 +747,69 @@ class PoolPanelController extends Controller
     private function generatePoolPanelId()
     {
         return 'PPN-' . PoolPanel::getNextAvailableId();
+    }
+
+    /**
+     * Retrieve splits from other pool panels for the given pool.
+     *
+     * @return \Illuminate\Support\Collection<int,array<string,mixed>>
+     */
+    private function getOtherPoolPanelSplits(int $poolId, int $currentPoolPanelId)
+    {
+        $otherSplits = PoolPanelSplit::with(['panel'])
+            ->where('pool_id', $poolId)
+            ->where('pool_panel_id', '!=', $currentPoolPanelId)
+            ->get();
+
+        if ($otherSplits->isEmpty()) {
+            return collect();
+        }
+
+        return $otherSplits
+            ->groupBy('pool_panel_id')
+            ->map(function ($panelSplits) {
+                /** @var PoolPanelSplit $firstSplit */
+                $firstSplit = $panelSplits->first();
+                $panel = $firstSplit?->panel ?? $firstSplit?->poolPanel;
+
+                $splits = $panelSplits->map(function (PoolPanelSplit $split) {
+                    $domainDetails = $split->getDomainDetails();
+                    $domainCount = count($domainDetails);
+                    if ($domainCount === 0) {
+                        $domainCount = count($split->getDomainNames());
+                    }
+                    $totalInboxes = ($split->inboxes_per_domain ?? 0) * $domainCount;
+
+                    return [
+                        'id' => $split->id,
+                        'inboxes_per_domain' => $split->inboxes_per_domain,
+                        'domains_count' => $domainCount,
+                        'domain_names' => $split->getDomainNames(),
+                        'domain_details' => $domainDetails,
+                        'total_inboxes' => $totalInboxes,
+                        'assigned_space' => $split->assigned_space ?? 0,
+                        'available_space' => max(($split->assigned_space ?? 0) - $totalInboxes, 0),
+                        'created_at' => optional($split->created_at)->toDateTimeString(),
+                    ];
+                })->values();
+
+                $totalDomains = $splits->sum('domains_count');
+                $totalInboxes = $splits->sum('total_inboxes');
+
+                return [
+                    'panel' => $panel ? [
+                        'id' => $panel->id,
+                        'auto_generated_id' => $panel->auto_generated_id ?? ('PPN-' . $panel->id),
+                        'title' => $panel->title,
+                        'is_active' => (bool) $panel->is_active,
+                        'inboxes_per_domain' => $panel->inboxes_per_domain ?? null,
+                    ] : null,
+                    'total_domains' => $totalDomains,
+                    'total_inboxes' => $totalInboxes,
+                    'total_splits' => $splits->count(),
+                    'splits' => $splits,
+                ];
+            })
+            ->values();
     }
 }
