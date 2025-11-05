@@ -2184,6 +2184,11 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                 <span>${reorderInfo?.sequencer_password || 'N/A'}</span>
                             </div>
 
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Backup Codes</span>
+                                <span>${reorderInfo?.backup_codes || 'N/A'}</span>
+                            </div>
+
                             <div class="d-flex flex-column">
                                 <h6 class="d-flex align-items-center gap-1">
                                     <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">

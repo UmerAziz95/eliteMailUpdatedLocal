@@ -872,7 +872,8 @@ class OrderController extends Controller
                     'is_shared' => $order->is_shared == 1 ? 1 : 0,
                     'shared_note' => $order->shared_note ?? null,
                     'helpers_ids' => $order->helpers_ids ?? [],
-                    'helpers_names' => $order->helpers_ids ? User::whereIn('id', $order->helpers_ids)->pluck('name')->toArray() : []
+                    'helpers_names' => $order->helpers_ids ? User::whereIn('id', $order->helpers_ids)->pluck('name')->toArray() : [],
+                    'backup_codes' => $reorderInfo->backup_codes ?? [],
                 ] : null,
                 'splits' => $splitsData
             ]);

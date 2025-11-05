@@ -266,6 +266,7 @@ class PanelController extends Controller
                         'prefix_variant_1' => $reorderInfo->prefix_variant_1,
                         'prefix_variant_2' => $reorderInfo->prefix_variant_2,
                         'master_inbox_email' => $reorderInfo->master_inbox_email,
+                        'backup_codes' => $reorderInfo->backup_codes,
                     ] : null,
                     // Add splits with enhanced domain information and status
                     'splits' => $splits->map(function ($split) use ($orderPanel) {

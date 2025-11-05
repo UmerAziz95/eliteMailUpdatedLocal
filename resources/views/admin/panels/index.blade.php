@@ -1979,7 +1979,10 @@
                                                     <span class="opacity-50">Cold email platform - Password</span>
                                                     <span>${order.reorder_info?.sequencer_password || 'N/A'}</span>
                                                 </div>
-
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Backup Codes</span>
+                                                    <span>${order.reorder_info?.backup_codes || 'N/A'}</span>
+                                                </div>
                                                 <div class="d-flex flex-column">
                                                     <span class="opacity-50 mb-3">
                                                         <i class="fa-solid fa-globe me-2"></i>All Domains & Panel Breaks
