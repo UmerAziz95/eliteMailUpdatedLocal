@@ -509,6 +509,22 @@ class PoolPlanController extends Controller
             $sendingPlatforms = \App\Models\SendingPlatform::where('name','Instantly')->orderBy('name')
                 ->get();
         }
+        
+        foreach ($sendingPlatforms as $platform) {
+            $fields = $platform->fields;
+            if (is_string($fields)) {
+                $fields = json_decode($fields, true);
+            }
+            if (is_array($fields)) {
+                foreach ($fields as $key => &$field) {
+                    if (isset($field['label'])) {
+                        $field['label'] = str_replace('Cold email platform - Login', 'Email', $field['label']);
+                        $field['label'] = str_replace('Cold email platform - Password', 'Password', $field['label']);
+                    }
+                }
+                $platform->fields = $fields;
+            }
+        }
 
         // Get active trial-new-order disclaimer
         $trialNewOrderDisclaimer = \App\Models\Disclaimer::getActiveByType('trial-new-order');
