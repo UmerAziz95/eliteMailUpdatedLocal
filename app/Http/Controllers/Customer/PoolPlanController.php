@@ -118,10 +118,10 @@ class PoolPlanController extends Controller
             $chargebeePlanId = $subscriptionItems[0]->itemPriceId ?? null;
             $quantity = $subscriptionItems[0]->quantity ?? 1;
             $poolPlan = PoolPlan::where('chargebee_plan_id', $chargebeePlanId)->first();
-            
-            // pool plan pricing model is flat then then set quantity to 10
+
+            // pool plan pricing model is flat then then set quantity to 99
             if ($poolPlan && $poolPlan->pricing_model === 'flat_fee') {
-                $quantity = env('PLAN_FLAT_QUANTITY', 10);
+                $quantity = env('PLAN_FLAT_QUANTITY', 99);
             }
             
             if (!$poolPlan) {
@@ -193,7 +193,7 @@ class PoolPlanController extends Controller
 
         // Pool plan pricing model is flat then set quantity to 10
         if ($poolPlan && $poolPlan->pricing_model === 'flat_fee') {
-            $quantity = env('PLAN_FLAT_QUANTITY', 10);
+            $quantity = env('PLAN_FLAT_QUANTITY', 99);
         }
 
         // Create new pool order
