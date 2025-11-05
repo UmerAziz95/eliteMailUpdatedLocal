@@ -1174,7 +1174,7 @@ function renderPoolPanelPools(pools, poolPanel) {
                         onclick="togglePoolAccordion('${collapseId}', this, event)">
                         <div class="d-flex flex-column">
                             <small>POOL ID: #${pool.pool_id ?? 'N/A'}</small>
-                            <small class="text-light">Splits: ${pool.total_splits ?? splits.length}</small>
+                            <small class="text-light d-none">Splits: ${pool.total_splits ?? splits.length}</small>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
                             <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold; display:none;">Panel ID: ${headerPanel?.auto_generated_id || (headerPanel?.id ? `PPN-${headerPanel.id}` : poolPanel.auto_generated_id || (poolPanel.id ? `PPN-${poolPanel.id}` : 'N/A'))}</span>

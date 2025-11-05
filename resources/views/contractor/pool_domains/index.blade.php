@@ -267,10 +267,7 @@
                     <div class="mb-3">
                         <label for="new_status" class="form-label">Select New Status</label>
                         <select class="form-select" id="new_status" name="status" required>
-                            <!-- <option value="pending">Pending</option> -->
-                            <option value="in-progress">In Progress</option>
-                            <!-- <option value="completed">Completed</option> -->
-                            <option value="cancelled">Cancelled</option>
+                            <!-- Options will be dynamically populated based on current status -->
                         </select>
                     </div>
                     
@@ -590,7 +587,29 @@ function assignToMe(orderId) {
 // Change pool order status
 function changePoolOrderStatus(orderId, currentStatus) {
     $('#change_status_order_id').val(orderId);
-    $('#new_status').val(currentStatus);
+    
+    // Clear and repopulate status options based on current status
+    const statusSelect = $('#new_status');
+    statusSelect.empty();
+    
+    if (currentStatus === 'in-progress') {
+        // When in-progress, only show completed and cancelled options
+        statusSelect.append('<option value="completed">Completed</option>');
+        statusSelect.append('<option value="cancelled">Cancelled</option>');
+        statusSelect.val('completed'); // Default to completed
+    } else if (currentStatus === 'pending') {
+        // When pending, show in-progress and cancelled options
+        statusSelect.append('<option value="in-progress">In Progress</option>');
+        statusSelect.append('<option value="cancelled">Cancelled</option>');
+        statusSelect.val('in-progress'); // Default to in-progress
+    } else {
+        // For other statuses, show all options
+        statusSelect.append('<option value="in-progress">In Progress</option>');
+        statusSelect.append('<option value="completed">Completed</option>');
+        statusSelect.append('<option value="cancelled">Cancelled</option>');
+        statusSelect.val(currentStatus);
+    }
+    
     $('#changeStatusModal').modal('show');
 }
 
