@@ -258,7 +258,7 @@ class OrderCancelledService
                     }
                 }
 
-                $order->update([
+                $order->updateQuietly([
                     'status_manage_by_admin' => $statusToRestore,
                 ]);
             }
