@@ -987,6 +987,12 @@
                                         <!-- Save Preconditions (Customer Only) -->
                                         <div class="mt-3">
                                             <div class="form-check text-start mb-2">
+                                                <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmNoWarmupChanges">
+                                                <label class="form-check-label small text-light" for="confirmNoWarmupChanges">
+                                                    I confirm that I will not activate warm-up on any email accounts, nor will I alter any of the existing settings. All the settings inside the Instantly account will be managed exclusively by Start Your AI Agency.
+                                                </label>
+                                            </div>
+                                            <div class="form-check text-start mb-2">
                                                 <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmInstantlyAccess">
                                                 <label class="form-check-label small text-light" for="confirmInstantlyAccess">
                                                     I confirm that the login credentials provided are accurate. Incorrect details will result in delays.
