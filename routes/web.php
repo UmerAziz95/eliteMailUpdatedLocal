@@ -106,6 +106,12 @@ Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('doLogin');
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// CSRF: refresh token endpoint for forms to fetch a fresh token before submit
+Route::get('/refresh-csrf', function () {
+    Session::regenerateToken();
+    return response()->json(['token' => csrf_token()]);
+})->name('refresh-csrf');
+
 Route::get('/test-admin', [AuthController::class, 'testAdmin'])->name('test.admin');
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
