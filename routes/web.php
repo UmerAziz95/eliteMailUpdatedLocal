@@ -323,6 +323,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/orders/panel/status/process', [AdminOrderController::class, 'processPanelStatus'])->name('order.panel.status.process');
         Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderEmailController::class, 'getPanelEmails']);
+        Route::get('/orders/panel/{orderPanelId}/emails/batches', [AdminOrderEmailController::class, 'getPanelEmailsByBatch']);
         Route::get('/orders/panel/{orderPanelId}/emails/check', [AdminOrderEmailController::class, 'checkEmailsExist']);
         Route::get('/orders/panel/{orderPanelId}/emails/download-csv', [AdminOrderEmailController::class, 'downloadCsv'])->name('order.panel.email.downloadCsv');
         Route::post('/orders/panel/email/bulk-import', [AdminOrderEmailController::class, 'bulkImport'])->name('order.panel.email.bulkImport');

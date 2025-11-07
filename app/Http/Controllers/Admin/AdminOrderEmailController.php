@@ -56,6 +56,74 @@ class AdminOrderEmailController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get emails for a panel grouped by batch_id
+     * Each batch contains up to 200 emails
+     */
+    public function getPanelEmailsByBatch($orderPanelId)
+    {
+        try {
+            // Get the order panel with its splits
+            $orderPanel = OrderPanel::with('orderPanelSplits')->findOrFail($orderPanelId);
+            
+            // Get space_assigned to determine total batches
+            $spaceAssigned = $orderPanel->space_assigned ?? 0;
+            
+            if ($spaceAssigned == 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No space assigned for this panel.'
+                ], 400);
+            }
+            
+            // Calculate total batches needed
+            $totalBatches = ceil($spaceAssigned / 200);
+            
+            // Get emails for all splits of this panel grouped by batch_id
+            $splitIds = $orderPanel->orderPanelSplits->pluck('id');
+            
+            $emailsByBatch = OrderEmail::whereIn('order_split_id', $splitIds)
+                ->select('id', 'name', 'last_name', 'email', 'password', 'batch_id')
+                ->orderBy('batch_id')
+                ->get()
+                ->groupBy('batch_id');
+
+            // Generate all batches (even empty ones)
+            $batches = [];
+            for ($i = 1; $i <= $totalBatches; $i++) {
+                // Calculate expected count for this batch
+                $expectedCount = ($i < $totalBatches) ? 200 : ($spaceAssigned % 200 ?: 200);
+                
+                // Check if this batch has emails
+                $batchEmails = $emailsByBatch->get($i, collect());
+                
+                $batches[] = [
+                    'batch_id' => $i,
+                    'batch_number' => $i,
+                    'email_count' => $batchEmails->count(),
+                    'expected_count' => $expectedCount,
+                    'emails' => $batchEmails->values()
+                ];
+            }
+
+            // Calculate total emails across all batches
+            $totalEmails = $emailsByBatch->flatten()->count();
+
+            return response()->json([
+                'success' => true,
+                'total_batches' => $totalBatches,
+                'total_emails' => $totalEmails,
+                'space_assigned' => $spaceAssigned,
+                'batches' => $batches
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching panel emails by batch: ' . $e->getMessage()
+            ], 500);
+        }
+    }
     
     public function bulkImport(Request $request)
     {
@@ -64,7 +132,9 @@ class AdminOrderEmailController extends Controller
             $validator = Validator::make($request->all(), [
                 'bulk_file' => 'required|file|mimes:csv,txt|max:2048',
                 'order_panel_id' => 'required|exists:order_panel,id',
-                'customized_note' => 'nullable|string|max:1000'
+                'customized_note' => 'nullable|string|max:1000',
+                'batch_id' => 'nullable|integer|min:1',
+                'expected_count' => 'nullable|integer|min:1'
             ]);
 
             if ($validator->fails()) {
@@ -76,6 +146,7 @@ class AdminOrderEmailController extends Controller
 
             $orderPanelId = $request->order_panel_id;
             $file = $request->file('bulk_file');
+            $requestedBatchId = $request->batch_id; // Get the specific batch_id from the request
 
             // Get the order panel with its splits
             $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])->findOrFail($orderPanelId);
@@ -155,13 +226,57 @@ class AdminOrderEmailController extends Controller
                 ], 422);
             }
 
-            // Check if CSV count matches space_assigned from OrderPanel
+            // Check if CSV count is valid for batch-wise import
             $spaceAssigned = $orderPanel->space_assigned ?? 0;
-            if ($spaceAssigned > 0 && count($csv) != $spaceAssigned) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "CSV row count (" . count($csv) . ") must equal the panel's space assigned ({$spaceAssigned}). Please ensure your CSV contains exactly {$spaceAssigned} email records."
-                ], 422);
+            if ($spaceAssigned > 0) {
+                // Get existing email count for this panel
+                $splitIds = $orderPanel->orderPanelSplits->pluck('id');
+                $existingEmailCount = OrderEmail::whereIn('order_split_id', $splitIds)->count();
+                
+                // If a specific batch is requested, validate against that batch
+                if ($requestedBatchId) {
+                    // Calculate expected size for this batch
+                    $totalBatches = ceil($spaceAssigned / 200);
+                    $expectedBatchSize = ($requestedBatchId < $totalBatches) ? 200 : ($spaceAssigned % 200 ?: 200);
+                    
+                    // Validate CSV count matches expected batch size
+                    if (count($csv) != $expectedBatchSize) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Batch {$requestedBatchId} requires exactly {$expectedBatchSize} emails. Your CSV contains " . count($csv) . " emails."
+                        ], 422);
+                    }
+                    
+                    // Check if importing this batch would exceed space_assigned
+                    $totalAfterImport = $existingEmailCount + count($csv);
+                    if ($totalAfterImport > $spaceAssigned) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Cannot import batch {$requestedBatchId}. Total would be {$totalAfterImport} emails, but space assigned is only {$spaceAssigned}."
+                        ], 422);
+                    }
+                } else {
+                    // No specific batch - validate general import
+                    $totalAfterImport = $existingEmailCount + count($csv);
+                    
+                    // Allow imports in batches of 200 or less (for the last batch)
+                    // But ensure total doesn't exceed space_assigned
+                    if ($totalAfterImport > $spaceAssigned) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Cannot import " . count($csv) . " emails. Current emails: {$existingEmailCount}, Space assigned: {$spaceAssigned}. You can import up to " . ($spaceAssigned - $existingEmailCount) . " more emails."
+                        ], 422);
+                    }
+                    
+                    // Validate batch size (200 emails per batch, except last batch can be less)
+                    $remainingSpace = $spaceAssigned - $existingEmailCount;
+                    if (count($csv) > 200 && count($csv) != $remainingSpace) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Please import in batches of 200 emails. For this import, you can upload up to 200 emails (or {$remainingSpace} emails to complete the panel)."
+                        ], 422);
+                    }
+                }
             }
 
             $emailsToImport = [];
@@ -251,16 +366,48 @@ class AdminOrderEmailController extends Controller
             DB::beginTransaction();
 
             try {
-                // Delete existing emails for this specific order panel split
-                OrderEmail::where('order_id', $orderPanel->order_id)
-                    ->where('order_split_id', $orderPanelSplit->id)
-                    ->delete();
-
-                // Insert new emails in batches
-                $batchSize = 500;
+                // Determine which batch_id to use
+                if ($requestedBatchId) {
+                    // User selected a specific batch - use that batch_id
+                    $startingBatchNumber = $requestedBatchId;
+                    
+                    // Check if this batch already has emails
+                    $splitIds = $orderPanel->orderPanelSplits->pluck('id');
+                    $existingBatchEmails = OrderEmail::whereIn('order_split_id', $splitIds)
+                        ->where('batch_id', $requestedBatchId)
+                        ->count();
+                    
+                    if ($existingBatchEmails > 0) {
+                        DB::rollBack();
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Batch {$requestedBatchId} already has {$existingBatchEmails} emails. Please delete existing emails first or choose a different batch."
+                        ], 422);
+                    }
+                } else {
+                    // No specific batch requested - calculate next available batch
+                    $splitIds = $orderPanel->orderPanelSplits->pluck('id');
+                    $existingEmailCount = OrderEmail::whereIn('order_split_id', $splitIds)->count();
+                    $startingBatchNumber = floor($existingEmailCount / 200) + 1;
+                }
+                
+                // Insert new emails in batches with batch_id assignment
+                // Each batch contains 200 emails
+                $batchSize = 200;
+                $batchNumber = $startingBatchNumber;
+                
                 for ($i = 0; $i < count($emailsToImport); $i += $batchSize) {
                     $batch = array_slice($emailsToImport, $i, $batchSize);
+                    
+                    // Assign batch_id to each email in the current batch
+                    foreach ($batch as &$email) {
+                        $email['batch_id'] = $batchNumber;
+                    }
+                    
+                    // Insert batch into database
                     OrderEmail::insert($batch);
+                    
+                    $batchNumber++;
                 }
 
                 // Update the order panel with customized note if provided

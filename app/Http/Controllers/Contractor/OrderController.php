@@ -2142,13 +2142,31 @@ class OrderController extends Controller
                 ], 422);
             }
 
-            // Check if CSV count matches space_assigned from OrderPanel
+            // Check if CSV count is valid for batch-wise import
             $spaceAssigned = $orderPanel->space_assigned ?? 0;
-            if ($spaceAssigned > 0 && count($csv) != $spaceAssigned) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "CSV row count (" . count($csv) . ") must equal the panel's space assigned ({$spaceAssigned}). Please ensure your CSV contains exactly {$spaceAssigned} email records."
-                ], 422);
+            if ($spaceAssigned > 0) {
+                // Get existing email count for this panel
+                $splitIds = $orderPanel->orderPanelSplits->pluck('id');
+                $existingEmailCount = OrderEmail::whereIn('order_split_id', $splitIds)->count();
+                $totalAfterImport = $existingEmailCount + count($csv);
+                
+                // Allow imports in batches of 200 or less (for the last batch)
+                // But ensure total doesn't exceed space_assigned
+                if ($totalAfterImport > $spaceAssigned) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Cannot import " . count($csv) . " emails. Current emails: {$existingEmailCount}, Space assigned: {$spaceAssigned}. You can import up to " . ($spaceAssigned - $existingEmailCount) . " more emails."
+                    ], 422);
+                }
+                
+                // Validate batch size (200 emails per batch, except last batch can be less)
+                $remainingSpace = $spaceAssigned - $existingEmailCount;
+                if (count($csv) > 200 && count($csv) != $remainingSpace) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Please import in batches of 200 emails. For this import, you can upload up to 200 emails (or {$remainingSpace} emails to complete the panel)."
+                    ], 422);
+                }
             }
 
             $emailsToImport = [];
@@ -2263,16 +2281,30 @@ class OrderController extends Controller
                     'uploaded_file_path' => $savedFilePath
                 ]);
 
-                // Delete existing emails for this specific order panel split
-                OrderEmail::where('order_id', $orderPanel->order_id)
-                    ->where('order_split_id', $orderPanelSplit->id)
-                    ->delete();
+                // Get existing email count and determine next batch number
+                $splitIds = $orderPanel->orderPanelSplits->pluck('id');
+                $existingEmailCount = OrderEmail::whereIn('order_split_id', $splitIds)->count();
+                
+                // Calculate starting batch number based on existing emails
+                $startingBatchNumber = floor($existingEmailCount / 200) + 1;
 
-                // Insert new emails in batches
-                $batchSize = 500;
+                // Insert new emails in batches with batch_id assignment
+                // Each batch contains 200 emails
+                $batchSize = 200;
+                $batchNumber = $startingBatchNumber;
+                
                 for ($i = 0; $i < count($emailsToImport); $i += $batchSize) {
                     $batch = array_slice($emailsToImport, $i, $batchSize);
+                    
+                    // Assign batch_id to each email in the current batch
+                    foreach ($batch as &$email) {
+                        $email['batch_id'] = $batchNumber;
+                    }
+                    
+                    // Insert batch into database
                     OrderEmail::insert($batch);
+                    
+                    $batchNumber++;
                 }
 
                 // Update the order panel with customized note if provided

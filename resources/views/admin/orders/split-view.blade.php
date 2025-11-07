@@ -298,7 +298,7 @@
                     </div>
                     <div>
                        <h6 class="mb-0 fw-bold text-white">Customized Note</h6>
-                       <small class="text-light opacity-75">Additional information provided</small>
+                       <small class="opacity-75">Additional information provided</small>
                     </div>
                   </div>
                   
@@ -395,20 +395,17 @@
                         </div>
                     </div>
                 </div>
-                <div class="table-responsive">
-                    <table id="email-configuration" class="display w-100">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Last Name</th>
-                                <th>Email</th>
-                                <th>Password</th>
-                                <!-- <th>Action</th> -->
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
+                                <div class="table-responsive">
+                    <!-- Batch-wise email display -->
+                    <div id="email-batches-container">
+                        <!-- Batches will be loaded dynamically via JavaScript -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Loading email batches...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -471,6 +468,67 @@
                         <button type="submit"
                             class="border border-success py-1 px-3 w-100 bg-transparent text-success rounded-2">Yes,
                             Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Batch-specific Import Modal -->
+<div class="modal fade" id="BatchImportModal" tabindex="-1" aria-labelledby="BatchImportModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="BatchImportModalLabel">
+                    <i class="fa-solid fa-layer-group me-2"></i>
+                    Import Emails for <span id="batchNumberTitle"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-info-circle me-2"></i>
+                    You are importing emails for <strong id="batchNumberInfo"></strong>. 
+                    Expected: <strong id="expectedCountInfo"></strong> emails.
+                </div>
+                
+                <div class="row text-muted" id="batchCsvInstructions">
+                    <p class="text-danger">Only .csv files are accepted.</p>
+                    <p class="text-danger">The CSV file must include the following headers: <strong>First Name</strong>,
+                        <strong>Last Name</strong>, <strong>Email address</strong>, and <strong>Password</strong>.
+                    </p>
+                    <p><a href="{{url('/').'/assets/samples/emails.csv'}}"><strong class="text-primary">Download
+                                Sample File</strong></a></p>
+                </div>
+                
+                <div class="alert alert-success d-none" id="batchFileSelectedInfo">
+                    <i class="fa-solid fa-check-circle me-2"></i>
+                    <span id="batchSelectedFileName">File selected successfully</span>
+                </div>
+                
+                <form id="BatchImportForm" action="{{ route('admin.order.panel.email.bulkImport') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="order_panel_id" value="{{ $orderPanel->id }}">
+                    <input type="hidden" name="batch_id" id="batch_id_input" value="">
+                    <input type="hidden" name="expected_count" id="expected_count_input" value="">
+                    
+                    <div class="mb-3">
+                        <label for="batch_file" class="form-label">Select CSV *</label>
+                        <input type="file" class="form-control" id="batch_file" name="bulk_file" accept=".csv"
+                            required>
+                    </div>
+
+                    <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                        <button type="button"
+                            class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                            data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit"
+                            class="border border-success py-1 px-3 w-100 bg-transparent text-success rounded-2">
+                            <i class="fa-solid fa-upload me-1"></i>
+                            Import for Batch
+                        </button>
                     </div>
                 </form>
             </div>
@@ -660,39 +718,23 @@
         const splitTotalInboxes = {{ $splitTotalInboxes }};
         const maxEmails = splitTotalInboxes || 0; // If splitTotalInboxes is 0, allow unlimited emails
         
-        // Function declarations first
-        function updateRowCount(table) {
-            const rowCount = table.rows().count();
+        // Function to update the total email count display
+        function updateTotalCount(totalEmails) {
             if (maxEmails > 0) {
-                $('#totalRowCount').text(rowCount + "/" + splitTotalInboxes);
+                $('#totalRowCount').text(totalEmails + "/" + maxEmails);
             } else {
-                $('#totalRowCount').text(rowCount + " (Unlimited)");
+                $('#totalRowCount').text(totalEmails);
             }
-            updateProgressBar(table);
+            updateProgressBar(totalEmails);
         }
 
-        function updateAddButtonState(table) {
-            const rowCount = table.rows().count();
-            const addButton = $('#addNewBtn');
-            
-            if (maxEmails > 0 && rowCount >= maxEmails) {
-                addButton.prop('disabled', true);
-                addButton.attr('title', `Maximum limit of ${maxEmails} emails reached`);
-            } else {
-                addButton.prop('disabled', false);
-                addButton.removeAttr('title');
-            }
-        }
-
-        function updateProgressBar(table) {
-            const rowCount = table.rows().count();
+        function updateProgressBar(totalEmails) {
             let percentage = 0;
             
             if (maxEmails > 0) {
-                percentage = Math.min((rowCount / maxEmails) * 100, 100);
+                percentage = Math.min((totalEmails / maxEmails) * 100, 100);
             } else {
-                // For unlimited inboxes, use a different logic
-                percentage = Math.min((rowCount / 100) * 100, 100);
+                percentage = Math.min((totalEmails / 100) * 100, 100);
             }
             
             const progressBar = $('#emailProgressBar');
@@ -701,7 +743,6 @@
             
             progressBar.removeClass('bg-primary bg-warning bg-danger');
             if (maxEmails > 0) {
-                // For limited inboxes
                 if (percentage >= 90) {
                     progressBar.addClass('bg-danger');
                 } else if (percentage >= 70) {
@@ -710,243 +751,348 @@
                     progressBar.addClass('bg-primary');
                 }
             } else {
-                // For unlimited inboxes, always show primary color
                 progressBar.addClass('bg-primary');
             }
         }
-
-        // Initialize DataTable
-        let emailTable = $('#email-configuration').DataTable({
-            responsive: true,
-            paging: false,
-            searching: false,
-            info: false,
-            dom: 'frtip',
-            autoWidth: false,
-            columnDefs: [
-                { width: '25%', targets: 0 }, // Name column
-                { width: '25%', targets: 1 }, // Last Name column
-                { width: '25%', targets: 2 }, // Email column
-                { width: '25%', targets: 3 }, // Password column
-                // { width: '10%', targets: 4 }  // Action column
-            ],
-            responsive: {
-                details: {
-                    display: $.fn.dataTable.Responsive.display.modal({
-                        header: function(row) {
-                            return 'Email Details';
-                        }
-                    }),
-                    renderer: $.fn.dataTable.Responsive.renderer.tableAll()
-                }
-            },
-            ajax: {
-                url: '/admin/orders/panel/{{ $orderPanel->id }}/emails',
-                dataSrc: function(json) {
-                    return json.data || [];
-                }
-            },
-            columns: [
-                { 
-                    data: 'name',
-                    render: function(data, type, row) {
-                        return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter name">`;
-                    }
-                },
-                { 
-                    data: 'last_name',
-                    defaultContent: '',
-                    render: function(data, type, row) {
-                        return `<input type="text" class="form-control last_name" value="${data || ''}" placeholder="Enter last name">`;
-                    }
-                },
-                { 
-                    data: 'email',
-                    render: function(data, type, row) {
-                        return `<input type="email" class="form-control email" value="${data || ''}" placeholder="Enter email">`;
-                    }
-                },
-                { 
-                    data: 'password',
-                    render: function(data, type, row) {
-                        return `<input type="password" class="form-control password" value="${data || ''}" placeholder="Enter password">`;
-                    }
-                }
-                // {
-                //     data: 'id',
-                //     render: function(data, type, row) {
-                //         return `<button class="bg-transparent p-0 border-0 deleteEmailBtn" data-id="${data || ''}"><i class="fa-regular fa-trash-can text-danger"></i></button>`;
-                //     }
-                // }
-            ],
-            drawCallback: function(settings) {
-                updateRowCount(this.api());
-                updateAddButtonState(this.api());
-            }
-        });
-
-        // Event listeners
-        emailTable.on('draw', function() {
-            updateRowCount(emailTable);
-            updateAddButtonState(emailTable);
-            updateProgressBar(emailTable);
-        });
-
-        // Add new row button click handler
-        $('#addNewBtn').click(function() {
-            const rowCount = emailTable.rows().count();
-            if (maxEmails > 0 && rowCount >= maxEmails) {
-                toastr.error(`You can only add up to ${maxEmails} email accounts as per your panel configuration.`);
-                return;
-            }
-
-            emailTable.row.add({
-                name: '',
-                last_name: '',
-                email: '',
-                password: '',
-                id: ''
-            }).draw(false);
-        });
-
-        // Save all button click handler
-        $('#saveAllBtn').click(function() {
-            const emailsToSave = [];
-            let isValid = true;
-
-            $(emailTable.rows().nodes()).each(function() {
-                const row = $(this);
-                const nameField = row.find('.name');
-                const lastNameField = row.find('.last_name');
-                const emailField = row.find('.email');
-                const passwordField = row.find('.password');
-
-                // Reset validation classes
-                nameField.removeClass('is-invalid');
-                lastNameField.removeClass('is-invalid');
-                emailField.removeClass('is-invalid');
-                passwordField.removeClass('is-invalid');
-
-                const name = nameField.val()?.trim();
-                const lastName = lastNameField.val()?.trim();
-                const email = emailField.val()?.trim();
-                const password = passwordField.val()?.trim();
-
-                // Validate fields
-                if (!name) {
-                    nameField.addClass('is-invalid');
-                    isValid = false;
-                }
-                if (!lastName) {
-                    lastNameField.addClass('is-invalid');
-                    isValid = false;
-                }
-                if (!email) {
-                    emailField.addClass('is-invalid');
-                    isValid = false;
-                }
-                if (!password) {
-                    passwordField.addClass('is-invalid');
-                    isValid = false;
-                }
-
-                if (name && lastName && email && password) {
-                    emailsToSave.push({ name, last_name: lastName, email, password });
-                }
-            });
-
-            if (!isValid) {
-                toastr.error('Please fill in all required fields');
-                return;
-            }
-
-            // Send as JSON to avoid max_input_vars limit
+        
+        // Function to load emails by batch
+        function loadEmailBatches() {
             $.ajax({
-                url: '/admin/orders/panel/emails',
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'Content-Type': 'application/json'
-                },
-                data: JSON.stringify({
-                    order_panel_id: {{ $orderPanel->id }},
-                    emails: emailsToSave
-                }),
+                url: '/admin/orders/panel/{{ $orderPanel->id }}/emails/batches',
+                method: 'GET',
                 success: function(response) {
-                    toastr.success('Emails saved successfully');
-                    emailTable.ajax.reload();
+                    if (response.success) {
+                        displayEmailBatches(response);
+                        updateTotalCount(response.total_emails);
+                    } else {
+                        showEmptyState();
+                    }
                 },
                 error: function(xhr) {
-                    console.error('Error response:', xhr.responseText);
-                    if (xhr.responseJSON && xhr.responseJSON.errors) {
-                        // Loop through each error and mark fields as invalid
-                        Object.keys(xhr.responseJSON.errors).forEach(function(key) {
-                            // Handle array fields like emails.0.email
-                            if (key.includes('emails.')) {
-                                const parts = key.split('.');
-                                const index = parseInt(parts[1]); // Get the row index as integer
-                                const field = parts[2]; // Get the field name (email, password, last_name, etc.)
-                                const errorMsg = xhr.responseJSON.errors[key][0]; // Get the first error message
-                                
-                                // Find the input field at the specific row
-                                const row = $(emailTable.rows().nodes()).eq(index);
-                                const input = row.find(`.${field}`);
-                                
-                                if (input.length) {
-                                    input.addClass('is-invalid');
-                                    
-                                    // Add tooltip or display error message
-                                    input.attr('title', errorMsg);
-                                    
-                                    // Optionally create/update feedback element
-                                    let feedback = input.next('.invalid-feedback');
-                                    if (!feedback.length) {
-                                        input.after(`<div class="invalid-feedback">${errorMsg}</div>`);
-                                    } else {
-                                        feedback.text(errorMsg);
-                                    }
-                                }
-                            }
-                        });
-                        toastr.error('Please correct the errors in the form');
-                    } else {
-                        toastr.error(xhr.responseJSON?.message || 'Error saving emails');
-                    }
+                    console.error('Error loading email batches:', xhr);
+                    showEmptyState('Error loading email batches. Please refresh the page.');
                 }
             });
+        }
+
+        // Function to display email batches
+        function displayEmailBatches(response) {
+            const container = $('#email-batches-container');
+            container.empty();
+
+            if (!response.batches || response.batches.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            // Create accordion for batches
+            const accordionId = 'emailBatchesAccordion';
+            let accordionHtml = `<div class="accordion" id="${accordionId}">`;
+
+            response.batches.forEach((batch, index) => {
+                const batchNumber = batch.batch_number;
+                const emailCount = batch.email_count;
+                const expectedCount = batch.expected_count || 200;
+                const emails = batch.emails || [];
+                const isFirstBatch = index === 0;
+                
+                // Determine badge color based on email count
+                let badgeClass = 'bg-secondary';
+                if (emailCount === 0) {
+                    badgeClass = 'bg-danger';
+                } else if (emailCount < expectedCount) {
+                    badgeClass = 'bg-warning';
+                } else {
+                    badgeClass = 'bg-success';
+                }
+
+                accordionHtml += `
+                    <div class="mb-3 border rounded">
+                        <h2 class="accordion-header" id="heading${batchNumber}">
+                            <button class="accordion-button ${isFirstBatch ? '' : 'collapsed'}" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#collapse${batchNumber}" 
+                                    aria-expanded="${isFirstBatch ? 'true' : 'false'}" aria-controls="collapse${batchNumber}">
+                                <div class="d-flex align-items-center justify-content-between w-100 pe-3">
+                                    <div>
+                                        <span class="fw-bold">
+                                            <i class="fa-solid fa-layer-group me-2"></i>
+                                            Batch ${batchNumber}
+                                        </span>
+                                        <small class="text-muted ms-2">(${emailCount === 0 ? 'Empty' : emailCount} / ${expectedCount} emails)</small>
+                                    </div>
+                                    <span class="badge ${badgeClass} rounded-pill">
+                                        ${emailCount === 0 ? 'Empty' : emailCount + ' emails'}
+                                    </span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapse${batchNumber}" class="accordion-collapse collapse ${isFirstBatch ? 'show' : ''}" 
+                             aria-labelledby="heading${batchNumber}" data-bs-parent="#${accordionId}">
+                            <div class="accordion-body">
+                `;
+
+                if (emails.length > 0) {
+                    // Create table for this batch
+                    accordionHtml += `
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="">
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 25%">Name</th>
+                                        <th style="width: 25%">Last Name</th>
+                                        <th style="width: 30%">Email</th>
+                                        <th style="width: 15%">Password</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    emails.forEach((email, emailIndex) => {
+                        accordionHtml += `
+                            <tr>
+                                <td>${emailIndex + 1}</td>
+                                <td>${escapeHtml(email.name || '')}</td>
+                                <td>${escapeHtml(email.last_name || '')}</td>
+                                <td><small>${escapeHtml(email.email || '')}</small></td>
+                                <td><small class="font-monospace">${escapeHtml(email.password || '')}</small></td>
+                            </tr>
+                        `;
+                    });
+
+                    accordionHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    // Empty batch - show import button
+                    accordionHtml += `
+                        <div class="text-center py-4">
+                            <div class="alert alert-info mb-3">
+                                <i class="fa-solid fa-info-circle me-2"></i>
+                                <strong>Batch ${batchNumber} is empty.</strong> Expected: ${expectedCount} emails.
+                            </div>
+                            <button class="btn btn-primary import-batch-btn" data-batch-id="${batchNumber}" data-expected-count="${expectedCount}">
+                                <i class="fa-solid fa-upload me-2"></i>
+                                Import Emails for Batch ${batchNumber}
+                            </button>
+                        </div>
+                    `;
+                }
+
+                accordionHtml += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            accordionHtml += '</div>';
+            
+            // Add summary at the top
+            const summaryHtml = `
+                <div class="alert alert-primary mb-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <i class="fa-solid fa-chart-bar me-2"></i>
+                            <strong>Summary:</strong> ${response.total_batches} batches | ${response.total_emails} total emails
+                        </div>
+                        <div>
+                            <span class="badge bg-primary">Space Assigned: ${response.space_assigned}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.html(summaryHtml + accordionHtml);
+        }
+
+        // Function to show empty state
+        function showEmptyState(message = 'No email batches found. Please import emails using the CSV upload feature.') {
+            const container = $('#email-batches-container');
+            container.html(`
+                <div class="text-center py-5">
+                    <i class="fa-solid fa-inbox fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">${message}</h5>
+                    <p class="text-muted">Click "Emails Customization" button above to import emails.</p>
+                </div>
+            `);
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text ? text.toString().replace(/[&<>"']/g, m => map[m]) : '';
+        }
+
+        // Load email batches on page load
+        loadEmailBatches();
+
+        // Handle batch-specific import button clicks
+        $(document).on('click', '.import-batch-btn', function() {
+            const batchId = $(this).data('batch-id');
+            const expectedCount = $(this).data('expected-count');
+            
+            // Set modal content
+            $('#batchNumberTitle').text('Batch ' + batchId);
+            $('#batchNumberInfo').text('Batch ' + batchId);
+            $('#expectedCountInfo').text(expectedCount);
+            $('#batch_id_input').val(batchId);
+            $('#expected_count_input').val(expectedCount);
+            
+            // Reset form
+            $('#BatchImportForm')[0].reset();
+            $('#batch_id_input').val(batchId);
+            $('#expected_count_input').val(expectedCount);
+            $('#batch_file').val('');
+            $('#batchCsvInstructions').removeClass('d-none');
+            $('#batchFileSelectedInfo').addClass('d-none');
+            
+            // Show modal
+            $('#BatchImportModal').modal('show');
         });
 
-        // Delete button click handler
-        $('#email-configuration tbody').on('click', '.deleteEmailBtn', function() {
-            const button = $(this);
-            const row = button.closest('tr');
-            const id = button.data('id');
+        // Batch file selection handler
+        $(document).on('change', '#batch_file', function() {
+            const fileInput = $(this);
+            const file = fileInput[0].files[0];
+            const csvInstructions = $('#batchCsvInstructions');
+            const fileSelectedInfo = $('#batchFileSelectedInfo');
+            const selectedFileName = $('#batchSelectedFileName');
             
-            if (id) {
-                // Delete existing record
-                $.ajax({
-                    url: `/admin/orders/panel/emails/${id}`,
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function() {
-                        toastr.success('Email deleted successfully');
-                        // Remove just the deleted row instead of reloading the entire table
-                        emailTable.row(row).remove().draw(false);
-                        updateRowCount(emailTable);
-                        updateAddButtonState(emailTable);
-                    },
-                    error: function(xhr) {
-                        toastr.error(xhr.responseJSON?.message || 'Error deleting email');
+            fileInput.removeClass('is-invalid is-valid');
+            fileInput.next('.invalid-feedback').remove();
+            
+            if (file) {
+                if (file.type === 'text/csv' || file.type === 'application/csv' || file.name.toLowerCase().endsWith('.csv')) {
+                    csvInstructions.addClass('d-none');
+                    fileSelectedInfo.removeClass('d-none');
+                    selectedFileName.text(`File selected: ${file.name}`);
+                    fileInput.addClass('is-valid');
+                } else {
+                    csvInstructions.removeClass('d-none');
+                    fileSelectedInfo.addClass('d-none');
+                    fileInput.addClass('is-invalid');
+                    if (!fileInput.next('.invalid-feedback').length) {
+                        fileInput.after('<div class="invalid-feedback">Please select a valid CSV file.</div>');
                     }
-                });
+                }
             } else {
-                // Remove unsaved row and redraw the table
-                emailTable.row(row).remove().draw(false);
-                updateRowCount(emailTable);
-                updateAddButtonState(emailTable);
+                csvInstructions.removeClass('d-none');
+                fileSelectedInfo.addClass('d-none');
+                fileInput.removeClass('is-invalid is-valid');
             }
+        });
+
+        // Batch Import Form submission
+        $(document).on('submit', '#BatchImportForm', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const form = $(this);
+            const fileInput = $('#batch_file');
+            const file = fileInput[0].files[0];
+            const batchId = $('#batch_id_input').val();
+            const expectedCount = $('#expected_count_input').val();
+            
+            if (!file) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No File Selected',
+                    text: 'Please select a CSV file to import.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return false;
+            }
+            
+            if (!file.type.includes('csv') && !file.name.toLowerCase().endsWith('.csv')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid File Type',
+                    text: 'Please select a valid CSV file.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return false;
+            }
+
+            const formData = new FormData(this);
+            formData.append('order_panel_id', {{ $orderPanel->id }});
+            formData.append('split_total_inboxes', {{ $splitTotalInboxes }});
+
+            Swal.fire({
+                title: 'Import Batch ' + batchId + '?',
+                text: `This will import up to ${expectedCount} emails for Batch ${batchId}.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Import!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait while we process your file...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    $.ajax({
+                        url: form.attr('action'),
+                        method: 'POST',
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        timeout: 60000,
+                        success: function(response) {
+                            $('#BatchImportModal').modal('hide');
+                            
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: response.message || `Batch ${batchId} has been imported successfully.`,
+                                confirmButtonColor: '#3085d6',
+                                timer: 5000,
+                                timerProgressBar: true
+                            }).then(() => {
+                                loadEmailBatches();
+                            });
+                        },
+                        error: function(xhr, status, error) {
+                            let errorMessage = 'An error occurred while processing the file.';
+                            
+                            if (status === 'timeout') {
+                                errorMessage = 'File processing timed out. Please try with a smaller file.';
+                            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Import Failed',
+                                text: errorMessage,
+                                confirmButtonColor: '#3085d6'
+                            });
+                        }
+                    });
+                }
+            });
+            
+            return false;
         });
 
         // Bulk import functionality
@@ -1145,10 +1291,8 @@
                                 timer: 5000,
                                 timerProgressBar: true
                             }).then(() => {
-                                // Reload the email table
-                                if (typeof emailTable !== 'undefined') {
-                                    emailTable.ajax.reload();
-                                }
+                                // Reload the email batches instead of the old table
+                                loadEmailBatches();
                             });
                         },
                         error: function(xhr, status, error) {

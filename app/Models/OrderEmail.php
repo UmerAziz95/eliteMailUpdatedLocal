@@ -11,6 +11,7 @@ class OrderEmail extends Model
         'user_id',
         'order_split_id',
         'contractor_id',
+        'batch_id',
         'name',
         'last_name',
         'email',
