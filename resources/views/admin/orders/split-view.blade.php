@@ -524,6 +524,7 @@
                         <button type="button"
                             class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
                             data-bs-dismiss="modal">Cancel</button>
+                            
                         <button type="submit"
                             class="border border-success py-1 px-3 w-100 bg-transparent text-success rounded-2">
                             <i class="fa-solid fa-upload me-1"></i>
@@ -629,7 +630,7 @@
         const selectedStatus = $('input[name="marked_status"]:checked').val();
         
         if (!selectedStatus) {
-            Swal.fire({
+            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                 icon: 'warning',
                 title: 'Status Required',
                 text: 'Please select a status before submitting.'
@@ -638,14 +639,12 @@
         }
 
         // Show loading alert
-        Swal.fire({
+        if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
             title: 'Updating Status...',
             text: 'Please wait while we update the panel status.',
             allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
+            didOpen: () => { Swal.showLoading(); }
+                    });
 
         // Submit the form via AJAX
         $.ajax({
@@ -658,7 +657,7 @@
                 Swal.close();
                 $('#order-split-status-update').modal('hide');
                 
-                Swal.fire({
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                     icon: 'success',
                     title: 'Success!',
                     text: response.message || 'Panel status updated successfully.',
@@ -683,7 +682,7 @@
                     }
                 }
                 
-                Swal.fire({
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                     icon: 'error',
                     title: 'Error!',
                     text: errorMessage,
@@ -1003,30 +1002,34 @@
             const expectedCount = $('#expected_count_input').val();
             
             if (!file) {
-                Swal.fire({
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                     icon: 'warning',
                     title: 'No File Selected',
                     text: 'Please select a CSV file to import.',
                     confirmButtonColor: '#3085d6'
                 });
+                $('#BulkImportForm button[type="submit"]').prop('disabled', false);
                 return false;
             }
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
             
             if (!file.type.includes('csv') && !file.name.toLowerCase().endsWith('.csv')) {
-                Swal.fire({
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                     icon: 'warning',
                     title: 'Invalid File Type',
                     text: 'Please select a valid CSV file.',
                     confirmButtonColor: '#3085d6'
                 });
+                $('#BulkImportForm button[type="submit"]').prop('disabled', false);
                 return false;
             }
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
 
             const formData = new FormData(this);
             formData.append('order_panel_id', {{ $orderPanel->id }});
             formData.append('split_total_inboxes', {{ $splitTotalInboxes }});
 
-            Swal.fire({
+            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                 title: 'Import Batch ' + batchId + '?',
                 text: `This will import up to ${expectedCount} emails for Batch ${batchId}.`,
                 icon: 'question',
@@ -1037,15 +1040,13 @@
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    Swal.fire({
+                    if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                         title: 'Processing...',
                         text: 'Please wait while we process your file...',
                         allowOutsideClick: false,
                         allowEscapeKey: false,
                         showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
+                        didOpen: () => { Swal.showLoading(); }
                     });
 
                     $.ajax({
@@ -1061,7 +1062,7 @@
                         success: function(response) {
                             $('#BatchImportModal').modal('hide');
                             
-                            Swal.fire({
+                            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                                 icon: 'success',
                                 title: 'Success!',
                                 text: response.message || `Batch ${batchId} has been imported successfully.`,
@@ -1073,6 +1074,8 @@
                             });
                         },
                         error: function(xhr, status, error) {
+                            // Re-enable submit button on error
+                            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
                             let errorMessage = 'An error occurred while processing the file.';
                             
                             if (status === 'timeout') {
@@ -1081,7 +1084,7 @@
                                 errorMessage = xhr.responseJSON.message;
                             }
                             
-                            Swal.fire({
+                            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                                 icon: 'error',
                                 title: 'Import Failed',
                                 text: errorMessage,
@@ -1089,10 +1092,21 @@
                             });
                         }
                     });
+                } else {
+                    // Re-enable submit if user cancels the confirmation dialog
+                    $('#BatchImportForm button[type="submit"]').prop('disabled', false);
                 }
             });
             
             return false;
+        });
+
+        // Ensure Batch Import submit is enabled when modal opens/closes
+        $('#BatchImportModal').on('show.bs.modal', function() {
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
+        });
+        $('#BatchImportModal').on('hidden.bs.modal', function() {
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
         });
 
         // Bulk import functionality
@@ -1215,31 +1229,35 @@
             
             // Validate file selection
             if (!file) {
-                Swal.fire({
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                     icon: 'warning',
                     title: 'No File Selected',
                     text: 'Please select a CSV file to import.',
                     confirmButtonColor: '#3085d6'
                 });
+                $('#BatchImportForm button[type="submit"]').prop('disabled', false);
                 return false;
             }
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
             
             // Validate file type
             if (!file.type.includes('csv') && !file.name.toLowerCase().endsWith('.csv')) {
-                Swal.fire({
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                     icon: 'warning',
                     title: 'Invalid File Type',
                     text: 'Please select a valid CSV file.',
                     confirmButtonColor: '#3085d6'
                 });
+                $('#BatchImportForm button[type="submit"]').prop('disabled', false);
                 return false;
             }
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
 
             const formData = new FormData(this);
             const order_panel_id = {{ $orderPanel->id }};
             const split_total_inboxes = {{ $splitTotalInboxes }};
 
-            Swal.fire({
+            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                 title: 'Are you sure?',
                 text: 'Do you want to import this CSV file?',
                 icon: 'warning',
@@ -1255,15 +1273,13 @@
                     formData.append('split_total_inboxes', split_total_inboxes);
 
                     // Show processing dialog
-                    Swal.fire({
+                    if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                         title: 'Processing...',
                         text: 'Please wait while we process your file...',
                         allowOutsideClick: false,
                         allowEscapeKey: false,
                         showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
+                        didOpen: () => { Swal.showLoading(); }
                     });
 
                     $.ajax({
@@ -1283,7 +1299,7 @@
                             $('#BulkImportModal').modal('hide');
                             
                             // Show success message
-                            Swal.fire({
+                            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                                 icon: 'success',
                                 title: 'Success!',
                                 text: response.message || 'File has been imported successfully.',
@@ -1317,7 +1333,7 @@
                                 }
                             }
                             
-                            Swal.fire({
+                            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                                 icon: 'error',
                                 title: 'Import Failed',
                                 text: errorMessage,
@@ -1327,12 +1343,27 @@
                         }
                     });
                 } else {
-                    console.log('Import cancelled by user');
+                    // User cancelled confirmation: ensure submit stays enabled
+                    $('#BatchImportForm button[type="submit"]').prop('disabled', false);
                 }
             });
             
             return false;
         });
+
+        // Ensure submit buttons are re-enabled if the SweetAlert is cancelled/closed
+        $(document).on('click', '.swal2-cancel, .swal2-close', function() {
+            $('#BulkImportForm button[type="submit"]').prop('disabled', false);
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
+        });
     });
 </script>
 @endpush
+
+
+
+
+
+
+
+
