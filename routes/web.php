@@ -662,6 +662,8 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/order/email/bulk-import', [ContractorOrderController::class, 'orderImportProcess'])->name('order.email.bulkImport');
     Route::post('/order/panel/email/bulk-import', [ContractorOrderController::class, 'orderSplitImportProcess'])->name('order.panel.email.bulkImport');
     Route::get('/order/panel/{orderPanelId}/email/download-csv', [ContractorOrderController::class, 'downloadPanelCsv'])->name('order.panel.email.downloadCsv');
+    // Contractor: Email batches view for a panel
+    Route::get('/orders/panel/{orderPanelId}/emails/batches', [ContractorOrderController::class, 'getPanelEmailsByBatch']);
     
     Route::get('/dashboard', [App\Http\Controllers\Contractor\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/orders-history', [App\Http\Controllers\Contractor\DashboardController::class, 'getOrdersHistory'])->name('orders.history');

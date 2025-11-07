@@ -82,13 +82,12 @@ class AdminOrderEmailController extends Controller
             
             // Get emails for all splits of this panel grouped by batch_id
             $splitIds = $orderPanel->orderPanelSplits->pluck('id');
-            
             $emailsByBatch = OrderEmail::whereIn('order_split_id', $splitIds)
                 ->select('id', 'name', 'last_name', 'email', 'password', 'batch_id')
                 ->orderBy('batch_id')
                 ->get()
                 ->groupBy('batch_id');
-
+            // dd($emailsByBatch);
             // Generate all batches (even empty ones)
             $batches = [];
             for ($i = 1; $i <= $totalBatches; $i++) {

@@ -387,19 +387,14 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table id="email-configuration" class="display w-100">
-                        <thead>
-                            <tr>
-                                <th>First Name</th>
-                                <th>Last Name</th>
-                                <th>Email</th>
-                                <th>Password</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
+                    <div id="email-batches-container">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Loading email batches...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -467,6 +462,60 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Batch-specific Import Modal -->
+<div class="modal fade" id="BatchImportModal" tabindex="-1" aria-labelledby="BatchImportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="BatchImportModalLabel">
+                    <i class="fa-solid fa-layer-group me-2"></i>
+                    Import Emails for <span id="batchNumberTitle"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-info-circle me-2"></i>
+                    You are importing emails for <strong id="batchNumberInfo"></strong>. 
+                    Expected: <strong id="expectedCountInfo"></strong> emails.
+                </div>
+
+                <div class="row text-muted" id="batchCsvInstructions">
+                    <p class="text-danger">Only .csv files are accepted.</p>
+                    <p class="text-danger">The CSV file must include the following headers: <strong>First Name</strong>, <strong>Last Name</strong>, <strong>Email address</strong>, and <strong>Password</strong>.</p>
+                    <p><a href="{{ url('/').'/assets/samples/emails.csv' }}"><strong class="text-primary">Download Sample File</strong></a></p>
+                </div>
+
+                <div class="alert alert-success d-none" id="batchFileSelectedInfo">
+                    <i class="fa-solid fa-check-circle me-2"></i>
+                    <span id="batchSelectedFileName">File selected successfully</span>
+                </div>
+
+                <form id="BatchImportForm" action="{{ route('contractor.order.panel.email.bulkImport') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="order_panel_id" value="{{ $orderPanel->id }}">
+                    <input type="hidden" name="batch_id" id="batch_id_input" value="">
+                    <input type="hidden" name="expected_count" id="expected_count_input" value="">
+
+                    <div class="mb-3">
+                        <label for="batch_file" class="form-label">Select CSV *</label>
+                        <input type="file" class="form-control" id="batch_file" name="bulk_file" accept=".csv" required>
+                    </div>
+
+                    <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                        <button type="button" class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="border border-success py-1 px-3 w-100 bg-transparent text-success rounded-2">
+                            <i class="fa-solid fa-upload me-1"></i>
+                            Import for Batch
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
 </div>
 
 <!-- Status Change Modal -->
@@ -766,6 +815,123 @@
         
         const splitTotalInboxes = {{ $splitTotalInboxes }};
         const maxEmails = splitTotalInboxes || 0; // If splitTotalInboxes is 0, allow unlimited emails
+        
+        // If batch UI is present (no #email-configuration table), load batches and exit early
+        if (!$('#email-configuration').length) {
+            function updateTotalCount(totalEmails) {
+                if (maxEmails > 0) {
+                    $('#totalRowCount').text(totalEmails + "/" + splitTotalInboxes);
+                } else {
+                    $('#totalRowCount').text(totalEmails);
+                }
+                updateProgressBar(totalEmails);
+            }
+            function updateProgressBar(totalEmails) {
+                let percentage = 0;
+                if (maxEmails > 0) {
+                    percentage = Math.min((totalEmails / maxEmails) * 100, 100);
+                } else {
+                    percentage = Math.min((totalEmails / 100) * 100, 100);
+                }
+                const progressBar = $('#emailProgressBar');
+                progressBar.css('width', percentage + '%').attr('aria-valuenow', percentage);
+                progressBar.removeClass('bg-primary bg-warning bg-danger');
+                if (maxEmails > 0) {
+                    if (percentage >= 90) progressBar.addClass('bg-danger');
+                    else if (percentage >= 70) progressBar.addClass('bg-warning');
+                    else progressBar.addClass('bg-primary');
+                } else { progressBar.addClass('bg-primary'); }
+            }
+            function showEmptyState(message = 'No email batches found. Please import emails using the CSV upload feature.') {
+                $('#email-batches-container').html(`
+                    <div class=\"text-center py-5\">
+                        <i class=\"fa-solid fa-inbox fa-4x text-muted mb-3\"></i>
+                        <h5 class=\"text-muted\">${message}</h5>
+                        <p class=\"text-muted\">Click \"Emails Customization\" to import emails.</p>
+                    </div>
+                `);
+            }
+            function escapeHtml(text) {
+                const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+                return text ? text.toString().replace(/[&<>"']/g, m => map[m]) : '';
+            }
+            function displayEmailBatches(response) {
+                const container = $('#email-batches-container');
+                container.empty();
+                if (!response.batches || response.batches.length === 0) { showEmptyState(); return; }
+                const accordionId = 'emailBatchesAccordion';
+                let html = `<div class=\"accordion\" id=\"${accordionId}\">`;
+                response.batches.forEach((b, i) => {
+                    const n=b.batch_number, cnt=b.email_count, exp=b.expected_count||200, emails=b.emails||[], first=i===0;
+                    let badge='bg-secondary'; if (cnt===0) badge='bg-danger'; else if (cnt<exp) badge='bg-warning'; else badge='bg-success';
+                    html += `
+                        <div class=\"mb-3 border rounded\">
+                          <h2 class=\"accordion-header\" id=\"heading${n}\"> 
+                            <button class=\"accordion-button ${first?'':'collapsed'}\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#collapse${n}\" aria-expanded=\"${first?'true':'false'}\" aria-controls=\"collapse${n}\"> 
+                              <div class=\"d-flex align-items-center justify-content-between w-100 pe-3\"> 
+                                <div><span class=\"fw-bold\"><i class=\"fa-solid fa-layer-group me-2\"></i>Batch ${n}</span> 
+                                <small class=\"text-muted ms-2\">(${cnt===0?'Empty':cnt} / ${exp} emails)</small></div> 
+                                <span class=\"badge ${badge} rounded-pill\">${cnt===0?'Empty':cnt+' emails'}</span></div> 
+                            </button>
+                          </h2>
+                          <div id=\"collapse${n}\" class=\"accordion-collapse collapse ${first?'show':''}\" aria-labelledby=\"heading${n}\" data-bs-parent=\"#${accordionId}\"> 
+                            <div class=\"accordion-body\">`;
+                    if (emails.length>0) {
+                        html += `<div class=\"table-responsive\"><table class=\"table table-striped table-hover mb-0\"><thead><tr><th>First Name</th><th>Last Name</th><th>Email</th><th>Password</th></tr></thead><tbody>`;
+                        emails.forEach(em => { html += `<tr><td>${escapeHtml(em.name)}</td><td>${escapeHtml(em.last_name)}</td><td>${escapeHtml(em.email)}</td><td><code>${escapeHtml(em.password)}</code></td></tr>`; });
+                        html += `</tbody></table></div>`;
+                    } else {
+                        html += `<div class=\"text-center py-4\"><i class=\"fa-solid fa-inbox fa-2x text-muted mb-2\"></i><p class=\"text-muted mb-3\">No emails imported for this batch yet.</p><button class=\"btn btn-outline-primary import-batch-btn\" data-batch-id=\"${n}\" data-expected-count=\"${exp}\"><i class=\"fa-solid fa-upload me-1\"></i> Import for Batch ${n}</button></div>`;
+                    }
+                    html += `</div></div></div>`;
+                });
+                html += `</div>`;
+                const summary = `<div class=\"d-flex align-items-center justify-content-between mb-3\"><div><span class=\"badge bg-secondary me-2\">Total Batches: ${response.total_batches}</span><span class=\"badge bg-info\">Total Emails: ${response.total_emails}</span></div><div><span class=\"badge bg-primary\">Space Assigned: ${response.space_assigned}</span></div></div>`;
+                container.html(summary + html);
+            }
+            function loadEmailBatches() {
+                $.ajax({
+                    url: '/contractor/orders/panel/{{ $orderPanel->id }}/emails/batches',
+                    method: 'GET',
+                    success: function(resp){ if(resp.success){ displayEmailBatches(resp); updateTotalCount(resp.total_emails); } else { showEmptyState(resp.message||undefined);} },
+                    error: function(){ showEmptyState('Error loading email batches. Please refresh the page.'); }
+                });
+            }
+            // Batch-specific import button
+            $(document).on('click', '.import-batch-btn', function(){
+                const batchId=$(this).data('batch-id'); const expected=$(this).data('expected-count');
+                $('#batchNumberTitle').text('Batch ' + batchId);
+                $('#batchNumberInfo').text('Batch ' + batchId);
+                $('#expectedCountInfo').text(expected);
+                $('#batch_id_input').val(batchId);
+                $('#expected_count_input').val(expected);
+                const form=$('#BatchImportForm')[0]; if(form) form.reset();
+                $('#batch_file').val(''); $('#batchCsvInstructions').removeClass('d-none'); $('#batchFileSelectedInfo').addClass('d-none');
+                $('#BatchImportModal').modal('show');
+            });
+            // Batch import submit
+            $(document).on('submit', '#BatchImportForm', function(e){
+                e.preventDefault();
+                const file=$('#batch_file')[0].files[0]; if(!file||(!file.type.includes('csv')&&!file.name.toLowerCase().endsWith('.csv'))){ Swal.fire({icon:'warning', title:'Invalid or Missing File'}); return false; }
+                const fd=new FormData(this); fd.append('order_panel_id', {{ $orderPanel->id }}); fd.append('split_total_inboxes', {{ $splitTotalInboxes }});
+                const batchId=$('#batch_id_input').val(); const expected=$('#expected_count_input').val();
+                Swal.fire({title:'Import Batch '+batchId+'?', text:`This will import exactly ${expected} emails.`, icon:'question', showCancelButton:true}).then((r)=>{
+                    if(!r.isConfirmed) return; Swal.fire({title:'Processing...', allowOutsideClick:false, showConfirmButton:false, didOpen:()=>Swal.showLoading()});
+                    $.ajax({url: $(e.target).attr('action'), method:'POST', data:fd, contentType:false, processData:false, headers:{'X-CSRF-TOKEN':$('meta[name="csrf-token"]').attr('content')}, success:function(resp){ $('#BatchImportModal').modal('hide'); Swal.fire({icon:'success', title:'Imported', text: resp.message || 'Batch imported successfully.'}); loadEmailBatches(); }, error:function(xhr, st){ let msg='An error occurred while processing the file.'; if(st==='timeout') msg='File processing timed out.'; else if(xhr.responseJSON&&xhr.responseJSON.message) msg=xhr.responseJSON.message; Swal.fire({icon:'error', title:'Import Failed', text: msg}); }});
+                });
+                return false;
+            });
+            // Bulk import submit (next available batches)
+            $(document).on('submit', '#BulkImportForm', function(e){
+                e.preventDefault(); const fd=new FormData(this); fd.append('order_panel_id', {{ $orderPanel->id }}); fd.append('split_total_inboxes', {{ $splitTotalInboxes }});
+                Swal.fire({title:'Processing...', allowOutsideClick:false, showConfirmButton:false, didOpen:()=>Swal.showLoading()});
+                $.ajax({url: $(this).attr('action'), method:'POST', data:fd, contentType:false, processData:false, headers:{'X-CSRF-TOKEN':$('meta[name="csrf-token"]').attr('content')}, success:function(resp){ $('#BulkImportModal').modal('hide'); Swal.fire({icon:'success', title:'Success!', text: resp.message || 'File imported successfully.'}); loadEmailBatches(); }, error:function(xhr, st){ let msg='An error occurred while processing the file.'; if(st==='timeout') msg='File processing timed out.'; else if(xhr.responseJSON&&xhr.responseJSON.message) msg=xhr.responseJSON.message; else if(xhr.responseText&&xhr.responseText.includes('validation')) msg='File validation failed. Please check your CSV format.'; Swal.fire({icon:'error', title:'Import Failed', text: msg}); }});
+                return false;
+            });
+            // Initial load for batches UI
+            loadEmailBatches();
+            return; // Skip DataTable-related code below
+        }
         
         // Function declarations first
         function updateRowCount(table) {
