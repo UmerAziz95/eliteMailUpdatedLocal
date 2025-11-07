@@ -58,7 +58,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="card p-3 mb-3">
-                        <h6 class="d-flex align-items-center gap-2 d-none">
+                        <h6 class="d-flex align-items-center gap-2">
                             <div class="d-flex align-items-center justify-content-center"
                                 style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                 <i class="fa-regular fa-envelope"></i>
@@ -345,7 +345,7 @@
                             <!-- @if($orderPanel->order->status_manage_by_admin === 'pending' || $orderPanel->order->status_manage_by_admin === 'in-progress') -->
                                 
                             <!-- @endif -->
-                            <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
+                            <button id="addBulkEmail" class="btn btn-primary me-2 d-none" data-bs-toggle="modal"
                                 data-bs-target="#BulkImportModal">
                                 <i class="fa-solid fa-plus me-1"></i> Emails Customization 
                             </button>
