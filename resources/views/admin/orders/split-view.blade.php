@@ -58,7 +58,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="card p-3 mb-3">
-                        <h6 class="d-flex align-items-center gap-2">
+                        <h6 class="d-flex align-items-center gap-2 d-none">
                             <div class="d-flex align-items-center justify-content-center"
                                 style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                 <i class="fa-regular fa-envelope"></i>
@@ -364,7 +364,7 @@
                             
                             @if($uploadedFilePath)
                                 <a href="{{ route('admin.order.panel.email.downloadCsv', ['orderPanelId' => $orderPanel->id]) }}" 
-                                   class="btn btn-outline-success me-2 btn-sm" 
+                                   class="btn btn-outline-success me-2 btn-sm d-none" 
                                    title="Download uploaded CSV file">
                                     <i class="fa-solid fa-download me-1"></i> Download CSV
                                 </a>
