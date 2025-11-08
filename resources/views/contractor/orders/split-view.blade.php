@@ -1019,9 +1019,32 @@
                     `;
 
                     if (emails.length > 0) {
-                        // Create table for this batch
+                        // Create table for this batch with search
                         accordionHtml += `
-                            <div class="table-responsive" style="border-radius: 8px; overflow: hidden; max-height: 500px; overflow-y: auto;">
+                            <!-- Search Bar -->
+                            <div class="mb-3 px-2">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text" style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); border: none; color: white;">
+                                        <i class="fa-solid fa-search"></i>
+                                    </span>
+                                    <input type="text" 
+                                           class="form-control batch-search-input" 
+                                           data-batch="${batchNumber}" 
+                                           placeholder="Search by name, email, or password..." 
+                                           style="font-size: 0.85rem; border-color: #d1d5db;">
+                                    <button class="btn btn-outline-secondary btn-sm batch-clear-search" 
+                                            data-batch="${batchNumber}" 
+                                            type="button"
+                                            style="font-size: 0.75rem;">
+                                        <i class="fa-solid fa-times"></i> Clear
+                                    </button>
+                                </div>
+                                <small class="text-muted ms-1 batch-result-count" data-batch="${batchNumber}" style="font-size: 0.75rem;">
+                                    Showing ${emails.length} of ${emails.length} emails
+                                </small>
+                            </div>
+                            
+                            <div class="table-responsive batch-table-container" data-batch="${batchNumber}" style="border-radius: 8px; overflow: hidden; max-height: 500px; overflow-y: auto;">
                                 <table class="table table-hover mb-0" style="background: transparent;">
                                     <thead style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); color: white; position: sticky; top: 0; z-index: 10;">
                                         <tr>
@@ -1032,26 +1055,26 @@
                                             <th style="width: 15%; padding: 0.5rem; font-size: 0.8rem;">Password</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody class="batch-table-body" data-batch="${batchNumber}">
                         `;
 
                         emails.forEach((email, emailIndex) => {
                             accordionHtml += `
-                                <tr style="border-bottom: 1px solid #e0e2e5;">
+                                <tr class="batch-row" data-batch="${batchNumber}" style="border-bottom: 1px solid #e0e2e5;">
                                     <td style="padding: 0.5rem;">
                                         <span class="badge rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem; background: rgba(79, 70, 229, 0.1); color: var(--second-primary);">
                                             ${emailIndex + 1}
                                         </span>
                                     </td>
-                                    <td style="padding: 0.5rem; font-size: 0.85rem;">${escapeHtml(email.name || '')}</td>
-                                    <td style="padding: 0.5rem; font-size: 0.85rem;">${escapeHtml(email.last_name || '')}</td>
-                                    <td style="padding: 0.5rem;">
+                                    <td class="searchable-name" style="padding: 0.5rem; font-size: 0.85rem;">${escapeHtml(email.name || '')}</td>
+                                    <td class="searchable-lastname" style="padding: 0.5rem; font-size: 0.85rem;">${escapeHtml(email.last_name || '')}</td>
+                                    <td class="searchable-email" style="padding: 0.5rem;">
                                         <span class="badge px-2 py-1" style="font-weight: normal; font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
                                             <i class="fa-solid fa-envelope me-1" style="font-size: 0.65rem;"></i>
                                             ${escapeHtml(email.email || '')}
                                         </span>
                                     </td>
-                                    <td style="padding: 0.5rem;">
+                                    <td class="searchable-password" style="padding: 0.5rem;">
                                         <code class="px-2 py-1 rounded" style="background: rgba(214, 51, 132, 0.1); color: #d63384; font-size: 0.75rem;">
                                             ${escapeHtml(email.password || '')}
                                         </code>
@@ -1264,6 +1287,64 @@
                 $.ajax({url: $(this).attr('action'), method:'POST', data:fd, contentType:false, processData:false, headers:{'X-CSRF-TOKEN':$('meta[name="csrf-token"]').attr('content')}, success:function(resp){ $('#BulkImportModal').modal('hide'); Swal.fire({icon:'success', title:'Success!', text: resp.message || 'File imported successfully.'}); loadEmailBatches(); }, error:function(xhr, st){ let msg='An error occurred while processing the file.'; if(st==='timeout') msg='File processing timed out.'; else if(xhr.responseJSON&&xhr.responseJSON.message) msg=xhr.responseJSON.message; else if(xhr.responseText&&xhr.responseText.includes('validation')) msg='File validation failed. Please check your CSV format.'; Swal.fire({icon:'error', title:'Import Failed', text: msg}); }});
                 return false;
             });
+
+            // Search functionality for batch tables
+            $(document).on('input', '.batch-search-input', function() {
+                const batchNumber = $(this).data('batch');
+                const searchTerm = $(this).val().toLowerCase().trim();
+                const rows = $(`.batch-row[data-batch="${batchNumber}"]`);
+                let visibleCount = 0;
+                const totalCount = rows.length;
+
+                rows.each(function() {
+                    const $row = $(this);
+                    const name = $row.find('.searchable-name').text().toLowerCase();
+                    const lastName = $row.find('.searchable-lastname').text().toLowerCase();
+                    const email = $row.find('.searchable-email').text().toLowerCase();
+                    const password = $row.find('.searchable-password').text().toLowerCase();
+
+                    const matches = name.includes(searchTerm) || 
+                                   lastName.includes(searchTerm) || 
+                                   email.includes(searchTerm) || 
+                                   password.includes(searchTerm);
+
+                    if (matches) {
+                        $row.show();
+                        visibleCount++;
+                    } else {
+                        $row.hide();
+                    }
+                });
+
+                // Update result count
+                $(`.batch-result-count[data-batch="${batchNumber}"]`).text(
+                    `Showing ${visibleCount} of ${totalCount} emails`
+                );
+
+                // Show "no results" message if needed
+                const $tableContainer = $(`.batch-table-container[data-batch="${batchNumber}"]`);
+                $tableContainer.find('.no-results-message').remove();
+                
+                if (visibleCount === 0 && searchTerm !== '') {
+                    const $tbody = $(`.batch-table-body[data-batch="${batchNumber}"]`);
+                    $tbody.append(`
+                        <tr class="no-results-message">
+                            <td colspan="5" class="text-center py-4">
+                                <i class="fa-solid fa-search text-muted mb-2" style="font-size: 2rem;"></i>
+                                <p class="text-muted mb-0">No emails found matching "${escapeHtml(searchTerm)}"</p>
+                            </td>
+                        </tr>
+                    `);
+                }
+            });
+
+            // Clear search functionality
+            $(document).on('click', '.batch-clear-search', function() {
+                const batchNumber = $(this).data('batch');
+                const $input = $(`.batch-search-input[data-batch="${batchNumber}"]`);
+                $input.val('').trigger('input');
+            });
+
             // Initial load for batches UI
             loadEmailBatches();
             return; // Skip DataTable-related code below
