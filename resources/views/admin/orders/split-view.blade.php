@@ -836,10 +836,10 @@
                 let cardBorder = 'border-secondary';
                 
                 if (emailCount === 0) {
-                    badgeClass = 'bg-danger';
-                    statusIcon = 'fa-circle-xmark';
-                    statusText = 'Empty';
-                    cardBorder = 'border-danger';
+                    badgeClass = 'bg-info';
+                    statusIcon = 'fa-circle-dot';
+                    statusText = 'Default';
+                    cardBorder = 'border-info';
                 } else if (emailCount < expectedCount) {
                     badgeClass = 'bg-warning text-dark';
                     statusIcon = 'fa-circle-exclamation';
@@ -848,7 +848,7 @@
                 } else {
                     badgeClass = 'bg-success';
                     statusIcon = 'fa-circle-check';
-                    statusText = 'Complete';
+                    statusText = 'Customized';
                     cardBorder = 'border-success';
                 }
 
@@ -890,9 +890,9 @@
                 if (emails.length > 0) {
                     // Create table for this batch
                     accordionHtml += `
-                        <div class="table-responsive" style="border-radius: 8px; overflow: hidden;">
+                        <div class="table-responsive" style="border-radius: 8px; overflow: hidden; max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover mb-0" style="background: transparent;">
-                                <thead style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); color: white;">
+                                <thead style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); color: white; position: sticky; top: 0; z-index: 10;">
                                     <tr>
                                         <th style="width: 5%; padding: 0.5rem; font-size: 0.8rem;">#</th>
                                         <th style="width: 25%; padding: 0.5rem; font-size: 0.8rem;">First Name</th>

@@ -2,6 +2,38 @@
 
 @section('title', 'Orders')
 
+@push('styles')
+<style>
+    .accordion {
+        --bs-accordion-bg: transparent !important;
+    }
+
+    .accordion-button:focus {
+        box-shadow: none !important
+    }
+
+    .button.collapsed {
+        background-color: var(--slide-bg) !important;
+        color: var(--light-color);
+        cursor: pointer;
+    }
+
+    .button {
+        background-color: var(--second-primary);
+        color: var(--light-color);
+        transition: all ease .4s;
+        cursor: pointer;
+    }
+
+    .accordion-body {
+        color: var(--light-color)
+    }
+
+    .transition-transform {
+        transition: transform 0.3s ease;
+    }
+</style>
+@endpush
 
 @section('content')
 <section class="py-3 overflow-hidden">
@@ -855,6 +887,59 @@
                 const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
                 return text ? text.toString().replace(/[&<>"']/g, m => map[m]) : '';
             }
+
+            // Toggle batch accordions and rotate icon (global function)
+            window.toggleBatchAccordion = function(targetId, buttonElement, event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+
+                const target = document.getElementById(targetId);
+                if (!target) {
+                    console.error('Target not found:', targetId);
+                    return;
+                }
+
+                const batchNumber = targetId.replace('collapse', '');
+                const arrowIcon = document.getElementById(`batch-accordion-icon-${batchNumber}`);
+                const isExpanded = target.classList.contains('show');
+
+                if (isExpanded) {
+                    // Close this accordion
+                    $(target).collapse('hide');
+                    buttonElement.setAttribute('aria-expanded', 'false');
+                    buttonElement.classList.add('collapsed');
+                    if (arrowIcon) {
+                        arrowIcon.style.transform = 'rotate(0deg)';
+                    }
+                } else {
+                    // Close other accordions first
+                    document.querySelectorAll('#emailBatchesAccordion .accordion-collapse.show').forEach(openItem => {
+                        $(openItem).collapse('hide');
+                        const btn = openItem.previousElementSibling?.querySelector('.button');
+                        if (btn) {
+                            btn.setAttribute('aria-expanded', 'false');
+                            btn.classList.add('collapsed');
+                        }
+                        const collapseId = openItem.id;
+                        const batchNum = collapseId.replace('collapse', '');
+                        const icon = document.getElementById(`batch-accordion-icon-${batchNum}`);
+                        if (icon) {
+                            icon.style.transform = 'rotate(0deg)';
+                        }
+                    });
+
+                    // Open this accordion
+                    $(target).collapse('show');
+                    buttonElement.setAttribute('aria-expanded', 'true');
+                    buttonElement.classList.remove('collapsed');
+                    if (arrowIcon) {
+                        arrowIcon.style.transform = 'rotate(180deg)';
+                    }
+                }
+            };
+
             function displayEmailBatches(response) {
                 const container = $('#email-batches-container');
                 container.empty();
@@ -882,10 +967,10 @@
                     let cardBorder = 'border-secondary';
                     
                     if (emailCount === 0) {
-                        badgeClass = 'bg-danger';
-                        statusIcon = 'fa-circle-xmark';
-                        statusText = 'Empty';
-                        cardBorder = 'border-danger';
+                        badgeClass = 'bg-info';
+                        statusIcon = 'fa-circle-dot';
+                        statusText = 'Default';
+                        cardBorder = 'border-info';
                     } else if (emailCount < expectedCount) {
                         badgeClass = 'bg-warning text-dark';
                         statusIcon = 'fa-circle-exclamation';
@@ -894,42 +979,39 @@
                     } else {
                         badgeClass = 'bg-success';
                         statusIcon = 'fa-circle-check';
-                        statusText = 'Complete';
+                        statusText = 'Customized';
                         cardBorder = 'border-success';
                     }
 
                     accordionHtml += `
-                        <div class="card mb-3 border ${cardBorder} shadow-sm" style="border-width: 2px !important; border-radius: 12px; overflow: hidden;">
+                        <div class="accordion-item">
                             <h2 class="accordion-header" id="heading${batchNumber}">
-                                <button class="accordion-button ${isFirstBatch ? '' : 'collapsed'}" 
-                                        type="button" 
-                                        data-bs-toggle="collapse" 
-                                        data-bs-target="#collapse${batchNumber}" 
-                                        aria-expanded="${isFirstBatch ? 'true' : 'false'}" 
-                                        aria-controls="collapse${batchNumber}"
-                                        style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); border: none; padding: 0.5rem 0.75rem; font-weight: 500; color: white;">
-                                    <div class="d-flex align-items-center justify-content-between w-100 pe-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="d-flex align-items-center justify-content-center" 
-                                                 style="width: 35px; height: 35px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; backdrop-filter: blur(10px);">
-                                                <i class="fa-solid fa-layer-group text-white" style="font-size: 0.85rem;"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold mb-0 text-white" style="font-size: 0.9rem;">Batch #${batchNumber}</div>
-                                                <small class="d-flex align-items-center gap-1" style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.7);">
-                                                    <i class="fa-solid fa-envelope" style="font-size: 0.7rem;"></i>
-                                                    ${emailCount} / ${expectedCount} emails
-                                                </small>
-                                            </div>
+                                <div class="button p-3 ${isFirstBatch ? '' : 'collapsed'} d-flex align-items-center justify-content-between" 
+                                     type="button"
+                                     aria-expanded="${isFirstBatch ? 'true' : 'false'}"
+                                     aria-controls="collapse${batchNumber}"
+                                     onclick="toggleBatchAccordion('collapse${batchNumber}', this, event)">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="d-flex align-items-center justify-content-center" 
+                                             style="width: 35px; height: 35px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; backdrop-filter: blur(10px);">
+                                            <i class="fa-solid fa-layer-group text-white" style="font-size: 0.85rem;"></i>
                                         </div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="badge ${badgeClass} rounded-pill px-2 py-1 d-flex align-items-center gap-1" style="font-size: 0.75rem;">
-                                                <i class="fa-solid ${statusIcon}" style="font-size: 0.7rem;"></i>
-                                                ${statusText}
-                                            </span>
+                                        <div>
+                                            <div class="fw-bold mb-0 text-white" style="font-size: 0.9rem;">Batch #${batchNumber}</div>
+                                            <small class="d-flex align-items-center gap-1" style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.7);">
+                                                <i class="fa-solid fa-envelope" style="font-size: 0.7rem;"></i>
+                                                ${emailCount} / ${expectedCount} emails
+                                            </small>
                                         </div>
                                     </div>
-                                </button>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge ${badgeClass} rounded-pill px-2 py-1 d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                                            <i class="fa-solid ${statusIcon}" style="font-size: 0.7rem;"></i>
+                                            ${statusText}
+                                        </span>
+                                        <i class="fas fa-chevron-down transition-transform" id="batch-accordion-icon-${batchNumber}" style="font-size: 12px; transform: rotate(${isFirstBatch ? '180' : '0'}deg);"></i>
+                                    </div>
+                                </div>
                             </h2>
                             <div id="collapse${batchNumber}" class="accordion-collapse collapse ${isFirstBatch ? 'show' : ''}" 
                                  aria-labelledby="heading${batchNumber}" data-bs-parent="#${accordionId}">
@@ -939,9 +1021,9 @@
                     if (emails.length > 0) {
                         // Create table for this batch
                         accordionHtml += `
-                            <div class="table-responsive" style="border-radius: 8px; overflow: hidden;">
+                            <div class="table-responsive" style="border-radius: 8px; overflow: hidden; max-height: 500px; overflow-y: auto;">
                                 <table class="table table-hover mb-0" style="background: transparent;">
-                                    <thead style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); color: white;">
+                                    <thead style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); color: white; position: sticky; top: 0; z-index: 10;">
                                         <tr>
                                             <th style="width: 5%; padding: 0.5rem; font-size: 0.8rem;">#</th>
                                             <th style="width: 25%; padding: 0.5rem; font-size: 0.8rem;">First Name</th>
