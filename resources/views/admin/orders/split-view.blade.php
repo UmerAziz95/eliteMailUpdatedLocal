@@ -379,7 +379,7 @@
                             </button> -->
                         </div>
                     </div>
-                    <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
+                    <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2 d-none">
                         <div class="badge rounded-circle bg-primary p-2">
                             <i class="fa-solid fa-envelope text-white"></i>
                         </div>

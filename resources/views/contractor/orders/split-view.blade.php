@@ -368,7 +368,7 @@
                             </button> -->
                         </div>
                     </div>
-                    <div class="email-stats d-flex align-items-center gap-2 bg- rounded p-2">
+                    <div class="email-stats d-flex align-items-center gap-2 bg- rounded p-2 d-none">
                         <div class="badge rounded-circle bg-primary p-2">
                             <i class="fa-solid fa-envelope text-white"></i>
                         </div>
@@ -858,41 +858,260 @@
             function displayEmailBatches(response) {
                 const container = $('#email-batches-container');
                 container.empty();
-                if (!response.batches || response.batches.length === 0) { showEmptyState(); return; }
+
+                if (!response.batches || response.batches.length === 0) {
+                    showEmptyState();
+                    return;
+                }
+
+                // Create accordion for batches
                 const accordionId = 'emailBatchesAccordion';
-                let html = `<div class=\"accordion\" id=\"${accordionId}\">`;
-                response.batches.forEach((b, i) => {
-                    const n=b.batch_number, cnt=b.email_count, exp=b.expected_count||200, emails=b.emails||[], first=i===0;
-                    let badge='bg-secondary'; if (cnt===0) badge='bg-danger'; else if (cnt<exp) badge='bg-warning'; else badge='bg-success';
-                    html += `
-                        <div class=\"mb-3 border rounded\">
-                          <h2 class=\"accordion-header\" id=\"heading${n}\"> 
-                            <button class=\"accordion-button ${first?'':'collapsed'}\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#collapse${n}\" aria-expanded=\"${first?'true':'false'}\" aria-controls=\"collapse${n}\"> 
-                              <div class=\"d-flex align-items-center justify-content-between w-100 pe-3\"> 
-                                <div><span class=\"fw-bold\"><i class=\"fa-solid fa-layer-group me-2\"></i>Batch ${n}</span> 
-                                <small class=\"text-muted ms-2\">(${cnt===0?'Empty':cnt} / ${exp} emails)</small></div> 
-                                <span class=\"badge ${badge} rounded-pill\">${cnt===0?'Empty':cnt+' emails'}</span></div> 
-                            </button>
-                          </h2>
-                          <div id=\"collapse${n}\" class=\"accordion-collapse collapse ${first?'show':''}\" aria-labelledby=\"heading${n}\" data-bs-parent=\"#${accordionId}\"> 
-                            <div class=\"accordion-body\">`;
-                    if (emails.length>0) {
-                        html += `<div class=\"table-responsive\"><table class=\"table table-striped table-hover mb-0\"><thead><tr><th>First Name</th><th>Last Name</th><th>Email</th><th>Password</th></tr></thead><tbody>`;
-                        emails.forEach(em => { html += `<tr><td>${escapeHtml(em.name)}</td><td>${escapeHtml(em.last_name)}</td><td>${escapeHtml(em.email)}</td><td><code>${escapeHtml(em.password)}</code></td></tr>`; });
-                        html += `</tbody></table></div>
-                                <div class=\"text-center mt-3 py-2 border-top\">
-                                    <button class=\"btn btn-warning import-batch-btn\" data-batch-id=\"${n}\" data-expected-count=\"${exp}\" data-overwrite=\"true\">
-                                        <i class=\"fa-solid fa-sync-alt me-1\"></i> Overwrite Emails for Batch ${n}
-                                    </button>
-                                </div>`;
+                let accordionHtml = `<div class="accordion accordion-flush" id="${accordionId}">`;
+
+                response.batches.forEach((batch, index) => {
+                    const batchNumber = batch.batch_number;
+                    const emailCount = batch.email_count;
+                    const expectedCount = batch.expected_count || 200;
+                    const emails = batch.emails || [];
+                    const isFirstBatch = index === 0;
+                    
+                    // Determine badge color and status based on email count
+                    let badgeClass = 'bg-secondary';
+                    let statusIcon = 'fa-circle-question';
+                    let statusText = 'Unknown';
+                    let cardBorder = 'border-secondary';
+                    
+                    if (emailCount === 0) {
+                        badgeClass = 'bg-danger';
+                        statusIcon = 'fa-circle-xmark';
+                        statusText = 'Empty';
+                        cardBorder = 'border-danger';
+                    } else if (emailCount < expectedCount) {
+                        badgeClass = 'bg-warning text-dark';
+                        statusIcon = 'fa-circle-exclamation';
+                        statusText = 'Partial';
+                        cardBorder = 'border-warning';
                     } else {
-                        html += `<div class=\"text-center py-4\"><i class=\"fa-solid fa-inbox fa-2x text-muted mb-2\"></i><p class=\"text-muted mb-3\">No emails imported for this batch yet.</p><button class=\"btn btn-outline-primary import-batch-btn\" data-batch-id=\"${n}\" data-expected-count=\"${exp}\"><i class=\"fa-solid fa-upload me-1\"></i> Import for Batch ${n}</button></div>`;
+                        badgeClass = 'bg-success';
+                        statusIcon = 'fa-circle-check';
+                        statusText = 'Complete';
+                        cardBorder = 'border-success';
                     }
-                    html += `</div></div></div>`;
+
+                    accordionHtml += `
+                        <div class="card mb-3 border ${cardBorder} shadow-sm" style="border-width: 2px !important; border-radius: 12px; overflow: hidden;">
+                            <h2 class="accordion-header" id="heading${batchNumber}">
+                                <button class="accordion-button ${isFirstBatch ? '' : 'collapsed'}" 
+                                        type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#collapse${batchNumber}" 
+                                        aria-expanded="${isFirstBatch ? 'true' : 'false'}" 
+                                        aria-controls="collapse${batchNumber}"
+                                        style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); border: none; padding: 0.5rem 0.75rem; font-weight: 500; color: white;">
+                                    <div class="d-flex align-items-center justify-content-between w-100 pe-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="d-flex align-items-center justify-content-center" 
+                                                 style="width: 35px; height: 35px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; backdrop-filter: blur(10px);">
+                                                <i class="fa-solid fa-layer-group text-white" style="font-size: 0.85rem;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold mb-0 text-white" style="font-size: 0.9rem;">Batch #${batchNumber}</div>
+                                                <small class="d-flex align-items-center gap-1" style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.7);">
+                                                    <i class="fa-solid fa-envelope" style="font-size: 0.7rem;"></i>
+                                                    ${emailCount} / ${expectedCount} emails
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge ${badgeClass} rounded-pill px-2 py-1 d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                                                <i class="fa-solid ${statusIcon}" style="font-size: 0.7rem;"></i>
+                                                ${statusText}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse${batchNumber}" class="accordion-collapse collapse ${isFirstBatch ? 'show' : ''}" 
+                                 aria-labelledby="heading${batchNumber}" data-bs-parent="#${accordionId}">
+                                <div class="accordion-body" style="padding: 0.5rem;">
+                    `;
+
+                    if (emails.length > 0) {
+                        // Create table for this batch
+                        accordionHtml += `
+                            <div class="table-responsive" style="border-radius: 8px; overflow: hidden;">
+                                <table class="table table-hover mb-0" style="background: transparent;">
+                                    <thead style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); color: white;">
+                                        <tr>
+                                            <th style="width: 5%; padding: 0.5rem; font-size: 0.8rem;">#</th>
+                                            <th style="width: 25%; padding: 0.5rem; font-size: 0.8rem;">First Name</th>
+                                            <th style="width: 25%; padding: 0.5rem; font-size: 0.8rem;">Last Name</th>
+                                            <th style="width: 30%; padding: 0.5rem; font-size: 0.8rem;">Email Address</th>
+                                            <th style="width: 15%; padding: 0.5rem; font-size: 0.8rem;">Password</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+
+                        emails.forEach((email, emailIndex) => {
+                            accordionHtml += `
+                                <tr style="border-bottom: 1px solid #e0e2e5;">
+                                    <td style="padding: 0.5rem;">
+                                        <span class="badge rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem; background: rgba(79, 70, 229, 0.1); color: var(--second-primary);">
+                                            ${emailIndex + 1}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 0.5rem; font-size: 0.85rem;">${escapeHtml(email.name || '')}</td>
+                                    <td style="padding: 0.5rem; font-size: 0.85rem;">${escapeHtml(email.last_name || '')}</td>
+                                    <td style="padding: 0.5rem;">
+                                        <span class="badge px-2 py-1" style="font-weight: normal; font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                                            <i class="fa-solid fa-envelope me-1" style="font-size: 0.65rem;"></i>
+                                            ${escapeHtml(email.email || '')}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 0.5rem;">
+                                        <code class="px-2 py-1 rounded" style="background: rgba(214, 51, 132, 0.1); color: #d63384; font-size: 0.75rem;">
+                                            ${escapeHtml(email.password || '')}
+                                        </code>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+
+                        accordionHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-center mt-2 py-2 border-top" style="background: rgba(234, 179, 8, 0.15); border-top-color: rgba(234, 179, 8, 0.3) !important;">
+                                <button class="btn btn-warning import-batch-btn px-3 py-1 shadow-sm" 
+                                        data-batch-id="${batchNumber}" 
+                                        data-expected-count="${expectedCount}" 
+                                        data-overwrite="true"
+                                        style="border-radius: 6px; font-weight: 500; font-size: 0.8rem; background: linear-gradient(135deg, #eab308 0%, #f59e0b 100%); border: none; color: white;">
+                                    <i class="fa-solid fa-sync-alt me-1" style="font-size: 0.75rem;"></i>
+                                    Overwrite Batch ${batchNumber}
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        // Empty batch - show import button
+                        accordionHtml += `
+                            <div class="py-4 px-3" style="background: transparent;">
+                                <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 180px;">
+                                    <!-- Icon Container -->
+                                    <div class="mb-3 d-flex align-items-center justify-content-center" 
+                                         style="width: 70px; height: 70px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; border: 2px dashed rgba(59, 130, 246, 0.3);">
+                                        <i class="fa-solid fa-inbox" style="font-size: 1.8rem; color: #3b82f6;"></i>
+                                    </div>
+                                    
+                                    <!-- Message -->
+                                    <div class="text-center mb-3">
+                                        <h6 class="mb-1 fw-bold" style="color: #e5e7eb;">Batch ${batchNumber} is Empty</h6>
+                                        <p class="mb-0 small" style="color: #9ca3af;">
+                                            <i class="fa-solid fa-circle-info me-1" style="font-size: 0.75rem;"></i>
+                                            Expected ${expectedCount} email accounts
+                                        </p>
+                                    </div>
+                                    
+                                    <!-- Import Button -->
+                                    <button class="btn import-batch-btn px-4 py-2 shadow-sm" 
+                                            data-batch-id="${batchNumber}" 
+                                            data-expected-count="${expectedCount}"
+                                            style="border-radius: 8px; font-weight: 500; font-size: 0.85rem; background: linear-gradient(135deg, var(--second-primary) 0%, #4f46e5 100%); border: none; color: white; transition: all 0.3s ease;">
+                                        <i class="fa-solid fa-upload me-2" style="font-size: 0.8rem;"></i>
+                                        Import Emails for Batch ${batchNumber}
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    accordionHtml += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 });
-                html += `</div>`;
-                const summary = `<div class=\"d-flex align-items-center justify-content-between mb-3\"><div><span class=\"badge bg-secondary me-2\">Total Batches: ${response.total_batches}</span><span class=\"badge bg-info\">Total Emails: ${response.total_emails}</span></div><div><span class=\"badge bg-primary\">Space Assigned: ${response.space_assigned}</span></div></div>`;
-                container.html(summary + html);
+
+                accordionHtml += '</div>';
+                
+                // Add summary at the top with progress bar
+                const totalEmails = response.total_emails || 0;
+                const spaceAssigned = response.space_assigned || 0;
+                const completionPercentage = spaceAssigned > 0 ? Math.round((totalEmails / spaceAssigned) * 100) : 0;
+                const remaining = spaceAssigned - totalEmails;
+
+                const summaryHtml = `
+                    <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); border-radius: 12px; overflow: hidden;">
+                        <div class="card-body p-4">
+                            <div class="row align-items-center">
+                                <div class="col-md-4 text-center text-md-start mb-3 mb-md-0">
+                                    <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-3">
+                                        <div class="d-flex align-items-center justify-content-center" 
+                                             style="width: 50px; height: 50px; background: rgba(79, 70, 229, 0.2); border-radius: 12px;">
+                                            <i class="fa-solid fa-chart-pie text-white" style="font-size: 1.5rem;"></i>
+                                        </div>
+                                        <div class="text-start">
+                                            <h6 class="mb-0 text-white fw-bold">Summary</h6>
+                                            <small style="color: rgba(255, 255, 255, 0.7);">Email Distribution</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="row g-3">
+                                        <div class="col-4">
+                                            <div class="text-center">
+                                                <div class="badge bg-info bg-opacity-25 text-white px-3 py-2 w-100" style="font-size: 0.85rem;">
+                                                    <i class="fa-solid fa-layer-group me-1"></i>
+                                                    <div class="fw-bold fs-5 mt-1">${response.total_batches || 0}</div>
+                                                    <small class="opacity-75">Total Batches</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="text-center">
+                                                <div class="badge bg-success bg-opacity-25 text-white px-3 py-2 w-100" style="font-size: 0.85rem;">
+                                                    <i class="fa-solid fa-envelope-circle-check me-1"></i>
+                                                    <div class="fw-bold fs-5 mt-1">${totalEmails}</div>
+                                                    <small class="opacity-75">Emails Added</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="text-center">
+                                                <div class="badge bg-primary bg-opacity-25 text-white px-3 py-2 w-100" style="font-size: 0.85rem;">
+                                                    <i class="fa-solid fa-database me-1"></i>
+                                                    <div class="fw-bold fs-5 mt-1">${spaceAssigned}</div>
+                                                    <small class="opacity-75">Space Assigned</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <small class="text-white opacity-75">
+                                                <i class="fa-solid fa-chart-line me-1"></i>
+                                                Progress: ${completionPercentage}% Complete
+                                            </small>
+                                            <small class="text-white opacity-75">
+                                                <i class="fa-solid fa-hourglass-half me-1"></i>
+                                                ${remaining} Remaining
+                                            </small>
+                                        </div>
+                                        <div class="progress" style="height: 8px; border-radius: 10px; background: rgba(255, 255, 255, 0.1);">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: ${completionPercentage}%; background: linear-gradient(90deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%); border-radius: 10px; transition: width 0.6s ease;" 
+                                                 aria-valuenow="${completionPercentage}" aria-valuemin="0" aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.html(summaryHtml + accordionHtml);
             }
             function loadEmailBatches() {
                 $.ajax({
