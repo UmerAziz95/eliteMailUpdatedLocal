@@ -2076,6 +2076,7 @@ class OrderController extends Controller
                 'customized_note' => 'nullable|string|max:1000',
                 'batch_id' => 'nullable|integer|min:1',
                 'expected_count' => 'nullable|integer|min:1',
+                'overwrite' => 'nullable|boolean',
             ]);
 
             if ($validator->fails()) {
@@ -2088,6 +2089,7 @@ class OrderController extends Controller
             $orderPanelId = $request->order_panel_id;
             $file = $request->file('bulk_file');
             $requestedBatchId = $request->batch_id; // optional, target a specific batch
+            $isOverwrite = $request->has('overwrite') && $request->overwrite == '1';
 
             // First check if the order panel exists
             if (!OrderPanel::where('id', $orderPanelId)->exists()) {
@@ -2225,14 +2227,16 @@ class OrderController extends Controller
                         ], 422);
                     }
 
-                    // Ensure target batch is empty
+                    // Check if target batch has existing emails
                     $existingInTarget = OrderEmail::whereIn('order_split_id', $splitIds)
                         ->where('batch_id', $requestedBatchId)
                         ->count();
-                    if ($existingInTarget > 0) {
+                    
+                    // If batch has emails and overwrite is not enabled, reject
+                    if ($existingInTarget > 0 && !$isOverwrite) {
                         return response()->json([
                             'success' => false,
-                            'message' => "Batch {$requestedBatchId} already has {$existingInTarget} emails. Delete them first or choose another batch."
+                            'message' => "Batch {$requestedBatchId} already has {$existingInTarget} emails. Use overwrite option to replace them or choose another batch."
                         ], 422);
                     }
 
@@ -2390,6 +2394,18 @@ class OrderController extends Controller
 
                 // Determine batch assignment strategy
                 if ($requestedBatchId) {
+                    // If overwrite is enabled, delete existing emails in this batch first
+                    if ($isOverwrite) {
+                        $deletedCount = OrderEmail::whereIn('order_split_id', $splitIds)
+                            ->where('batch_id', $requestedBatchId)
+                            ->delete();
+                        
+                        Log::info('Overwrite mode: Deleted existing emails', [
+                            'batch_id' => $requestedBatchId,
+                            'deleted_count' => $deletedCount
+                        ]);
+                    }
+                    
                     // Assign all to the requested batch (already size-validated)
                     foreach ($emailsToImport as &$email) {
                         $email['batch_id'] = (int) $requestedBatchId;
@@ -2459,16 +2475,23 @@ class OrderController extends Controller
                     'order_panel_id' => $orderPanelId,
                     'imported_count' => count($emailsToImport),
                     'contractor_id' => auth()->id(),
-                    'file_saved' => $savedFilePath
+                    'file_saved' => $savedFilePath,
+                    'is_overwrite' => $isOverwrite,
+                    'batch_id' => $requestedBatchId
                 ]);
+
+                $successMessage = $isOverwrite 
+                    ? count($emailsToImport) . ' emails overwritten successfully for batch ' . $requestedBatchId . '.'
+                    : count($emailsToImport) . ' emails imported successfully for panel split.';
 
                 return response()->json([
                     'success' => true,
-                    'message' => count($emailsToImport) . ' emails imported successfully for panel split.',
+                    'message' => $successMessage,
                     'count' => count($emailsToImport),
                     'imported_count' => count($emailsToImport),
                     'file_saved' => $savedFilePath,
-                    'errors' => $errors
+                    'errors' => $errors,
+                    'is_overwrite' => $isOverwrite
                 ]);
 
             } catch (\Exception $e) {

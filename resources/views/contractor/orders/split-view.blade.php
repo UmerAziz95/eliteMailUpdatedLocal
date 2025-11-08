@@ -879,7 +879,12 @@
                     if (emails.length>0) {
                         html += `<div class=\"table-responsive\"><table class=\"table table-striped table-hover mb-0\"><thead><tr><th>First Name</th><th>Last Name</th><th>Email</th><th>Password</th></tr></thead><tbody>`;
                         emails.forEach(em => { html += `<tr><td>${escapeHtml(em.name)}</td><td>${escapeHtml(em.last_name)}</td><td>${escapeHtml(em.email)}</td><td><code>${escapeHtml(em.password)}</code></td></tr>`; });
-                        html += `</tbody></table></div>`;
+                        html += `</tbody></table></div>
+                                <div class=\"text-center mt-3 py-2 border-top\">
+                                    <button class=\"btn btn-warning import-batch-btn\" data-batch-id=\"${n}\" data-expected-count=\"${exp}\" data-overwrite=\"true\">
+                                        <i class=\"fa-solid fa-sync-alt me-1\"></i> Overwrite Emails for Batch ${n}
+                                    </button>
+                                </div>`;
                     } else {
                         html += `<div class=\"text-center py-4\"><i class=\"fa-solid fa-inbox fa-2x text-muted mb-2\"></i><p class=\"text-muted mb-3\">No emails imported for this batch yet.</p><button class=\"btn btn-outline-primary import-batch-btn\" data-batch-id=\"${n}\" data-expected-count=\"${exp}\"><i class=\"fa-solid fa-upload me-1\"></i> Import for Batch ${n}</button></div>`;
                     }
@@ -900,12 +905,30 @@
             // Batch-specific import button
             $(document).on('click', '.import-batch-btn', function(){
                 const batchId=$(this).data('batch-id'); const expected=$(this).data('expected-count');
-                $('#batchNumberTitle').text('Batch ' + batchId);
+                const isOverwrite=$(this).data('overwrite')===true;
+                
+                if (isOverwrite) {
+                    $('#batchNumberTitle').text('Overwrite Batch ' + batchId);
+                    $('#BatchImportModalLabel h5').text('Overwrite Emails for Batch ' + batchId);
+                } else {
+                    $('#batchNumberTitle').text('Batch ' + batchId);
+                    $('#BatchImportModalLabel h5').text('Import Emails for Batch ' + batchId);
+                }
+                
                 $('#batchNumberInfo').text('Batch ' + batchId);
                 $('#expectedCountInfo').text(expected);
                 $('#batch_id_input').val(batchId);
                 $('#expected_count_input').val(expected);
+                
+                if (isOverwrite) {
+                    $('#BatchImportForm').attr('data-overwrite', 'true');
+                } else {
+                    $('#BatchImportForm').removeAttr('data-overwrite');
+                }
+                
                 const form=$('#BatchImportForm')[0]; if(form) form.reset();
+                $('#batch_id_input').val(batchId);
+                $('#expected_count_input').val(expected);
                 $('#batch_file').val(''); $('#batchCsvInstructions').removeClass('d-none'); $('#batchFileSelectedInfo').addClass('d-none');
                 $('#BatchImportModal').modal('show');
             });
@@ -915,9 +938,21 @@
                 const file=$('#batch_file')[0].files[0]; if(!file||(!file.type.includes('csv')&&!file.name.toLowerCase().endsWith('.csv'))){ Swal.fire({icon:'warning', title:'Invalid or Missing File'}); return false; }
                 const fd=new FormData(this); fd.append('order_panel_id', {{ $orderPanel->id }}); fd.append('split_total_inboxes', {{ $splitTotalInboxes }});
                 const batchId=$('#batch_id_input').val(); const expected=$('#expected_count_input').val();
-                Swal.fire({title:'Import Batch '+batchId+'?', text:`This will import exactly ${expected} emails.`, icon:'question', showCancelButton:true}).then((r)=>{
+                const isOverwrite=$('#BatchImportForm').attr('data-overwrite')==='true';
+                if(isOverwrite) fd.append('overwrite', '1');
+                
+                const confirmTitle = isOverwrite ? 'Overwrite Batch '+batchId+'?' : 'Import Batch '+batchId+'?';
+                const confirmText = isOverwrite ? `This will REPLACE all existing ${expected} emails in Batch ${batchId} with new data.` : `This will import exactly ${expected} emails.`;
+                const confirmBtn = isOverwrite ? 'Yes, Overwrite!' : 'Yes, Import!';
+                const confirmColor = isOverwrite ? '#f39c12' : '#3085d6';
+                const icon = isOverwrite ? 'warning' : 'question';
+                
+                Swal.fire({title:confirmTitle, text:confirmText, icon:icon, showCancelButton:true, confirmButtonColor:confirmColor, cancelButtonColor:'#d33', confirmButtonText:confirmBtn}).then((r)=>{
                     if(!r.isConfirmed) return; Swal.fire({title:'Processing...', allowOutsideClick:false, showConfirmButton:false, didOpen:()=>Swal.showLoading()});
-                    $.ajax({url: $(e.target).attr('action'), method:'POST', data:fd, contentType:false, processData:false, headers:{'X-CSRF-TOKEN':$('meta[name="csrf-token"]').attr('content')}, success:function(resp){ $('#BatchImportModal').modal('hide'); Swal.fire({icon:'success', title:'Imported', text: resp.message || 'Batch imported successfully.'}); loadEmailBatches(); }, error:function(xhr, st){ let msg='An error occurred while processing the file.'; if(st==='timeout') msg='File processing timed out.'; else if(xhr.responseJSON&&xhr.responseJSON.message) msg=xhr.responseJSON.message; Swal.fire({icon:'error', title:'Import Failed', text: msg}); }});
+                    
+                    const successTitle = isOverwrite ? 'Overwritten Successfully!' : 'Imported Successfully!';
+                    
+                    $.ajax({url: $(e.target).attr('action'), method:'POST', data:fd, contentType:false, processData:false, headers:{'X-CSRF-TOKEN':$('meta[name="csrf-token"]').attr('content')}, success:function(resp){ $('#BatchImportModal').modal('hide'); Swal.fire({icon:'success', title:successTitle, text: resp.message || (isOverwrite ? `Batch ${batchId} overwritten.` : `Batch ${batchId} imported.`)}); loadEmailBatches(); }, error:function(xhr, st){ let msg='An error occurred while processing the file.'; if(st==='timeout') msg='File processing timed out.'; else if(xhr.responseJSON&&xhr.responseJSON.message) msg=xhr.responseJSON.message; Swal.fire({icon:'error', title:'Import Failed', text: msg}); }});
                 });
                 return false;
             });

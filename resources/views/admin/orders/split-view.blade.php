@@ -122,6 +122,7 @@
                     <span class="opacity-50">Profile Picture URL</span>
                     <span>{{ $orderPanel->order->reorderInfo->first()->profile_picture_link ?? 'N/A' }}</span>
                 </div> -->
+                <!--  -->
                 <div class="d-flex flex-column mt-3">
                     <span class="opacity-50">Profile Picture URLs</span>
                     @if($orderPanel->order->reorderInfo->first()->prefix_variants_details)
@@ -863,6 +864,12 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="text-center mt-3 py-2 border-top">
+                            <button class="btn btn-warning import-batch-btn" data-batch-id="${batchNumber}" data-expected-count="${expectedCount}" data-overwrite="true">
+                                <i class="fa-solid fa-sync-alt me-2"></i>
+                                Overwrite Emails for Batch ${batchNumber}
+                            </button>
+                        </div>
                     `;
                 } else {
                     // Empty batch - show import button
@@ -938,13 +945,28 @@
         $(document).on('click', '.import-batch-btn', function() {
             const batchId = $(this).data('batch-id');
             const expectedCount = $(this).data('expected-count');
+            const isOverwrite = $(this).data('overwrite') === true;
             
-            // Set modal content
-            $('#batchNumberTitle').text('Batch ' + batchId);
+            // Set modal content based on mode
+            if (isOverwrite) {
+                $('#batchNumberTitle').text('Overwrite Batch ' + batchId);
+                $('#BatchImportModalLabel h5').text('Overwrite Emails for Batch ' + batchId);
+            } else {
+                $('#batchNumberTitle').text('Batch ' + batchId);
+                $('#BatchImportModalLabel h5').text('Import Emails for Batch ' + batchId);
+            }
+            
             $('#batchNumberInfo').text('Batch ' + batchId);
             $('#expectedCountInfo').text(expectedCount);
             $('#batch_id_input').val(batchId);
             $('#expected_count_input').val(expectedCount);
+            
+            // Store overwrite flag in a hidden field or data attribute
+            if (isOverwrite) {
+                $('#BatchImportForm').attr('data-overwrite', 'true');
+            } else {
+                $('#BatchImportForm').removeAttr('data-overwrite');
+            }
             
             // Reset form
             $('#BatchImportForm')[0].reset();
@@ -1028,15 +1050,27 @@
             const formData = new FormData(this);
             formData.append('order_panel_id', {{ $orderPanel->id }});
             formData.append('split_total_inboxes', {{ $splitTotalInboxes }});
+            
+            // Check if this is an overwrite operation
+            const isOverwrite = $('#BatchImportForm').attr('data-overwrite') === 'true';
+            if (isOverwrite) {
+                formData.append('overwrite', '1');
+            }
+
+            const confirmTitle = isOverwrite ? 'Overwrite Batch ' + batchId + '?' : 'Import Batch ' + batchId + '?';
+            const confirmText = isOverwrite 
+                ? `This will REPLACE all existing ${expectedCount} emails in Batch ${batchId} with new data from the CSV file.`
+                : `This will import up to ${expectedCount} emails for Batch ${batchId}.`;
+            const confirmButton = isOverwrite ? 'Yes, Overwrite!' : 'Yes, Import!';
 
             if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
-                title: 'Import Batch ' + batchId + '?',
-                text: `This will import up to ${expectedCount} emails for Batch ${batchId}.`,
-                icon: 'question',
+                title: confirmTitle,
+                text: confirmText,
+                icon: isOverwrite ? 'warning' : 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#3085d6',
+                confirmButtonColor: isOverwrite ? '#f39c12' : '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, Import!',
+                confirmButtonText: confirmButton,
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -1062,10 +1096,15 @@
                         success: function(response) {
                             $('#BatchImportModal').modal('hide');
                             
+                            const successTitle = isOverwrite ? 'Overwritten Successfully!' : 'Imported Successfully!';
+                            const successText = response.message || (isOverwrite 
+                                ? `Batch ${batchId} has been overwritten successfully.`
+                                : `Batch ${batchId} has been imported successfully.`);
+                            
                             if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                                 icon: 'success',
-                                title: 'Success!',
-                                text: response.message || `Batch ${batchId} has been imported successfully.`,
+                                title: successTitle,
+                                text: successText,
                                 confirmButtonColor: '#3085d6',
                                 timer: 5000,
                                 timerProgressBar: true

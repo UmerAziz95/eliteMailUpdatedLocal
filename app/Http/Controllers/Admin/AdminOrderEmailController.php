@@ -133,7 +133,8 @@ class AdminOrderEmailController extends Controller
                 'order_panel_id' => 'required|exists:order_panel,id',
                 'customized_note' => 'nullable|string|max:1000',
                 'batch_id' => 'nullable|integer|min:1',
-                'expected_count' => 'nullable|integer|min:1'
+                'expected_count' => 'nullable|integer|min:1',
+                'overwrite' => 'nullable|boolean',
             ]);
 
             if ($validator->fails()) {
@@ -146,6 +147,7 @@ class AdminOrderEmailController extends Controller
             $orderPanelId = $request->order_panel_id;
             $file = $request->file('bulk_file');
             $requestedBatchId = $request->batch_id; // Get the specific batch_id from the request
+            $isOverwrite = $request->has('overwrite') && $request->overwrite == '1';
 
             // Get the order panel with its splits
             $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])->findOrFail($orderPanelId);
@@ -376,12 +378,26 @@ class AdminOrderEmailController extends Controller
                         ->where('batch_id', $requestedBatchId)
                         ->count();
                     
-                    if ($existingBatchEmails > 0) {
+                    // If batch has emails and overwrite is not enabled, reject
+                    if ($existingBatchEmails > 0 && !$isOverwrite) {
                         DB::rollBack();
                         return response()->json([
                             'success' => false,
-                            'message' => "Batch {$requestedBatchId} already has {$existingBatchEmails} emails. Please delete existing emails first or choose a different batch."
+                            'message' => "Batch {$requestedBatchId} already has {$existingBatchEmails} emails. Use overwrite option to replace them or choose a different batch."
                         ], 422);
+                    }
+                    
+                    // If overwrite is enabled, delete existing emails in this batch
+                    if ($isOverwrite && $existingBatchEmails > 0) {
+                        $deletedCount = OrderEmail::whereIn('order_split_id', $splitIds)
+                            ->where('batch_id', $requestedBatchId)
+                            ->delete();
+                        
+                        Log::info('Admin overwrite mode: Deleted existing emails', [
+                            'batch_id' => $requestedBatchId,
+                            'deleted_count' => $deletedCount,
+                            'admin_id' => auth()->id()
+                        ]);
                     }
                 } else {
                     // No specific batch requested - calculate next available batch
@@ -449,14 +465,21 @@ class AdminOrderEmailController extends Controller
                 Log::info('Admin bulk email import successful', [
                     'order_panel_id' => $orderPanelId,
                     'imported_count' => count($emailsToImport),
-                    'admin_id' => auth()->id()
+                    'admin_id' => auth()->id(),
+                    'is_overwrite' => $isOverwrite,
+                    'batch_id' => $requestedBatchId
                 ]);
+
+                $successMessage = $isOverwrite 
+                    ? count($emailsToImport) . ' emails overwritten successfully for batch ' . $requestedBatchId . '.'
+                    : count($emailsToImport) . ' emails imported successfully.';
 
                 return response()->json([
                     'success' => true,
-                    'message' => count($emailsToImport) . ' emails imported successfully.',
+                    'message' => $successMessage,
                     'imported_count' => count($emailsToImport),
-                    'errors' => $errors
+                    'errors' => $errors,
+                    'is_overwrite' => $isOverwrite
                 ]);
 
             } catch (\Exception $e) {
