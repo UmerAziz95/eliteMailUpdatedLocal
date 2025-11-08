@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+﻿@extends('admin.layouts.app')
 
 @section('title', 'Orders')
 
@@ -787,7 +787,7 @@
 
             // Create accordion for batches
             const accordionId = 'emailBatchesAccordion';
-            let accordionHtml = `<div class="accordion" id="${accordionId}">`;
+            let accordionHtml = `<div class="accordion accordion-flush" id="${accordionId}">`;
 
             response.batches.forEach((batch, index) => {
                 const batchNumber = batch.batch_number;
@@ -796,53 +796,79 @@
                 const emails = batch.emails || [];
                 const isFirstBatch = index === 0;
                 
-                // Determine badge color based on email count
+                // Determine badge color and status based on email count
                 let badgeClass = 'bg-secondary';
+                let statusIcon = 'fa-circle-question';
+                let statusText = 'Unknown';
+                let cardBorder = 'border-secondary';
+                
                 if (emailCount === 0) {
                     badgeClass = 'bg-danger';
+                    statusIcon = 'fa-circle-xmark';
+                    statusText = 'Empty';
+                    cardBorder = 'border-danger';
                 } else if (emailCount < expectedCount) {
-                    badgeClass = 'bg-warning';
+                    badgeClass = 'bg-warning text-dark';
+                    statusIcon = 'fa-circle-exclamation';
+                    statusText = 'Partial';
+                    cardBorder = 'border-warning';
                 } else {
                     badgeClass = 'bg-success';
+                    statusIcon = 'fa-circle-check';
+                    statusText = 'Complete';
+                    cardBorder = 'border-success';
                 }
 
                 accordionHtml += `
-                    <div class="mb-3 border rounded">
+                    <div class="card mb-3 border ${cardBorder} shadow-sm" style="border-width: 2px !important; border-radius: 12px; overflow: hidden;">
                         <h2 class="accordion-header" id="heading${batchNumber}">
-                            <button class="accordion-button ${isFirstBatch ? '' : 'collapsed'}" type="button" 
-                                    data-bs-toggle="collapse" data-bs-target="#collapse${batchNumber}" 
-                                    aria-expanded="${isFirstBatch ? 'true' : 'false'}" aria-controls="collapse${batchNumber}">
-                                <div class="d-flex align-items-center justify-content-between w-100 pe-3">
-                                    <div>
-                                        <span class="fw-bold">
-                                            <i class="fa-solid fa-layer-group me-2"></i>
-                                            Batch ${batchNumber}
-                                        </span>
-                                        <small class="text-muted ms-2">(${emailCount === 0 ? 'Empty' : emailCount} / ${expectedCount} emails)</small>
+                            <button class="accordion-button ${isFirstBatch ? '' : 'collapsed'}" 
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#collapse${batchNumber}" 
+                                    aria-expanded="${isFirstBatch ? 'true' : 'false'}" 
+                                    aria-controls="collapse${batchNumber}"
+                                    style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); border: none; padding: 0.5rem 0.75rem; font-weight: 500; color: white;">
+                                <div class="d-flex align-items-center justify-content-between w-100 pe-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="d-flex align-items-center justify-content-center" 
+                                             style="width: 35px; height: 35px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; backdrop-filter: blur(10px);">
+                                            <i class="fa-solid fa-layer-group text-white" style="font-size: 0.85rem;"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold mb-0 text-white" style="font-size: 0.9rem;">Batch #${batchNumber}</div>
+                                            <small class="d-flex align-items-center gap-1" style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.7);">
+                                                <i class="fa-solid fa-envelope" style="font-size: 0.7rem;"></i>
+                                                ${emailCount} / ${expectedCount} emails
+                                            </small>
+                                        </div>
                                     </div>
-                                    <span class="badge ${badgeClass} rounded-pill">
-                                        ${emailCount === 0 ? 'Empty' : emailCount + ' emails'}
-                                    </span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge ${badgeClass} rounded-pill px-2 py-1 d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                                            <i class="fa-solid ${statusIcon}" style="font-size: 0.7rem;"></i>
+                                            ${statusText}
+                                        </span>
+                                    </div>
                                 </div>
                             </button>
                         </h2>
                         <div id="collapse${batchNumber}" class="accordion-collapse collapse ${isFirstBatch ? 'show' : ''}" 
                              aria-labelledby="heading${batchNumber}" data-bs-parent="#${accordionId}">
-                            <div class="accordion-body">
+                            <div class="accordion-body" style="padding: 0.5rem;">
                 `;
 
                 if (emails.length > 0) {
                     // Create table for this batch
                     accordionHtml += `
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="">
+                        <div class="table-responsive" style="border-radius: 8px; overflow: hidden;">
+                            <table class="table table-hover mb-0" style="background: transparent;">
+                                <thead style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); color: white;">
                                     <tr>
-                                        <th style="width: 5%">#</th>
-                                        <th style="width: 25%">Name</th>
-                                        <th style="width: 25%">Last Name</th>
-                                        <th style="width: 30%">Email</th>
-                                        <th style="width: 15%">Password</th>
+                                        <th style="width: 5%; padding: 0.5rem; font-size: 0.8rem;">#</th>
+                                        <th style="width: 25%; padding: 0.5rem; font-size: 0.8rem;">First Name</th>
+                                        <th style="width: 25%; padding: 0.5rem; font-size: 0.8rem;">Last Name</th>
+                                        <th style="width: 30%; padding: 0.5rem; font-size: 0.8rem;">Email Address</th>
+                                        <th style="width: 15%; padding: 0.5rem; font-size: 0.8rem;">Password</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -850,12 +876,25 @@
 
                     emails.forEach((email, emailIndex) => {
                         accordionHtml += `
-                            <tr>
-                                <td>${emailIndex + 1}</td>
-                                <td>${escapeHtml(email.name || '')}</td>
-                                <td>${escapeHtml(email.last_name || '')}</td>
-                                <td><small>${escapeHtml(email.email || '')}</small></td>
-                                <td><small class="font-monospace">${escapeHtml(email.password || '')}</small></td>
+                            <tr style="border-bottom: 1px solid #e0e2e5;">
+                                <td style="padding: 0.5rem;">
+                                    <span class="badge rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem; background: rgba(79, 70, 229, 0.1); color: var(--second-primary);">
+                                        ${emailIndex + 1}
+                                    </span>
+                                </td>
+                                <td style="padding: 0.5rem; font-size: 0.85rem;">${escapeHtml(email.name || '')}</td>
+                                <td style="padding: 0.5rem; font-size: 0.85rem;">${escapeHtml(email.last_name || '')}</td>
+                                <td style="padding: 0.5rem;">
+                                    <span class="badge px-2 py-1" style="font-weight: normal; font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                                        <i class="fa-solid fa-envelope me-1" style="font-size: 0.65rem;"></i>
+                                        ${escapeHtml(email.email || '')}
+                                    </span>
+                                </td>
+                                <td style="padding: 0.5rem;">
+                                    <code class="px-2 py-1 rounded" style="background: rgba(214, 51, 132, 0.1); color: #d63384; font-size: 0.75rem;">
+                                        ${escapeHtml(email.password || '')}
+                                    </code>
+                                </td>
                             </tr>
                         `;
                     });
@@ -864,25 +903,46 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="text-center mt-3 py-2 border-top">
-                            <button class="btn btn-warning import-batch-btn" data-batch-id="${batchNumber}" data-expected-count="${expectedCount}" data-overwrite="true">
-                                <i class="fa-solid fa-sync-alt me-2"></i>
-                                Overwrite Emails for Batch ${batchNumber}
+                        <div class="text-center mt-2 py-2 border-top" style="background: rgba(234, 179, 8, 0.15); border-top-color: rgba(234, 179, 8, 0.3) !important;">
+                            <button class="btn btn-warning import-batch-btn px-3 py-1 shadow-sm" 
+                                    data-batch-id="${batchNumber}" 
+                                    data-expected-count="${expectedCount}" 
+                                    data-overwrite="true"
+                                    style="border-radius: 6px; font-weight: 500; font-size: 0.8rem; background: linear-gradient(135deg, #eab308 0%, #f59e0b 100%); border: none; color: white;">
+                                <i class="fa-solid fa-sync-alt me-1" style="font-size: 0.75rem;"></i>
+                                Overwrite Batch ${batchNumber}
                             </button>
                         </div>
                     `;
                 } else {
                     // Empty batch - show import button
                     accordionHtml += `
-                        <div class="text-center py-4">
-                            <div class="alert alert-info mb-3">
-                                <i class="fa-solid fa-info-circle me-2"></i>
-                                <strong>Batch ${batchNumber} is empty.</strong> Expected: ${expectedCount} emails.
+                        <div class="py-4 px-3" style="background: transparent;">
+                            <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 180px;">
+                                <!-- Icon Container -->
+                                <div class="mb-3 d-flex align-items-center justify-content-center" 
+                                     style="width: 70px; height: 70px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; border: 2px dashed rgba(59, 130, 246, 0.3);">
+                                    <i class="fa-solid fa-inbox" style="font-size: 1.8rem; color: #3b82f6;"></i>
+                                </div>
+                                
+                                <!-- Message -->
+                                <div class="text-center mb-3">
+                                    <h6 class="mb-1 fw-bold" style="color: #e5e7eb;">Batch ${batchNumber} is Empty</h6>
+                                    <p class="mb-0 small" style="color: #9ca3af;">
+                                        <i class="fa-solid fa-circle-info me-1" style="font-size: 0.75rem;"></i>
+                                        Expected ${expectedCount} email accounts
+                                    </p>
+                                </div>
+                                
+                                <!-- Import Button -->
+                                <button class="btn import-batch-btn px-4 py-2 shadow-sm" 
+                                        data-batch-id="${batchNumber}" 
+                                        data-expected-count="${expectedCount}"
+                                        style="border-radius: 8px; font-weight: 500; font-size: 0.85rem; background: linear-gradient(135deg, var(--second-primary) 0%, #4f46e5 100%); border: none; color: white; transition: all 0.3s ease;">
+                                    <i class="fa-solid fa-upload me-2" style="font-size: 0.8rem;"></i>
+                                    Import Emails for Batch ${batchNumber}
+                                </button>
                             </div>
-                            <button class="btn btn-primary import-batch-btn" data-batch-id="${batchNumber}" data-expected-count="${expectedCount}">
-                                <i class="fa-solid fa-upload me-2"></i>
-                                Import Emails for Batch ${batchNumber}
-                            </button>
                         </div>
                     `;
                 }
@@ -898,14 +958,49 @@
             
             // Add summary at the top
             const summaryHtml = `
-                <div class="alert alert-primary mb-4">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <i class="fa-solid fa-chart-bar me-2"></i>
-                            <strong>Summary:</strong> ${response.total_batches} batches | ${response.total_emails} total emails
+                <div class="card mb-3 border-0 shadow-sm" style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); border-radius: 10px; overflow: hidden;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between text-white mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; backdrop-filter: blur(10px);">
+                                    <i class="fa-solid fa-chart-bar"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold" style="font-size: 0.95rem;">Email Batches Summary</h6>
+                                    <div class="d-flex align-items-center gap-3 text-white opacity-75" style="font-size: 0.8rem;">
+                                        <span>
+                                            <i class="fa-solid fa-layer-group me-1" style="font-size: 0.75rem;"></i>
+                                            ${response.total_batches} Batches
+                                        </span>
+                                        <span>
+                                            <i class="fa-solid fa-envelope me-1" style="font-size: 0.75rem;"></i>
+                                            ${response.total_emails} / ${response.space_assigned} Emails
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="badge px-3 py-1" style="font-size: 0.85rem; background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 8px; backdrop-filter: blur(10px);">
+                                    <i class="fa-solid fa-database me-1" style="font-size: 0.75rem;"></i>
+                                    Space: ${response.space_assigned}
+                                </span>
+                            </div>
                         </div>
-                        <div>
-                            <span class="badge bg-primary">Space Assigned: ${response.space_assigned}</span>
+                        
+                        <!-- Progress Bar -->
+                        <div class="position-relative" style="height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden;">
+                            <div class="position-absolute h-100" 
+                                 style="width: ${Math.min((response.total_emails / response.space_assigned) * 100, 100)}%; 
+                                        background: linear-gradient(90deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%);
+                                        border-radius: 10px;
+                                        transition: width 0.5s ease;
+                                        box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1" style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.7);">
+                            <span>${Math.round((response.total_emails / response.space_assigned) * 100)}% Complete</span>
+                            <span>${response.space_assigned - response.total_emails} Remaining</span>
                         </div>
                     </div>
                 </div>
@@ -918,10 +1013,21 @@
         function showEmptyState(message = 'No email batches found. Please import emails using the CSV upload feature.') {
             const container = $('#email-batches-container');
             container.html(`
-                <div class="text-center py-5">
-                    <i class="fa-solid fa-inbox fa-4x text-muted mb-3"></i>
-                    <h5 class="text-muted">${message}</h5>
-                    <p class="text-muted">Click "Emails Customization" button above to import emails.</p>
+                <div class="card border-0 shadow-sm" style="border-radius: 10px;">
+                    <div class="card-body text-center py-4">
+                        <div class="mb-3">
+                            <div class="d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 80px; height: 80px; background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%); border-radius: 50%;">
+                                <i class="fa-solid fa-inbox fa-2x" style="color: #6366f1;"></i>
+                            </div>
+                        </div>
+                        <h6 class="mb-2 fw-bold" style="color: #1d2239; font-size: 0.95rem;">${message}</h6>
+                        <p class="text-muted mb-3" style="font-size: 0.85rem;">Click "Emails Customization" button above to import emails.</p>
+                        <div class="d-inline-block px-3 py-2 rounded-pill" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px dashed #0ea5e9;">
+                            <i class="fa-solid fa-lightbulb text-info me-1" style="font-size: 0.85rem;"></i>
+                            <small class="text-info fw-medium" style="font-size: 0.8rem;">Upload a CSV file to get started</small>
+                        </div>
+                    </div>
                 </div>
             `);
         }
