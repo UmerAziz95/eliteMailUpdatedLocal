@@ -30,6 +30,7 @@ use App\Services\PanelReassignmentService;
 use App\Services\OrderContractorReassignmentService;
 use App\Services\SlackNotificationService;
 use App\Services\TextExportService;
+use App\Services\EmailExportService;
 class OrderController extends Controller
 {
     private $statuses;
@@ -2296,12 +2297,12 @@ class OrderController extends Controller
         }
     }
 
-    /**  
+    /**
      * Export CSV file with smart data selection based on order_emails availability
-     * If order_emails data exists for order panels, usev that data
-     * Otherwise, fall back to the existing domain-based generation method
+     * If batch data exists: exports batch-wise CSVs in a ZIP
+     * If no batch data: exports domain-wise chunked CSVs (200 emails per file) in a ZIP
      */
-    public function exportCsvSplitDomainsSmartById($splitId)
+    public function exportCsvSplitDomainsSmartById($splitId, EmailExportService $emailExportService)
     {
         try {
             // Find the order panel split
@@ -2316,26 +2317,14 @@ class OrderController extends Controller
             $order = $orderPanelSplit->orderPanel->order;
             $orderPanelId = $orderPanelSplit->order_panel_id;
 
-            // Check if order_emails data is available for this order panel
-            $orderEmails = OrderEmail::whereHas('orderSplit', function($query) use ($orderPanelId) {
-                $query->where('order_panel_id', $orderPanelId);
-            })->get();
-
-            // If order_emails data exists, use it for CSV generation
-            if ($orderEmails->count() > 0) {
-                return $this->exportCsvFromOrderEmails($splitId, $orderEmails);
-            }
-
-            // Otherwise, fall back to the existing domain-based method
-            return $this->exportCsvSplitDomainsById($splitId);
+            // Use the service to handle the export
+            return $emailExportService->exportSmartZip($splitId, $orderPanelId, $order, $orderPanelSplit);
 
         } catch (\Exception $e) {
             Log::error('Error exporting CSV with smart selection: ' . $e->getMessage());
             return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
-    }
-
-    /**
+    }    /**
      * Export CSV using existing order_emails data
      */
     private function exportCsvFromOrderEmails($splitId, $orderEmails)
