@@ -19,7 +19,8 @@ class AdminSettingsController extends Controller
 
     public function sysConfing(Request $request){
         $configurations = Configuration::getPanelConfigurations();
-        return view('admin.config.index', compact('configurations'));
+        $providerTypes = Configuration::getProviderTypes();
+        return view('admin.config.index', compact('configurations', 'providerTypes'));
     }
 
     /**
@@ -40,14 +41,14 @@ class AdminSettingsController extends Controller
      */
     public function updateConfiguration(Request $request)
     {
-        $request->validate([
-            'key' => 'required|string',
-            'value' => 'required',
-            'type' => 'string|in:string,number,boolean,json',
-            'description' => 'nullable|string'
-        ]);
-
         try {
+            $request->validate([
+                'key' => 'required|string',
+                'value' => 'required',
+                'type' => 'nullable|string|in:string,number,boolean,json,select',
+                'description' => 'nullable|string'
+            ]);
+
             $type = $request->type ?? 'string';
             
             $config = Configuration::updateOrCreate(
@@ -64,6 +65,12 @@ class AdminSettingsController extends Controller
                 'message' => 'Configuration updated successfully',
                 'data' => $config
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

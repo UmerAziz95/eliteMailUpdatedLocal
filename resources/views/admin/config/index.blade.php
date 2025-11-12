@@ -353,8 +353,9 @@
                                         </td>
                                         <td id="value-panel-capacity">{{ $configArray['PANEL_CAPACITY']->value ?? '1790' }}</td>
                                         <td class="text-center">
+                                            
                                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editConfig('PANEL_CAPACITY', '{{ $configArray['PANEL_CAPACITY']->value ?? '1790' }}', 'number', '{{ $configArray['PANEL_CAPACITY']->description ?? 'Maximum capacity for panel assignments' }}')">
+                                                    onclick="editConfig('PANEL_CAPACITY')">
                                                 <i class="fa fa-edit me-1"></i>Edit
                                             </button>
                                         </td>
@@ -367,7 +368,7 @@
                                         <td id="value-max-split-capacity">{{ $configArray['MAX_SPLIT_CAPACITY']->value ?? '1790' }}</td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editConfig('MAX_SPLIT_CAPACITY', '{{ $configArray['MAX_SPLIT_CAPACITY']->value ?? '1790' }}', 'number', '{{ $configArray['MAX_SPLIT_CAPACITY']->description ?? 'Maximum split capacity for panel divisions' }}')">
+                                                    onclick="editConfig('MAX_SPLIT_CAPACITY')">
                                                 <i class="fa fa-edit me-1"></i>Edit
                                             </button>
                                         </td>
@@ -386,7 +387,7 @@
                                         </td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editConfig('ENABLE_MAX_SPLIT_CAPACITY', '{{ $enableMaxSplit }}', 'boolean', '{{ $configArray['ENABLE_MAX_SPLIT_CAPACITY']->description ?? 'Enable or disable maximum split capacity feature' }}')">
+                                                    onclick="editConfig('ENABLE_MAX_SPLIT_CAPACITY')">
                                                 <i class="fa fa-edit me-1"></i>Edit
                                             </button>
                                         </td>
@@ -399,7 +400,22 @@
                                         <td id="value-plan-flat-quantity">{{ $configArray['PLAN_FLAT_QUANTITY']->value ?? '99' }}</td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editConfig('PLAN_FLAT_QUANTITY', '{{ $configArray['PLAN_FLAT_QUANTITY']->value ?? '99' }}', 'number', '{{ $configArray['PLAN_FLAT_QUANTITY']->description ?? 'Flat quantity value for plan calculations' }}')">
+                                                    onclick="editConfig('PLAN_FLAT_QUANTITY')">
+                                                <i class="fa fa-edit me-1"></i>Edit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>PROVIDER_TYPE</strong></td>
+                                        <td id="desc-provider-type" class="text-muted">
+                                            {{ $configArray['PROVIDER_TYPE']->description ?? 'Email provider type for inbox management' }}
+                                        </td>
+                                        <td id="value-provider-type">
+                                            <span class="badge bg-label-info">{{ $configArray['PROVIDER_TYPE']->value ?? 'Google' }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editConfig('PROVIDER_TYPE')">
                                                 <i class="fa fa-edit me-1"></i>Edit
                                             </button>
                                         </td>
@@ -621,6 +637,14 @@
                 <label for="configValue" class="form-label">Value</label>
                 <input type="number" class="form-control" id="configValue" placeholder="Enter value">
             </div>
+            <div class="mb-3" id="selectInput" style="display: none;">
+                <label for="configSelectValue" class="form-label">Value</label>
+                <select class="form-select" id="configSelectValue">
+                    @foreach($providerTypes ?? [] as $provider)
+                        <option value="{{ $provider }}">{{ $provider }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="mb-3" id="booleanInput" style="display: none;">
                 <label class="form-label">Value</label>
                 <div>
@@ -730,31 +754,112 @@
     let currentConfigKey = '';
     let currentConfigType = '';
 
-    function editConfig(key, value, type, description = '') {
-        currentConfigKey = key;
-        currentConfigType = type;
-        
-        document.getElementById('configKey').value = key;
-        document.getElementById('configDescription').value = description;
-        
-        if (type === 'boolean') {
-            document.getElementById('numberInput').style.display = 'none';
-            document.getElementById('booleanInput').style.display = 'block';
-            
-            if (value === 'true') {
-                document.getElementById('boolTrue').checked = true;
-            } else {
-                document.getElementById('boolFalse').checked = true;
+    function editConfig(key, value = null, type = null, description = null) {
+        // Show loading state
+        Swal.fire({
+            title: 'Loading...',
+            text: 'Fetching configuration data',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
             }
-        } else {
-            document.getElementById('numberInput').style.display = 'block';
-            document.getElementById('booleanInput').style.display = 'none';
-            document.getElementById('configValue').value = value;
-        }
-        
-        // Open offcanvas
-        const offcanvas = new bootstrap.Offcanvas(document.getElementById('editConfigOffcanvas'));
-        offcanvas.show();
+        });
+
+        // Fetch fresh data from the server
+        fetch('{{ route("admin.panel.configurations.get") }}', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Close loading
+            Swal.close();
+            
+            if (data.success) {
+                // Find the configuration by key
+                const config = data.data.find(c => c.key === key);
+                
+                if (config) {
+                    currentConfigKey = config.key;
+                    currentConfigType = config.type;
+                    
+                    // Hide all input types first
+                    document.getElementById('numberInput').style.display = 'none';
+                    document.getElementById('selectInput').style.display = 'none';
+                    document.getElementById('booleanInput').style.display = 'none';
+                    
+                    // Reset all input values
+                    document.getElementById('configValue').value = '';
+                    document.getElementById('configSelectValue').selectedIndex = 0;
+                    document.querySelectorAll('input[name="configBoolValue"]').forEach(radio => radio.checked = false);
+                    
+                    // Set form values with fresh data
+                    document.getElementById('configKey').value = config.key;
+                    document.getElementById('configDescription').value = config.description || '';
+                    
+                    // Show and set the appropriate input based on type
+                    if (config.type === 'boolean') {
+                        document.getElementById('booleanInput').style.display = 'block';
+                        
+                        if (config.value === 'true' || config.value === true) {
+                            document.getElementById('boolTrue').checked = true;
+                        } else {
+                            document.getElementById('boolFalse').checked = true;
+                        }
+                    } else if (config.type === 'select' || config.type === 'string') {
+                        // Check if key is PROVIDER_TYPE for select dropdown
+                        if (config.key === 'PROVIDER_TYPE') {
+                            document.getElementById('selectInput').style.display = 'block';
+                            setTimeout(() => {
+                                document.getElementById('configSelectValue').value = config.value;
+                            }, 10);
+                        } else {
+                            document.getElementById('numberInput').style.display = 'block';
+                            document.getElementById('configValue').value = config.value;
+                            document.getElementById('configValue').type = 'text';
+                        }
+                    } else {
+                        document.getElementById('numberInput').style.display = 'block';
+                        document.getElementById('configValue').value = config.value;
+                        document.getElementById('configValue').type = config.type === 'number' ? 'number' : 'text';
+                    }
+                    
+                    // Open offcanvas
+                    const offcanvas = new bootstrap.Offcanvas(document.getElementById('editConfigOffcanvas'));
+                    offcanvas.show();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Configuration not found',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Failed to fetch configuration',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while fetching the configuration',
+                confirmButtonText: 'OK'
+            });
+        });
     }
 
     document.getElementById('saveConfigBtn').addEventListener('click', function() {
@@ -763,6 +868,8 @@
         
         if (currentConfigType === 'boolean') {
             newValue = document.querySelector('input[name="configBoolValue"]:checked').value;
+        } else if (currentConfigType === 'select') {
+            newValue = document.getElementById('configSelectValue').value;
         } else {
             newValue = document.getElementById('configValue').value;
         }
@@ -794,7 +901,9 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
                 key: currentConfigKey,
@@ -820,6 +929,8 @@
                 if (currentConfigType === 'boolean') {
                     const badgeClass = newValue === 'true' ? 'bg-label-success' : 'bg-label-danger';
                     valueCell.innerHTML = `<span class="badge ${badgeClass}">${newValue}</span>`;
+                } else if (currentConfigType === 'select') {
+                    valueCell.innerHTML = `<span class="badge bg-label-info">${newValue}</span>`;
                 } else {
                     valueCell.textContent = newValue;
                 }
@@ -857,6 +968,25 @@
                 confirmButtonText: 'OK'
             });
         });
+    });
+
+    // Reset form when offcanvas is closed
+    document.getElementById('editConfigOffcanvas').addEventListener('hidden.bs.offcanvas', function () {
+        // Clear all inputs
+        document.getElementById('configKey').value = '';
+        document.getElementById('configDescription').value = '';
+        document.getElementById('configValue').value = '';
+        document.getElementById('configSelectValue').selectedIndex = 0;
+        document.querySelectorAll('input[name="configBoolValue"]').forEach(radio => radio.checked = false);
+        
+        // Hide all input sections
+        document.getElementById('numberInput').style.display = 'none';
+        document.getElementById('selectInput').style.display = 'none';
+        document.getElementById('booleanInput').style.display = 'none';
+        
+        // Reset tracking variables
+        currentConfigKey = '';
+        currentConfigType = '';
     });
 
     // Chargebee Configuration Toggle Logic

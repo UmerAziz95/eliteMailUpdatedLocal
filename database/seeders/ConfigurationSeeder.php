@@ -37,6 +37,12 @@ class ConfigurationSeeder extends Seeder
                 'type' => 'number',
                 'description' => 'Default flat quantity value used for plan calculations and billing'
             ],
+            [
+                'key' => 'PROVIDER_TYPE',
+                'value' => 'Google',
+                'type' => 'string',
+                'description' => 'Email provider type for inbox management'
+            ],
         ];
 
         foreach ($configurations as $config) {

@@ -91,7 +91,22 @@ class Configuration extends Model
             'PANEL_CAPACITY',
             'MAX_SPLIT_CAPACITY',
             'ENABLE_MAX_SPLIT_CAPACITY',
-            'PLAN_FLAT_QUANTITY'
+            'PLAN_FLAT_QUANTITY',
+            'PROVIDER_TYPE'
         ])->get();
+    }
+
+    /**
+     * Get available provider types
+     *
+     * @return array
+     */
+    public static function getProviderTypes()
+    {
+        return [
+            'Google',
+            'Microsoft 365',
+            'Private SMTP'
+        ];
     }
 }
