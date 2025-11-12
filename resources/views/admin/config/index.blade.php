@@ -271,8 +271,14 @@
                                            value="{{ $systemArray['SUPPORT_EMAIL'] ?? '' }}"
                                            placeholder="support@example.com">
                                 </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="footerText" class="form-label">Footer Text</label>
+                                    <textarea class="form-control" id="footerText" name="FOOTER_TEXT" rows="3"
+                                              placeholder="© 2025 My Application. All rights reserved.">{{ $systemArray['FOOTER_TEXT'] ?? '' }}</textarea>
+                                </div>
                                 
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-12 mb-3">
                                     <label class="form-label">System Logo</label>
                                     <div class="d-flex align-items-center gap-3">
                                         <!-- Logo Preview Thumbnail -->
@@ -303,12 +309,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="col-md-12 mb-3">
-                                    <label for="footerText" class="form-label">Footer Text</label>
-                                    <textarea class="form-control" id="footerText" name="FOOTER_TEXT" rows="3"
-                                              placeholder="© 2025 My Application. All rights reserved.">{{ $systemArray['FOOTER_TEXT'] ?? '' }}</textarea>
                                 </div>
                             </div>
 
