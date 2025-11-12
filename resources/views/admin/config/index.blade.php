@@ -160,72 +160,46 @@
 
             <div class="tab-pane fade" id="backup-tab-pane" role="tabpanel" aria-labelledby="backup-tab" tabindex="0">
                 <div class="card mb-4 p-3">
-                    <h5 class="card-header">Backup</h5>
+                    <h5 class="card-header">System Backups (Last 30 Days)</h5>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover align-middle mb-0">
                                 <thead class="">
                                     <tr>
-                                        <th>Backup Title</th>
-                                        <th>Occurred At</th>
+                                        <th>Backup File</th>
+                                        <th>File Size</th>
+                                        <th>Created At</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @forelse($backups as $backup)
                                     <tr>
-                                        <td>Daily Backup - July 16</td>
-                                        <td>16 Jul 2025, 03:00 AM</td>
+                                        <td><i class="fa fa-file-archive me-2 text-primary"></i>{{ $backup['name'] }}</td>
+                                        <td>{{ $backup['size'] }}</td>
+                                        <td>{{ $backup['date'] }}</td>
                                         <td class="text-center">
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
-                                                        data-bs-toggle="dropdown" aria-expanded="false">
-                                                    Actions
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li>
-                                                        <a class="dropdown-item" href="#">
-                                                            <i class="fa fa-download me-2 text-success"></i>Download
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <button type="button" class="dropdown-item text-danger">
-                                                            <i class="fa fa-trash me-2"></i>Delete
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </div>
+                                            <a href="{{ route('admin.backup.download', ['file' => $backup['name']]) }}" 
+                                               class="btn btn-sm btn-success me-1" 
+                                               title="Download Backup">
+                                                <i class="fa fa-download"></i>
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-danger delete-backup-btn" 
+                                                    data-file="{{ $backup['name'] }}"
+                                                    title="Delete Backup">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
                                         </td>
                                     </tr>
-
+                                    @empty
                                     <tr>
-                                        <td>Weekly Backup - July 14</td>
-                                        <td>14 Jul 2025, 01:15 AM</td>
-                                        <td class="text-center">
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
-                                                        data-bs-toggle="dropdown" aria-expanded="false">
-                                                    Actions
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li>
-                                                        <a class="dropdown-item" href="#">
-                                                            <i class="fa fa-download me-2 text-success"></i>Download
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <button type="button" class="dropdown-item text-danger">
-                                                            <i class="fa fa-trash me-2"></i>Delete
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </div>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            <i class="fa fa-inbox fa-3x mb-3 d-block"></i>
+                                            No backups found in the last 30 days.
                                         </td>
                                     </tr>
-
-                                    <!-- Empty state -->
-                                    <!-- <tr>
-                                        <td colspan="3" class="text-center text-muted">No backups found.</td>
-                                    </tr> -->
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
@@ -1255,6 +1229,83 @@
                 confirmButtonText: 'OK'
             });
         });
+    });
+
+    // Delete Backup Handler
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-backup-btn') || e.target.closest('.delete-backup-btn')) {
+            const button = e.target.classList.contains('delete-backup-btn') ? e.target : e.target.closest('.delete-backup-btn');
+            const filename = button.getAttribute('data-file');
+            
+            Swal.fire({
+                title: 'Delete Backup?',
+                text: 'Are you sure you want to delete this backup file? This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Deleting...',
+                        text: 'Please wait while we delete the backup file',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Delete backup
+                    fetch('{{ route("admin.backup.delete") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            file: filename
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted!',
+                                text: data.message || 'Backup file has been deleted successfully.',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                // Reload page to refresh backup list
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.message || 'Failed to delete backup file',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'An error occurred while deleting the backup',
+                            confirmButtonText: 'OK'
+                        });
+                    });
+                }
+            });
+        }
     });
 </script>
 @endpush

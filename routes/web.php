@@ -437,6 +437,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/chargebee-configurations/update', [AdminSettingsController::class, 'updateChargebeeConfigurations'])->name('chargebee.configurations.update');
         Route::get('/system-configurations', [AdminSettingsController::class, 'getSystemConfigurations'])->name('system.configurations.get');
         Route::post('/system-configurations/update', [AdminSettingsController::class, 'updateSystemConfigurations'])->name('system.configurations.update');
+        Route::get('/backup/download', [AdminSettingsController::class, 'downloadBackup'])->name('backup.download');
+        Route::post('/backup/delete', [AdminSettingsController::class, 'deleteBackup'])->name('backup.delete');
         
         // GHL Settings Routes
          Route::get('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'index'])->name('ghl-settings.index');
