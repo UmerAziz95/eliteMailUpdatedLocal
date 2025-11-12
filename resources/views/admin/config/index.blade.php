@@ -100,7 +100,7 @@
                 tabindex="0">
             </div>
 
-
+            <!-- Chargebee Configuration -->
             <div class="tab-pane fade active show" id="chargebee_configuration_tab-pane" role="tabpanel"
                 aria-labelledby="chargebe_configuration-tab" tabindex="0">
                 <div class="card mb-4 p-3">
@@ -416,6 +416,19 @@
                                         <td class="text-center">
                                             <button type="button" class="btn btn-sm btn-outline-primary" 
                                                     onclick="editConfig('PROVIDER_TYPE')">
+                                                <i class="fa fa-edit me-1"></i>Edit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>MICROSOFT_365_CAPACITY</strong></td>
+                                        <td id="desc-microsoft-365-capacity" class="text-muted">
+                                            {{ $configArray['MICROSOFT_365_CAPACITY']->description ?? 'Maximum capacity for Microsoft 365 panel assignments' }}
+                                        </td>
+                                        <td id="value-microsoft-365-capacity">{{ $configArray['MICROSOFT_365_CAPACITY']->value ?? '1790' }}</td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editConfig('MICROSOFT_365_CAPACITY')">
                                                 <i class="fa fa-edit me-1"></i>Edit
                                             </button>
                                         </td>

@@ -92,7 +92,8 @@ class Configuration extends Model
             'MAX_SPLIT_CAPACITY',
             'ENABLE_MAX_SPLIT_CAPACITY',
             'PLAN_FLAT_QUANTITY',
-            'PROVIDER_TYPE'
+            'PROVIDER_TYPE',
+            'MICROSOFT_365_CAPACITY'
         ])->get();
     }
 

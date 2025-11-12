@@ -43,6 +43,12 @@ class ConfigurationSeeder extends Seeder
                 'type' => 'string',
                 'description' => 'Email provider type for Panel Allocation i.e. on which panel new orders will be placed'
             ],
+            [
+                'key' => 'MICROSOFT_365_CAPACITY',
+                'value' => '300',
+                'type' => 'number',
+                'description' => 'Maximum capacity for Microsoft 365 panel assignments'
+            ],
         ];
 
         foreach ($configurations as $config) {
