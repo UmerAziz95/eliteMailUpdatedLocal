@@ -157,14 +157,38 @@
                     </div>
                 </div>
             </div>
-
+            <!-- System Backup -->
             <div class="tab-pane fade" id="backup-tab-pane" role="tabpanel" aria-labelledby="backup-tab" tabindex="0">
                 <div class="card mb-4 p-3">
-                    <h5 class="card-header">System Backups (Last 30 Days)</h5>
+                    <h5 class="card-header">System Backups</h5>
                     <div class="card-body">
+                        <!-- Filters -->
+                        <div class="row g-3 align-items-end mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label" for="backupStart">Start Date</label>
+                                <input type="date" class="form-control" id="backupStart" value="{{ now()->subDays(30)->toDateString() }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="backupEnd">End Date</label>
+                                <input type="date" class="form-control" id="backupEnd" value="{{ now()->toDateString() }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="backupSizeMin">Min Size (MB)</label>
+                                <input type="number" min="0" step="1" class="form-control" id="backupSizeMin" placeholder="e.g. 10">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="backupSizeMax">Max Size (MB)</label>
+                                <input type="number" min="0" step="1" class="form-control" id="backupSizeMax" placeholder="e.g. 500">
+                            </div>
+                            <div class="col-md-2 d-flex gap-2">
+                                <button type="button" id="applyBackupFilters" class="btn btn-primary w-100">Apply</button>
+                                <button type="button" id="resetBackupFilters" class="btn btn-secondary w-100">Reset</button>
+                            </div>
+                        </div>
+
                         <div class="table-responsive">
-                            <table class="table table-bordered table-hover align-middle mb-0">
-                                <thead class="">
+                            <table id="backupsTable" class="table table-bordered table-hover align-middle mb-0" style="width:100%">
+                                <thead>
                                     <tr>
                                         <th>Backup File</th>
                                         <th>File Size</th>
@@ -173,33 +197,6 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($backups as $backup)
-                                    <tr>
-                                        <td><i class="fa fa-file-archive me-2 text-primary"></i>{{ $backup['name'] }}</td>
-                                        <td>{{ $backup['size'] }}</td>
-                                        <td>{{ $backup['date'] }}</td>
-                                        <td class="text-center">
-                                            <a href="{{ route('admin.backup.download', ['file' => $backup['name']]) }}" 
-                                               class="btn btn-sm btn-success me-1" 
-                                               title="Download Backup">
-                                                <i class="fa fa-download"></i>
-                                            </a>
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-danger delete-backup-btn" 
-                                                    data-file="{{ $backup['name'] }}"
-                                                    title="Delete Backup">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">
-                                            <i class="fa fa-inbox fa-3x mb-3 d-block"></i>
-                                            No backups found in the last 30 days.
-                                        </td>
-                                    </tr>
-                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
@@ -1278,30 +1275,20 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Remove the row from table instead of reloading
-                            const row = button.closest('tr');
-                            if (row) {
-                                row.remove();
+                            // Prefer DataTables reload if available
+                            if (window.backupsTable) {
+                                window.backupsTable.ajax.reload(null, false);
+                            } else {
+                                // Fallback: remove the row directly
+                                const row = button.closest('tr');
+                                if (row) { row.remove(); }
                             }
-                            
-                            // Check if table is now empty and show empty state
-                            const tbody = document.querySelector('#backup-tab-pane tbody');
-                            if (tbody && tbody.querySelectorAll('tr').length === 0) {
-                                tbody.innerHTML = `
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">
-                                            <i class="fa fa-inbox fa-3x mb-3 d-block"></i>
-                                            No backups found in the last 30 days.
-                                        </td>
-                                    </tr>
-                                `;
-                            }
-                            
+
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Deleted!',
                                 text: data.message || 'Backup file has been deleted successfully.',
-                                timer: 2000,
+                                timer: 1200,
                                 showConfirmButton: false
                             });
                         } else {
@@ -1323,6 +1310,54 @@
                         });
                     });
                 }
+            });
+        }
+    });
+    // Initialize backups DataTable and filter actions
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof $ !== 'undefined' && document.getElementById('backupsTable')) {
+            const $table = $('#backupsTable');
+            const listUrl = '{{ route("admin.backup.list") }}';
+
+            window.backupsTable = $table.DataTable({
+                responsive: true,
+                processing: true,
+                serverSide: false,
+                searching: false,
+                ajax: {
+                    url: listUrl,
+                    data: function(d) {
+                        d.start_date = document.getElementById('backupStart')?.value || '';
+                        d.end_date = document.getElementById('backupEnd')?.value || '';
+                        d.size_min = document.getElementById('backupSizeMin')?.value || '';
+                        d.size_max = document.getElementById('backupSizeMax')?.value || '';
+                    },
+                    dataSrc: function(json) { return json.data || []; }
+                },
+                columns: [
+                    { data: 'name', render: function(data){
+                        return `<i class="fa fa-file-archive me-2 text-primary"></i>${data}`;
+                    }},
+                    { data: 'size_human' },
+                    { data: 'date' },
+                    { data: null, orderable: false, searchable: false, className: 'text-center', render: function(data, type, row){
+                        const downloadUrl = '{{ route("admin.backup.download") }}' + '?file=' + encodeURIComponent(row.name);
+                        return `<a href="${downloadUrl}" class="btn btn-sm btn-success me-1" title="Download Backup"><i class="fa fa-download"></i></a>
+                                <button type="button" class="btn btn-sm btn-danger delete-backup-btn" data-file="${row.name}" title="Delete Backup"><i class="fa fa-trash"></i></button>`;
+                    }}
+                ],
+                order: [[2, 'desc']]
+            });
+
+            const apply = document.getElementById('applyBackupFilters');
+            const reset = document.getElementById('resetBackupFilters');
+            if (apply) apply.addEventListener('click', () => window.backupsTable.ajax.reload());
+            if (reset) reset.addEventListener('click', () => {
+                document.getElementById('backupStart').value = '{{ now()->subDays(30)->toDateString() }}';
+                document.getElementById('backupEnd').value = '{{ now()->toDateString() }}';
+                document.getElementById('backupSizeMin').value = '';
+                document.getElementById('backupSizeMax').value = '';
+                window.backupsTable.ajax.reload();
             });
         }
     });

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Configuration;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class AdminSettingsController extends Controller
 {
@@ -127,6 +128,91 @@ class AdminSettingsController extends Controller
                 'message' => 'Failed to delete backup: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * List backup files with optional filters (AJAX for DataTables)
+     * Filters:
+     * - start_date (Y-m-d)
+     * - end_date (Y-m-d)
+     * - size_min (MB)
+     * - size_max (MB)
+     */
+    public function listBackups(Request $request)
+    {
+        $backupPath = storage_path('app/backup');
+        if (!file_exists($backupPath)) {
+            return response()->json([
+                'success' => true,
+                'data' => []
+            ]);
+        }
+
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $sizeMinMb = $request->input('size_min');
+        $sizeMaxMb = $request->input('size_max');
+
+        $startTs = null;
+        $endTs = null;
+
+        try {
+            if ($startDate) {
+                $startTs = Carbon::parse($startDate)->startOfDay()->timestamp;
+            }
+        } catch (\Throwable $e) { /* ignore parse error */ }
+
+        try {
+            if ($endDate) {
+                $endTs = Carbon::parse($endDate)->endOfDay()->timestamp;
+            }
+        } catch (\Throwable $e) { /* ignore parse error */ }
+
+        // Defaults: last 30 days
+        if (!$startTs && !$endTs) {
+            $startTs = now()->subDays(30)->startOfDay()->timestamp;
+            $endTs = now()->endOfDay()->timestamp;
+        } else {
+            // Fill missing bound with very wide range
+            if (!$startTs) { $startTs = 0; }
+            if (!$endTs) { $endTs = PHP_INT_MAX; }
+        }
+
+        $minBytes = is_numeric($sizeMinMb) ? (int)($sizeMinMb * 1024 * 1024) : null;
+        $maxBytes = is_numeric($sizeMaxMb) ? (int)($sizeMaxMb * 1024 * 1024) : null;
+
+        $files = \File::files($backupPath);
+        $rows = [];
+        foreach ($files as $file) {
+            $fileTime = $file->getMTime();
+            $sizeBytes = $file->getSize();
+
+            if ($fileTime < $startTs || $fileTime > $endTs) {
+                continue;
+            }
+            if ($minBytes !== null && $sizeBytes < $minBytes) {
+                continue;
+            }
+            if ($maxBytes !== null && $sizeBytes > $maxBytes) {
+                continue;
+            }
+
+            $rows[] = [
+                'name' => $file->getFilename(),
+                'size_bytes' => $sizeBytes,
+                'size_human' => $this->formatBytes($sizeBytes),
+                'date' => date('d M Y, h:i A', $fileTime),
+                'timestamp' => $fileTime,
+            ];
+        }
+
+        // Sort newest first
+        usort($rows, function($a, $b) { return $b['timestamp'] <=> $a['timestamp']; });
+
+        return response()->json([
+            'success' => true,
+            'data' => $rows,
+        ]);
     }
 
     /**
@@ -320,4 +406,3 @@ class AdminSettingsController extends Controller
     }
 
 }
-
