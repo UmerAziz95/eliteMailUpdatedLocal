@@ -49,6 +49,24 @@ class ConfigurationSeeder extends Seeder
                 'type' => 'number',
                 'description' => 'Maximum capacity for Microsoft 365 panel assignments'
             ],
+            [
+                'key' => 'CHARGEBEE_PUBLISHABLE_API_KEY',
+                'value' => 'test_AhIaXMucdYCKah7boupv0BdwxrB3ljcdSk',
+                'type' => 'string',
+                'description' => 'Chargebee Publishable API Key for payment gateway integration'
+            ],
+            [
+                'key' => 'CHARGEBEE_SITE',
+                'value' => 'projectinbox-test',
+                'type' => 'string',
+                'description' => 'Chargebee Site name/identifier for API authentication'
+            ],
+            [
+                'key' => 'CHARGEBEE_API_KEY',
+                'value' => 'test_EFIuXC2fuB1OiUPVy5y6cdMDQN3derDJL',
+                'type' => 'string',
+                'description' => 'Chargebee Secret API Key for server-side operations'
+            ],
         ];
 
         foreach ($configurations as $config) {

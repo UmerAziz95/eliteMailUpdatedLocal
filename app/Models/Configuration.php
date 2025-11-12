@@ -110,4 +110,19 @@ class Configuration extends Model
             'Private SMTP'
         ];
     }
+
+    /**
+     * Get all Chargebee configurations
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public static function getChargebeeConfigurations()
+    {
+        return self::whereIn('key', [
+            'CHARGEBEE_PUBLISHABLE_API_KEY',
+            'CHARGEBEE_SITE',
+            'CHARGEBEE_API_KEY'
+        ])->get();
+    }
 }
+

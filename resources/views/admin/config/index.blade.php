@@ -73,11 +73,7 @@
                     data-bs-target="#chargebee_configuration_tab-pane" type="button" role="tab" aria-controls="chargebee_configuration_tab-pane"
                     aria-selected="false"><i class="fa-solid fa-unlock"></i> Chargebee Configuration</button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="plan-tab" data-bs-toggle="tab" data-bs-target="#plans-tab-pane"
-                    type="button" role="tab" aria-controls="notify-tab-pane" aria-selected="false"><i
-                        class="fa-regular fa-gear"></i> Plan Configuration</button>
-            </li>
+            
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#backup-tab-pane"
                     type="button" role="tab" aria-controls="backup-tab-pane" aria-selected="false"><i
@@ -107,87 +103,46 @@
                     <h5 class="card-header">Chargebee Configuration</h5>
                     <div class="card-body">
                         <form id="chargebeeConfigForm">
-                            <div class="alert text-warning alert-dismissible"
-                                style="background-color: rgba(255, 166, 0, 0.189)" role="alert">
-                                <h5 class="alert-heading mb-1">Note</h5>
-                                <span>Only one environment can be active at a time. Provide credentials accordingly.</span>
-                                <button type="button" class="btn-close text-warning" data-bs-dismiss="alert"
-                                        aria-label="Close"></button>
-                            </div>
+                            @csrf
+                            @php
+                                $chargebeeArray = [];
+                                if (isset($chargebeeConfigs)) {
+                                    foreach ($chargebeeConfigs as $config) {
+                                        $chargebeeArray[$config->key] = $config->value;
+                                    }
+                                }
+                            @endphp
 
-                            {{-- Environment Toggles --}}
-                            <div class="row mb-4">
-                                <div class="col-sm-6">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="liveSwitch">
-                                        <label class="form-check-label" for="liveSwitch">Use Live Environment</label>
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="sandboxSwitch">
-                                        <label class="form-check-label" for="sandboxSwitch">Use Sandbox Environment</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Live Credentials --}}
                             <div class="row gx-3">
                                 <div class="col-md-6 mb-3">
-                                    <label for="liveSiteKey" class="form-label">Live Site Key</label>
-                                    <input type="text" id="liveSiteKey" name="liveSiteKey" class="form-control" disabled>
+                                    <label for="chargebeePublishableKey" class="form-label">Publishable API Key</label>
+                                    <input type="text" id="chargebeePublishableKey" name="CHARGEBEE_PUBLISHABLE_API_KEY" 
+                                           class="form-control" 
+                                           value="{{ $chargebeeArray['CHARGEBEE_PUBLISHABLE_API_KEY'] ?? '' }}"
+                                           placeholder="Enter Publishable API Key">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="liveSecretKey" class="form-label">Live Secret Key</label>
-                                    <input type="text" id="liveSecretKey" name="liveSecretKey" class="form-control" disabled>
+                                    <label for="chargebeeSite" class="form-label">Chargebee Site</label>
+                                    <input type="text" id="chargebeeSite" name="CHARGEBEE_SITE" 
+                                           class="form-control" 
+                                           value="{{ $chargebeeArray['CHARGEBEE_SITE'] ?? '' }}"
+                                           placeholder="Enter Site Name">
                                 </div>
                             </div>
 
-                            {{-- Sandbox Credentials --}}
                             <div class="row gx-3">
-                                <div class="col-md-6 mb-3">
-                                    <label for="sandboxSiteKey" class="form-label">Sandbox Site Key</label>
-                                    <input type="text" id="sandboxSiteKey" name="sandboxSiteKey" class="form-control" disabled>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="sandboxSecretKey" class="form-label">Sandbox Secret Key</label>
-                                    <input type="text" id="sandboxSecretKey" name="sandboxSecretKey" class="form-control" disabled>
+                                <div class="col-md-12 mb-3">
+                                    <label for="chargebeeApiKey" class="form-label">Secret API Key</label>
+                                    <input type="text" id="chargebeeApiKey" name="CHARGEBEE_API_KEY" 
+                                           class="form-control" 
+                                           value="{{ $chargebeeArray['CHARGEBEE_API_KEY'] ?? '' }}"
+                                           placeholder="Enter Secret API Key">
                                 </div>
                             </div>
 
                             <div class="mt-4">
-                                <button type="submit" class="btn btn-primary">Save Configuration</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
 
-
-
-           <div class="tab-pane fade" id="plans-tab-pane" role="tabpanel" aria-labelledby="plans-tab" tabindex="0">
-                <div class="card mb-4 p-3">
-                    <h5 class="card-header">Plan Configuration</h5>
-                    <div class="card-body">
-                        <form id="planConfigForm">
-                            <div class="row gx-4">
-                                {{-- Split Limit Value --}}
-                                <div class="col-md-6 mb-4">
-                                    <label for="splitLimitValue" class="form-label">Split Limit Value</label>
-                                    <input type="number" step="0.01" id="splitLimitValue" name="splitLimitValue" class="form-control"
-                                        placeholder="Enter split limit">
-                                </div>
-
-                                {{-- Chargebee Product Family ID --}}
-                                <div class="col-md-6 mb-4">
-                                    <label for="productFamilyId" class="form-label">Chargebee Product Family ID</label>
-                                    <input type="text" id="productFamilyId" name="productFamilyId" class="form-control"
-                                        placeholder="Enter Chargebee Product Family ID">
-                                </div>
-                            </div>
-
-                            <div class="mt-3">
-                                <button type="submit" class="btn btn-primary">Save Configuration</button>
+                                <button type="submit" id="chargebeeConfigSubmit" class="btn btn-primary">Save Configuration</button>
                             </div>
                         </form>
                     </div>
@@ -200,7 +155,7 @@
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover align-middle mb-0">
-                                <thead class="table-light">
+                                <thead class="">
                                     <tr>
                                         <th>Backup Title</th>
                                         <th>Occurred At</th>
@@ -1002,42 +957,70 @@
         currentConfigType = '';
     });
 
-    // Chargebee Configuration Toggle Logic
-    document.addEventListener("DOMContentLoaded", () => {
-        const liveSwitch = document.getElementById("liveSwitch");
-        const sandboxSwitch = document.getElementById("sandboxSwitch");
-
-        const liveSiteKey = document.getElementById("liveSiteKey");
-        const liveSecretKey = document.getElementById("liveSecretKey");
-
-        const sandboxSiteKey = document.getElementById("sandboxSiteKey");
-        const sandboxSecretKey = document.getElementById("sandboxSecretKey");
-
-        function updateFields() {
-            if (liveSwitch.checked) {
-                sandboxSwitch.checked = false;
-                liveSiteKey.disabled = false;
-                liveSecretKey.disabled = false;
-                sandboxSiteKey.disabled = true;
-                sandboxSecretKey.disabled = true;
-            } else if (sandboxSwitch.checked) {
-                liveSwitch.checked = false;
-                sandboxSiteKey.disabled = false;
-                sandboxSecretKey.disabled = false;
-                liveSiteKey.disabled = true;
-                liveSecretKey.disabled = true;
-            } else {
-                liveSiteKey.disabled = true;
-                liveSecretKey.disabled = true;
-                sandboxSiteKey.disabled = true;
-                sandboxSecretKey.disabled = true;
+    // Chargebee Configuration Form
+    document.getElementById('chargebeeConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = {};
+        formData.forEach((value, key) => {
+            if (key !== '_token') {
+                data[key] = value;
             }
-        }
+        });
 
-        liveSwitch.addEventListener("change", updateFields);
-        sandboxSwitch.addEventListener("change", updateFields);
+        // Show loading
+        Swal.fire({
+            title: 'Saving...',
+            text: 'Updating Chargebee configuration',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
 
-        updateFields(); // run once on load
+        fetch('{{ route("admin.chargebee.configurations.update") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            // enabled submit button
+            document.getElementById('chargebeeConfigSubmit').disabled = false;
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: data.message || 'Chargebee configuration updated successfully',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Failed to update Chargebee configuration',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('chargebeeConfigSubmit').disabled = false;
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while saving',
+                confirmButtonText: 'OK'
+            });
+        });
     });
 </script>
 @endpush

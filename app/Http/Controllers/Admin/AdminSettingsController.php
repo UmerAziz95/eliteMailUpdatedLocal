@@ -19,8 +19,9 @@ class AdminSettingsController extends Controller
 
     public function sysConfing(Request $request){
         $configurations = Configuration::getPanelConfigurations();
+        $chargebeeConfigs = Configuration::getChargebeeConfigurations();
         $providerTypes = Configuration::getProviderTypes();
-        return view('admin.config.index', compact('configurations', 'providerTypes'));
+        return view('admin.config.index', compact('configurations', 'chargebeeConfigs', 'providerTypes'));
     }
 
     /**
@@ -79,4 +80,64 @@ class AdminSettingsController extends Controller
         }
     }
 
+    /**
+     * Get Chargebee configurations
+     */
+    public function getChargebeeConfigurations()
+    {
+        $configurations = Configuration::getChargebeeConfigurations();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $configurations
+        ]);
+    }
+
+    /**
+     * Update Chargebee configurations
+     */
+    public function updateChargebeeConfigurations(Request $request)
+    {
+        try {
+            $request->validate([
+                'CHARGEBEE_PUBLISHABLE_API_KEY' => 'required|string',
+                'CHARGEBEE_SITE' => 'required|string',
+                'CHARGEBEE_API_KEY' => 'required|string',
+            ]);
+
+            $configs = [
+                'CHARGEBEE_PUBLISHABLE_API_KEY' => $request->CHARGEBEE_PUBLISHABLE_API_KEY,
+                'CHARGEBEE_SITE' => $request->CHARGEBEE_SITE,
+                'CHARGEBEE_API_KEY' => $request->CHARGEBEE_API_KEY,
+            ];
+
+            foreach ($configs as $key => $value) {
+                Configuration::updateOrCreate(
+                    ['key' => $key],
+                    [
+                        'value' => $value,
+                        'type' => 'string'
+                    ]
+                );
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Chargebee configuration updated successfully'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update Chargebee configuration: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
+
