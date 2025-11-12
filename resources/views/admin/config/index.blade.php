@@ -66,7 +66,7 @@
 @section('content')
 <div class="row py-4">
 
-    <div class="col-xl-8 col-lg-5">
+    <div class="col-12">
         <ul class="nav nav-tabs border-0" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="chargebee-tab" data-bs-toggle="tab"
@@ -87,6 +87,11 @@
                 <button class="nav-link" id="configuration-pane" data-bs-toggle="tab" data-bs-target="#system_configuration-pane"
                     type="button" role="tab" aria-controls="system_configuration-tab-pane" aria-selected="false"><i
                         class="fa-regular fa-file"></i> System Configuration</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="panel-config-tab" data-bs-toggle="tab" data-bs-target="#panel_configuration-pane"
+                    type="button" role="tab" aria-controls="panel_configuration-tab-pane" aria-selected="false"><i
+                        class="fa-solid fa-sliders"></i> Panel Configurations</button>
             </li>
         </ul>
 
@@ -317,6 +322,96 @@
 </div>
 
 
+            <div class="tab-pane fade" id="panel_configuration-pane" role="tabpanel"
+                 aria-labelledby="panel_configuration-tab" tabindex="0">
+                <div class="card mb-4 p-3">
+                    <h5 class="card-header">Panel Configurations</h5>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead class="">
+                                    <tr>
+                                        <th>Configuration Key</th>
+                                        <th>Label / Description</th>
+                                        <th>Value</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $panelConfigs = $configurations ?? [];
+                                        $configArray = [];
+                                        foreach ($panelConfigs as $config) {
+                                            $configArray[$config->key] = $config;
+                                        }
+                                    @endphp
+                                    
+                                    <tr>
+                                        <td><strong>PANEL_CAPACITY</strong></td>
+                                        <td id="desc-panel-capacity" class="text-muted">
+                                            {{ $configArray['PANEL_CAPACITY']->description ?? 'Maximum capacity for panel assignments' }}
+                                        </td>
+                                        <td id="value-panel-capacity">{{ $configArray['PANEL_CAPACITY']->value ?? '1790' }}</td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editConfig('PANEL_CAPACITY', '{{ $configArray['PANEL_CAPACITY']->value ?? '1790' }}', 'number', '{{ $configArray['PANEL_CAPACITY']->description ?? 'Maximum capacity for panel assignments' }}')">
+                                                <i class="fa fa-edit me-1"></i>Edit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>MAX_SPLIT_CAPACITY</strong></td>
+                                        <td id="desc-max-split-capacity" class="text-muted">
+                                            {{ $configArray['MAX_SPLIT_CAPACITY']->description ?? 'Maximum split capacity for panel divisions' }}
+                                        </td>
+                                        <td id="value-max-split-capacity">{{ $configArray['MAX_SPLIT_CAPACITY']->value ?? '1790' }}</td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editConfig('MAX_SPLIT_CAPACITY', '{{ $configArray['MAX_SPLIT_CAPACITY']->value ?? '1790' }}', 'number', '{{ $configArray['MAX_SPLIT_CAPACITY']->description ?? 'Maximum split capacity for panel divisions' }}')">
+                                                <i class="fa fa-edit me-1"></i>Edit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ENABLE_MAX_SPLIT_CAPACITY</strong></td>
+                                        <td id="desc-enable-max-split-capacity" class="text-muted">
+                                            {{ $configArray['ENABLE_MAX_SPLIT_CAPACITY']->description ?? 'Enable or disable maximum split capacity feature' }}
+                                        </td>
+                                        <td id="value-enable-max-split-capacity">
+                                            @php
+                                                $enableMaxSplit = $configArray['ENABLE_MAX_SPLIT_CAPACITY']->value ?? 'false';
+                                                $badgeClass = $enableMaxSplit === 'true' ? 'bg-label-success' : 'bg-label-danger';
+                                            @endphp
+                                            <span class="badge {{ $badgeClass }}">{{ $enableMaxSplit }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editConfig('ENABLE_MAX_SPLIT_CAPACITY', '{{ $enableMaxSplit }}', 'boolean', '{{ $configArray['ENABLE_MAX_SPLIT_CAPACITY']->description ?? 'Enable or disable maximum split capacity feature' }}')">
+                                                <i class="fa fa-edit me-1"></i>Edit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>PLAN_FLAT_QUANTITY</strong></td>
+                                        <td id="desc-plan-flat-quantity" class="text-muted">
+                                            {{ $configArray['PLAN_FLAT_QUANTITY']->description ?? 'Flat quantity value for plan calculations' }}
+                                        </td>
+                                        <td id="value-plan-flat-quantity">{{ $configArray['PLAN_FLAT_QUANTITY']->value ?? '99' }}</td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editConfig('PLAN_FLAT_QUANTITY', '{{ $configArray['PLAN_FLAT_QUANTITY']->value ?? '99' }}', 'number', '{{ $configArray['PLAN_FLAT_QUANTITY']->description ?? 'Flat quantity value for plan calculations' }}')">
+                                                <i class="fa fa-edit me-1"></i>Edit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
         </div>
     </div>
 </div>
@@ -505,6 +600,52 @@
     </div>
 </div>
 
+<!-- Edit Configuration Offcanvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="editConfigOffcanvas" aria-labelledby="editConfigOffcanvasLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="editConfigOffcanvasLabel">Edit Configuration</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="editConfigForm">
+            <div class="mb-3">
+                <label for="configKey" class="form-label">Configuration Key</label>
+                <input type="text" class="form-control" id="configKey" readonly>
+            </div>
+            <div class="mb-3">
+                <label for="configDescription" class="form-label">Label / Description</label>
+                <textarea class="form-control" id="configDescription" rows="3" placeholder="Enter description"></textarea>
+                <small class="text-muted">This helps identify what this configuration is used for.</small>
+            </div>
+            <div class="mb-3" id="numberInput">
+                <label for="configValue" class="form-label">Value</label>
+                <input type="number" class="form-control" id="configValue" placeholder="Enter value">
+            </div>
+            <div class="mb-3" id="booleanInput" style="display: none;">
+                <label class="form-label">Value</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="configBoolValue" id="boolTrue" value="true">
+                        <label class="form-check-label" for="boolTrue">True</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="configBoolValue" id="boolFalse" value="false">
+                        <label class="form-check-label" for="boolFalse">False</label>
+                    </div>
+                </div>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary" id="saveConfigBtn">
+                    <i class="fa fa-save me-2"></i>Save Changes
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">
+                    <i class="fa fa-times me-2"></i>Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="modal fade" style="scrollbar-width: none" id="edit" tabindex="-1" aria-labelledby="editLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
@@ -585,6 +726,140 @@
 
 @push('scripts')
 <script>
+    // Panel Configuration Edit Functions
+    let currentConfigKey = '';
+    let currentConfigType = '';
+
+    function editConfig(key, value, type, description = '') {
+        currentConfigKey = key;
+        currentConfigType = type;
+        
+        document.getElementById('configKey').value = key;
+        document.getElementById('configDescription').value = description;
+        
+        if (type === 'boolean') {
+            document.getElementById('numberInput').style.display = 'none';
+            document.getElementById('booleanInput').style.display = 'block';
+            
+            if (value === 'true') {
+                document.getElementById('boolTrue').checked = true;
+            } else {
+                document.getElementById('boolFalse').checked = true;
+            }
+        } else {
+            document.getElementById('numberInput').style.display = 'block';
+            document.getElementById('booleanInput').style.display = 'none';
+            document.getElementById('configValue').value = value;
+        }
+        
+        // Open offcanvas
+        const offcanvas = new bootstrap.Offcanvas(document.getElementById('editConfigOffcanvas'));
+        offcanvas.show();
+    }
+
+    document.getElementById('saveConfigBtn').addEventListener('click', function() {
+        let newValue;
+        let newDescription = document.getElementById('configDescription').value;
+        
+        if (currentConfigType === 'boolean') {
+            newValue = document.querySelector('input[name="configBoolValue"]:checked').value;
+        } else {
+            newValue = document.getElementById('configValue').value;
+        }
+
+        // Validate input
+        if (!newValue && currentConfigType !== 'boolean') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please enter a value',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+        
+        // Show loading
+        Swal.fire({
+            title: 'Updating Configuration',
+            text: 'Please wait...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Make AJAX call to save to the backend
+        fetch('{{ route("admin.panel.configurations.update") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                key: currentConfigKey,
+                value: newValue,
+                type: currentConfigType,
+                description: newDescription
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the table display
+                const keySlug = currentConfigKey.toLowerCase().replace(/_/g, '-');
+                const valueCell = document.getElementById(`value-${keySlug}`);
+                const descCell = document.getElementById(`desc-${keySlug}`);
+                
+                // Update description
+                if (descCell) {
+                    descCell.textContent = newDescription;
+                }
+                
+                // Update value
+                if (currentConfigType === 'boolean') {
+                    const badgeClass = newValue === 'true' ? 'bg-label-success' : 'bg-label-danger';
+                    valueCell.innerHTML = `<span class="badge ${badgeClass}">${newValue}</span>`;
+                } else {
+                    valueCell.textContent = newValue;
+                }
+                
+                // Close offcanvas
+                const offcanvasElement = document.getElementById('editConfigOffcanvas');
+                const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                if (offcanvas) {
+                    offcanvas.hide();
+                }
+                
+                // Show success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Configuration updated successfully',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Failed to update configuration',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while updating the configuration',
+                confirmButtonText: 'OK'
+            });
+        });
+    });
+
+    // Chargebee Configuration Toggle Logic
     document.addEventListener("DOMContentLoaded", () => {
         const liveSwitch = document.getElementById("liveSwitch");
         const sandboxSwitch = document.getElementById("sandboxSwitch");
