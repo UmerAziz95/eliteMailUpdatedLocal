@@ -1200,15 +1200,18 @@
             // enabled submit button
             document.getElementById('systemConfigSubmit').disabled = false;
             if (data.success) {
+                // Reset the remove_logo flag after successful save
+                const removeLogoInput = document.getElementById('removeLogo_input');
+                if (removeLogoInput) {
+                    removeLogoInput.value = '0';
+                }
+                
                 Swal.fire({
                     icon: 'success',
                     title: 'Success',
                     text: data.message || 'System configuration updated successfully',
                     timer: 2000,
                     showConfirmButton: false
-                }).then(() => {
-                    // Reload page to show updated logo
-                    location.reload();
                 });
             } else {
                 Swal.fire({
@@ -1275,15 +1278,31 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            // Remove the row from table instead of reloading
+                            const row = button.closest('tr');
+                            if (row) {
+                                row.remove();
+                            }
+                            
+                            // Check if table is now empty and show empty state
+                            const tbody = document.querySelector('#backup-tab-pane tbody');
+                            if (tbody && tbody.querySelectorAll('tr').length === 0) {
+                                tbody.innerHTML = `
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            <i class="fa fa-inbox fa-3x mb-3 d-block"></i>
+                                            No backups found in the last 30 days.
+                                        </td>
+                                    </tr>
+                                `;
+                            }
+                            
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Deleted!',
                                 text: data.message || 'Backup file has been deleted successfully.',
                                 timer: 2000,
                                 showConfirmButton: false
-                            }).then(() => {
-                                // Reload page to refresh backup list
-                                location.reload();
                             });
                         } else {
                             Swal.fire({
