@@ -41,7 +41,7 @@ class ConfigurationSeeder extends Seeder
                 'key' => 'PROVIDER_TYPE',
                 'value' => 'Google',
                 'type' => 'string',
-                'description' => 'Email provider type for inbox management'
+                'description' => 'Email provider type for Panel Allocation i.e. on which panel new orders will be placed'
             ],
         ];
 
