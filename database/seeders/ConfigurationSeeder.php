@@ -67,6 +67,36 @@ class ConfigurationSeeder extends Seeder
                 'type' => 'string',
                 'description' => 'Chargebee Secret API Key for server-side operations'
             ],
+            [
+                'key' => 'SYSTEM_NAME',
+                'value' => 'My Application',
+                'type' => 'string',
+                'description' => 'Name of the application displayed across the system'
+            ],
+            [
+                'key' => 'ADMIN_EMAIL',
+                'value' => 'admin@example.com',
+                'type' => 'string',
+                'description' => 'Primary administrator email address for system notifications'
+            ],
+            [
+                'key' => 'SUPPORT_EMAIL',
+                'value' => 'support@example.com',
+                'type' => 'string',
+                'description' => 'Support email address for customer inquiries'
+            ],
+            [
+                'key' => 'FOOTER_TEXT',
+                'value' => '© 2025 My Application. All rights reserved.',
+                'type' => 'string',
+                'description' => 'Footer text displayed at the bottom of pages'
+            ],
+            [
+                'key' => 'SYSTEM_LOGO',
+                'value' => '',
+                'type' => 'string',
+                'description' => 'System logo image path'
+            ],
         ];
 
         foreach ($configurations as $config) {

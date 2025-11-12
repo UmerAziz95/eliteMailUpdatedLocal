@@ -60,6 +60,15 @@
     .timeline:not(.timeline-center) {
         padding-inline-start: .5rem;
     }
+
+    #logoThumbnail {
+        transition: all 0.3s ease;
+    }
+
+    #logoThumbnail:hover {
+        border-color: #007bff !important;
+        box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+    }
 </style>
 @endpush
 
@@ -224,57 +233,95 @@
                 </div>
             </div>
 
-
+            
             <div class="tab-pane fade" id="system_configuration-pane" role="tabpanel"
-     aria-labelledby="system_configuration-tab" tabindex="0">
-    <div class="card mb-4 p-3">
-        <h5 class="card-header">System Configuration</h5>
-        <div class="card-body">
-            <form id="systemConfigForm">
-                <div class="row gx-4">
-                    <div class="col-md-6 mb-3">
-                        <label for="systemName" class="form-label">System Name</label>
-                        <input type="text" class="form-control" id="systemName" name="systemName" placeholder="My Application">
-                    </div>
+                aria-labelledby="system_configuration-tab" tabindex="0">
+                <div class="card mb-4 p-3">
+                    <h5 class="card-header">System Configuration</h5>
+                    <div class="card-body">
+                        <form id="systemConfigForm">
+                            @csrf
+                            @php
+                                $systemArray = [];
+                                if (isset($systemConfigs)) {
+                                    foreach ($systemConfigs as $config) {
+                                        $systemArray[$config->key] = $config->value;
+                                    }
+                                }
+                            @endphp
+                            
+                            <div class="row gx-4">
+                                <div class="col-md-6 mb-3">
+                                    <label for="systemName" class="form-label">System Name</label>
+                                    <input type="text" class="form-control" id="systemName" name="SYSTEM_NAME" 
+                                           value="{{ $systemArray['SYSTEM_NAME'] ?? '' }}"
+                                           placeholder="My Application">
+                                </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label for="adminEmail" class="form-label">Admin Email</label>
-                        <input type="email" class="form-control" id="adminEmail" name="adminEmail" placeholder="admin@example.com">
-                    </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="adminEmail" class="form-label">Admin Email</label>
+                                    <input type="email" class="form-control" id="adminEmail" name="ADMIN_EMAIL" 
+                                           value="{{ $systemArray['ADMIN_EMAIL'] ?? '' }}"
+                                           placeholder="admin@example.com">
+                                </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label for="supportEmail" class="form-label">Support Email</label>
-                        <input type="email" class="form-control" id="supportEmail" name="supportEmail" placeholder="support@example.com">
-                    </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="supportEmail" class="form-label">Support Email</label>
+                                    <input type="email" class="form-control" id="supportEmail" name="SUPPORT_EMAIL" 
+                                           value="{{ $systemArray['SUPPORT_EMAIL'] ?? '' }}"
+                                           placeholder="support@example.com">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">System Logo</label>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <!-- Logo Preview Thumbnail -->
+                                        <div id="logoThumbnail" class="border rounded d-flex align-items-center justify-content-center" 
+                                             style="width: 80px; height: 80px; background-color: #f8f9fa; cursor: pointer; overflow: hidden;">
+                                            @if(!empty($systemArray['SYSTEM_LOGO']))
+                                                <img src="{{ asset($systemArray['SYSTEM_LOGO']) }}" id="logoThumbImg" alt="Logo" 
+                                                     style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                            @else
+                                                <i class="fa fa-image fa-2x text-muted" id="logoPlaceholderIcon"></i>
+                                                <img src="" id="logoThumbImg" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;">
+                                            @endif
+                                        </div>
+                                        
+                                        <!-- Upload Button and Info -->
+                                        <div class="flex-grow-1">
+                                            <input type="file" class="d-none" id="logo" name="logo" accept="image/*">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('logo').click()">
+                                                <i class="fa fa-upload me-1"></i> Upload Logo
+                                            </button>
+                                            <!-- Remove Logo Button -->
+                                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" id="removeLogo" style="display: {{ !empty($systemArray['SYSTEM_LOGO']) ? 'inline-block' : 'none' }};">
+                                                <i class="fa fa-trash me-1"></i> Remove
+                                            </button>
+                                            <div class="mt-2">
+                                                <small class="text-muted d-block">Accepted: JPG, PNG, GIF, SVG</small>
+                                                <small class="text-muted">Max size: 2MB</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                      <div class="col-md-6 mb-3">
-                        <label for="logo" class="form-label">System Logo</label>
-                        <input type="file" class="form-control" id="logo" name="logo">
-                    </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="footerText" class="form-label">Footer Text</label>
+                                    <textarea class="form-control" id="footerText" name="FOOTER_TEXT" rows="3"
+                                              placeholder="© 2025 My Application. All rights reserved.">{{ $systemArray['FOOTER_TEXT'] ?? '' }}</textarea>
+                                </div>
+                            </div>
 
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check form-switch mt-4">
-                            <input class="form-check-input" type="checkbox" id="maintenanceMode" name="maintenanceMode">
-                            <label class="form-check-label" for="maintenanceMode">Enable Maintenance Mode</label>
-                        </div>
-                    </div>
+                            <!-- Hidden input to track logo removal -->
+                            <input type="hidden" id="removeLogo_input" name="remove_logo" value="0">
 
-                  
-
-                    <div class="col-md-12 mb-3">
-                        <label for="footerText" class="form-label">Footer Text</label>
-                        <textarea class="form-control" id="footerText" name="footerText" rows="3"
-                                  placeholder="© 2025 My Application. All rights reserved."></textarea>
+                            <div class="mt-3">
+                                <button type="submit" id="systemConfigSubmit" class="btn btn-primary">Save Configuration</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-
-                <div class="mt-3">
-                    <button type="submit" class="btn btn-primary">Save Configuration</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+            </div>
 
 
             <div class="tab-pane fade" id="panel_configuration-pane" role="tabpanel"
@@ -366,7 +413,7 @@
                                             {{ $configArray['PROVIDER_TYPE']->description ?? 'Email provider type for inbox management' }}
                                         </td>
                                         <td id="value-provider-type">
-                                            <span class="badge bg-label-info">{{ $configArray['PROVIDER_TYPE']->value ?? 'Google' }}</span>
+                                            <span class="badge bg-label-success">{{ $configArray['PROVIDER_TYPE']->value ?? 'Google' }}</span>
                                         </td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-sm btn-outline-primary" 
@@ -1014,6 +1061,193 @@
         .catch(error => {
             console.error('Error:', error);
             document.getElementById('chargebeeConfigSubmit').disabled = false;
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while saving',
+                confirmButtonText: 'OK'
+            });
+        });
+    });
+
+    // Logo Thumbnail Click - Show Larger Preview
+    document.getElementById('logoThumbnail').addEventListener('click', function() {
+        const logoThumbImg = document.getElementById('logoThumbImg');
+        if (logoThumbImg.src && logoThumbImg.style.display !== 'none') {
+            Swal.fire({
+                imageUrl: logoThumbImg.src,
+                imageAlt: 'System Logo',
+                showConfirmButton: false,
+                showCloseButton: true,
+                width: 'auto',
+                padding: '2rem',
+                background: '#fff'
+            });
+        }
+    });
+
+    // Logo Preview Handler
+    document.getElementById('logo').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/svg+xml'];
+            if (!validTypes.includes(file.type)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid File Type',
+                    text: 'Please select a valid image file (JPG, PNG, GIF, SVG)',
+                    confirmButtonText: 'OK'
+                });
+                e.target.value = '';
+                return;
+            }
+
+            // Validate file size (2MB)
+            if (file.size > 2048000) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: 'Image size should not exceed 2MB',
+                    confirmButtonText: 'OK'
+                });
+                e.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const logoThumbImg = document.getElementById('logoThumbImg');
+                const logoPlaceholderIcon = document.getElementById('logoPlaceholderIcon');
+                const removeLogoBtn = document.getElementById('removeLogo');
+                const removeLogoInput = document.getElementById('removeLogo_input');
+                
+                // Reset remove flag since user is uploading a new logo
+                if (removeLogoInput) {
+                    removeLogoInput.value = '0';
+                }
+                
+                // Update thumbnail
+                logoThumbImg.src = event.target.result;
+                logoThumbImg.style.display = 'block';
+                
+                // Hide placeholder icon
+                if (logoPlaceholderIcon) {
+                    logoPlaceholderIcon.style.display = 'none';
+                }
+                
+                // Show remove button
+                if (removeLogoBtn) {
+                    removeLogoBtn.style.display = 'inline-block';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Remove Logo Handler
+    document.getElementById('removeLogo').addEventListener('click', function() {
+        Swal.fire({
+            title: 'Remove Logo?',
+            text: 'Are you sure you want to remove the system logo?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, remove it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const logoInput = document.getElementById('logo');
+                const logoThumbImg = document.getElementById('logoThumbImg');
+                const logoPlaceholderIcon = document.getElementById('logoPlaceholderIcon');
+                const removeLogoBtn = document.getElementById('removeLogo');
+                const removeLogoInput = document.getElementById('removeLogo_input');
+                
+                // Set hidden input to indicate logo should be removed
+                if (removeLogoInput) {
+                    removeLogoInput.value = '1';
+                }
+                
+                // Clear file input
+                logoInput.value = '';
+                
+                // Reset thumbnail to placeholder
+                logoThumbImg.src = '';
+                logoThumbImg.style.display = 'none';
+                
+                // Show placeholder icon
+                if (logoPlaceholderIcon) {
+                    logoPlaceholderIcon.style.display = 'inline-block';
+                }
+                
+                // Hide remove button
+                removeLogoBtn.style.display = 'none';
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Removed!',
+                    text: 'Logo has been removed. Save to apply changes.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    });
+
+    // System Configuration Form
+    document.getElementById('systemConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+
+        // Show loading
+        Swal.fire({
+            title: 'Saving...',
+            text: 'Updating System configuration',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch('{{ route("admin.system.configurations.update") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            // enabled submit button
+            document.getElementById('systemConfigSubmit').disabled = false;
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: data.message || 'System configuration updated successfully',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    // Reload page to show updated logo
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Failed to update System configuration',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('systemConfigSubmit').disabled = false;
             Swal.fire({
                 icon: 'error',
                 title: 'Error',

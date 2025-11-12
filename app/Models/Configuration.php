@@ -124,5 +124,21 @@ class Configuration extends Model
             'CHARGEBEE_API_KEY'
         ])->get();
     }
+
+    /**
+     * Get all System configurations
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public static function getSystemConfigurations()
+    {
+        return self::whereIn('key', [
+            'SYSTEM_NAME',
+            'ADMIN_EMAIL',
+            'SUPPORT_EMAIL',
+            'FOOTER_TEXT',
+            'SYSTEM_LOGO'
+        ])->get();
+    }
 }
 
