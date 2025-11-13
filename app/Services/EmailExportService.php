@@ -106,11 +106,11 @@ class EmailExportService
                     
                     // Add CSV headers
                     fputcsv($file, [
-                        'First Name [Required]',
-                        'Last Name [Required]',
-                        'Email Address [Required]',
-                        'Password [Required]',
-                        'Org Unit Path [Required]',
+                        'First Name',
+                        'Last Name',
+                        'Email Address',
+                        'Password',
+                        'Org Unit Path',
                         'Data Source',
                     ]);
                     
@@ -138,11 +138,11 @@ class EmailExportService
                         
                         // Add CSV headers
                         fputcsv($file, [
-                            'First Name [Required]',
-                            'Last Name [Required]',
-                            'Email Address [Required]',
-                            'Password [Required]',
-                            'Org Unit Path [Required]',
+                            'First Name',
+                            'Last Name',
+                            'Email Address',
+                            'Password',
+                            'Org Unit Path',
                             'Data Source',
                         ]);
                         
@@ -369,11 +369,11 @@ class EmailExportService
                     
                     // Add CSV headers
                     fputcsv($file, [
-                        'First Name [Required]',
-                        'Last Name [Required]',
-                        'Email Address [Required]',
-                        'Password [Required]',
-                        'Org Unit Path [Required]',
+                        'First Name',
+                        'Last Name',
+                        'Email Address',
+                        'Password',
+                        'Org Unit Path',
                         'Data Source',
                     ]);
                     
@@ -477,11 +477,11 @@ class EmailExportService
                 
                 // Add CSV headers
                 fputcsv($file, [
-                    'First Name [Required]',
-                    'Last Name [Required]',
-                    'Email Address [Required]',
-                    'Password [Required]',
-                    'Org Unit Path [Required]',
+                    'First Name',
+                    'Last Name',
+                    'Email Address',
+                    'Password',
+                    'Org Unit Path',
                     'Data Source',
                 ]);
                 
