@@ -25,7 +25,7 @@ class FixOrderEmailsBatchId extends Command
      *
      * @var string
      */
-    protected $description = 'Fix batch_id for existing order_emails records based on 200 emails per batch logic';
+    protected $description = 'Fix batch_id for existing order_emails records with globally unique batch IDs (200 emails per batch)';
 
     /**
      * Execute the console command.
@@ -38,6 +38,7 @@ class FixOrderEmailsBatchId extends Command
         $orderPanelId = $this->option('order-panel-id');
 
         $this->info('Starting batch_id fix process...');
+        $this->info('Note: Each batch will get a globally unique ID (no repeating numbers)');
         
         if ($isDryRun) {
             $this->warn('🔍 DRY RUN MODE - No changes will be made');
@@ -65,6 +66,10 @@ class FixOrderEmailsBatchId extends Command
 
             $totalProcessed = 0;
             $totalUpdated = 0;
+
+            // Get the maximum existing batch_id to ensure uniqueness
+            $maxBatchId = OrderEmail::max('batch_id') ?? 0;
+            $globalBatchNumber = $maxBatchId + 1;
 
             foreach ($orderPanels as $orderPanel) {
                 $this->info("\n" . str_repeat('=', 60));
@@ -98,14 +103,14 @@ class FixOrderEmailsBatchId extends Command
                 foreach ($emailsBySplit as $splitId => $splitEmails) {
                     $this->info("\n  Processing Split ID: {$splitId} ({$splitEmails->count()} emails)");
                     
-                    $batchNumber = 1;
                     $emailsInCurrentBatch = 0;
                     $updatesForThisSplit = 0;
+                    $batchStartNumber = $globalBatchNumber;
 
                     foreach ($splitEmails as $email) {
-                        // Assign batch number
+                        // Assign unique global batch number
                         if (!$isDryRun) {
-                            $email->batch_id = $batchNumber;
+                            $email->batch_id = $globalBatchNumber;
                             $email->save();
                         }
 
@@ -114,18 +119,21 @@ class FixOrderEmailsBatchId extends Command
 
                         // Move to next batch after 200 emails
                         if ($emailsInCurrentBatch >= 200) {
-                            $this->line("    ✓ Batch {$batchNumber}: {$emailsInCurrentBatch} emails assigned");
-                            $batchNumber++;
+                            $this->line("    ✓ Batch {$globalBatchNumber}: {$emailsInCurrentBatch} emails assigned");
+                            $globalBatchNumber++;
                             $emailsInCurrentBatch = 0;
                         }
                     }
 
                     // Log the last batch if it had emails
                     if ($emailsInCurrentBatch > 0) {
-                        $this->line("    ✓ Batch {$batchNumber}: {$emailsInCurrentBatch} emails assigned");
+                        $this->line("    ✓ Batch {$globalBatchNumber}: {$emailsInCurrentBatch} emails assigned");
+                        $globalBatchNumber++;
+                        $emailsInCurrentBatch = 0;
                     }
 
-                    $this->info("  ✓ Split {$splitId}: {$updatesForThisSplit} emails updated across {$batchNumber} batches");
+                    $batchesUsed = $globalBatchNumber - $batchStartNumber;
+                    $this->info("  ✓ Split {$splitId}: {$updatesForThisSplit} emails updated across {$batchesUsed} batches (IDs: {$batchStartNumber}-" . ($globalBatchNumber - 1) . ")");
                     $totalUpdated += $updatesForThisSplit;
                 }
 
