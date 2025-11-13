@@ -108,7 +108,7 @@ class EmailExportService
                     fputcsv($file, [
                         'First Name',
                         'Last Name',
-                        'Email Address',
+                        'Email address',
                         'Password',
                         'Org Unit Path',
                         'Data Source',
@@ -140,7 +140,7 @@ class EmailExportService
                         fputcsv($file, [
                             'First Name',
                             'Last Name',
-                            'Email Address',
+                            'Email address',
                             'Password',
                             'Org Unit Path',
                             'Data Source',
@@ -371,7 +371,7 @@ class EmailExportService
                     fputcsv($file, [
                         'First Name',
                         'Last Name',
-                        'Email Address',
+                        'Email address',
                         'Password',
                         'Org Unit Path',
                         'Data Source',
@@ -479,7 +479,7 @@ class EmailExportService
                 fputcsv($file, [
                     'First Name',
                     'Last Name',
-                    'Email Address',
+                    'Email address',
                     'Password',
                     'Org Unit Path',
                     'Data Source',
