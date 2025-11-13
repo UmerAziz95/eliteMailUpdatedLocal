@@ -90,24 +90,19 @@ class AdminOrderEmailController extends Controller
                 ->groupBy('batch_id');
             // dd($emailsByBatch);
             
-            // Get actual batch IDs from the database
-            $actualBatchIds = $emailsByBatch->keys()->sort()->values();
-            
             // Generate all batches (even empty ones) based on space_assigned
             $batches = [];
             for ($i = 1; $i <= $totalBatches; $i++) {
                 // Calculate expected count for this batch
                 $expectedCount = ($i < $totalBatches) ? 200 : ($spaceAssigned % 200 ?: 200);
                 
-                // Try to find emails for this batch number from actual batch IDs
-                // Map batch number (1-based) to actual batch_id if it exists
-                $actualBatchId = $actualBatchIds->get($i - 1);
-                $batchEmails = $actualBatchId ? $emailsByBatch->get($actualBatchId, collect()) : collect();
+                // Get emails for this batch_id directly from the grouped collection
+                $batchEmails = $emailsByBatch->get($i, collect());
                 
                 $batches[] = [
                     'batch_id' => $i,
                     'batch_number' => $i,
-                    'actual_batch_id' => $actualBatchId,
+                    'actual_batch_id' => $batchEmails->isNotEmpty() ? $i : null,
                     'email_count' => $batchEmails->count(),
                     'expected_count' => $expectedCount,
                     'emails' => $batchEmails->values()
@@ -133,12 +128,22 @@ class AdminOrderEmailController extends Controller
             ], 500);
         }
     }
-    
+    // when 
     public function bulkImport(Request $request)
     {
         try {
+            // Clean up batch_id before validation - remove if null, empty, or 0
+            $requestData = $request->all();
+            if (isset($requestData['batch_id'])) {
+                $batchIdValue = $requestData['batch_id'];
+                // Remove batch_id if it's null, empty string, '0', or 0
+                if ($batchIdValue === null || $batchIdValue === '' || $batchIdValue === '0' || $batchIdValue === 0 || $batchIdValue == 0) {
+                    unset($requestData['batch_id']);
+                }
+            }
+            
             // Validate the request
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($requestData, [
                 'bulk_file' => 'required|file|mimes:csv,txt|max:2048',
                 'order_panel_id' => 'required|exists:order_panel,id',
                 'customized_note' => 'nullable|string|max:1000',
@@ -156,7 +161,9 @@ class AdminOrderEmailController extends Controller
 
             $orderPanelId = $request->order_panel_id;
             $file = $request->file('bulk_file');
-            $requestedBatchId = $request->batch_id; // Get the specific batch_id from the request
+            // Get the specific batch_id from the request, handle null/empty values
+            // If batch_id doesn't exist or is <= 0, set to null to trigger auto-calculation
+            $requestedBatchId = (isset($requestData['batch_id']) && $requestData['batch_id'] > 0) ? (int)$requestData['batch_id'] : null;
             $isOverwrite = $request->has('overwrite') && $request->overwrite == '1';
 
             // Get the order panel with its splits
@@ -410,10 +417,15 @@ class AdminOrderEmailController extends Controller
                         ]);
                     }
                 } else {
-                    // No specific batch requested - calculate next available batch
+                    // No specific batch requested - find the next available unique batch_id
                     $splitIds = $orderPanel->orderPanelSplits->pluck('id');
-                    $existingEmailCount = OrderEmail::whereIn('order_split_id', $splitIds)->count();
-                    $startingBatchNumber = floor($existingEmailCount / 200) + 1;
+                    
+                    // Get the highest batch_id currently in the database
+                    $maxBatchId = OrderEmail::whereIn('order_split_id', $splitIds)
+                        ->max('batch_id');
+                    
+                    // If no batches exist, start from 1, otherwise increment the max
+                    $startingBatchNumber = $maxBatchId ? ($maxBatchId + 1) : 1;
                 }
                 
                 // Insert new emails in batches with batch_id assignment

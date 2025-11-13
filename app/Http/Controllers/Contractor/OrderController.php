@@ -2079,8 +2079,18 @@ class OrderController extends Controller
     public function orderSplitImportProcess(Request $request)
     {
         try {
+            // Clean up batch_id before validation - remove if null, empty, or 0
+            $requestData = $request->all();
+            if (isset($requestData['batch_id'])) {
+                $batchIdValue = $requestData['batch_id'];
+                // Remove batch_id if it's null, empty string, '0', or 0
+                if ($batchIdValue === null || $batchIdValue === '' || $batchIdValue === '0' || $batchIdValue === 0 || $batchIdValue == 0) {
+                    unset($requestData['batch_id']);
+                }
+            }
+            
             // Validate the request
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($requestData, [
                 'bulk_file' => 'required|file|mimes:csv,txt|max:2048',
                 'order_panel_id' => 'required|exists:order_panel,id',
                 'split_total_inboxes' => 'required|integer',
@@ -2099,7 +2109,9 @@ class OrderController extends Controller
 
             $orderPanelId = $request->order_panel_id;
             $file = $request->file('bulk_file');
-            $requestedBatchId = $request->batch_id; // optional, target a specific batch
+            // Get the specific batch_id from the request, handle null/empty values
+            // If batch_id doesn't exist or is <= 0, set to null to trigger auto-calculation
+            $requestedBatchId = (isset($requestData['batch_id']) && $requestData['batch_id'] > 0) ? (int)$requestData['batch_id'] : null;
             $isOverwrite = $request->has('overwrite') && $request->overwrite == '1';
 
             // First check if the order panel exists
@@ -2423,10 +2435,15 @@ class OrderController extends Controller
                     }
                     OrderEmail::insert($emailsToImport);
                 } else {
-                    // Auto-assign batches of 200 starting from next available
+                    // Auto-assign batches of 200 starting from next available unique batch_id
                     $splitIds = $orderPanel->orderPanelSplits->pluck('id');
-                    $existingEmailCount = OrderEmail::whereIn('order_split_id', $splitIds)->count();
-                    $startingBatchNumber = (int) floor($existingEmailCount / 200) + 1;
+                    
+                    // Get the highest batch_id currently in the database
+                    $maxBatchId = OrderEmail::whereIn('order_split_id', $splitIds)
+                        ->max('batch_id');
+                    
+                    // If no batches exist, start from 1, otherwise increment the max
+                    $startingBatchNumber = $maxBatchId ? ((int) $maxBatchId + 1) : 1;
 
                     $batchSize = 200;
                     $batchNumber = $startingBatchNumber;
