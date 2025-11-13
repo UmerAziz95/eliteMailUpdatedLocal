@@ -356,7 +356,7 @@ class BulkEmailImportService
 
         $splitIds = $orderPanel->orderPanelSplits->pluck('id');
         $existingEmailCount = OrderEmail::whereIn('order_split_id', $splitIds)->count();
-        
+        $existingEmailCount = $existingEmailCount -  count($csv); // Adjust for current import
         if ($requestedBatchId) {
             // Validate for specific batch import
             $totalBatches = ceil($spaceAssigned / 200);
