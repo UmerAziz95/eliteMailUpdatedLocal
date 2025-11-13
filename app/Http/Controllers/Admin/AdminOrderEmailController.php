@@ -66,7 +66,7 @@ class AdminOrderEmailController extends Controller
         try {
             // Get the order panel with its splits
             $orderPanel = OrderPanel::with('orderPanelSplits')->findOrFail($orderPanelId);
-            
+            // dd($orderPanel);
             // Get space_assigned to determine total batches
             $spaceAssigned = $orderPanel->space_assigned ?? 0;
             
@@ -82,24 +82,32 @@ class AdminOrderEmailController extends Controller
             
             // Get emails for all splits of this panel grouped by batch_id
             $splitIds = $orderPanel->orderPanelSplits->pluck('id');
+            // dd($splitIds);
             $emailsByBatch = OrderEmail::whereIn('order_split_id', $splitIds)
                 ->select('id', 'name', 'last_name', 'email', 'password', 'batch_id')
                 ->orderBy('batch_id')
                 ->get()
                 ->groupBy('batch_id');
             // dd($emailsByBatch);
-            // Generate all batches (even empty ones)
+            
+            // Get actual batch IDs from the database
+            $actualBatchIds = $emailsByBatch->keys()->sort()->values();
+            
+            // Generate all batches (even empty ones) based on space_assigned
             $batches = [];
             for ($i = 1; $i <= $totalBatches; $i++) {
                 // Calculate expected count for this batch
                 $expectedCount = ($i < $totalBatches) ? 200 : ($spaceAssigned % 200 ?: 200);
                 
-                // Check if this batch has emails
-                $batchEmails = $emailsByBatch->get($i, collect());
+                // Try to find emails for this batch number from actual batch IDs
+                // Map batch number (1-based) to actual batch_id if it exists
+                $actualBatchId = $actualBatchIds->get($i - 1);
+                $batchEmails = $actualBatchId ? $emailsByBatch->get($actualBatchId, collect()) : collect();
                 
                 $batches[] = [
                     'batch_id' => $i,
                     'batch_number' => $i,
+                    'actual_batch_id' => $actualBatchId,
                     'email_count' => $batchEmails->count(),
                     'expected_count' => $expectedCount,
                     'emails' => $batchEmails->values()
@@ -107,7 +115,9 @@ class AdminOrderEmailController extends Controller
             }
 
             // Calculate total emails across all batches
-            $totalEmails = $emailsByBatch->flatten()->count();
+            $totalEmails = $emailsByBatch->sum(function($batch) { 
+                return $batch->count(); 
+            });
 
             return response()->json([
                 'success' => true,

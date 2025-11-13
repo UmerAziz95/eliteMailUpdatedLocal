@@ -2032,21 +2032,31 @@ class OrderController extends Controller
                 ->get()
                 ->groupBy('batch_id');
             
+            // Get actual batch IDs from the database
+            $actualBatchIds = $emailsByBatch->keys()->sort()->values();
+            
             $batches = [];
             for ($i = 1; $i <= $totalBatches; $i++) {
                 $expectedCount = ($i < $totalBatches) ? 200 : ($spaceAssigned % 200 ?: 200);
-                $batchEmails = $emailsByBatch->get($i, collect());
+                
+                // Try to find emails for this batch number from actual batch IDs
+                // Map batch number (1-based) to actual batch_id if it exists
+                $actualBatchId = $actualBatchIds->get($i - 1);
+                $batchEmails = $actualBatchId ? $emailsByBatch->get($actualBatchId, collect()) : collect();
 
                 $batches[] = [
                     'batch_id' => $i,
                     'batch_number' => $i,
+                    'actual_batch_id' => $actualBatchId,
                     'email_count' => $batchEmails->count(),
                     'expected_count' => $expectedCount,
                     'emails' => $batchEmails->values(),
                 ];
             }
 
-            $totalEmails = $emailsByBatch->flatten()->count();
+            $totalEmails = $emailsByBatch->sum(function($batch) { 
+                return $batch->count(); 
+            });
 
             return response()->json([
                 'success' => true,
