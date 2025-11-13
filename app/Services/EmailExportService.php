@@ -110,8 +110,6 @@ class EmailExportService
                         'Last Name',
                         'Email address',
                         'Password',
-                        'Org Unit Path',
-                        'Data Source',
                     ]);
                     
                     // Add email data from database
@@ -121,8 +119,6 @@ class EmailExportService
                             $email->last_name ?? '',
                             $email->email ?? '',
                             $email->password ?? '',
-                            '/',
-                            'Customized (Uploaded)',
                         ]);
                     }
                     
@@ -142,8 +138,6 @@ class EmailExportService
                             'Last Name',
                             'Email address',
                             'Password',
-                            'Org Unit Path',
-                            'Data Source',
                         ]);
                         
                         // Add emails from domain generation (up to expectedCount)
@@ -154,8 +148,6 @@ class EmailExportService
                                 $email['last_name'],
                                 $email['email'],
                                 $email['password'],
-                                '/',
-                                'Default (Auto-generated)',
                             ]);
                         }
                         
@@ -373,8 +365,6 @@ class EmailExportService
                         'Last Name',
                         'Email address',
                         'Password',
-                        'Org Unit Path',
-                        'Data Source',
                     ]);
                     
                     // Add email data
@@ -384,8 +374,6 @@ class EmailExportService
                             $email->last_name ?? '',
                             $email->email ?? '',
                             $email->password ?? '',
-                            '/',
-                            'Customized (Uploaded)',
                         ]);
                     }
                     
@@ -481,8 +469,6 @@ class EmailExportService
                     'Last Name',
                     'Email address',
                     'Password',
-                    'Org Unit Path',
-                    'Data Source',
                 ]);
                 
                 // Add email data
@@ -492,8 +478,6 @@ class EmailExportService
                         $email['last_name'],
                         $email['email'],
                         $email['password'],
-                        '/',
-                        'Default (Auto-generated)',
                     ]);
                 }
                 
