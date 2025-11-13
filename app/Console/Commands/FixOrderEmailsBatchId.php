@@ -25,7 +25,7 @@ class FixOrderEmailsBatchId extends Command
      *
      * @var string
      */
-    protected $description = 'Fix batch_id for existing order_emails records with globally unique batch IDs (200 emails per batch)';
+    protected $description = 'Fix batch_id for existing order_emails records with unique batch IDs per panel (200 emails per batch)';
 
     /**
      * Execute the console command.
@@ -38,7 +38,7 @@ class FixOrderEmailsBatchId extends Command
         $orderPanelId = $this->option('order-panel-id');
 
         $this->info('Starting batch_id fix process...');
-        $this->info('Note: Each batch will get a globally unique ID (no repeating numbers)');
+        $this->info('Note: Each order panel will have batch IDs starting from 1');
         
         if ($isDryRun) {
             $this->warn('🔍 DRY RUN MODE - No changes will be made');
@@ -67,14 +67,13 @@ class FixOrderEmailsBatchId extends Command
             $totalProcessed = 0;
             $totalUpdated = 0;
 
-            // Get the maximum existing batch_id to ensure uniqueness
-            $maxBatchId = OrderEmail::max('batch_id') ?? 0;
-            $globalBatchNumber = $maxBatchId + 1;
-
             foreach ($orderPanels as $orderPanel) {
                 $this->info("\n" . str_repeat('=', 60));
                 $this->info("Processing Order Panel ID: {$orderPanel->id}");
                 $this->info("Space Assigned: {$orderPanel->space_assigned}");
+                
+                // Start batch numbering from 1 for each order panel
+                $batchNumber = 1;
                 
                 $splitIds = $orderPanel->orderPanelSplits->pluck('id')->toArray();
                 
@@ -105,12 +104,12 @@ class FixOrderEmailsBatchId extends Command
                     
                     $emailsInCurrentBatch = 0;
                     $updatesForThisSplit = 0;
-                    $batchStartNumber = $globalBatchNumber;
+                    $batchStartNumber = $batchNumber;
 
                     foreach ($splitEmails as $email) {
-                        // Assign unique global batch number
+                        // Assign batch number
                         if (!$isDryRun) {
-                            $email->batch_id = $globalBatchNumber;
+                            $email->batch_id = $batchNumber;
                             $email->save();
                         }
 
@@ -119,21 +118,21 @@ class FixOrderEmailsBatchId extends Command
 
                         // Move to next batch after 200 emails
                         if ($emailsInCurrentBatch >= 200) {
-                            $this->line("    ✓ Batch {$globalBatchNumber}: {$emailsInCurrentBatch} emails assigned");
-                            $globalBatchNumber++;
+                            $this->line("    ✓ Batch {$batchNumber}: {$emailsInCurrentBatch} emails assigned");
+                            $batchNumber++;
                             $emailsInCurrentBatch = 0;
                         }
                     }
 
                     // Log the last batch if it had emails
                     if ($emailsInCurrentBatch > 0) {
-                        $this->line("    ✓ Batch {$globalBatchNumber}: {$emailsInCurrentBatch} emails assigned");
-                        $globalBatchNumber++;
+                        $this->line("    ✓ Batch {$batchNumber}: {$emailsInCurrentBatch} emails assigned");
+                        $batchNumber++;
                         $emailsInCurrentBatch = 0;
                     }
 
-                    $batchesUsed = $globalBatchNumber - $batchStartNumber;
-                    $this->info("  ✓ Split {$splitId}: {$updatesForThisSplit} emails updated across {$batchesUsed} batches (IDs: {$batchStartNumber}-" . ($globalBatchNumber - 1) . ")");
+                    $batchesUsed = $batchNumber - $batchStartNumber;
+                    $this->info("  ✓ Split {$splitId}: {$updatesForThisSplit} emails updated across {$batchesUsed} batches (IDs: {$batchStartNumber}-" . ($batchNumber - 1) . ")");
                     $totalUpdated += $updatesForThisSplit;
                 }
 
