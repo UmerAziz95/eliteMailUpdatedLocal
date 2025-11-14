@@ -312,100 +312,51 @@
                                 </thead>
                                 <tbody>
                                     @php
-                                        $panelConfigs = $configurations ?? [];
-                                        $configArray = [];
-                                        foreach ($panelConfigs as $config) {
-                                            $configArray[$config->key] = $config;
-                                        }
+                                        $panelConfigs = collect($configurations ?? []);
                                     @endphp
                                     
-                                    <tr>
-                                        <td><strong>PANEL_CAPACITY</strong></td>
-                                        <td id="desc-panel-capacity" class="text-muted">
-                                            {{ $configArray['PANEL_CAPACITY']->description ?? 'Maximum capacity for panel assignments' }}
-                                        </td>
-                                        <td id="value-panel-capacity">{{ $configArray['PANEL_CAPACITY']->value ?? '1790' }}</td>
-                                        <td class="text-center">
-                                            
-                                            <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editConfig('PANEL_CAPACITY')">
-                                                <i class="fa fa-edit me-1"></i>Edit
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>MAX_SPLIT_CAPACITY</strong></td>
-                                        <td id="desc-max-split-capacity" class="text-muted">
-                                            {{ $configArray['MAX_SPLIT_CAPACITY']->description ?? 'Maximum split capacity for panel divisions' }}
-                                        </td>
-                                        <td id="value-max-split-capacity">{{ $configArray['MAX_SPLIT_CAPACITY']->value ?? '1790' }}</td>
-                                        <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editConfig('MAX_SPLIT_CAPACITY')">
-                                                <i class="fa fa-edit me-1"></i>Edit
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>ENABLE_MAX_SPLIT_CAPACITY</strong></td>
-                                        <td id="desc-enable-max-split-capacity" class="text-muted">
-                                            {{ $configArray['ENABLE_MAX_SPLIT_CAPACITY']->description ?? 'Enable or disable maximum split capacity feature' }}
-                                        </td>
-                                        <td id="value-enable-max-split-capacity">
-                                            @php
-                                                $enableMaxSplit = $configArray['ENABLE_MAX_SPLIT_CAPACITY']->value ?? 'false';
-                                                $badgeClass = $enableMaxSplit === 'true' ? 'bg-label-success' : 'bg-label-danger';
-                                            @endphp
-                                            <span class="badge {{ $badgeClass }}">{{ $enableMaxSplit }}</span>
-                                        </td>
-                                        <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editConfig('ENABLE_MAX_SPLIT_CAPACITY')">
-                                                <i class="fa fa-edit me-1"></i>Edit
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>PLAN_FLAT_QUANTITY</strong></td>
-                                        <td id="desc-plan-flat-quantity" class="text-muted">
-                                            {{ $configArray['PLAN_FLAT_QUANTITY']->description ?? 'Flat quantity value for plan calculations' }}
-                                        </td>
-                                        <td id="value-plan-flat-quantity">{{ $configArray['PLAN_FLAT_QUANTITY']->value ?? '99' }}</td>
-                                        <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editConfig('PLAN_FLAT_QUANTITY')">
-                                                <i class="fa fa-edit me-1"></i>Edit
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>PROVIDER_TYPE</strong></td>
-                                        <td id="desc-provider-type" class="text-muted">
-                                            {{ $configArray['PROVIDER_TYPE']->description ?? 'Email provider type for inbox management' }}
-                                        </td>
-                                        <td id="value-provider-type">
-                                            <span class="badge bg-label-success">{{ $configArray['PROVIDER_TYPE']->value ?? 'Google' }}</span>
-                                        </td>
-                                        <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editConfig('PROVIDER_TYPE')">
-                                                <i class="fa fa-edit me-1"></i>Edit
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>MICROSOFT_365_CAPACITY</strong></td>
-                                        <td id="desc-microsoft-365-capacity" class="text-muted">
-                                            {{ $configArray['MICROSOFT_365_CAPACITY']->description ?? 'Maximum capacity for Microsoft 365 panel assignments' }}
-                                        </td>
-                                        <td id="value-microsoft-365-capacity">{{ $configArray['MICROSOFT_365_CAPACITY']->value ?? '1790' }}</td>
-                                        <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editConfig('MICROSOFT_365_CAPACITY')">
-                                                <i class="fa fa-edit me-1"></i>Edit
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    @forelse ($panelConfigs as $config)
+                                        @php
+                                            $type = strtolower($config->type ?? 'string');
+                                            $rawValue = $config->value ?? '';
+                                            $displayValue = ($rawValue === null || $rawValue === '') ? '--' : $rawValue;
+                                            $badgeClass = null;
+
+                                            if ($type === 'boolean') {
+                                                $isTrue = filter_var($rawValue, FILTER_VALIDATE_BOOLEAN);
+                                                $displayValue = $isTrue ? 'true' : 'false';
+                                                $badgeClass = $isTrue ? 'bg-label-success' : 'bg-label-danger';
+                                            } elseif ($config->key === 'PROVIDER_TYPE') {
+                                                $badgeClass = 'bg-label-success';
+                                            }
+
+                                            $keySlug = \Illuminate\Support\Str::slug($config->key, '-');
+                                        @endphp
+                                        <tr>
+                                            <td><strong>{{ $config->key }}</strong></td>
+                                            <td id="desc-{{ $keySlug }}" class="text-muted">
+                                                {{ $config->description ?? '--' }}
+                                            </td>
+                                            <td id="value-{{ $keySlug }}">
+                                                @if ($badgeClass)
+                                                    <span class="badge {{ $badgeClass }}">{{ $displayValue }}</span>
+                                                @else
+                                                    {{ $displayValue }}
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="editConfig('{{ $config->key }}')">
+                                                    <i class="fa fa-edit me-1"></i>Edit
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">No panel configurations found.</td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>

@@ -14,7 +14,7 @@ class ConfigurationSeeder extends Seeder
     {
         $configurations = [
             [
-                'key' => 'PANEL_CAPACITY',
+                'key' => 'GOOGLE_PANEL_CAPACITY',
                 'value' => '1790',
                 'type' => 'number',
                 'description' => 'Maximum capacity for panel assignments (total inboxes per panel)'

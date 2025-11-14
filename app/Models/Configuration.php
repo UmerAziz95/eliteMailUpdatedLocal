@@ -88,7 +88,7 @@ class Configuration extends Model
     public static function getPanelConfigurations()
     {
         return self::whereIn('key', [
-            'PANEL_CAPACITY',
+            'GOOGLE_PANEL_CAPACITY',
             'MAX_SPLIT_CAPACITY',
             'ENABLE_MAX_SPLIT_CAPACITY',
             'PLAN_FLAT_QUANTITY',
@@ -141,4 +141,3 @@ class Configuration extends Model
         ])->get();
     }
 }
-
