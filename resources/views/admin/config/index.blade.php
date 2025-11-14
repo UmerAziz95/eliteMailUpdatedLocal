@@ -306,6 +306,7 @@
                                     <tr>
                                         <th>Configuration Key</th>
                                         <th>Label / Description</th>
+                                        <th>Type</th>
                                         <th>Value</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
@@ -328,6 +329,8 @@
                                                 $badgeClass = $isTrue ? 'bg-label-success' : 'bg-label-danger';
                                             } elseif ($config->key === 'PROVIDER_TYPE') {
                                                 $badgeClass = 'bg-label-success';
+                                            } elseif ($type === 'number') {
+                                                $badgeClass = 'bg-label-warning';
                                             }
 
                                             $keySlug = \Illuminate\Support\Str::slug($config->key, '-');
@@ -337,6 +340,7 @@
                                             <td id="desc-{{ $keySlug }}" class="text-muted">
                                                 {{ $config->description ?? '--' }}
                                             </td>
+                                            <td>{{ strtoupper($config->type ?? 'STRING') }}</td>
                                             <td id="value-{{ $keySlug }}">
                                                 @if ($badgeClass)
                                                     <span class="badge {{ $badgeClass }}">{{ $displayValue }}</span>
