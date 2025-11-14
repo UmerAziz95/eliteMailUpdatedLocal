@@ -391,6 +391,8 @@ class PanelController extends Controller
                 'panel_description' => 'nullable|string',
                 'panel_status' => 'in:0,1',
                 'panel_limit' => 'required|integer|min:1',
+                // Accept provider type from the form; this will drive panel_sr_no via the Observer
+                'provider_type' => 'required|string|in:Google,Microsoft 365',
             ]);
 
             $panel = Panel::create([
@@ -400,6 +402,8 @@ class PanelController extends Controller
                 'limit' => $data['panel_limit'],
                 'remaining_limit' => $data['panel_limit'], // Use the actual panel limit instead of env
                 'created_by' => auth()->user()->name,
+                // These are persisted; panel_sr_no gets assigned in PanelObserver::creating
+                'provider_type' => $data['provider_type'],
             ]);
 
             // Calculate needed panels after creation

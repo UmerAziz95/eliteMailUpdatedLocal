@@ -18,6 +18,9 @@ class Panel extends Model
         'remaining_limit',
         'is_active',
         'created_by',
+        // newly added attributes
+        'provider_type',
+        'panel_sr_no',
     ];
 
     protected static function booted(): void

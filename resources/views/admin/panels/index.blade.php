@@ -484,6 +484,13 @@
                 <label for="panel_title">Panel title: <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="panel_title" name="panel_title" value="" required maxlength="255">
 
+                <label for="provider_type" class="mt-3">Provider Type: <span class="text-danger">*</span></label>
+                <select class="form-control mb-3" id="provider_type" name="provider_type" required>
+                    <option value="" disabled>Select provider</option>
+                    <option value="Google" selected>Google</option>
+                    <option value="Microsoft 365">Microsoft 365</option>
+                </select>
+
                 <label for="panel_description" class="mt-3">Panel Description:</label>
                 <input type="text" class="form-control mb-3" id="panel_description" name="panel_description" value="">
 
@@ -3064,10 +3071,22 @@ $('#submitPanelFormBtn').on('click', function(e) {
         $('#panel_title').after('<div class="invalid-feedback">Panel title must not exceed 255 characters</div>');
         isValid = false;
     }
+
+    // Validate provider type on create
+    const providerTypeEl = $('#provider_type');
+    const providerType = providerTypeEl.val();
+    const allowedProviders = ['Google', 'Microsoft 365'];
+    const isUpdate = form.data('action') === 'update';
+    if (!isUpdate) {
+        if (!providerType || !allowedProviders.includes(providerType)) {
+            providerTypeEl.addClass('is-invalid');
+            providerTypeEl.after('<div class="invalid-feedback">Please select a valid provider</div>');
+            isValid = false;
+        }
+    }
     
     // Validate panel limit (only for new panels, not for updates since it's readonly)
     const panelLimit = $('#panel_limit').val();
-    const isUpdate = form.data('action') === 'update';
     
     if (!isUpdate) {
         // Only validate limit for new panels
@@ -3335,6 +3354,11 @@ async function editPanel(panelId) {
         $('#panel_description').val(panel.description || '');
         $('#panel_limit').val(panel.limit || '');
         $('#panel_status').val(panel.is_active ? '1' : '0');
+        // Provider type is fixed after creation; show if available and disable the field
+        if (panel.provider_type) {
+            $('#provider_type').val(panel.provider_type);
+        }
+        $('#provider_type').prop('disabled', true);
         
         // For editing, we want to keep the current limit but make it readonly
         // The limit should not be changed for existing panels
@@ -3692,6 +3716,9 @@ function resetPanelForm() {
     $('#panelFormOffcanvasLabel').text('Panel');
     $('#submitPanelFormBtn').text('Submit');
     $('#panel_limit').val('{{env('PANEL_CAPACITY', 1790)}}'); // Reset to default
+    // Reset provider type for new panel creation
+    $('#provider_type').prop('disabled', false);
+    $('#provider_type').val('Google');
     
     // Clear any validation errors
     $('.form-control').removeClass('is-invalid');
@@ -4392,3 +4419,4 @@ function showCustomizedNoteModal(note) {
         </div>
     </div>
 </div>
+<!-- when panel save then  -->
