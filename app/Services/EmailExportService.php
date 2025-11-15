@@ -21,6 +21,7 @@ class EmailExportService
      * @param object $orderPanelSplit
      * @return \Illuminate\Http\Response
      */
+    
     public function exportSmartZip($splitId, $orderPanelId, $order, $orderPanelSplit)
     {
         try {
@@ -104,22 +105,14 @@ class EmailExportService
                     
                     $file = fopen($filepath, 'w');
                     
-                    // Add CSV headers
-                    fputcsv($file, [
-                        'First Name',
-                        'Last Name',
-                        'Email address',
-                        'Password',
-                    ]);
+                    // Add CSV headers based on provider type
+                    $headers = $this->getHeadersByProviderType($order->provider_type ?? 'Google');
+                    fputcsv($file, $headers);
                     
                     // Add email data from database
                     foreach ($batchEmails as $email) {
-                        fputcsv($file, [
-                            $email->name ?? '',
-                            $email->last_name ?? '',
-                            $email->email ?? '',
-                            $email->password ?? '',
-                        ]);
+                        $row = $this->formatRowByProviderType($email, $order->provider_type ?? 'Google');
+                        fputcsv($file, $row);
                     }
                     
                     fclose($file);
@@ -132,23 +125,15 @@ class EmailExportService
                         
                         $file = fopen($filepath, 'w');
                         
-                        // Add CSV headers
-                        fputcsv($file, [
-                            'First Name',
-                            'Last Name',
-                            'Email address',
-                            'Password',
-                        ]);
+                        // Add CSV headers based on provider type
+                        $headers = $this->getHeadersByProviderType($order->provider_type ?? 'Google');
+                        fputcsv($file, $headers);
                         
                         // Add emails from domain generation (up to expectedCount)
                         $emailsToWrite = array_slice($domainEmailData, $domainEmailIndex, $expectedCount);
                         foreach ($emailsToWrite as $email) {
-                            fputcsv($file, [
-                                $email['first_name'],
-                                $email['last_name'],
-                                $email['email'],
-                                $email['password'],
-                            ]);
+                            $row = $this->formatRowByProviderType($email, $order->provider_type ?? 'Google', true);
+                            fputcsv($file, $row);
                         }
                         
                         $domainEmailIndex += count($emailsToWrite);
@@ -359,22 +344,14 @@ class EmailExportService
                     
                     $file = fopen($filepath, 'w');
                     
-                    // Add CSV headers
-                    fputcsv($file, [
-                        'First Name',
-                        'Last Name',
-                        'Email address',
-                        'Password',
-                    ]);
+                    // Add CSV headers based on provider type
+                    $headers = $this->getHeadersByProviderType($order->provider_type ?? 'Google');
+                    fputcsv($file, $headers);
                     
                     // Add email data
                     foreach ($batchEmails as $email) {
-                        fputcsv($file, [
-                            $email->name ?? '',
-                            $email->last_name ?? '',
-                            $email->email ?? '',
-                            $email->password ?? '',
-                        ]);
+                        $row = $this->formatRowByProviderType($email, $order->provider_type ?? 'Google');
+                        fputcsv($file, $row);
                     }
                     
                     fclose($file);
@@ -463,22 +440,14 @@ class EmailExportService
                 
                 $file = fopen($filepath, 'w');
                 
-                // Add CSV headers
-                fputcsv($file, [
-                    'First Name',
-                    'Last Name',
-                    'Email address',
-                    'Password',
-                ]);
+                // Add CSV headers based on provider type
+                $headers = $this->getHeadersByProviderType($order->provider_type ?? 'Google');
+                fputcsv($file, $headers);
                 
                 // Add email data
                 foreach ($chunk as $email) {
-                    fputcsv($file, [
-                        $email['first_name'],
-                        $email['last_name'],
-                        $email['email'],
-                        $email['password'],
-                    ]);
+                    $row = $this->formatRowByProviderType($email, $order->provider_type ?? 'Google', true);
+                    fputcsv($file, $row);
                 }
                 
                 fclose($file);
@@ -626,5 +595,100 @@ class EmailExportService
                 'message' => 'Error fetching batch data: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Get CSV headers based on provider type
+     * 
+     * @param string $providerType
+     * @return array
+     */
+    private function getHeadersByProviderType($providerType)
+    {
+        if ($providerType === 'Microsoft 365') {
+            return [
+                'First Name',
+                'Last Name',
+                'Display Name',
+                'User Name',
+                'Password',
+                'Job Title',
+                'Department',
+                'Office Number',
+                'Office Phone',
+                'Mobile Phone',
+                'Fax',
+                'Address',
+                'City',
+                'State or Province',
+                'ZIP or Postal Code',
+                'Country or Region'
+            ];
+        }
+        
+        // Default: Google Workspace format
+        return [
+            'First Name',
+            'Last Name',
+            'Email address',
+            'Password',
+            // 'Org Unit Path [Required]'
+        ];
+    }
+
+    /**
+     * Format row data based on provider type
+     * 
+     * @param mixed $email (object or array)
+     * @param string $providerType
+     * @param bool $isArray Whether email data is array format
+     * @return array
+     */
+    private function formatRowByProviderType($email, $providerType, $isArray = false)
+    {
+        if ($isArray) {
+            $firstName = $email['first_name'] ?? '';
+            $lastName = $email['last_name'] ?? '';
+            $emailAddress = $email['email'] ?? '';
+            $password = $email['password'] ?? '';
+        } else {
+            $firstName = $email->name ?? '';
+            $lastName = $email->last_name ?? '';
+            $emailAddress = $email->email ?? '';
+            $password = $email->password ?? '';
+        }
+
+        if ($providerType === 'Microsoft 365') {
+            // Extract username from email (part before @)
+            $username = strpos($emailAddress, '@') !== false ? substr($emailAddress, 0, strpos($emailAddress, '@')) : $emailAddress;
+            
+            return [
+                $firstName,                          // First Name
+                $lastName,                           // Last Name
+                $firstName . ' ' . $lastName,        // Display Name
+                $emailAddress,                       // User Name (full email)
+                $password,                           // Password
+                '',                                  // Job Title
+                '',                                  // Department
+                '',                                  // Office Number
+                '',                                  // Office Phone
+                '',                                  // Mobile Phone
+                '',                                  // Fax
+                '',                                  // Address
+                '',                                  // City
+                '',                                  // State or Province
+                '',                                  // ZIP or Postal Code
+                ''                                   // Country or Region
+            ];
+        }
+        
+        // Default: Google Workspace format
+        return [
+            $firstName,                              // First Name
+            $lastName,                               // Last Name
+            $emailAddress,                           // Email address
+            $password,                               // Password
+            '/'                                      // Org Unit Path [Required]
+        ];
     }
 }
