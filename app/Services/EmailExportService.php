@@ -611,7 +611,7 @@ class EmailExportService
                 'First name',
                 'Last name',
                 'Display name',
-                'Password',
+                // 'Password',
                 'Job title',
                 'Department',
                 'Office number',
@@ -668,7 +668,7 @@ class EmailExportService
                 $firstName,                          // First name
                 $lastName,                           // Last name
                 $firstName,                          // Display name
-                $password,                           // Password
+                // $password,                           // Password
                 '',                                  // Job title
                 '',                                  // Department
                 '',                                  // Office number
