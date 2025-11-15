@@ -1446,7 +1446,7 @@ class OrderController extends Controller
         try {
             // Validate the request
             $validator = Validator::make($request->all(), [
-                'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject',
+                'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject,cancelled_force',
                 'reason' => 'nullable|string|max:500',
                 'provider_type' => 'nullable|in:Google,Microsoft 365'
             ]);
@@ -1469,6 +1469,26 @@ class OrderController extends Controller
                     'message' => 'Provider type is required when status is completed'
                 ], 422);
             }
+
+            // Validate email completion for Microsoft 365 orders before marking as completed
+            if ($newStatus === 'completed' && $providerType === 'Microsoft 365') {
+                $order = Order::with('reorderInfo')->findOrFail($orderId);
+
+                $totalInboxes = $order->reorderInfo->first()->total_inboxes ?? 0;
+                $totalEmails = OrderEmail::where('order_id', $orderId)->count();
+
+                if ($totalEmails !== $totalInboxes) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Cannot complete order. Email count mismatch: {$totalEmails} emails uploaded, but {$totalInboxes} inboxes required. Please complete all email uploads before marking the order as completed.",
+                        'data' => [
+                            'total_emails_uploaded' => $totalEmails,
+                            'total_inboxes_required' => $totalInboxes,
+                            'missing_emails' => $totalInboxes - $totalEmails
+                        ]
+                    ], 422);
+                }
+            }
             if($newStatus == 'reject' || $newStatus == 'cancelled') {
                 if(!$reason) {
                     return response()->json([
@@ -1485,14 +1505,15 @@ class OrderController extends Controller
                 return response()->json($result);
             }
             // if status is cancelled then also remove customer subscriptoins create service
-            if($newStatus === 'cancelled') {
+            if($newStatus === 'cancelled' || $newStatus === 'cancelled_force') {
                 $order = Order::findOrFail($orderId);
                 $subscriptionService = new \App\Services\OrderCancelledService();
                 $result = $subscriptionService->cancelSubscription(
                     $order->chargebee_subscription_id,
                     $order->user_id,
                     $reason,
-                    false
+                    false,
+                    $newStatus === 'cancelled_force' ? true : false
                 );
                 
                 return response()->json($result);
