@@ -1647,6 +1647,7 @@
                             <!-- <option value="in-progress">In Progress</option> -->
                         </select>
                     </div>
+                    
                     <div class="mb-3" id="providerTypeWrapper" style="display: none;">
                         <label for="providerType" class="form-label">Provider Type <span class="text-danger">*</span></label>
                         <select class="form-select" id="providerType">
@@ -1654,7 +1655,7 @@
                             <option value="Google">Google</option>
                             <option value="Microsoft 365">Microsoft 365</option>
                         </select>
-                        <small class="text-muted">Required when status is Completed</small>
+                        <small class="">Required when status is Completed</small>
                     </div>
                     <div class="mb-3">
                         <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
