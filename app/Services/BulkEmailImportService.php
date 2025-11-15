@@ -288,8 +288,17 @@ class BulkEmailImportService
         for ($i = 0; $i < count($csv); $i++) {
             $row = array_map('trim', $csv[$i]);
             
+            // Check for Microsoft 365 format (Username, First name, Last name, Display name, etc.)
+            if (in_array('Username', $row) && 
+                in_array('First name', $row) && 
+                in_array('Last name', $row) && 
+                in_array('Display name', $row)) {
+                $headerRowIndex = $i;
+                $headers = $row;
+                break;
+            }
             // Check for admin format (name, email, password)
-            if (in_array('name', array_map('strtolower', $row)) && 
+            elseif (in_array('name', array_map('strtolower', $row)) && 
                 in_array('email', array_map('strtolower', $row)) && 
                 in_array('password', array_map('strtolower', $row))) {
                 $headerRowIndex = $i;
@@ -319,7 +328,7 @@ class BulkEmailImportService
             return [
                 'success' => false,
                 'message' => 'File format is incorrect. Could not find header row with required columns.',
-                'required_format' => 'CSV file must contain columns: name, email, password OR First Name, Last Name, Email address, Password OR Domain, Email, Password',
+                'required_format' => 'CSV file must contain columns: name, email, password OR First Name, Last Name, Email address, Password OR Username, First name, Last name, Display name (Microsoft 365) OR Domain, Email, Password',
                 'status_code' => 400
             ];
         }
@@ -446,8 +455,15 @@ class BulkEmailImportService
             $email = '';
             $password = '';
             
+            // Microsoft 365 format (Username, First name, Last name, Display name, etc.)
+            if (isset($data['Username']) && isset($data['First name'])) {
+                $email = trim($data['Username'] ?? '');
+                $firstName = trim($data['First name'] ?? '');
+                $lastName = trim($data['Last name'] ?? '');
+                $password = ''; // Microsoft 365 format doesn't include password in import
+            }
             // Admin format (name, email, password)
-            if (isset($data['name'])) {
+            elseif (isset($data['name'])) {
                 $firstName = trim($data['name'] ?? '');
                 $lastName = '';
                 $email = trim($data['email'] ?? '');
@@ -474,7 +490,8 @@ class BulkEmailImportService
                 continue;
             }
             
-            if (empty($password)) {
+            // Password is optional for Microsoft 365 format
+            if (empty($password) && !isset($data['Username'])) {
                 $errors[] = "Row {$rowNumber}: Password is required";
                 continue;
             }
