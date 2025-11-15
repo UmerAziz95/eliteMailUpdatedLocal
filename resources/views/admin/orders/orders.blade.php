@@ -1943,7 +1943,7 @@
                     <label class="form-label">Order ID</label>
                     <div class="d-flex align-items-center gap-2">
                         <span class="badge bg-primary" id="providerModalOrderId">#</span>
-                        <span class="text-muted">Current: </span>
+                        <span class="">Current: </span>
                         <span class="badge" id="providerModalCurrentType">None</span>
                     </div>
                 </div>
@@ -1959,7 +1959,7 @@
                         </option>
                     </select>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3 d-none">
                     <label for="providerChangeReason" class="form-label">Reason for Change (Optional)</label>
                     <textarea class="form-control" id="providerChangeReason" rows="3"
                         placeholder="Enter reason for provider type change..."></textarea>

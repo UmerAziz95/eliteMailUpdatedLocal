@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             if (!Schema::hasColumn('orders', 'provider_type')) {
-                $table->enum('provider_type', ['Google', 'Microsoft 365'])->nullable()->after('status_manage_by_admin');
+                $table->enum('provider_type', ['Google', 'Microsoft 365'])->nullable()->default('Google')->after('status_manage_by_admin');
             }
         });
     }
