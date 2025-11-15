@@ -1657,6 +1657,17 @@
                         </select>
                         <small class="">Required when status is Completed</small>
                     </div>
+                    <div class="mb-3" id="microsoftCsvWrapper" style="display: none;">
+                        <label for="microsoftCsvFile" class="form-label">
+                            Import CSV File for Microsoft 365 <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" class="form-control" id="microsoftCsvFile" accept=".csv">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            CSV must contain: Display name, Username, Password, Licenses (optional). Total rows must match order's total inboxes.
+                        </small>
+                        <div id="csvValidationMessage" class="mt-2" style="display: none;"></div>
+                    </div>
                     <div class="mb-3">
                         <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
                         <textarea class="form-control" id="statusReason" rows="3"
@@ -5639,7 +5650,21 @@
                 $('#providerTypeWrapper').slideDown();
             } else {
                 $('#providerTypeWrapper').slideUp();
+                $('#microsoftCsvWrapper').slideUp();
                 $('#providerType').val('');
+                $('#microsoftCsvFile').val('');
+            }
+        });
+
+        // Show/hide CSV upload based on provider type
+        $('#providerType').on('change', function() {
+            const selectedProvider = $(this).val();
+            if (selectedProvider === 'Microsoft 365') {
+                $('#microsoftCsvWrapper').slideDown();
+            } else {
+                $('#microsoftCsvWrapper').slideUp();
+                $('#microsoftCsvFile').val('');
+                $('#csvValidationMessage').hide();
             }
         });
     });
@@ -5650,6 +5675,7 @@
         const newStatus = document.getElementById('newStatus').value;
         const reason = document.getElementById('statusReason').value;
         const providerType = document.getElementById('providerType').value;
+        const csvFileInput = document.getElementById('microsoftCsvFile');
         
         if (!newStatus) {
             Swal.fire({
@@ -5670,6 +5696,30 @@
                 confirmButtonColor: '#3085d6'
             });
             return;
+        }
+
+        // Validate CSV file for Microsoft 365
+        if (newStatus === 'completed' && providerType === 'Microsoft 365') {
+            if (!csvFileInput.files || csvFileInput.files.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing CSV File',
+                    text: 'Please upload a CSV file with email accounts for Microsoft 365',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+            
+            const file = csvFileInput.files[0];
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid File Type',
+                    text: 'Please upload a valid CSV file',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
         }
         
         // status is reject or cancelled
@@ -5703,7 +5753,7 @@
         // Show SweetAlert2 loading dialog
         Swal.fire({
             title: 'Updating Status...',
-            text: 'Please wait while we update the order status.',
+            text: 'Please wait while we update the order status and process the CSV file.',
             icon: 'info',
             allowOutsideClick: false,
             allowEscapeKey: false,
@@ -5714,18 +5764,24 @@
         });
         
         try {
+            // Use FormData for file upload
+            const formData = new FormData();
+            formData.append('status', newStatus);
+            formData.append('reason', reason);
+            formData.append('provider_type', providerType);
+            
+            // Add CSV file if Microsoft 365
+            if (newStatus === 'completed' && providerType === 'Microsoft 365' && csvFileInput.files.length > 0) {
+                formData.append('microsoft_csv', csvFileInput.files[0]);
+            }
+
             const response = await fetch(`/admin/orders/${orderId}/change-status`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({
-                    status: newStatus,
-                    reason: reason,
-                    provider_type: providerType
-                })
+                body: formData
             });
             
             if (!response.ok) {

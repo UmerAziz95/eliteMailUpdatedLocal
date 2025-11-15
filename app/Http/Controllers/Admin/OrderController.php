@@ -26,6 +26,7 @@ use App\Models\OrderPanelSplit;
 use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use App\Services\PanelReassignmentService;
 use App\Services\OrderContractorReassignmentService;
 use App\Services\SlackNotificationService;
@@ -1916,7 +1917,8 @@ class OrderController extends Controller
             $validator = Validator::make($request->all(), [
                 'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject,cancelled_force',
                 'reason' => 'nullable|string|max:500',
-                'provider_type' => 'nullable|in:Google,Microsoft 365'
+                'provider_type' => 'nullable|in:Google,Microsoft 365',
+                'microsoft_csv' => 'nullable|file|mimes:csv,txt|max:10240' // Max 10MB
             ]);
 
             if ($validator->fails()) {
@@ -1940,25 +1942,29 @@ class OrderController extends Controller
                 ], 422);
             }
 
-            // Validate email completion for Microsoft 365
+            // Validate CSV file for Microsoft 365
             if ($newStatus === 'completed' && $providerType === 'Microsoft 365') {
-                $order = Order::with('reorderInfo')->findOrFail($orderId);
+                if (!$request->hasFile('microsoft_csv')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'CSV file is required for Microsoft 365 provider type'
+                    ], 422);
+                }
+
+                $order = Order::with('reorderInfo', 'orderPanels.orderPanelSplits')->findOrFail($orderId);
                 
                 // Get total inboxes from reorder info
                 $totalInboxes = $order->reorderInfo->first()->total_inboxes ?? 0;
+
+                // Process and validate CSV file
+                $csvFile = $request->file('microsoft_csv');
+                $csvData = $this->processMicrosoftCsv($csvFile, $totalInboxes, $order);
                 
-                // Get total emails count from order_emails table
-                $totalEmails = OrderEmail::where('order_id', $orderId)->count();
-                
-                if ($totalEmails !== $totalInboxes) {
+                if (!$csvData['success']) {
                     return response()->json([
                         'success' => false,
-                        'message' => "Cannot complete order. Email count mismatch: {$totalEmails} emails uploaded, but {$totalInboxes} inboxes required. Please complete all email uploads before marking the order as completed.",
-                        'data' => [
-                            'total_emails_uploaded' => $totalEmails,
-                            'total_inboxes_required' => $totalInboxes,
-                            'missing_emails' => $totalInboxes - $totalEmails
-                        ]
+                        'message' => $csvData['message'],
+                        'data' => $csvData['data'] ?? []
                     ], 422);
                 }
             }
@@ -3160,6 +3166,179 @@ class OrderController extends Controller
                 'success' => false,
                 'message' => 'Failed to create order: ' . $e->getMessage()
             ], 422);
+        }
+    }
+
+    /**
+     * Process Microsoft 365 CSV file and save emails with batch logic
+     * Expected CSV headers: Display name, Username, Password, Licenses (optional)
+     */
+    private function processMicrosoftCsv($csvFile, $expectedTotalInboxes, $order)
+    {
+        try {
+            $csvPath = $csvFile->getRealPath();
+            $csvData = array_map('str_getcsv', file($csvPath));
+            
+            // Get header row and data rows
+            $header = array_map('trim', array_shift($csvData));
+            
+            // Validate required columns (case-insensitive)
+            $requiredColumns = ['Display name', 'Username', 'Password'];
+            $headerLower = array_map('strtolower', $header);
+            $requiredLower = array_map('strtolower', $requiredColumns);
+            
+            $missingColumns = [];
+            foreach ($requiredLower as $required) {
+                if (!in_array($required, $headerLower)) {
+                    $missingColumns[] = $required;
+                }
+            }
+            
+            if (!empty($missingColumns)) {
+                return [
+                    'success' => false,
+                    'message' => 'CSV missing required columns: ' . implode(', ', $missingColumns),
+                    'data' => ['required_columns' => $requiredColumns, 'found_columns' => $header]
+                ];
+            }
+            
+            // Validate row count matches expected
+            $actualRows = count($csvData);
+            if ($actualRows !== $expectedTotalInboxes) {
+                return [
+                    'success' => false,
+                    'message' => "CSV row count mismatch. Expected: {$expectedTotalInboxes}, Found: {$actualRows}",
+                    'data' => [
+                        'expected_inboxes' => $expectedTotalInboxes,
+                        'found_rows' => $actualRows,
+                        'difference' => abs($expectedTotalInboxes - $actualRows)
+                    ]
+                ];
+            }
+
+            // Get column indexes (case-insensitive search)
+            $displayNameIndex = false;
+            $usernameIndex = false;
+            $passwordIndex = false;
+            $licensesIndex = false;
+            
+            foreach ($header as $index => $col) {
+                $colLower = strtolower(trim($col));
+                if ($colLower === 'display name') $displayNameIndex = $index;
+                if ($colLower === 'username') $usernameIndex = $index;
+                if ($colLower === 'password') $passwordIndex = $index;
+                if ($colLower === 'licenses') $licensesIndex = $index;
+            }
+
+            // Get order panel splits for batch assignment
+            $splits = $order->orderPanels()->with('orderPanelSplits')->get()
+                ->flatMap(function($panel) {
+                    return $panel->orderPanelSplits;
+                })->sortBy('id');
+
+            if ($splits->isEmpty()) {
+                return [
+                    'success' => false,
+                    'message' => 'No panel splits found for this order'
+                ];
+            }
+
+            DB::beginTransaction();
+
+            try {
+                // Delete existing emails for this order
+                OrderEmail::where('order_id', $order->id)->delete();
+
+                $batchNumber = 1;
+                $emailsInCurrentBatch = 0;
+                $currentSplitIndex = 0;
+                $emailsPerSplit = ceil($actualRows / $splits->count());
+                $emailsProcessedForCurrentSplit = 0;
+                $totalProcessed = 0;
+
+                foreach ($csvData as $row) {
+                    // Skip empty rows
+                    if (empty(array_filter($row))) {
+                        continue;
+                    }
+
+                    // Get current split
+                    $currentSplit = $splits[$currentSplitIndex];
+
+                    // Extract display name (could be "FirstName LastName" or just one name)
+                    $displayName = trim($row[$displayNameIndex] ?? '');
+                    $nameParts = explode(' ', $displayName, 2);
+                    $firstName = $nameParts[0] ?? '';
+                    $lastName = $nameParts[1] ?? '';
+
+                    // Prepare email data using orders table structure
+                    $emailData = [
+                        'order_id' => $order->id,
+                        'user_id' => $order->user_id,
+                        'order_split_id' => $currentSplit->id,
+                        'contractor_id' => $order->assigned_to,
+                        'batch_id' => $batchNumber,
+                        'name' => $firstName,
+                        'last_name' => $lastName,
+                        'email' => trim($row[$usernameIndex] ?? ''),
+                        'password' => trim($row[$passwordIndex] ?? ''), // Save password from CSV
+                        'profile_picture' => ($licensesIndex !== false && isset($row[$licensesIndex])) ? trim($row[$licensesIndex]) : null,
+                    ];
+
+                    // Create email record
+                    OrderEmail::create($emailData);
+
+                    $emailsInCurrentBatch++;
+                    $emailsProcessedForCurrentSplit++;
+                    $totalProcessed++;
+
+                    // Move to next batch after 200 emails
+                    if ($emailsInCurrentBatch >= 200) {
+                        $batchNumber++;
+                        $emailsInCurrentBatch = 0;
+                    }
+
+                    // Move to next split when we've processed enough emails for current split
+                    if ($emailsProcessedForCurrentSplit >= $emailsPerSplit && $currentSplitIndex < $splits->count() - 1) {
+                        $currentSplitIndex++;
+                        $emailsProcessedForCurrentSplit = 0;
+                    }
+                }
+
+                DB::commit();
+
+                Log::info('Microsoft 365 CSV processed successfully', [
+                    'order_id' => $order->id,
+                    'total_emails' => $totalProcessed,
+                    'total_batches' => $batchNumber,
+                    'total_splits' => $splits->count()
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => "Successfully imported {$totalProcessed} emails across {$batchNumber} batches",
+                    'data' => [
+                        'total_emails' => $totalProcessed,
+                        'total_batches' => $batchNumber,
+                        'total_splits' => $splits->count()
+                    ]
+                ];
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error processing Microsoft 365 CSV', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error processing CSV file: ' . $e->getMessage()
+            ];
         }
     }
 }
