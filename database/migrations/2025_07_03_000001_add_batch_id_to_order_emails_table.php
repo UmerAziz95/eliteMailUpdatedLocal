@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('order_emails', function (Blueprint $table) {
-            $table->integer('batch_id')->nullable()->after('order_split_id')->comment('Batch identifier for grouping emails (200 per batch)');
-            $table->index('batch_id');
+            if (!Schema::hasColumn('order_emails', 'batch_id')) {
+                $table->integer('batch_id')->nullable()->after('order_split_id')->comment('Batch identifier for grouping emails (200 per batch)');
+                $table->index('batch_id');
+            }
         });
     }
 
@@ -23,8 +25,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('order_emails', function (Blueprint $table) {
-            $table->dropIndex(['batch_id']);
-            $table->dropColumn('batch_id');
+            if (Schema::hasColumn('order_emails', 'batch_id')) {
+                $table->dropIndex(['batch_id']);
+                $table->dropColumn('batch_id');
+            }
         });
     }
 };
