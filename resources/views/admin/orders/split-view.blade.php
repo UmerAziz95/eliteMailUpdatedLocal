@@ -58,7 +58,20 @@
     <div class="d-flex align-items-center justify-content-between mt-3">
         <div>
             <h5 class="mb-3">Order #{{ $orderPanel->order->id ?? 'N/A' }} - Split Id #{{ $orderPanel->id }}</h5>
-            <h6><span class="opacity-50 fs-6">Order Date:</span> {{ $orderPanel->order->created_at ? $orderPanel->order->created_at->format('M d, Y') : 'N/A' }}</h6>
+            <h6 class="mb-2"><span class="opacity-50 fs-6">Order Date:</span> {{ $orderPanel->order->created_at ? $orderPanel->order->created_at->format('M d, Y') : 'N/A' }}</h6>
+            @if($orderPanel->order->provider_type)
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <span class="opacity-50 fs-6">Provider Type:</span>
+                <span class="badge {{ $orderPanel->order->provider_type === 'Google' ? 'bg-primary' : 'bg-info' }} d-flex align-items-center gap-1 px-3 py-2" style="font-size: 0.85rem; font-weight: 500;">
+                    @if($orderPanel->order->provider_type === 'Google')
+                        <i class="fab fa-google"></i>
+                    @elseif($orderPanel->order->provider_type === 'Microsoft 365')
+                        <i class="fab fa-microsoft"></i>
+                    @endif
+                    {{ $orderPanel->order->provider_type }}
+                </span>
+            </div>
+            @endif
         </div>
         <!-- <div class="d-flex align-items-center gap-2">
             <div class="border border-{{ $orderPanel->split_status_color ?? 'secondary' }} rounded-2 py-1 px-2 text-{{ $orderPanel->split_status_color ?? 'secondary' }} bg-transparent">
