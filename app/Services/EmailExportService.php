@@ -611,6 +611,7 @@ class EmailExportService
                 'First name',
                 'Last name',
                 'Display name',
+                'Password',
                 'Job title',
                 'Department',
                 'Office number',
@@ -657,7 +658,7 @@ class EmailExportService
             $emailAddress = $email->email ?? '';
             $password = $email->password ?? '';
         }
-
+        
         if ($providerType === 'Microsoft 365') {
             // Extract username from email (part before @)
             $username = strpos($emailAddress, '@') !== false ? substr($emailAddress, 0, strpos($emailAddress, '@')) : $emailAddress;
@@ -667,6 +668,7 @@ class EmailExportService
                 $firstName,                          // First name
                 $lastName,                           // Last name
                 $firstName,                          // Display name
+                $password,                           // Password
                 '',                                  // Job title
                 '',                                  // Department
                 '',                                  // Office number
