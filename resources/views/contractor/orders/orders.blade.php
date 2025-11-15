@@ -715,6 +715,17 @@
                     </select>
                     <small class="text-muted">Required when status is Completed</small>
                 </div>
+                <div class="mb-3" id="microsoftCsvWrapper" style="display: none;">
+                    <label for="microsoftCsvFile" class="form-label">
+                        Import CSV File for Microsoft 365 <span class="text-danger">*</span>
+                    </label>
+                    <input type="file" class="form-control" id="microsoftCsvFile" accept=".csv">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        CSV must contain: Display name, Username, Password, Licenses (optional). Total rows must match order's total inboxes.
+                    </small>
+                    <div id="csvValidationMessage" class="mt-2" style="display: none;"></div>
+                </div>
                 <div class="mb-3">
                     <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
                     <textarea class="form-control" id="statusReason" rows="3" placeholder="Enter reason for status change..."></textarea>
@@ -2766,6 +2777,8 @@ function parseUTCDateTime(dateStr) {
         const statusSelect = document.getElementById('contractorNewStatus');
         const providerWrapper = document.getElementById('providerTypeWrapper');
         const providerSelect = document.getElementById('providerType');
+        const microsoftCsvWrapper = document.getElementById('microsoftCsvWrapper');
+        const microsoftCsvFile = document.getElementById('microsoftCsvFile');
         
         if (!statusSelect || !providerWrapper || !providerSelect) {
             return;
@@ -2778,9 +2791,29 @@ function parseUTCDateTime(dateStr) {
             } else {
                 providerWrapper.style.display = 'none';
                 providerSelect.value = '';
+                if (microsoftCsvWrapper) {
+                    microsoftCsvWrapper.style.display = 'none';
+                }
+                if (microsoftCsvFile) {
+                    microsoftCsvFile.value = '';
+                }
             }
             console.log('Provider type wrapper display:', providerWrapper.style.display);
         });
+
+        // Show/hide CSV upload based on provider type
+        if (providerSelect && microsoftCsvWrapper) {
+            providerSelect.addEventListener('change', function() {
+                if (this.value === 'Microsoft 365') {
+                    microsoftCsvWrapper.style.display = 'block';
+                } else {
+                    microsoftCsvWrapper.style.display = 'none';
+                    if (microsoftCsvFile) {
+                        microsoftCsvFile.value = '';
+                    }
+                }
+            });
+        }
     });
 
     // Helper function to get status badge class
@@ -2803,6 +2836,7 @@ function parseUTCDateTime(dateStr) {
         const newStatus = document.getElementById('contractorNewStatus').value;
         const reason = document.getElementById('statusReason').value;
         const providerType = document.getElementById('providerType') ? document.getElementById('providerType').value : '';
+        const microsoftCsvFile = document.getElementById('microsoftCsvFile');
         
         if (!newStatus) {
             Swal.fire({
@@ -2822,6 +2856,20 @@ function parseUTCDateTime(dateStr) {
             });
             return;
         }
+        
+        // Validate CSV file for Microsoft 365
+        if (newStatus === 'completed' && providerType === 'Microsoft 365') {
+            if (!microsoftCsvFile || !microsoftCsvFile.files || microsoftCsvFile.files.length === 0) {
+                Swal.fire({
+                    title: 'Missing CSV File',
+                    text: 'Please upload a CSV file for Microsoft 365 orders',
+                    icon: 'warning',
+                    confirmButtonColor: '#f39c12'
+                });
+                return;
+            }
+        }
+        
         // Validate reason if status is not completed
         if (newStatus !== 'completed' && !reason) {
             Swal.fire({
@@ -2865,18 +2913,37 @@ function parseUTCDateTime(dateStr) {
         });
         
         try {
-            const response = await fetch(`/contractor/orders/${orderId}/change-status`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            // Use FormData if CSV file is present
+            let body, headers;
+            if (newStatus === 'completed' && providerType === 'Microsoft 365' && microsoftCsvFile && microsoftCsvFile.files[0]) {
+                const formData = new FormData();
+                formData.append('status', newStatus);
+                formData.append('reason', reason || '');
+                formData.append('provider_type', providerType);
+                formData.append('microsoft_csv', microsoftCsvFile.files[0]);
+                
+                body = formData;
+                headers = {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                     'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
+                };
+            } else {
+                body = JSON.stringify({
                     status: newStatus,
                     reason: reason,
                     provider_type: providerType
-                })
+                });
+                headers = {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+            }
+            
+            const response = await fetch(`/contractor/orders/${orderId}/change-status`, {
+                method: 'POST',
+                headers: headers,
+                body: body
             });
             
             if (!response.ok) {

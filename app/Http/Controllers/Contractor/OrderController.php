@@ -1448,7 +1448,8 @@ class OrderController extends Controller
             $validator = Validator::make($request->all(), [
                 'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject,cancelled_force',
                 'reason' => 'nullable|string|max:500',
-                'provider_type' => 'nullable|in:Google,Microsoft 365'
+                'provider_type' => 'nullable|in:Google,Microsoft 365',
+                'microsoft_csv' => 'nullable|file|mimes:csv,txt|max:10240'
             ]);
 
             if ($validator->fails()) {
@@ -1470,25 +1471,24 @@ class OrderController extends Controller
                 ], 422);
             }
 
-            // Validate email completion for Microsoft 365 orders before marking as completed
+            // Handle Microsoft 365 CSV import
             if ($newStatus === 'completed' && $providerType === 'Microsoft 365') {
-                $order = Order::with('reorderInfo')->findOrFail($orderId);
-
-                $totalInboxes = $order->reorderInfo->first()->total_inboxes ?? 0;
-                $totalEmails = OrderEmail::where('order_id', $orderId)->count();
-
-                if ($totalEmails !== $totalInboxes) {
+                if (!$request->hasFile('microsoft_csv')) {
                     return response()->json([
                         'success' => false,
-                        'message' => "Cannot complete order. Email count mismatch: {$totalEmails} emails uploaded, but {$totalInboxes} inboxes required. Please complete all email uploads before marking the order as completed.",
-                        'data' => [
-                            'total_emails_uploaded' => $totalEmails,
-                            'total_inboxes_required' => $totalInboxes,
-                            'missing_emails' => $totalInboxes - $totalEmails
-                        ]
+                        'message' => 'CSV file is required for Microsoft 365 orders'
                     ], 422);
                 }
+
+                // Process CSV file
+                $csvFile = $request->file('microsoft_csv');
+                $csvResult = $this->processMicrosoftCsv($csvFile, $orderId);
+                
+                if (!$csvResult['success']) {
+                    return response()->json($csvResult, 422);
+                }
             }
+
             if($newStatus == 'reject' || $newStatus == 'cancelled') {
                 if(!$reason) {
                     return response()->json([
@@ -2807,6 +2807,141 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error exporting TXT with smart selection: ' . $e->getMessage());
             return back()->with('error', 'Error exporting TXT: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Process Microsoft 365 CSV file and import emails with batch logic
+     */
+    private function processMicrosoftCsv($csvFile, $orderId)
+    {
+        DB::beginTransaction();
+        
+        try {
+            $order = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits'])->findOrFail($orderId);
+            $totalInboxes = $order->reorderInfo->first()->total_inboxes ?? 0;
+            
+            // Parse CSV file
+            $csvData = [];
+            $handle = fopen($csvFile->getRealPath(), 'r');
+            $headers = fgetcsv($handle); // Read header row
+            
+            // Validate headers
+            $expectedHeaders = ['Display name', 'Username', 'Password', 'Licenses'];
+            $headerMap = [];
+            foreach ($expectedHeaders as $expectedHeader) {
+                $index = array_search($expectedHeader, $headers);
+                if ($index === false && $expectedHeader !== 'Licenses') { // Licenses is optional
+                    fclose($handle);
+                    return [
+                        'success' => false,
+                        'message' => "Invalid CSV format. Missing required header: {$expectedHeader}"
+                    ];
+                }
+                $headerMap[$expectedHeader] = $index;
+            }
+            
+            // Read all data rows
+            while (($row = fgetcsv($handle)) !== false) {
+                if (empty(array_filter($row))) continue; // Skip empty rows
+                
+                $csvData[] = [
+                    'Display name' => $row[$headerMap['Display name']] ?? '',
+                    'Username' => $row[$headerMap['Username']] ?? '',
+                    'Password' => $row[$headerMap['Password']] ?? '',
+                    'Licenses' => isset($headerMap['Licenses']) && isset($row[$headerMap['Licenses']]) ? $row[$headerMap['Licenses']] : ''
+                ];
+            }
+            fclose($handle);
+            
+            // Validate row count matches total_inboxes
+            $csvRowCount = count($csvData);
+            if ($csvRowCount !== $totalInboxes) {
+                return [
+                    'success' => false,
+                    'message' => "CSV row count mismatch. Expected {$totalInboxes} rows but found {$csvRowCount} rows."
+                ];
+            }
+            
+            // Delete existing emails for this order
+            OrderEmail::where('order_id', $orderId)->delete();
+            
+            // Get order splits for distribution
+            $splits = $order->orderPanels->flatMap(function($panel) {
+                return $panel->orderPanelSplits;
+            })->sortBy('id');
+            
+            if ($splits->isEmpty()) {
+                return [
+                    'success' => false,
+                    'message' => 'No order splits found for this order'
+                ];
+            }
+            
+            // Batch logic: 200 emails per batch
+            $batchSize = 200;
+            $batchId = 1;
+            $emailsToInsert = [];
+            
+            foreach ($csvData as $index => $row) {
+                // Parse display name into first and last name
+                $displayName = $row['Display name'];
+                $nameParts = explode(' ', trim($displayName), 2);
+                $firstName = $nameParts[0] ?? '';
+                $lastName = $nameParts[1] ?? '';
+                
+                // Distribute across splits round-robin
+                $splitIndex = $index % $splits->count();
+                $split = $splits->values()[$splitIndex];
+                
+                // Calculate batch_id (increments every 200 emails)
+                $batchId = intdiv($index, $batchSize) + 1;
+                
+                $emailsToInsert[] = [
+                    'order_id' => $orderId,
+                    'user_id' => $order->user_id,
+                    'order_split_id' => $split->id,
+                    'contractor_id' => $split->contractor_id,
+                    'batch_id' => $batchId,
+                    'name' => $firstName,
+                    'last_name' => $lastName,
+                    'email' => $row['Username'],
+                    'password' => $row['Password'],
+                    'profile_picture' => $row['Licenses'], // Store licenses in profile_picture field
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ];
+            }
+            
+            // Bulk insert all emails
+            OrderEmail::insert($emailsToInsert);
+            
+            DB::commit();
+            
+            ActivityLogService::log(
+                'contractor-microsoft-csv-import',
+                "Imported {$csvRowCount} emails from CSV for order {$orderId}",
+                $order,
+                [
+                    'order_id' => $orderId,
+                    'total_emails' => $csvRowCount,
+                    'total_batches' => $batchId,
+                    'imported_by' => Auth::id()
+                ]
+            );
+            
+            return [
+                'success' => true,
+                'message' => "Successfully imported {$csvRowCount} emails in {$batchId} batches"
+            ];
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error processing Microsoft CSV: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error processing CSV: ' . $e->getMessage()
+            ];
         }
     }
 }
