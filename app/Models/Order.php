@@ -33,6 +33,7 @@ class Order extends Model
         'meta',
         'plan_id',
         'status_manage_by_admin',
+        'provider_type',
         'reason',
         'last_draft_notification_sent_at',
         'completed_at',

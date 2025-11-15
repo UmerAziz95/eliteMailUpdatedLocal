@@ -1647,6 +1647,15 @@
                             <!-- <option value="in-progress">In Progress</option> -->
                         </select>
                     </div>
+                    <div class="mb-3" id="providerTypeWrapper" style="display: none;">
+                        <label for="providerType" class="form-label">Provider Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="providerType">
+                            <option value="">-- Select Provider Type --</option>
+                            <option value="Google">Google</option>
+                            <option value="Microsoft 365">Microsoft 365</option>
+                        </select>
+                        <small class="text-muted">Required when status is Completed</small>
+                    </div>
                     <div class="mb-3">
                         <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
                         <textarea class="form-control" id="statusReason" rows="3"
@@ -5391,6 +5400,8 @@
         // Reset form
         document.getElementById('newStatus').value = '';
         document.getElementById('statusReason').value = '';
+        document.getElementById('providerType').value = '';
+        document.getElementById('providerTypeWrapper').style.display = 'none';
         
         // Store order ID for later use
         document.getElementById('changeStatusModal').setAttribute('data-order-id', orderId);
@@ -5400,11 +5411,25 @@
         modal.show();
     }
 
+    // Add event listener for status change to show/hide provider type
+    $(document).ready(function() {
+        $('#newStatus').on('change', function() {
+            const selectedStatus = $(this).val();
+            if (selectedStatus === 'completed') {
+                $('#providerTypeWrapper').slideDown();
+            } else {
+                $('#providerTypeWrapper').slideUp();
+                $('#providerType').val('');
+            }
+        });
+    });
+
     async function updateOrderStatus() {
         const modal = document.getElementById('changeStatusModal');
         const orderId = modal.getAttribute('data-order-id');
         const newStatus = document.getElementById('newStatus').value;
         const reason = document.getElementById('statusReason').value;
+        const providerType = document.getElementById('providerType').value;
         
         if (!newStatus) {
             Swal.fire({
@@ -5415,6 +5440,18 @@
             });
             return;
         }
+
+        // Validate provider type when status is completed
+        if (newStatus === 'completed' && !providerType) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Provider Type',
+                text: 'Please select a provider type (Google or Microsoft 365) before completing the order',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+        
         // status is reject or cancelled
         if ((newStatus === 'reject' || newStatus === 'cancelled' || newStatus === 'cancelled_force') && !reason) {
             Swal.fire({
@@ -5466,7 +5503,8 @@
                 },
                 body: JSON.stringify({
                     status: newStatus,
-                    reason: reason
+                    reason: reason,
+                    provider_type: providerType
                 })
             });
             
