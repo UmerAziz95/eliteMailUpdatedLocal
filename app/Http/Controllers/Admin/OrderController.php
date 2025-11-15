@@ -1938,6 +1938,29 @@ class OrderController extends Controller
                 ], 422);
             }
 
+            // Validate email completion for Microsoft 365
+            if ($newStatus === 'completed' && $providerType === 'Microsoft 365') {
+                $order = Order::with('reorderInfo')->findOrFail($orderId);
+                
+                // Get total inboxes from reorder info
+                $totalInboxes = $order->reorderInfo->first()->total_inboxes ?? 0;
+                
+                // Get total emails count from order_emails table
+                $totalEmails = OrderEmail::where('order_id', $orderId)->count();
+                
+                if ($totalEmails !== $totalInboxes) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Cannot complete order. Email count mismatch: {$totalEmails} emails uploaded, but {$totalInboxes} inboxes required. Please complete all email uploads before marking the order as completed.",
+                        'data' => [
+                            'total_emails_uploaded' => $totalEmails,
+                            'total_inboxes_required' => $totalInboxes,
+                            'missing_emails' => $totalInboxes - $totalEmails
+                        ]
+                    ], 422);
+                }
+            }
+
             if($newStatus == 'reject' || $newStatus == 'cancelled') {
                 if(!$reason) {
                     return response()->json([
@@ -2103,6 +2126,7 @@ class OrderController extends Controller
             ], 500);
         }
     }
+    
 
     /**
      * Get available panels for reassignment
