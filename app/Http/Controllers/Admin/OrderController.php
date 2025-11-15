@@ -1972,12 +1972,12 @@ class OrderController extends Controller
             $oldStatus = $order->status_manage_by_admin;
             
             // Don't allow status change if it's the same
-            if ($oldStatus === $newStatus) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order is already in the selected status.'
-                ], 400);
-            }
+            // if ($oldStatus === $newStatus) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Order is already in the selected status.'
+            //     ], 400);
+            // }
             
             // Update order status using the correct column
             $order->status_manage_by_admin = $newStatus;

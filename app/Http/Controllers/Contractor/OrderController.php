@@ -1447,7 +1447,8 @@ class OrderController extends Controller
             // Validate the request
             $validator = Validator::make($request->all(), [
                 'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject',
-                'reason' => 'nullable|string|max:500'
+                'reason' => 'nullable|string|max:500',
+                'provider_type' => 'nullable|in:Google,Microsoft 365'
             ]);
 
             if ($validator->fails()) {
@@ -1461,6 +1462,13 @@ class OrderController extends Controller
             $contractorId = Auth::id();
             $newStatus = $request->input('status');
             $reason = $request->input('reason');
+            $providerType = $request->input('provider_type');
+            if ($newStatus === 'completed' && !$providerType) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Provider type is required when status is completed'
+                ], 422);
+            }
             if($newStatus == 'reject' || $newStatus == 'cancelled') {
                 if(!$reason) {
                     return response()->json([
@@ -1507,6 +1515,7 @@ class OrderController extends Controller
             // Set completion timestamp if status is completed
             if ($newStatus === 'completed') {
                 $order->completed_at = now();
+                $order->provider_type = $providerType;
             }
             
             // Add reason if provided
@@ -1528,7 +1537,8 @@ class OrderController extends Controller
                     'new_status' => $order->status_manage_by_admin,
                     'updated_by' => $contractorId,
                     'assigned_to' => $order->assigned_to,
-                    'reason' => $reason
+                    'reason' => $reason,
+                    'provider_type' => $providerType
                 ]
             );
             
@@ -1543,6 +1553,7 @@ class OrderController extends Controller
                     'old_status' => $oldStatus,
                     'new_status' => $newStatus,
                     'reason' => $reason,
+                    'provider_type' => $providerType,
                     'assigned_to' => $order->assigned_to
                 ]
             ]);
@@ -1558,6 +1569,7 @@ class OrderController extends Controller
                     'old_status' => $oldStatus,
                     'new_status' => $newStatus,
                     'reason' => $reason,
+                    'provider_type' => $providerType,
                     'assigned_to' => $order->assigned_to
                 ]
             ]);

@@ -697,14 +697,23 @@
                     <label class="form-label">Current Status: <span id="modalCurrentStatus" class="badge"></span></label>
                 </div>
                 <div class="mb-3">
-                    <label for="newStatus" class="form-label">Select New Status</label>
-                    <select class="form-select" id="newStatus" required>
+                    <label for="contractorNewStatus" class="form-label">Select New Status</label>
+                    <select class="form-select" id="contractorNewStatus" required>
                         <option value="">-- Select Status --</option>
                         <!-- <option value="pending">Pending</option> -->
                         <option value="completed">Completed</option>
                         <!-- <option value="cancelled">Cancelled</option> -->
                         <option value="reject">Rejected</option>
                     </select>
+                </div>
+                <div class="mb-3" id="providerTypeWrapper" style="display: none;">
+                    <label for="providerType" class="form-label">Provider Type <span class="text-danger">*</span></label>
+                    <select class="form-select" id="providerType">
+                        <option value="">-- Select Provider Type --</option>
+                        <option value="Google">Google</option>
+                        <option value="Microsoft 365">Microsoft 365</option>
+                    </select>
+                    <small class="text-muted">Required when status is Completed</small>
                 </div>
                 <div class="mb-3">
                     <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
@@ -2677,6 +2686,10 @@ function parseUTCDateTime(dateStr) {
     
     function startTimer(durationSeconds) {
       const container = document.getElementById('flip-timer');
+      if (!container) {
+        console.warn('flip-timer container not found; skipping timer initialization.');
+        return;
+      }
       const digitElements = [];
     
       const formatTime = (s) => {
@@ -2730,8 +2743,16 @@ function parseUTCDateTime(dateStr) {
         statusBadge.className = 'badge ' + getStatusBadgeClass(currentStatus);
         
         // Reset form
-        document.getElementById('newStatus').value = '';
+        document.getElementById('contractorNewStatus').value = '';
         document.getElementById('statusReason').value = '';
+        const providerTypeField = document.getElementById('providerType');
+        if (providerTypeField) {
+            providerTypeField.value = '';
+        }
+        const providerWrapper = document.getElementById('providerTypeWrapper');
+        if (providerWrapper) {
+            providerWrapper.style.display = 'none';
+        }
         
         // Store order ID for later use
         document.getElementById('changeStatusModal').setAttribute('data-order-id', orderId);
@@ -2740,6 +2761,27 @@ function parseUTCDateTime(dateStr) {
         const modal = new bootstrap.Modal(document.getElementById('changeStatusModal'));
         modal.show();
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusSelect = document.getElementById('contractorNewStatus');
+        const providerWrapper = document.getElementById('providerTypeWrapper');
+        const providerSelect = document.getElementById('providerType');
+        
+        if (!statusSelect || !providerWrapper || !providerSelect) {
+            return;
+        }
+
+        statusSelect.addEventListener('change', function() {
+            console.log('Selected status:', this.value);
+            if (this.value === 'completed') {
+                providerWrapper.style.display = 'block';
+            } else {
+                providerWrapper.style.display = 'none';
+                providerSelect.value = '';
+            }
+            console.log('Provider type wrapper display:', providerWrapper.style.display);
+        });
+    });
 
     // Helper function to get status badge class
     function getStatusBadgeClass(status) {
@@ -2758,13 +2800,23 @@ function parseUTCDateTime(dateStr) {
     async function updateOrderStatus() {
         const modal = document.getElementById('changeStatusModal');
         const orderId = modal.getAttribute('data-order-id');
-        const newStatus = document.getElementById('newStatus').value;
+        const newStatus = document.getElementById('contractorNewStatus').value;
         const reason = document.getElementById('statusReason').value;
+        const providerType = document.getElementById('providerType') ? document.getElementById('providerType').value : '';
         
         if (!newStatus) {
             Swal.fire({
                 title: 'Validation Error',
                 text: 'Please select a new status',
+                icon: 'warning',
+                confirmButtonColor: '#f39c12'
+            });
+            return;
+        }
+        if (newStatus === 'completed' && !providerType) {
+            Swal.fire({
+                title: 'Missing Provider Type',
+                text: 'Please select a provider type (Google or Microsoft 365) before completing the order',
                 icon: 'warning',
                 confirmButtonColor: '#f39c12'
             });
@@ -2822,7 +2874,8 @@ function parseUTCDateTime(dateStr) {
                 },
                 body: JSON.stringify({
                     status: newStatus,
-                    reason: reason
+                    reason: reason,
+                    provider_type: providerType
                 })
             });
             
