@@ -607,22 +607,22 @@ class EmailExportService
     {
         if ($providerType === 'Microsoft 365') {
             return [
-                'First Name',
-                'Last Name',
-                'Display Name',
-                'User Name',
-                'Password',
-                'Job Title',
+                'Username',
+                'First name',
+                'Last name',
+                'Display name',
+                'Job title',
                 'Department',
-                'Office Number',
-                'Office Phone',
-                'Mobile Phone',
+                'Office number',
+                'Office phone',
+                'Mobile phone',
                 'Fax',
+                'Alternate email address',
                 'Address',
                 'City',
-                'State or Province',
-                'ZIP or Postal Code',
-                'Country or Region'
+                'State or province',
+                'ZIP or postal code',
+                'Country or region'
             ];
         }
         
@@ -663,22 +663,22 @@ class EmailExportService
             $username = strpos($emailAddress, '@') !== false ? substr($emailAddress, 0, strpos($emailAddress, '@')) : $emailAddress;
             
             return [
-                $firstName,                          // First Name
-                $lastName,                           // Last Name
-                $firstName . ' ' . $lastName,        // Display Name
-                $emailAddress,                       // User Name (full email)
-                $password,                           // Password
-                '',                                  // Job Title
+                $emailAddress,                       // Username (full email)
+                $firstName,                          // First name
+                $lastName,                           // Last name
+                $firstName,                          // Display name
+                '',                                  // Job title
                 '',                                  // Department
-                '',                                  // Office Number
-                '',                                  // Office Phone
-                '',                                  // Mobile Phone
+                '',                                  // Office number
+                '',                                  // Office phone
+                '',                                  // Mobile phone
                 '',                                  // Fax
+                '',                                  // Alternate email address
                 '',                                  // Address
                 '',                                  // City
-                '',                                  // State or Province
-                '',                                  // ZIP or Postal Code
-                ''                                   // Country or Region
+                '',                                  // State or province
+                '',                                  // ZIP or postal code
+                ''                                   // Country or region
             ];
         }
         
@@ -688,7 +688,7 @@ class EmailExportService
             $lastName,                               // Last Name
             $emailAddress,                           // Email address
             $password,                               // Password
-            '/'                                      // Org Unit Path [Required]
+            // '/'                                   // Org Unit Path [Required]
         ];
     }
 }
