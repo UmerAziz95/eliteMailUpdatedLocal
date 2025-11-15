@@ -742,6 +742,7 @@ class OrderController extends Controller
                     'customer_image' => $order->user->profile_image ? asset('storage/profile_images/' . $order->user->profile_image) : null,
                     'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
                     'inboxes_per_domain' => $inboxesPerDomain,
+                    'provider_type' => $order->provider_type,
                     'contractor_name' => $order->assignedTo ? $order->assignedTo->name : null,
                     'total_domains' => $totalDomainsCount,
                     'status' => $order->status_manage_by_admin ?? 'pending',
@@ -850,6 +851,7 @@ class OrderController extends Controller
                         return '<span style="font-size: 11px !important;" class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
                             . ucfirst($status) . '</span>';
                     })(),
+                    'provider_type' => $order->provider_type,
                 ],
                 'reorder_info' => $reorderInfo ? [
                     'total_inboxes' => $reorderInfo->total_inboxes,
@@ -2123,6 +2125,112 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to change order status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Change order provider type (Google or Microsoft 365)
+     */
+    public function changeProviderType(Request $request, $orderId)
+    {
+        try {
+            // Validate the request
+            $validator = Validator::make($request->all(), [
+                'provider_type' => 'required|in:Google,Microsoft 365',
+                'reason' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $adminId = Auth::id();
+            $newProviderType = $request->input('provider_type');
+            $reason = $request->input('reason');
+
+            // Find the order
+            $order = Order::findOrFail($orderId);
+            
+            // Only allow provider type change for completed orders
+            // if ($order->status_manage_by_admin !== 'completed') {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Provider type can only be changed for completed orders'
+            //     ], 400);
+            // }
+
+            $oldProviderType = $order->provider_type;
+            
+            // Don't allow change if it's the same
+            if ($oldProviderType === $newProviderType) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order already has the selected provider type.'
+                ], 400);
+            }
+            
+            // Update provider type
+            $order->provider_type = $newProviderType;
+            $order->save();
+            
+            // Log the activity
+            ActivityLogService::log(
+                'admin_order_provider_type_updated',
+                "Admin changed order provider type from '{$oldProviderType}' to '{$newProviderType}'" . ($reason ? " with reason: {$reason}" : ""),
+                $order,
+                [
+                    'order_id' => $orderId,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => $newProviderType,
+                    'reason' => $reason,
+                    'changed_by' => $adminId,
+                    'changed_by_type' => 'admin'
+                ],
+                $adminId
+            );
+            
+            // Create notification for customer
+            Notification::create([
+                'user_id' => $order->user_id,
+                'type' => 'order_provider_type_change',
+                'title' => 'Order Provider Type Updated',
+                'message' => "Your order #{$orderId} provider type has been changed to {$newProviderType}",
+                'data' => [
+                    'order_id' => $orderId,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => $newProviderType,
+                    'reason' => $reason
+                ]
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Provider type successfully changed from '{$oldProviderType}' to '{$newProviderType}'",
+                'data' => [
+                    'order_id' => $orderId,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => $newProviderType,
+                    'reason' => $reason
+                ]
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
+            
+        } catch (Exception $e) {
+            Log::error("Error in changeProviderType for order {$orderId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change provider type: ' . $e->getMessage()
             ], 500);
         }
     }

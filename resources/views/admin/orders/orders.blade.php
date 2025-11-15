@@ -1927,6 +1927,56 @@
     </div>
 </div>
 
+<!-- Change Provider Type Modal -->
+<div class="modal fade" id="changeProviderTypeModal" tabindex="-1" aria-labelledby="changeProviderTypeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeProviderTypeModalLabel">
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    Change Provider Type
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Order ID</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary" id="providerModalOrderId">#</span>
+                        <span class="text-muted">Current: </span>
+                        <span class="badge" id="providerModalCurrentType">None</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="newProviderType" class="form-label">Select Provider Type <span class="text-danger">*</span></label>
+                    <select class="form-select" id="newProviderType" required>
+                        <option value="">-- Select Provider Type --</option>
+                        <option value="Google">
+                            <i class="fab fa-google"></i> Google
+                        </option>
+                        <option value="Microsoft 365">
+                            <i class="fab fa-microsoft"></i> Microsoft 365
+                        </option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="providerChangeReason" class="form-label">Reason for Change (Optional)</label>
+                    <textarea class="form-control" id="providerChangeReason" rows="3"
+                        placeholder="Enter reason for provider type change..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmProviderTypeChange"
+                    onclick="updateProviderType()">
+                    <i class="fas fa-save me-1"></i>
+                    Update Provider Type
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -4197,6 +4247,12 @@
                             <h6>
                                 ${orderInfo.status_manage_by_admin || orderInfo.status.charAt(0).toUpperCase() + orderInfo.status.slice(1)}
                                 ${createTimerBadge(orderInfo, 0)}
+                                ${orderInfo.provider_type ? `
+                                    <span class="badge ${orderInfo.provider_type === 'Google' ? 'bg-primary' : 'bg-info'} ms-2" style="font-size: 11px;">
+                                        <i class="${orderInfo.provider_type === 'Google' ? 'fab fa-google' : 'fab fa-microsoft'}"></i>
+                                        ${orderInfo.provider_type}
+                                    </span>
+                                ` : ''}
                             </h6>
                             <p class="text-white small mb-0">Customer: ${orderInfo.customer_name || 'N/A'} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
@@ -4209,6 +4265,15 @@
                                     Change Status
                                 </button>
                             ` : ''}
+
+                            
+                            <button class="btn btn-info btn-sm px-3 py-2" 
+                                    onclick="openChangeProviderTypeModal(${orderInfo?.id}, '${orderInfo?.provider_type || ''}')"
+                                    style="font-size: 13px;">
+                                <i class="${orderInfo?.provider_type === 'Google' ? 'fab fa-google' : orderInfo?.provider_type === 'Microsoft 365' ? 'fab fa-microsoft' : 'fas fa-exchange-alt'} me-1" style="font-size: 12px;"></i>
+                                ${orderInfo?.provider_type ? `Change Provider (${orderInfo.provider_type})` : 'Set Provider'}
+                            </button>
+                            
 
                             <button class="btn btn-outline-primary btn-sm px-3 py-2" 
                                     onclick="openAssignContractorsModal(${orderInfo?.id})"
@@ -4274,6 +4339,12 @@
                         <h6>
                             ${orderInfo.status_manage_by_admin}
                             ${createTimerBadge(orderInfo, 0)}
+                            ${orderInfo.provider_type ? `
+                                <span class="badge ${orderInfo.provider_type === 'Google' ? 'bg-primary' : 'bg-info'} ms-2" style="font-size: 11px;">
+                                    <i class="${orderInfo.provider_type === 'Google' ? 'fab fa-google' : 'fab fa-microsoft'}"></i>
+                                    ${orderInfo.provider_type}
+                                </span>
+                            ` : ''}
                         </h6>
                         <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                     </div>
@@ -4286,6 +4357,15 @@
                                 Change Status
                             </button>
                         ` : ''}
+
+                        
+                        <button class="btn btn-info btn-sm px-3 py-2" 
+                                onclick="openChangeProviderTypeModal(${orderInfo?.id}, '${orderInfo?.provider_type || ''}')"
+                                style="font-size: 13px;">
+                            <i class="${orderInfo?.provider_type === 'Google' ? 'fab fa-google' : orderInfo?.provider_type === 'Microsoft 365' ? 'fab fa-microsoft' : 'fas fa-exchange-alt'} me-1" style="font-size: 12px;"></i>
+                            ${orderInfo?.provider_type ? `Change Provider (${orderInfo.provider_type})` : 'Set Provider'}
+                        </button>
+                        
 
                         <button class="btn btn-outline-primary btn-sm px-3 py-2" 
                                 onclick="openAssignContractorsModal(${orderInfo?.id})"
@@ -5409,6 +5489,145 @@
         // Show the modal
         const modal = new bootstrap.Modal(document.getElementById('changeStatusModal'));
         modal.show();
+    }
+
+    // Open Change Provider Type Modal
+    function openChangeProviderTypeModal(orderId, currentProviderType) {
+        // Set the order ID in the modal
+        document.getElementById('providerModalOrderId').textContent = '#' + orderId;
+        
+        // Set current provider type with appropriate styling and icon
+        const providerBadge = document.getElementById('providerModalCurrentType');
+        if (currentProviderType) {
+            providerBadge.textContent = currentProviderType;
+            providerBadge.className = 'badge ' + (currentProviderType === 'Google' ? 'bg-primary' : 'bg-info');
+        } else {
+            providerBadge.textContent = 'Not Set';
+            providerBadge.className = 'badge bg-secondary';
+        }
+        
+        // Reset form
+        document.getElementById('newProviderType').value = '';
+        document.getElementById('providerChangeReason').value = '';
+        
+        // Store order ID for later use
+        document.getElementById('changeProviderTypeModal').setAttribute('data-order-id', orderId);
+        document.getElementById('changeProviderTypeModal').setAttribute('data-current-provider', currentProviderType || '');
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('changeProviderTypeModal'));
+        modal.show();
+    }
+
+    // Update Provider Type
+    async function updateProviderType() {
+        const modal = document.getElementById('changeProviderTypeModal');
+        const orderId = modal.getAttribute('data-order-id');
+        const currentProviderType = modal.getAttribute('data-current-provider');
+        const newProviderType = document.getElementById('newProviderType').value;
+        const reason = document.getElementById('providerChangeReason').value;
+        
+        if (!newProviderType) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Information',
+                text: 'Please select a provider type',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
+        if (newProviderType === currentProviderType) {
+            Swal.fire({
+                icon: 'info',
+                title: 'No Change',
+                text: 'The selected provider type is the same as the current one',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+        
+        // Show confirmation dialog
+        const result = await Swal.fire({
+            title: 'Confirm Provider Type Change',
+            html: `Are you sure you want to change the provider type to <strong>${newProviderType}</strong>?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, update it!',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+        
+        // Show loading dialog
+        Swal.fire({
+            title: 'Updating Provider Type...',
+            text: 'Please wait while we update the provider type.',
+            icon: 'info',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        try {
+            const response = await fetch(`/admin/orders/${orderId}/change-provider-type`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    provider_type: newProviderType,
+                    reason: reason
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update provider type');
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Close loading dialog and show success
+                await Swal.fire({
+                    title: 'Success!',
+                    text: 'Provider type updated successfully!',
+                    icon: 'success',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                
+                // Hide modal
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                modalInstance.hide();
+                
+                // Refresh the order details if currently viewing this order
+                viewOrderSplits(orderId);
+                
+                // Reload the orders list
+                loadOrders(currentFilters, 1, false);
+            } else {
+                throw new Error(result.message || 'Failed to update provider type');
+            }
+        } catch (error) {
+            console.error('Error updating provider type:', error);
+            Swal.fire({
+                title: 'Error',
+                text: error.message || 'An error occurred while updating the provider type',
+                icon: 'error',
+                confirmButtonColor: '#d33'
+            });
+        }
     }
 
     // Add event listener for status change to show/hide provider type

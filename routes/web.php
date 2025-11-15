@@ -342,6 +342,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/split/{splitId}/export-txt-generated-emails', [AdminOrderController::class, 'exportTxtGeneratedEmails'])->name('orders.split.export.txt.generated.emails');
         Route::post('/orders/{orderId}/assign-to-me', [AdminOrderController::class, 'assignOrderToMe'])->name('orders.assign-to-me');
         Route::post('/orders/{orderId}/change-status', [AdminOrderController::class, 'changeStatus'])->name('orders.change-status');
+        Route::post('/orders/{orderId}/change-provider-type', [AdminOrderController::class, 'changeProviderType'])->name('orders.change-provider-type');
         
         // Shared Orders routes
         Route::get('/shared-order-requests', [AdminOrderController::class, 'sharedOrderRequests'])->name('orders.shared-order-requests');
