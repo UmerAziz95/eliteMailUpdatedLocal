@@ -320,6 +320,34 @@ class EmailExportService
                         }
                     }
                     
+                    // Check if first name and last name are identical (and not empty)
+                    // This happens when prefix_variants_details returns same value for both
+                    if (!empty($firstName) && $firstName === $lastName) {
+                        // Try to split intelligently based on the prefix value
+                        $nameToSplit = $firstName;
+                        
+                        // If name contains a dot, split by dot
+                        if (strpos($nameToSplit, '.') !== false) {
+                            $parts = explode('.', $nameToSplit, 2);
+                            $firstName = ucfirst(str_replace('.', '', $parts[0]));
+                            $lastName = ucfirst(str_replace('.', '', $parts[1]));
+                        }
+                        // If name has camelCase or PascalCase (e.g., RyanLeavesley)
+                        elseif (preg_match('/^([a-z]+)([A-Z].*)$/', $nameToSplit, $matches)) {
+                            $firstName = ucfirst($matches[1]); // Ryan
+                            $lastName = $matches[2];           // Leavesley
+                        }
+                        // If it's a single word, keep it as is for both (fallback)
+                        else {
+                            // First name stays as is, last name gets a space or differentiation
+                            $lastName = $firstName;
+                        }
+                    }
+                    
+                    // Remove any remaining dots from names
+                    $firstName = str_replace('.', '', $firstName);
+                    $lastName = str_replace('.', '', $lastName);
+                    
                     $emailData[] = [
                         'first_name' => $firstName,
                         'last_name' => $lastName,
