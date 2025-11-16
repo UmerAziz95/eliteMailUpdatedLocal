@@ -207,10 +207,18 @@ class EmailExportService
                 if ($reorderInfo->prefix_variants) {
                     // Handle both string and array formats
                     if (is_string($reorderInfo->prefix_variants)) {
-                        $prefixVariants = explode(',', $reorderInfo->prefix_variants);
-                        $prefixVariants = array_map('trim', $prefixVariants);
+                        $decoded = json_decode($reorderInfo->prefix_variants, true);
+                        if (is_array($decoded)) {
+                            // It's a JSON object like {"prefix_variant_1": "Ryan", "prefix_variant_2": "RyanL"}
+                            $prefixVariants = array_values($decoded);
+                        } else {
+                            // It's a comma-separated string
+                            $prefixVariants = explode(',', $reorderInfo->prefix_variants);
+                            $prefixVariants = array_map('trim', $prefixVariants);
+                        }
                     } elseif (is_array($reorderInfo->prefix_variants)) {
-                        $prefixVariants = $reorderInfo->prefix_variants;
+                        // Already an array, extract values if it's associative
+                        $prefixVariants = array_values($reorderInfo->prefix_variants);
                     }
                 }
                 
@@ -265,21 +273,28 @@ class EmailExportService
                     $firstName = '';
                     $lastName = '';
                     
-                    // Try to get details from prefix_variants_details using the actual index
-                    // prefix_variants_details is typically indexed by 1, 2, 3... or by the prefix key
+                    // PRIORITY 1: Try to get details from prefix_variants_details database column
+                    // This contains the correct first_name and last_name for each prefix variant
                     $detailsFound = false;
                     
-                    // First try with 1-based index (only if index is numeric)
-                    if (is_numeric($index)) {
+                    // Try with "prefix_variant_X" key format (1-based)
+                    $variantKey = 'prefix_variant_' . ($index + 1);
+                    if (isset($prefixVariantDetails[$variantKey])) {
+                        $details = $prefixVariantDetails[$variantKey];
+                        $firstName = $details['first_name'] ?? '';
+                        $lastName = $details['last_name'] ?? '';
+                        $detailsFound = true;
+                    }
+                    
+                    // Try with numeric index (both 0-based and 1-based)
+                    if (!$detailsFound && is_numeric($index)) {
                         $onBasedIndex = (int)$index + 1;
                         if (isset($prefixVariantDetails[$onBasedIndex])) {
                             $details = $prefixVariantDetails[$onBasedIndex];
                             $firstName = $details['first_name'] ?? '';
                             $lastName = $details['last_name'] ?? '';
                             $detailsFound = true;
-                        }
-                        // Try with 0-based index
-                        elseif (isset($prefixVariantDetails[$index])) {
+                        } elseif (isset($prefixVariantDetails[$index])) {
                             $details = $prefixVariantDetails[$index];
                             $firstName = $details['first_name'] ?? '';
                             $lastName = $details['last_name'] ?? '';
@@ -295,52 +310,39 @@ class EmailExportService
                         $detailsFound = true;
                     }
                     
-                    // Try with counter-based index (1, 2, 3...)
-                    if (!$detailsFound) {
-                        $counterIndex = $counter + 1;
-                        if (isset($prefixVariantDetails[$counterIndex])) {
-                            $details = $prefixVariantDetails[$counterIndex];
-                            $firstName = $details['first_name'] ?? '';
-                            $lastName = $details['last_name'] ?? '';
-                            $detailsFound = true;
-                        }
-                    }
-                    
-                    // If no details found or details are empty, use the prefix intelligently
+                    // PRIORITY 2: If no database details found or values are empty, 
+                    // intelligently parse the prefix itself
                     if (!$detailsFound || (empty($firstName) && empty($lastName))) {
-                        // If prefix contains a dot (e.g., "mitsu.bee"), split it
+                        // If prefix contains a dot (e.g., "mitsu.bee"), split by dot
                         if (strpos($prefix, '.') !== false) {
                             $parts = explode('.', $prefix, 2);
-                            $firstName = ucfirst($parts[0]);
-                            $lastName = ucfirst($parts[1]);
-                        } else {
-                            // Use prefix as first name, capitalize it for last name
-                            $firstName = $prefix;
-                            $lastName = ucfirst($prefix);
-                        }
-                    }
-                    
-                    // Check if first name and last name are identical (and not empty)
-                    // This happens when prefix_variants_details returns same value for both
-                    if (!empty($firstName) && $firstName === $lastName) {
-                        // Try to split intelligently based on the prefix value
-                        $nameToSplit = $firstName;
-                        
-                        // If name contains a dot, split by dot
-                        if (strpos($nameToSplit, '.') !== false) {
-                            $parts = explode('.', $nameToSplit, 2);
                             $firstName = ucfirst(str_replace('.', '', $parts[0]));
                             $lastName = ucfirst(str_replace('.', '', $parts[1]));
                         }
-                        // If name has camelCase or PascalCase (e.g., RyanLeavesley)
-                        elseif (preg_match('/^([a-z]+)([A-Z].*)$/', $nameToSplit, $matches)) {
-                            $firstName = ucfirst($matches[1]); // Ryan
-                            $lastName = $matches[2];           // Leavesley
+                        // Try to find capital letter in the middle for compound names (e.g., RyanLeavesley -> Ryan, Leavesley)
+                        elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]+.*)$/', $prefix, $matches)) {
+                            $firstName = $matches[1]; // Ryan
+                            $lastName = $matches[2];  // Leavesley
                         }
-                        // If it's a single word, keep it as is for both (fallback)
+                        // If prefix has PascalCase short form (e.g., RyanL -> Ryan, L)
+                        elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]*)$/', $prefix, $matches)) {
+                            $firstName = $matches[1]; // Ryan
+                            $lastName = $matches[2] ?: $matches[1]; // L or Ryan if no second part
+                        }
+                        // If it starts with lowercase and has uppercase (e.g., ryanL)
+                        elseif (preg_match('/^([a-z]+)([A-Z].*)$/', $prefix, $matches)) {
+                            $firstName = ucfirst($matches[1]); // Ryan
+                            $lastName = $matches[2];           // L
+                        }
+                        // If it's a single word (no capitals in the middle), use it for both first and last
+                        elseif (preg_match('/^[A-Z][a-z]+$/', $prefix) || preg_match('/^[a-z]+$/', $prefix)) {
+                            $firstName = ucfirst($prefix);
+                            $lastName = ucfirst($prefix);
+                        }
+                        // Last resort: use prefix as is
                         else {
-                            // First name stays as is, last name gets a space or differentiation
-                            $lastName = $firstName;
+                            $firstName = $prefix;
+                            $lastName = $prefix;
                         }
                     }
                     
