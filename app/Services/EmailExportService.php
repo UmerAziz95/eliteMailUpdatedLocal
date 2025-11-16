@@ -257,23 +257,67 @@ class EmailExportService
 
             // Generate emails with prefixes
             $emailData = [];
+            $counter = 0;
             foreach ($domains as $domain) {
-                $counter = 0;
                 foreach ($prefixVariants as $index => $prefix) {
-                    $counter++;
-                    $variantNumber = is_numeric($index) ? ($index + 1) : $counter;
                     $emailAddress = $prefix . '@' . $domain;
                     
                     $firstName = '';
                     $lastName = '';
                     
-                    if (isset($prefixVariantDetails[$variantNumber])) {
-                        $details = $prefixVariantDetails[$variantNumber];
-                        $firstName = $details['first_name'] ?? $prefix;
-                        $lastName = $details['last_name'] ?? ucfirst($prefix);
-                    } else {
-                        $firstName = $prefix;
-                        $lastName = ucfirst($prefix);
+                    // Try to get details from prefix_variants_details using the actual index
+                    // prefix_variants_details is typically indexed by 1, 2, 3... or by the prefix key
+                    $detailsFound = false;
+                    
+                    // First try with 1-based index (only if index is numeric)
+                    if (is_numeric($index)) {
+                        $onBasedIndex = (int)$index + 1;
+                        if (isset($prefixVariantDetails[$onBasedIndex])) {
+                            $details = $prefixVariantDetails[$onBasedIndex];
+                            $firstName = $details['first_name'] ?? '';
+                            $lastName = $details['last_name'] ?? '';
+                            $detailsFound = true;
+                        }
+                        // Try with 0-based index
+                        elseif (isset($prefixVariantDetails[$index])) {
+                            $details = $prefixVariantDetails[$index];
+                            $firstName = $details['first_name'] ?? '';
+                            $lastName = $details['last_name'] ?? '';
+                            $detailsFound = true;
+                        }
+                    }
+                    
+                    // Try with the prefix itself as key
+                    if (!$detailsFound && isset($prefixVariantDetails[$prefix])) {
+                        $details = $prefixVariantDetails[$prefix];
+                        $firstName = $details['first_name'] ?? '';
+                        $lastName = $details['last_name'] ?? '';
+                        $detailsFound = true;
+                    }
+                    
+                    // Try with counter-based index (1, 2, 3...)
+                    if (!$detailsFound) {
+                        $counterIndex = $counter + 1;
+                        if (isset($prefixVariantDetails[$counterIndex])) {
+                            $details = $prefixVariantDetails[$counterIndex];
+                            $firstName = $details['first_name'] ?? '';
+                            $lastName = $details['last_name'] ?? '';
+                            $detailsFound = true;
+                        }
+                    }
+                    
+                    // If no details found or details are empty, use the prefix intelligently
+                    if (!$detailsFound || (empty($firstName) && empty($lastName))) {
+                        // If prefix contains a dot (e.g., "mitsu.bee"), split it
+                        if (strpos($prefix, '.') !== false) {
+                            $parts = explode('.', $prefix, 2);
+                            $firstName = ucfirst($parts[0]);
+                            $lastName = ucfirst($parts[1]);
+                        } else {
+                            // Use prefix as first name, capitalize it for last name
+                            $firstName = $prefix;
+                            $lastName = ucfirst($prefix);
+                        }
                     }
                     
                     $emailData[] = [
@@ -282,6 +326,8 @@ class EmailExportService
                         'email' => $emailAddress,
                         'password' => $this->customEncrypt($order->id),
                     ];
+                    
+                    $counter++;
                 }
             }
 
