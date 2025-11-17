@@ -16,7 +16,9 @@ class DatabaseSeeder extends Seeder
             UsersTableSeeder::class,
             SidebarNavigationSeeder::class,
             StatusesTableSeeder::class,
-            AssignRoleSeeder::class
+            AssignRoleSeeder::class,
+            ConfigurationSeeder::class,
+
         ]);
     }
 }
