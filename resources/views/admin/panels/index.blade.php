@@ -823,7 +823,7 @@
                 </button>
             </li>
         </ul>
-        
+        <div class="d-flex align-items-center">
         {{-- Provider Type Filter Dropdown --}}
         <select class="form-select form-select-sm me-2" id="providerTypeFilter" style="width: auto; min-width: 180px;"
                 onchange="filterByProviderType()">
@@ -838,6 +838,7 @@
             <i class="fa-solid fa-plus me-2"></i>
             Create New Panel
         </button>
+        </div>
     </div>
     <!-- Grid Cards (Dynamic) -->
     <div id="panelsContainer"
