@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::table('pool_panels', function (Blueprint $table) {
             $table->enum('provider_type', ['Google', 'Microsoft 365'])->default('Google')->after('created_by');
+            $table->unsignedInteger('pool_panel_sr_no')->nullable()->after('provider_type');
         });
     }
 
@@ -22,6 +23,7 @@ return new class extends Migration {
     {
         Schema::table('pool_panels', function (Blueprint $table) {
             $table->dropColumn('provider_type');
+            $table->dropColumn('pool_panel_sr_no');
         });
     }
 };
