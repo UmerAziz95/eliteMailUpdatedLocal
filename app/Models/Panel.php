@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Collection;
+use App\Models\Configuration;
 
 class Panel extends Model
 {
@@ -66,7 +67,7 @@ class Panel extends Model
      */
     public static function getNextSerialForProvider(?string $providerType): int
     {
-        $providerType = $providerType ?: 'Google';
+        $providerType = $providerType ?: Configuration::get('PROVIDER_TYPE', 'Google');
 
         $query = static::query();
 

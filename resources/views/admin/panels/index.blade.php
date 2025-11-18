@@ -483,18 +483,29 @@
                 <label for="panel_title">Panel title: <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="panel_title" name="panel_title" value="" required maxlength="255">
 
+                @php
+                    $providerOptions = $providerTypes ?? ['Google', 'Microsoft 365'];
+                    $selectedProviderType = $defaultProviderType ?? ($providerOptions[0] ?? null);
+                    $capacityMap = $providerCapacities ?? [];
+                    $selectedCapacity = $selectedProviderType && isset($capacityMap[$selectedProviderType])
+                        ? $capacityMap[$selectedProviderType]
+                        : env('PANEL_CAPACITY', 1790);
+                @endphp
                 <label for="provider_type" class="mt-3">Provider Type: <span class="text-danger">*</span></label>
                 <select class="form-control mb-3" id="provider_type" name="provider_type" required>
-                    <option value="" disabled>Select provider</option>
-                    <option value="Google" selected>Google</option>
-                    <option value="Microsoft 365">Microsoft 365</option>
+                    <option value="" disabled {{ $selectedProviderType ? '' : 'selected' }}>Select provider</option>
+                    @foreach($providerOptions as $provider)
+                        <option value="{{ $provider }}" {{ $selectedProviderType === $provider ? 'selected' : '' }}>
+                            {{ $provider }}
+                        </option>
+                    @endforeach
                 </select>
 
                 <label for="panel_description" class="mt-3">Panel Description:</label>
                 <input type="text" class="form-control mb-3" id="panel_description" name="panel_description" value="">
 
                 <label for="panel_limit">Limit: <span class="text-danger">*</span></label>
-                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 1790)}}" required min="1" readonly>
+                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{ $selectedCapacity }}" required min="1" readonly>
 
                 <label for="panel_status">Status:</label>
                 <select class="form-control mb-3" name="panel_status" id="panel_status" required>
@@ -925,8 +936,21 @@
 @push('scripts')
 <script>
     // Pass PHP values to JavaScript
-    const PANEL_CAPACITY = {{ env('PANEL_CAPACITY', 1790) }};
+    const PANEL_CAPACITY_FALLBACK = {{ env('PANEL_CAPACITY', 1790) }};
+    const DEFAULT_PROVIDER_TYPE = @json($selectedProviderType ?? 'Google');
+    const PROVIDER_OPTIONS = @json($providerOptions ?? ['Google', 'Microsoft 365']);
+    const PROVIDER_CAPACITIES = @json($capacityMap ?? []);
 
+
+    function getCapacityForProvider(providerType) {
+        if (providerType && Object.prototype.hasOwnProperty.call(PROVIDER_CAPACITIES, providerType)) {
+            const capacity = Number(PROVIDER_CAPACITIES[providerType]);
+            if (!Number.isNaN(capacity) && capacity > 0) {
+                return capacity;
+            }
+        }
+        return PANEL_CAPACITY_FALLBACK;
+    }
 
     document.getElementById("openSecondOffcanvasBtn").addEventListener("click", function () {
         const secondOffcanvasElement = document.getElementById("secondOffcanvas");
@@ -949,10 +973,13 @@
     function fetchNextPanelId(options = {}) {
         const { showOffcanvas = true, showLoader = true } = options;
         const providerTypeField = document.getElementById('provider_type');
-        const providerType = providerTypeField ? providerTypeField.value : 'Google';
+        const providerTypeValue = providerTypeField && providerTypeField.value
+            ? providerTypeField.value
+            : DEFAULT_PROVIDER_TYPE;
         const query = new URLSearchParams({
-            provider_type: providerType || 'Google',
+            provider_type: providerTypeValue || DEFAULT_PROVIDER_TYPE,
         });
+        const panelLimitInput = document.getElementById('panel_limit');
 
         if (showLoader) {
             // Show SweetAlert loading dialog only when requested
@@ -977,6 +1004,16 @@
             })
             .then(data => {
                 document.getElementById('panel_id').value = data.next_id || '';
+                const capacityFromResponse = data && typeof data.capacity !== 'undefined'
+                    ? Number(data.capacity)
+                    : null;
+
+                if (panelLimitInput) {
+                    const capacityToApply = capacityFromResponse && !Number.isNaN(capacityFromResponse)
+                        ? capacityFromResponse
+                        : getCapacityForProvider(providerTypeValue);
+                    panelLimitInput.value = capacityToApply;
+                }
 
                 if (showLoader) {
                     Swal.close();
@@ -991,6 +1028,9 @@
             })
             .catch((error) => {
                 document.getElementById('panel_id').value = '';
+                if (panelLimitInput) {
+                    panelLimitInput.value = getCapacityForProvider(providerTypeValue);
+                }
 
                 if (showLoader) {
                     Swal.close();
@@ -3099,7 +3139,9 @@ $('#submitPanelFormBtn').on('click', function(e) {
     // Validate provider type on create
     const providerTypeEl = $('#provider_type');
     const providerType = providerTypeEl.val();
-    const allowedProviders = ['Google', 'Microsoft 365'];
+    const allowedProviders = Array.isArray(PROVIDER_OPTIONS) && PROVIDER_OPTIONS.length
+        ? PROVIDER_OPTIONS
+        : ['Google', 'Microsoft 365'];
     const isUpdate = form.data('action') === 'update';
     if (!isUpdate) {
         if (!providerType || !allowedProviders.includes(providerType)) {
@@ -3739,10 +3781,10 @@ function resetPanelForm() {
     $('#panelForm').removeData('action');
     $('#panelFormOffcanvasLabel').text('Panel');
     $('#submitPanelFormBtn').text('Submit');
-    $('#panel_limit').val('{{env('PANEL_CAPACITY', 1790)}}'); // Reset to default
+    $('#panel_limit').val(getCapacityForProvider(DEFAULT_PROVIDER_TYPE)); // Reset to default
     // Reset provider type for new panel creation
     $('#provider_type').prop('disabled', false);
-    $('#provider_type').val('Google');
+    $('#provider_type').val(DEFAULT_PROVIDER_TYPE);
     
     // Clear any validation errors
     $('.form-control').removeClass('is-invalid');
@@ -3760,6 +3802,10 @@ $(document).ready(function() {
     const providerTypeSelect = document.getElementById('provider_type');
     if (providerTypeSelect) {
         providerTypeSelect.addEventListener('change', function() {
+            const limitInput = document.getElementById('panel_limit');
+            if (limitInput) {
+                limitInput.value = getCapacityForProvider(this.value);
+            }
             fetchNextPanelId({ showOffcanvas: false, showLoader: false });
         });
     }
