@@ -2018,64 +2018,57 @@ function openCreateForm() {
     resetForm();
     isEditMode = false;
     currentPoolPanelId = null;
-
     $('#poolPanelFormOffcanvasLabel').text('Create Pool Panel');
     $('#submitPoolPanelFormBtn').text('Create Pool Panel');
-    $('#poolPanelIdContainer').show();
-    $('#pool_panel_id').val('Loading next ID...');
-
-    // loader
+    $('#poolPanelIdContainer').show(); // Show ID container for create mode too
+    
+    // Show Swal loader for fetching next ID
     Swal.fire({
         title: 'Preparing Form...',
         text: 'Fetching next Pool Panel ID...',
         allowOutsideClick: false,
         allowEscapeKey: false,
         showConfirmButton: false,
-        didOpen: () => Swal.showLoading()
+        didOpen: () => {
+            Swal.showLoading();
+        }
     });
-
-    fetchNextId(); // 🔥 Reusable function
-}
-
-function fetchNextId() {
-    const provider = $('#provider_type').val();
-
+    
+    // Show loading state for ID field
+    $('#pool_panel_id').val('Loading next ID...');
+    
+    // Fetch next pool panel ID from server
     $.ajax({
-        url: '{{ route("admin.pool-panels.next-id") }}',
+        url: '{{ route("admin.pool-panels.index") }}?next_id=1',
         method: 'GET',
-        data: {
-            provider: provider // send provider to backend if required
-        },
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
             'Accept': 'application/json'
         },
-        success: function (response) {
+        success: function(response) {
             $('#pool_panel_id').val(response.next_id);
-            $('#poolPanelIdHint').text('ID generated based on provider: ' + provider);
-
+            $('#poolPanelIdHint').text('This ID will be automatically assigned to your new pool panel');
+            
+            // Close Swal loader
             Swal.close();
         },
-        error: function () {
+        error: function(xhr) {
+            console.error('Failed to fetch next pool panel ID:', xhr);
+            // Show error message
             $('#pool_panel_id').val('Error loading ID');
-            $('#poolPanelIdHint').text('ID will be generated during creation');
-
+            $('#poolPanelIdHint').text('ID will be generated when creating the pool panel');
+            
+            // Show Swal warning (this will replace the loading dialog)
             Swal.fire({
                 icon: 'warning',
-                title: 'Unable to fetch ID',
-                timer: 2000,
+                title: 'ID Generation Warning',
+                text: 'Could not fetch next Pool Panel ID. A new ID will be generated when you create the panel.',
+                timer: 3000,
                 showConfirmButton: false
             });
         }
     });
 }
-
-$('#provider_type').on('change', function () {
-    if (!isEditMode) { 
-        $('#pool_panel_id').val('Updating...');
-        fetchNextId();
-    }
-});
 
 function openEditForm(id) {
     // Show Swal loader for loading edit data
