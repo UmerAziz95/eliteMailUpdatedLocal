@@ -840,17 +840,46 @@
         </button>
         </div>
     </div>
-    <!-- Grid Cards (Dynamic) -->
-    <div id="panelsContainer"
-        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
-        <!-- Loading state -->
-        <div id="loadingState"
-            style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-2 mb-0">Loading panels...</p>
+
+    <!-- Loading state -->
+    <div id="loadingState"
+        style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
+        <p class="mt-2 mb-0">Loading panels...</p>
+    </div>
+
+    <!-- Google Panels Section -->
+    <div id="googlePanelsSection" style="display: none;">
+        <div class="d-flex align-items-center mb-3">
+            <i class="fab fa-google me-2 text-danger" style="font-size: 1.5rem;"></i>
+            <h5 class="mb-0">Google Panels</h5>
+            <span class="badge bg-primary ms-2" id="googlePanelsCount">0</span>
+        </div>
+        <div id="googlePanelsContainer"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        </div>
+    </div>
+
+    <!-- Microsoft 365 Panels Section -->
+    <div id="microsoftPanelsSection" style="display: none;">
+        <div class="d-flex align-items-center mb-3">
+            <i class="fab fa-microsoft me-2 text-info" style="font-size: 1.5rem;"></i>
+            <h5 class="mb-0">Microsoft 365 Panels</h5>
+            <span class="badge bg-primary ms-2" id="microsoftPanelsCount">0</span>
+        </div>
+        <div id="microsoftPanelsContainer"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
+        </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" style="display: none; text-align: center; padding: 3rem 0; min-height: 300px;">
+        <i class="fas fa-inbox text-muted mb-3" style="font-size: 3rem;"></i>
+        <h5>No Panels Found</h5>
+        <p class="mb-3">No panels match your current filters.</p>
+        <button class="btn btn-outline-primary" onclick="resetFilters()">Clear Filters</button>
     </div>
 
 
@@ -976,7 +1005,6 @@
         return `
             <span class="badge ${config.className} ms-2 d-inline-flex align-items-center gap-1">
                 <i class="${config.icon}"></i>
-                ${providerType}
             </span>
         `;
     }
@@ -1477,57 +1505,71 @@
                 hideLoading();
             }
             
-            const container = document.getElementById('panelsContainer');
-            if (!container) {
-                console.error('panelsContainer element not found');
+            const googleContainer = document.getElementById('googlePanelsContainer');
+            const microsoftContainer = document.getElementById('microsoftPanelsContainer');
+            const googleSection = document.getElementById('googlePanelsSection');
+            const microsoftSection = document.getElementById('microsoftPanelsSection');
+            const emptyState = document.getElementById('emptyState');
+            const googleCountBadge = document.getElementById('googlePanelsCount');
+            const microsoftCountBadge = document.getElementById('microsoftPanelsCount');
+            
+            if (!googleContainer || !microsoftContainer) {
+                console.error('Panel containers not found');
                 return;
             }
               
             if (panels.length === 0 && !append) {
-                // Keep grid layout but show empty state spanning full width
-                container.style.display = 'grid';
-                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
-                container.style.gap = '1rem';
-                
-                container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-                        <i class="fas fa-inbox text-muted mb-3" style="font-size: 3rem;"></i>
-                        <h5>No Panels Found</h5>
-                        <p class="mb-3">No panels match your current filters.</p>
-                        <button class="btn btn-outline-primary" onclick="resetFilters()">Clear Filters</button>
-                    </div>
-                `;
+                // Show empty state
+                googleSection.style.display = 'none';
+                microsoftSection.style.display = 'none';
+                emptyState.style.display = 'block';
                 return;
             }
             
-            // Reset container to grid layout for panels
-            container.style.display = 'grid';
-            container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
-            container.style.gap = '1rem';
+            // Hide empty state
+            emptyState.style.display = 'none';
+            
+            // Separate panels by provider type
+            const googlePanels = panels.filter(p => p.provider_type === 'Google');
+            const microsoftPanels = panels.filter(p => p.provider_type === 'Microsoft 365');
 
             if (append) {
-                // Only add new panels for pagination
-                const currentPanelsCount = container.children.length;
-                const newPanels = panels.slice(currentPanelsCount);
-                const newPanelsHtml = newPanels.map(panel => createPanelCard(panel)).join('');
-                container.insertAdjacentHTML('beforeend', newPanelsHtml);
+                // For pagination, append to respective containers
+                const googleHtml = googlePanels.map(panel => createPanelCard(panel)).join('');
+                const microsoftHtml = microsoftPanels.map(panel => createPanelCard(panel)).join('');
                 
-                // Initialize charts for new panels only
+                if (googleHtml) googleContainer.insertAdjacentHTML('beforeend', googleHtml);
+                if (microsoftHtml) microsoftContainer.insertAdjacentHTML('beforeend', microsoftHtml);
+                
+                // Initialize charts for new panels
                 setTimeout(() => {
-                    newPanels.forEach(panel => {
+                    [...googlePanels, ...microsoftPanels].forEach(panel => {
                         initChart(panel);
                     });
                 }, 100);
             } else {
-                // Replace all content for new search
-                const panelsHtml = panels.map(panel => createPanelCard(panel)).join('');
-                container.innerHTML = panelsHtml;
+                // Replace all content
+                const googleHtml = googlePanels.map(panel => createPanelCard(panel)).join('');
+                const microsoftHtml = microsoftPanels.map(panel => createPanelCard(panel)).join('');
+                
+                googleContainer.innerHTML = googleHtml;
+                microsoftContainer.innerHTML = microsoftHtml;
+                
+                // Show/hide sections based on content
+                googleSection.style.display = googlePanels.length > 0 ? 'block' : 'none';
+                microsoftSection.style.display = microsoftPanels.length > 0 ? 'block' : 'none';
+                
+                // Update count badges
+                if (googleCountBadge) googleCountBadge.textContent = googlePanels.length;
+                if (microsoftCountBadge) microsoftCountBadge.textContent = microsoftPanels.length;
                 
                 // Initialize charts after DOM is updated
                 setTimeout(() => {
                     panels.forEach(panel => {
                         initChart(panel);
                     });
-                }, 100);            }
+                }, 100);
+            }
         }
 
         // Update pagination info display
@@ -1661,7 +1703,7 @@
                 <div class="card p-3 d-flex flex-column gap-1" style="${archivedStyle}">                    
                     <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
                         <div class="d-flex align-items-center gap-2">
-                            <small class="mb-0 opacity-75">${'PNL-' + panel.id || panel.auto_generated_id}</small>
+                            <small class="mb-0 opacity-75">${'PNL-' + panel.panel_sr_no || panel.id || panel.auto_generated_id}</small>
                             ${providerLabel}
                         </div>
                         <h6>Title: ${panel.title || 'N/A'} ${!panel.is_active ? '<span class="badge bg-secondary ms-2">Archived</span>' : ''}</h6>

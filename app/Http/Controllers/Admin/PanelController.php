@@ -148,6 +148,7 @@ class PanelController extends Controller
                     'provider_type' => $panel->provider_type,
                     'limit' => $panel->limit,
                     'used' => $used,
+                    'panel_sr_no' => $panel->panel_sr_no,
                     'remaining_limit' => $panel->remaining_limit,
                     'is_active' => $panel->is_active,
                     'created_by' => $panel->created_by,
