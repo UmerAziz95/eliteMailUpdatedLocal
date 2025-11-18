@@ -824,6 +824,14 @@
             </li>
         </ul>
         
+        {{-- Provider Type Filter Dropdown --}}
+        <select class="form-select form-select-sm me-2" id="providerTypeFilter" style="width: auto; min-width: 180px;"
+                onchange="filterByProviderType()">
+            <option value="all">All Providers</option>
+            <option value="Google">Google</option>
+            <option value="Microsoft 365">Microsoft 365</option>
+        </select>
+        
         {{-- create panel button --}}
         <button type="button" class="btn btn-primary btn-sm border-0 px-3" 
                 onclick="createNewPanel()">
@@ -989,6 +997,25 @@
     // document.getElementById('panelFormOffcanvas').addEventListener('shown.bs.offcanvas', function () {
         
     // });
+
+    // Filter panels by provider type
+    function filterByProviderType() {
+        const selectedProvider = document.getElementById('providerTypeFilter').value;
+        
+        // Store the current filter
+        window.currentProviderFilter = selectedProvider;
+        
+        // Add provider type filter to current filters
+        if (selectedProvider !== 'all') {
+            currentFilters.provider_type = selectedProvider;
+        } else {
+            delete currentFilters.provider_type;
+        }
+        
+        // Reset pagination and reload panels
+        currentPage = 1;
+        loadPanels(currentFilters, 1, false);
+    }
 
     function fetchNextPanelId(options = {}) {
         const { showOffcanvas = true, showLoader = true } = options;
@@ -1192,8 +1219,16 @@
         try {
             console.log('Fetching panel counters...');
             
+            // Get current provider filter
+            const providerFilter = document.getElementById('providerTypeFilter')?.value || 'all';
+            const params = new URLSearchParams();
+            if (providerFilter && providerFilter !== 'all') {
+                params.append('provider_type', providerFilter);
+            }
+            
             // Fetch comprehensive panel statistics from server
-            const response = await fetch('/admin/panels/statistics', {
+            const url = `/admin/panels/statistics${params.toString() ? '?' + params.toString() : ''}`;
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -1297,6 +1332,7 @@
         let hasMorePages = false;
         let totalPanels = 0;
         let isLoading = false;
+        let currentTab = 'active'; // Track current tab (active or archived)
 
         // Load panels data
         async function loadPanels(filters = {}, page = 1, append = false) {
@@ -1319,8 +1355,16 @@
                 const params = new URLSearchParams({
                     ...filters,
                     page: page,
-                    per_page: 12
+                    per_page: 12,
+                    is_active: currentTab === 'active' ? 1 : 0
                 });
+                
+                // Add provider type filter if set
+                const providerFilter = document.getElementById('providerTypeFilter')?.value;
+                if (providerFilter && providerFilter !== 'all') {
+                    params.append('provider_type', providerFilter);
+                }
+                
                 const url = `/admin/panels/data?${params}`;
                
                 
@@ -3766,6 +3810,9 @@ function switchTab(tab) {
     // Clear existing panels and show loading state immediately
     panels = [];
     showLoading();
+    
+    // Update current tab
+    currentTab = tab;
     
     // Update current filters based on tab
     if (tab === 'active') {
