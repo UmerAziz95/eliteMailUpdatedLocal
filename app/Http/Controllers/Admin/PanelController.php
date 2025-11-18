@@ -20,10 +20,25 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 class PanelController extends Controller
 {
     // getNextId
-    public function getNextId()
+    public function getNextId(Request $request)
     {
-        $nextId = Panel::getNextAvailableId();
-        return response()->json(['next_id' => 'PNL-' . $nextId]);
+        $providerType = $request->query('provider_type', 'Google');
+        $allowedProviders = ['Google', 'Microsoft 365'];
+
+        if (!in_array($providerType, $allowedProviders, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid provider type selected.',
+            ], 422);
+        }
+
+        $nextSerial = Panel::getNextSerialForProvider($providerType);
+
+        return response()->json([
+            'next_id' => 'PNL-' . $nextSerial,
+            'panel_sr_no' => $nextSerial,
+            'provider_type' => $providerType,
+        ]);
     }
     public function index(Request $request)
     {

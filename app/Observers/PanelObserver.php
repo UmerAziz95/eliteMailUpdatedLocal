@@ -25,11 +25,7 @@ class PanelObserver
         if (!empty($panel->provider_type) && empty($panel->panel_sr_no)) {
             try {
                 // Find current max serial for this provider_type and increment
-                $max = Panel::query()
-                    ->where('provider_type', $panel->provider_type)
-                    ->max('panel_sr_no');
-
-                $panel->panel_sr_no = ((int) $max) + 1;
+                $panel->panel_sr_no = Panel::getNextSerialForProvider($panel->provider_type);
             } catch (\Throwable $e) {
                 Log::error('PanelObserver: Failed assigning panel_sr_no', [
                     'provider_type' => $panel->provider_type,

@@ -476,7 +476,6 @@
             </div>
             
             <form id="panelForm" class="">
-
                 <div class="mb-3" id="nextPanelIdContainer">
                     <label for="panel_id">Panel ID:</label>
                     <input type="text" class="form-control" id="panel_id" name="panel_id" value="" readonly>
@@ -947,38 +946,63 @@
         
     // });
 
-    function fetchNextPanelId() {
-        // Show SweetAlert loading dialog
-        Swal.fire({
-            title: 'Fetching Panel ID',
-            text: 'Please wait...',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
+    function fetchNextPanelId(options = {}) {
+        const { showOffcanvas = true, showLoader = true } = options;
+        const providerTypeField = document.getElementById('provider_type');
+        const providerType = providerTypeField ? providerTypeField.value : 'Google';
+        const query = new URLSearchParams({
+            provider_type: providerType || 'Google',
         });
 
-        fetch('/admin/panels/next-id')
-            .then(response => response.json())
+        if (showLoader) {
+            // Show SweetAlert loading dialog only when requested
+            Swal.fire({
+                title: 'Fetching Panel ID',
+                text: 'Please wait...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
+
+        fetch(`/admin/panels/next-id?${query.toString()}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch next panel ID.');
+                }
+                return response.json();
+            })
             .then(data => {
                 document.getElementById('panel_id').value = data.next_id || '';
-                Swal.close();
-                // Show the offcanvas (no need to wait for fetchNextPanelId, since it sets the value asynchronously)
-                const offcanvasElement = document.getElementById('panelFormOffcanvas');
-                const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
-                offcanvas.show();
+
+                if (showLoader) {
+                    Swal.close();
+                }
+
+                if (showOffcanvas) {
+                    // Show the offcanvas (no need to wait for fetchNextPanelId, since it sets the value asynchronously)
+                    const offcanvasElement = document.getElementById('panelFormOffcanvas');
+                    const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+                    offcanvas.show();
+                }
             })
-            .catch(() => {
+            .catch((error) => {
                 document.getElementById('panel_id').value = '';
-                Swal.close();
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Failed to fetch next panel ID.',
-                    confirmButtonText: 'OK'
-                });
+
+                if (showLoader) {
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to fetch next panel ID.',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    console.error(error);
+                }
             });
     }
 
@@ -3732,6 +3756,13 @@ function resetPanelForm() {
 $(document).ready(function() {
     // Load initial panels
     // loadPanels();
+
+    const providerTypeSelect = document.getElementById('provider_type');
+    if (providerTypeSelect) {
+        providerTypeSelect.addEventListener('change', function() {
+            fetchNextPanelId({ showOffcanvas: false, showLoader: false });
+        });
+    }
     
     // Reset form when offcanvas is hidden
     $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {

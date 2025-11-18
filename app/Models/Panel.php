@@ -61,6 +61,26 @@ class Panel extends Model
         return $candidate;
     }
 
+    /**
+     * Determine the next sequential panel_sr_no for the given provider.
+     */
+    public static function getNextSerialForProvider(?string $providerType): int
+    {
+        $providerType = $providerType ?: 'Google';
+
+        $query = static::query();
+
+        if ($providerType !== null) {
+            $query->where('provider_type', $providerType);
+        } else {
+            $query->whereNull('provider_type');
+        }
+
+        $maxSerial = $query->max('panel_sr_no');
+
+        return ((int) $maxSerial) + 1;
+    }
+
     public function order_panels()
     {
         return $this->hasMany(OrderPanel::class);
