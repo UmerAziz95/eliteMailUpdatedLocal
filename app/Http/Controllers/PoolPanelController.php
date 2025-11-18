@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use DataTables;
 
@@ -15,9 +16,12 @@ use DataTables;
 use App\Models\PoolPanel;
 use App\Models\Pool;
 use App\Models\PoolPanelSplit;
+use App\Models\Configuration;
 
 class PoolPanelController extends Controller
 {
+    private const PROVIDER_TYPES = ['Google', 'Microsoft 365'];
+
     /**
      * Display a listing of the resource.
      */
@@ -77,6 +81,28 @@ class PoolPanelController extends Controller
         }
 
         return view('admin.pool_panels.index');
+    }
+
+    public function getNextId()
+    {
+        $nextId = 'PPN-' . PoolPanel::getNextAvailableId();
+
+        return response()->json(['next_id' => $nextId]);
+    }
+
+    public function getProviderLimit(Request $request)
+    {
+        $validated = $request->validate([
+            'provider' => ['nullable', 'string', Rule::in(self::PROVIDER_TYPES)],
+        ]);
+
+        $provider = $validated['provider'] ?? self::PROVIDER_TYPES[0];
+        $limit = $this->getCapacityForProvider($provider);
+
+        return response()->json([
+            'provider' => $provider,
+            'limit' => $limit,
+        ]);
     }
 
     /**
@@ -214,15 +240,18 @@ class PoolPanelController extends Controller
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'is_active' => 'boolean',
+                'provider_type' => ['required', 'string', Rule::in(self::PROVIDER_TYPES)],
             ]);
 
             // Generate auto_generated_id
             $data['auto_generated_id'] = $this->generatePoolPanelId();
-            
-            // Set default values for limit fields (since we removed them from form)
-            $data['limit'] = env('PANEL_CAPACITY', 1790);
-            $data['remaining_limit'] = env('PANEL_CAPACITY', 1790);
+
+            // Set default values for limit fields based on provider
+            $capacity = $this->getCapacityForProvider($data['provider_type']);
+            $data['limit'] = $capacity;
+            $data['remaining_limit'] = $capacity;
             $data['used_limit'] = 0;
+            $data['is_active'] = isset($data['is_active']) ? (bool) $data['is_active'] : true;
 
             // Set creator
             $data['created_by'] = Auth::id();
@@ -304,10 +333,17 @@ class PoolPanelController extends Controller
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'is_active' => 'boolean',
+                'provider_type' => ['required', 'string', Rule::in(self::PROVIDER_TYPES)],
             ]);
 
             // Set updater
             $data['updated_by'] = Auth::id();
+            $data['is_active'] = isset($data['is_active']) ? (bool) $data['is_active'] : $poolPanel->is_active;
+
+            $capacity = $this->getCapacityForProvider($data['provider_type']);
+            $usedLimit = $poolPanel->used_limit ?? 0;
+            $data['limit'] = $capacity;
+            $data['remaining_limit'] = max($capacity - $usedLimit, 0);
 
             $poolPanel->update($data);
 
@@ -739,6 +775,17 @@ class PoolPanelController extends Controller
         ]);
         
         return $totalSpace;
+    }
+
+    private function getCapacityForProvider(?string $providerType): int
+    {
+        $defaultCapacity = (int) env('PANEL_CAPACITY', 1790);
+
+        return match ($providerType) {
+            'Microsoft 365' => (int) Configuration::get('MICROSOFT_365_CAPACITY', 300),
+            'Google' => (int) Configuration::get('GOOGLE_PANEL_CAPACITY', $defaultCapacity),
+            default => $defaultCapacity,
+        };
     }
 
     /**

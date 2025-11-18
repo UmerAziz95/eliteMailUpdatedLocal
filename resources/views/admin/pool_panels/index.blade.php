@@ -629,6 +629,74 @@ let isLoading = false;
 let currentFilters = {};
 let poolPanels = [];
 let charts = {}; // Store chart instances
+const poolPanelRoutes = {
+    nextId: '{{ route('admin.pool-panels.next-id') }}',
+    providerLimit: '{{ route('admin.pool-panels.provider-limit') }}'
+};
+const DEFAULT_POOL_PANEL_LIMIT = @json((int) env('PANEL_CAPACITY', 1790));
+const providerLimitCache = {};
+
+function fetchPoolPanelNextId() {
+    return $.ajax({
+        url: poolPanelRoutes.nextId,
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    });
+}
+
+function fetchAndApplyProviderLimit(providerType, options = {}) {
+    const { preserveExistingValue = false } = options;
+    const limitInput = $('#panel_limit');
+    const deferred = $.Deferred();
+
+    const applyLimitValue = (value) => {
+        const numericValue = Number(value);
+        const finalValue = Number.isFinite(numericValue) && numericValue > 0 ? numericValue : DEFAULT_POOL_PANEL_LIMIT;
+        if (!preserveExistingValue || !limitInput.val()) {
+            limitInput.val(finalValue);
+        }
+        limitInput.attr('placeholder', '');
+        deferred.resolve(finalValue);
+    };
+
+    if (!providerType) {
+        applyLimitValue(DEFAULT_POOL_PANEL_LIMIT);
+        return deferred.promise();
+    }
+
+    if (providerLimitCache[providerType]) {
+        applyLimitValue(providerLimitCache[providerType]);
+        return deferred.promise();
+    }
+
+    limitInput.attr('placeholder', 'Fetching limit...');
+
+    $.ajax({
+        url: poolPanelRoutes.providerLimit,
+        method: 'GET',
+        data: { provider: providerType },
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+        .done(function(response) {
+            const limit = response?.limit;
+            providerLimitCache[providerType] = limit;
+            applyLimitValue(limit);
+        })
+        .fail(function(xhr) {
+            console.error('Failed to fetch provider limit:', xhr);
+            limitInput.attr('placeholder', '');
+            if (!preserveExistingValue) {
+                limitInput.val(DEFAULT_POOL_PANEL_LIMIT);
+            }
+            deferred.reject(xhr);
+        });
+
+    return deferred.promise();
+}
 
 $(document).ready(function() {
     // Set initial filter to show only active pool panels
@@ -809,6 +877,11 @@ $(document).ready(function() {
         if (!isLoading && hasMorePages) {
             loadPoolPanels(false);
         }
+    });
+
+    $('#provider_type').on('change', function() {
+        const providerType = $(this).val();
+        fetchAndApplyProviderLimit(providerType, { preserveExistingValue: false });
     });
 });
 
@@ -2021,7 +2094,11 @@ function openCreateForm() {
     $('#poolPanelFormOffcanvasLabel').text('Create Pool Panel');
     $('#submitPoolPanelFormBtn').text('Create Pool Panel');
     $('#poolPanelIdContainer').show(); // Show ID container for create mode too
-    
+    $('#provider_type').prop('disabled', false);
+
+    const providerType = $('#provider_type').val() || 'Google';
+    fetchAndApplyProviderLimit(providerType, { preserveExistingValue: false });
+
     // Show Swal loader for fetching next ID
     Swal.fire({
         title: 'Preparing Form...',
@@ -2033,32 +2110,28 @@ function openCreateForm() {
             Swal.showLoading();
         }
     });
-    
+
     // Show loading state for ID field
     $('#pool_panel_id').val('Loading next ID...');
-    
+
     // Fetch next pool panel ID from server
-    $.ajax({
-        url: '{{ route("admin.pool-panels.index") }}?next_id=1',
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        },
-        success: function(response) {
+    fetchPoolPanelNextId()
+        .done(function(response) {
             $('#pool_panel_id').val(response.next_id);
             $('#poolPanelIdHint').text('This ID will be automatically assigned to your new pool panel');
-            
-            // Close Swal loader
-            Swal.close();
-        },
-        error: function(xhr) {
+            if (Swal.isVisible()) {
+                Swal.close();
+            }
+        })
+        .fail(function(xhr) {
             console.error('Failed to fetch next pool panel ID:', xhr);
-            // Show error message
             $('#pool_panel_id').val('Error loading ID');
             $('#poolPanelIdHint').text('ID will be generated when creating the pool panel');
-            
-            // Show Swal warning (this will replace the loading dialog)
+
+            if (Swal.isVisible()) {
+                Swal.close();
+            }
+
             Swal.fire({
                 icon: 'warning',
                 title: 'ID Generation Warning',
@@ -2066,8 +2139,7 @@ function openCreateForm() {
                 timer: 3000,
                 showConfirmButton: false
             });
-        }
-    });
+        });
 }
 
 function openEditForm(id) {
@@ -2091,13 +2163,18 @@ function openEditForm(id) {
         },
         success: function(response) {
             const poolPanel = response.poolPanel;
-            
+
             // Populate form
             $('#pool_panel_id').val(poolPanel.auto_generated_id);
             $('#pool_panel_title').val(poolPanel.title);
             $('#pool_panel_description').val(poolPanel.description);
+            const providerType = poolPanel.provider_type || 'Google';
+            $('#provider_type').val(providerType);
+            providerLimitCache[providerType] = poolPanel.limit;
             $('#pool_panel_status').val(poolPanel.is_active ? '1' : '0');
-            
+            $('#panel_limit').val(poolPanel.limit);
+            $('#panel_limit').attr('placeholder', '');
+
             // Set edit mode
             isEditMode = true;
             currentPoolPanelId = id;
@@ -2473,11 +2550,14 @@ function refreshPoolPanelCapacityAlert() {
 function resetForm() {
     $('#poolPanelForm')[0].reset();
     $('#pool_panel_status').val('1');
-    
+    $('#provider_type').val('Google');
+    $('#panel_limit').val(DEFAULT_POOL_PANEL_LIMIT);
+    $('#panel_limit').attr('placeholder', '');
+
     // Reset ID label and hint for create mode
     $('#poolPanelIdLabel').text('Next Pool Panel ID:');
     $('#poolPanelIdHint').text('This ID will be automatically generated');
-    
+
     // Clear validation errors
     $('.is-invalid').removeClass('is-invalid');
     $('.invalid-feedback').remove();
