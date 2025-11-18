@@ -855,7 +855,7 @@
         <div class="d-flex align-items-center mb-3">
             <i class="fab fa-google me-2 text-danger" style="font-size: 1.5rem;"></i>
             <h5 class="mb-0">Google Panels</h5>
-            <span class="badge bg-primary ms-2" id="googlePanelsCount">0</span>
+            <span class="badge bg-primary ms-2 d-none" id="googlePanelsCount">0</span>
         </div>
         <div id="googlePanelsContainer"
             style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
@@ -867,7 +867,7 @@
         <div class="d-flex align-items-center mb-3">
             <i class="fab fa-microsoft me-2 text-info" style="font-size: 1.5rem;"></i>
             <h5 class="mb-0">Microsoft 365 Panels</h5>
-            <span class="badge bg-primary ms-2" id="microsoftPanelsCount">0</span>
+            <span class="badge bg-primary ms-2 d-none" id="microsoftPanelsCount">0</span>
         </div>
         <div id="microsoftPanelsContainer"
             style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
