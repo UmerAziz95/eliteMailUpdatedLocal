@@ -17,14 +17,20 @@ use App\Models\OrderTracking;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Models\Configuration;
+use Illuminate\Validation\Rule;
 
 class PanelController extends Controller
 {
     // getNextId
     public function getNextId(Request $request)
     {
-        $providerType = $request->query('provider_type', 'Google');
-        $allowedProviders = ['Google', 'Microsoft 365'];
+        $allowedProviders = Configuration::getProviderTypes();
+        if (empty($allowedProviders)) {
+            $allowedProviders = ['Google', 'Microsoft 365', 'Private SMTP'];
+        }
+
+        $defaultProviderType = Configuration::get('PROVIDER_TYPE', $allowedProviders[0] ?? 'Google');
+        $providerType = $request->query('provider_type', $defaultProviderType);
 
         if (!in_array($providerType, $allowedProviders, true)) {
             return response()->json([
@@ -34,11 +40,13 @@ class PanelController extends Controller
         }
 
         $nextSerial = Panel::getNextSerialForProvider($providerType);
+        $capacity = $this->getProviderCapacity($providerType);
 
         return response()->json([
             'next_id' => 'PNL-' . $nextSerial,
             'panel_sr_no' => $nextSerial,
             'provider_type' => $providerType,
+            'capacity' => $capacity,
         ]);
     }
     public function index(Request $request)
@@ -47,8 +55,29 @@ class PanelController extends Controller
             return $this->getPanelsData($request);
         } 
 
-        $defaultProviderType = Configuration::get('PROVIDER_TYPE', 'Google');
-        return view('admin.panels.index', compact('defaultProviderType'));
+        $configuredProviderTypes = Configuration::getProviderTypes();
+        if (empty($configuredProviderTypes)) {
+            $configuredProviderTypes = ['Google', 'Microsoft 365', 'Private SMTP'];
+        }
+
+        $providerTypes = array_values(array_filter($configuredProviderTypes, function ($type) {
+            return $type !== 'Private SMTP';
+        }));
+        if (empty($providerTypes)) {
+            $providerTypes = ['Google', 'Microsoft 365'];
+        }
+
+        $defaultProviderType = Configuration::get('PROVIDER_TYPE', $configuredProviderTypes[0] ?? 'Google');
+        if (!in_array($defaultProviderType, $providerTypes, true)) {
+            $defaultProviderType = $providerTypes[0];
+        }
+
+        $providerCapacities = [];
+        foreach ($providerTypes as $provider) {
+            $providerCapacities[$provider] = $this->getProviderCapacity($provider);
+        }
+
+        return view('admin.panels.index', compact('defaultProviderType', 'providerTypes', 'providerCapacities'));
     }    
     
     public function getPanelsData(Request $request)
@@ -398,6 +427,11 @@ class PanelController extends Controller
     public function createPanel(Request $request)
     {
         try {
+            $providerTypes = Configuration::getProviderTypes();
+            if (empty($providerTypes)) {
+                $providerTypes = ['Google', 'Microsoft 365', 'Private SMTP'];
+            }
+
             $data = $request->validate([
                 'panel_title' => [
                     'required',
@@ -409,7 +443,11 @@ class PanelController extends Controller
                 'panel_status' => 'in:0,1',
                 'panel_limit' => 'required|integer|min:1',
                 // Accept provider type from the form; this will drive panel_sr_no via the Observer
-                'provider_type' => 'required|string|in:Google,Microsoft 365',
+                'provider_type' => [
+                    'required',
+                    'string',
+                    Rule::in($providerTypes),
+                ],
             ]);
 
             $panel = Panel::create([
@@ -453,6 +491,18 @@ class PanelController extends Controller
                 'message' => 'Failed to create panel: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function getProviderCapacity(?string $providerType): int
+    {
+        $fallback = (int) env('PANEL_CAPACITY', 1790);
+
+        $key = match ($providerType) {
+            'Microsoft 365' => 'MICROSOFT_365_CAPACITY',
+            default => 'GOOGLE_PANEL_CAPACITY',
+        };
+
+        return (int) Configuration::get($key, $fallback);
     }
 
     /**
