@@ -148,6 +148,11 @@ class PoolPanelController extends Controller
                 $query->where('is_active', (int) $request->status);
             }
 
+            // Add provider type filter
+            if ($request->filled('provider_type') && $request->provider_type !== 'all') {
+                $query->where('provider_type', $request->provider_type);
+            }
+
             $orderDirection = strtolower($request->get('order', 'desc'));
             if (! in_array($orderDirection, ['asc', 'desc'], true)) {
                 $orderDirection = 'desc';
@@ -183,6 +188,7 @@ class PoolPanelController extends Controller
                     'auto_generated_id' => $panel->auto_generated_id ?? ('PPN-' . $panel->id),
                     'title' => $panel->title,
                     'description' => $panel->description,
+                    'provider_type' => $panel->provider_type,
                     'limit' => $panel->limit,
                     'remaining_limit' => $panel->remaining_limit,
                     'used_limit' => $panel->used_limit,
@@ -255,11 +261,13 @@ class PoolPanelController extends Controller
             $data = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
+                'provider_type' => 'required|string',
                 'is_active' => 'boolean',
             ]);
 
             // Generate auto_generated_id
             $data['auto_generated_id'] = $this->generatePoolPanelId();
+            $data['provider_type'] = $request->provider_type;
             
             // Set default values for limit fields (since we removed them from form)
             $data['limit'] = $request->panel_limit;
