@@ -694,6 +694,28 @@
     // Panel Configuration Edit Functions
     let currentConfigKey = '';
     let currentConfigType = '';
+    let isSelectInputMode = false;
+
+    function getConfigBadgeHtml(key, type, value) {
+        if (type === 'boolean') {
+            const badgeClass = value === 'true' ? 'bg-label-success' : 'bg-label-danger';
+            return `<span class="badge ${badgeClass}">${value}</span>`;
+        }
+
+        if (key === 'PROVIDER_TYPE') {
+            return `<span class="badge bg-label-success">${value}</span>`;
+        }
+
+        if (type === 'number') {
+            return `<span class="badge bg-label-warning">${value}</span>`;
+        }
+
+        if (type === 'select' || isSelectInputMode) {
+            return `<span class="badge bg-label-info">${value}</span>`;
+        }
+
+        return '';
+    }
 
     function editConfig(key, value = null, type = null, description = null) {
         // Show loading state
@@ -734,6 +756,7 @@
                     document.getElementById('numberInput').style.display = 'none';
                     document.getElementById('selectInput').style.display = 'none';
                     document.getElementById('booleanInput').style.display = 'none';
+                    isSelectInputMode = false;
                     
                     // Reset all input values
                     document.getElementById('configValue').value = '';
@@ -753,22 +776,17 @@
                         } else {
                             document.getElementById('boolFalse').checked = true;
                         }
-                    } else if (config.type === 'select' || config.type === 'string') {
-                        // Check if key is PROVIDER_TYPE for select dropdown
-                        if (config.key === 'PROVIDER_TYPE') {
-                            document.getElementById('selectInput').style.display = 'block';
-                            setTimeout(() => {
-                                document.getElementById('configSelectValue').value = config.value;
-                            }, 10);
-                        } else {
-                            document.getElementById('numberInput').style.display = 'block';
-                            document.getElementById('configValue').value = config.value;
-                            document.getElementById('configValue').type = 'text';
-                        }
+                    } else if (config.type === 'select' || config.key === 'PROVIDER_TYPE') {
+                        document.getElementById('selectInput').style.display = 'block';
+                        isSelectInputMode = true;
+                        setTimeout(() => {
+                            document.getElementById('configSelectValue').value = config.value;
+                        }, 10);
                     } else {
                         document.getElementById('numberInput').style.display = 'block';
                         document.getElementById('configValue').value = config.value;
                         document.getElementById('configValue').type = config.type === 'number' ? 'number' : 'text';
+                        isSelectInputMode = false;
                     }
                     
                     // Open offcanvas
@@ -809,7 +827,7 @@
         
         if (currentConfigType === 'boolean') {
             newValue = document.querySelector('input[name="configBoolValue"]:checked').value;
-        } else if (currentConfigType === 'select') {
+        } else if (currentConfigType === 'select' || isSelectInputMode) {
             newValue = document.getElementById('configSelectValue').value;
         } else {
             newValue = document.getElementById('configValue').value;
@@ -866,12 +884,10 @@
                     descCell.textContent = newDescription;
                 }
                 
-                // Update value
-                if (currentConfigType === 'boolean') {
-                    const badgeClass = newValue === 'true' ? 'bg-label-success' : 'bg-label-danger';
-                    valueCell.innerHTML = `<span class="badge ${badgeClass}">${newValue}</span>`;
-                } else if (currentConfigType === 'select') {
-                    valueCell.innerHTML = `<span class="badge bg-label-info">${newValue}</span>`;
+                // Update value with appropriate badge style
+                const badgeHtml = getConfigBadgeHtml(currentConfigKey, currentConfigType, newValue);
+                if (badgeHtml) {
+                    valueCell.innerHTML = badgeHtml;
                 } else {
                     valueCell.textContent = newValue;
                 }
@@ -928,6 +944,7 @@
         // Reset tracking variables
         currentConfigKey = '';
         currentConfigType = '';
+        isSelectInputMode = false;
     });
 
     // Chargebee Configuration Form
