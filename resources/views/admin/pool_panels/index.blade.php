@@ -300,8 +300,21 @@
                 <label for="pool_panel_title">Title: <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="pool_panel_title" name="title" value="" required maxlength="255">
 
+                <label for="provider_type" class="mt-3">Provider Type: <span class="text-danger">*</span></label>
+                <select class="form-control mb-3" id="provider_type" name="provider_type" required>
+                    <option value="" disabled>Select provider</option>
+                    <option value="Google" selected>Google</option>
+                    <option value="Microsoft 365">Microsoft 365</option>
+                </select>
+
+
                 <label for="pool_panel_description" class="mt-3">Description:</label>
                 <textarea class="form-control mb-3" id="pool_panel_description" name="description" rows="3"></textarea>
+
+
+                <label for="panel_limit">Limit: <span class="text-danger">*</span></label>
+                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 1790)}}" required min="1" readonly>
+
 
                 <label for="pool_panel_status">Status:</label>
                 <select class="form-control mb-3" name="is_active" id="pool_panel_status" required>
