@@ -6,6 +6,7 @@ use App\Models\Panel;
 use App\Console\Commands\PanelCapacityNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Models\Configuration;
 
 class PanelObserver
 {
@@ -18,7 +19,7 @@ class PanelObserver
     {
         // Ensure provider_type has a default prior to DB default trigger
         if (empty($panel->provider_type)) {
-            $panel->provider_type = 'Google';
+            $panel->provider_type = Configuration::get('PROVIDER_TYPE', 'Google');
         }
 
         // Only assign if provider_type is present and panel_sr_no not already provided

@@ -486,8 +486,8 @@
                 <label for="provider_type" class="mt-3">Provider Type: <span class="text-danger">*</span></label>
                 <select class="form-control mb-3" id="provider_type" name="provider_type" required>
                     <option value="" disabled>Select provider</option>
-                    <option value="Google" selected>Google</option>
-                    <option value="Microsoft 365">Microsoft 365</option>
+                    <option value="Google" {{ ($defaultProviderType ?? 'Google') === 'Google' ? 'selected' : '' }}>Google</option>
+                    <option value="Microsoft 365" {{ ($defaultProviderType ?? 'Google') === 'Microsoft 365' ? 'selected' : '' }}>Microsoft 365</option>
                 </select>
 
                 <label for="panel_description" class="mt-3">Panel Description:</label>
@@ -949,9 +949,9 @@
     function fetchNextPanelId(options = {}) {
         const { showOffcanvas = true, showLoader = true } = options;
         const providerTypeField = document.getElementById('provider_type');
-        const providerType = providerTypeField ? providerTypeField.value : 'Google';
+        const providerType = providerTypeField ? providerTypeField.value : '{{ $defaultProviderType ?? 'Google' }}';
         const query = new URLSearchParams({
-            provider_type: providerType || 'Google',
+            provider_type: providerType || '{{ $defaultProviderType ?? 'Google' }}',
         });
 
         if (showLoader) {
@@ -3742,7 +3742,7 @@ function resetPanelForm() {
     $('#panel_limit').val('{{env('PANEL_CAPACITY', 1790)}}'); // Reset to default
     // Reset provider type for new panel creation
     $('#provider_type').prop('disabled', false);
-    $('#provider_type').val('Google');
+    $('#provider_type').val('{{ $defaultProviderType ?? 'Google' }}');
     
     // Clear any validation errors
     $('.form-control').removeClass('is-invalid');

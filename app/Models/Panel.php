@@ -66,7 +66,7 @@ class Panel extends Model
      */
     public static function getNextSerialForProvider(?string $providerType): int
     {
-        $providerType = $providerType ?: 'Google';
+        $providerType = $providerType ?: Configuration::get('PROVIDER_TYPE', 'Google');
 
         $query = static::query();
 

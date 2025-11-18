@@ -16,6 +16,7 @@ use App\Models\UserOrderPanelAssignment;
 use App\Models\OrderTracking;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Models\Configuration;
 
 class PanelController extends Controller
 {
@@ -46,7 +47,8 @@ class PanelController extends Controller
             return $this->getPanelsData($request);
         } 
 
-        return view('admin.panels.index');
+        $defaultProviderType = Configuration::get('PROVIDER_TYPE', 'Google');
+        return view('admin.panels.index', compact('defaultProviderType'));
     }    
     
     public function getPanelsData(Request $request)
