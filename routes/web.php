@@ -232,8 +232,6 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         
         // Pool Panels routes
         Route::get('pool-panels/data', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanelsData'])->name('pool-panels.data');
-        Route::get('pool-panels/next-id', [App\Http\Controllers\PoolPanelController::class, 'getNextId'])->name('pool-panels.next-id');
-        Route::get('pool-panels/provider-limit', [App\Http\Controllers\PoolPanelController::class, 'getProviderLimit'])->name('pool-panels.provider-limit');
         Route::get('pool-panels/{poolPanel}/pools', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanelPools'])->name('pool-panels.pools');
         Route::resource('pool-panels', App\Http\Controllers\PoolPanelController::class);
         Route::get('pool-panels/{id}/get', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanel'])->name('pool-panels.get');

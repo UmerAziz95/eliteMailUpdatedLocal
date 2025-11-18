@@ -20,8 +20,33 @@ use App\Models\Configuration;
 
 class PoolPanelController extends Controller
 {
-    private const PROVIDER_TYPES = ['Google', 'Microsoft 365'];
+    public function getNextId(Request $request)
+    {
+        $allowedProviders = Configuration::getProviderTypes();
+        if (empty($allowedProviders)) {
+            $allowedProviders = ['Google', 'Microsoft 365', 'Private SMTP'];
+        }
 
+        $defaultProviderType = Configuration::get('PROVIDER_TYPE', $allowedProviders[0] ?? 'Google');
+        $providerType = $request->query('provider_type', $defaultProviderType);
+
+        if (!in_array($providerType, $allowedProviders, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid provider type selected.',
+            ], 422);
+        }
+
+        $nextSerial = PoolPanel::getNextSerialForProvider($providerType);
+        $capacity = $this->getProviderCapacity($providerType);
+
+        return response()->json([
+            'next_id' => 'PNL-' . $nextSerial,
+            'panel_sr_no' => $nextSerial,
+            'provider_type' => $providerType,
+            'capacity' => $capacity,
+        ]);
+    }
     /**
      * Display a listing of the resource.
      */
@@ -81,28 +106,6 @@ class PoolPanelController extends Controller
         }
 
         return view('admin.pool_panels.index');
-    }
-
-    public function getNextId()
-    {
-        $nextId = 'PPN-' . PoolPanel::getNextAvailableId();
-
-        return response()->json(['next_id' => $nextId]);
-    }
-
-    public function getProviderLimit(Request $request)
-    {
-        $validated = $request->validate([
-            'provider' => ['nullable', 'string', Rule::in(self::PROVIDER_TYPES)],
-        ]);
-
-        $provider = $validated['provider'] ?? self::PROVIDER_TYPES[0];
-        $limit = $this->getCapacityForProvider($provider);
-
-        return response()->json([
-            'provider' => $provider,
-            'limit' => $limit,
-        ]);
     }
 
     /**
