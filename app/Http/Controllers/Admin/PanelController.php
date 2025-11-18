@@ -150,7 +150,7 @@ class PanelController extends Controller
                     'total_orders' => $panel->total_orders,
                     'can_edit' => $used === 0, // Can edit only if no space is used
                     'can_delete' => $used === 0, // Can delete only if no space is used
-                    'show_edit_delete_buttons' => $panel->remaining_limit == env('PANEL_CAPACITY', 358), // Show buttons only if remaining_limit is equal to PANEL_CAPACITY
+                    'show_edit_delete_buttons' => $used === 0, // Show buttons only when no space is used
                     'recent_orders' => $recentOrders->map(function ($orderPanel) {
                         return [
                             'id' => $orderPanel->order->id ?? 'N/A',
