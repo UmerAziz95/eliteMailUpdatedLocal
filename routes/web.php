@@ -229,8 +229,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('pools/import/data', [PoolController::class, 'importData'])->name('pools.import.data');
         Route::get('pools/import-data/{id}', [PoolController::class, 'importDataById'])->name('pools.import-data');
         Route::post('pools/capacity-check', [PoolController::class, 'capacityCheck'])->name('pools.capacity-check');
-        
         // Pool Panels routes
+        Route::get('/pool-panels/next-id', [App\Http\Controllers\PoolPanelController::class, 'getNextId'])->name('pool-panels.next-id');
         Route::get('pool-panels/data', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanelsData'])->name('pool-panels.data');
         Route::get('pool-panels/{poolPanel}/pools', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanelPools'])->name('pool-panels.pools');
         Route::resource('pool-panels', App\Http\Controllers\PoolPanelController::class);
@@ -238,7 +238,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('pool-panels/{id}/toggle-status', [App\Http\Controllers\PoolPanelController::class, 'toggleStatus'])->name('pool-panels.toggle-status');
         Route::post('pool-panels/{id}/archive', [App\Http\Controllers\PoolPanelController::class, 'archive'])->name('pool-panels.archive');
         Route::get('pool-panels-capacity/alert', [App\Http\Controllers\PoolPanelController::class, 'getCapacityAlert'])->name('pool-panels.capacity-alert');
-        Route::get('/pool-panels/next-id', [App\Http\Controllers\PoolPanelController::class, 'getNextId'])->name('pool-panels.next-id');
+
         
         // Special Plans routes (is_discounted = 3)
         Route::get('special-plans', [SpecialPlanController::class, 'index'])->name('special-plans.index');

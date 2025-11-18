@@ -21,6 +21,7 @@ class PoolPanel extends Model
         'created_by',
         'updated_by',
         'provider_type',
+        'pool_panel_sr_no',
     ];
 
     protected static function booted(): void

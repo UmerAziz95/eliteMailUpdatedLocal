@@ -629,6 +629,19 @@ let isLoading = false;
 let currentFilters = {};
 let poolPanels = [];
 let charts = {}; // Store chart instances
+const PANEL_CAPACITY_FALLBACK = {{ env('PANEL_CAPACITY', 1790) }};
+const DEFAULT_PROVIDER_TYPE = 'Google';
+
+function getCapacityForProvider(providerType) {
+    // In the future, you can expand this with a map from the backend if capacities differ
+    if (providerType === 'Microsoft 365') {
+        return {{ env('MICROSOFT_PANEL_CAPACITY', 1790) }}; // Example for different capacity
+    }
+    if (providerType === 'Google') {
+        return {{ env('GOOGLE_PANEL_CAPACITY', 1790) }}; // Example for different capacity
+    }
+    return PANEL_CAPACITY_FALLBACK;
+}
 
 $(document).ready(function() {
     // Set initial filter to show only active pool panels
@@ -637,6 +650,19 @@ $(document).ready(function() {
     // Load initial data
     loadPoolPanels();
     updateCounters();
+
+    const providerTypeSelect = document.getElementById('provider_type');
+    if (providerTypeSelect) {
+        providerTypeSelect.addEventListener('change', function() {
+            // When provider changes in create mode, fetch new ID and update limit
+            if (!isEditMode) {
+                fetchNextPoolPanelId({
+                    showOffcanvas: false,
+                    showLoader: false
+                });
+            }
+        });
+    }
 
     // Form submission handler
     $('#submitPoolPanelFormBtn').on('click', function() {
@@ -2014,60 +2040,90 @@ function resetFilterButtonStates() {
 
 // No longer needed - ID generation happens in the backend
 
+function fetchNextPoolPanelId(options = {}) {
+    const {
+        showOffcanvas = true, showLoader = true
+    } = options;
+    const providerTypeField = document.getElementById('provider_type');
+    const providerTypeValue = providerTypeField && providerTypeField.value ?
+        providerTypeField.value :
+        DEFAULT_PROVIDER_TYPE;
+    const query = new URLSearchParams({
+        provider_type: providerTypeValue || DEFAULT_PROVIDER_TYPE,
+    });
+    const panelLimitInput = document.getElementById('panel_limit'); // Corrected ID
+
+    if (showLoader) {
+        // Show SweetAlert loading dialog only when requested
+        Swal.fire({
+            title: 'Preparing Form...',
+            text: 'Fetching next Pool Panel ID...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    }
+
+    fetch(`{{ route('admin.pool-panels.next-id') }}?${query.toString()}`)
+    .then(response => {
+        if (!response.ok) {
+                throw new Error('Failed to fetch next panel ID.');
+            }
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById('pool_panel_id').value = data.next_id || ''; // Corrected ID
+            const capacityFromResponse = data && typeof data.capacity !== 'undefined' // Corrected ID
+                ?
+                Number(data.capacity) :
+                null;
+
+            if (panelLimitInput) {
+                const capacityToApply = capacityFromResponse && !Number.isNaN(capacityFromResponse) ?
+                    capacityFromResponse :
+                    getCapacityForProvider(providerTypeValue);
+                panelLimitInput.value = capacityToApply;
+            }
+
+            if (showLoader) {
+                Swal.close();
+            }
+
+            if (showOffcanvas) {
+                // Show the offcanvas (no need to wait for fetchNextPanelId, since it sets the value asynchronously)
+                const offcanvasElement = document.getElementById('poolPanelFormOffcanvas');
+                const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+                offcanvas.show();
+            }
+        })
+        .catch((error) => {
+            document.getElementById('pool_panel_id').value = ''; // Corrected ID
+            if (panelLimitInput) {
+                panelLimitInput.value = getCapacityForProvider(providerTypeValue);
+            }
+
+            if (showLoader) {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to fetch next panel ID.',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+            console.error(error);
+        }
+    });
+}
+
 function openCreateForm() {
     resetForm();
     isEditMode = false;
     currentPoolPanelId = null;
-    $('#poolPanelFormOffcanvasLabel').text('Create Pool Panel');
-    $('#submitPoolPanelFormBtn').text('Create Pool Panel');
-    $('#poolPanelIdContainer').show(); // Show ID container for create mode too
-    
-    // Show Swal loader for fetching next ID
-    Swal.fire({
-        title: 'Preparing Form...',
-        text: 'Fetching next Pool Panel ID...',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-            Swal.showLoading();
-        }
-    });
-    
-    // Show loading state for ID field
-    $('#pool_panel_id').val('Loading next ID...');
-    
-    // Fetch next pool panel ID from server
-    $.ajax({
-        url: '{{ route("admin.pool-panels.index") }}?next_id=1',
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        },
-        success: function(response) {
-            $('#pool_panel_id').val(response.next_id);
-            $('#poolPanelIdHint').text('This ID will be automatically assigned to your new pool panel');
-            
-            // Close Swal loader
-            Swal.close();
-        },
-        error: function(xhr) {
-            console.error('Failed to fetch next pool panel ID:', xhr);
-            // Show error message
-            $('#pool_panel_id').val('Error loading ID');
-            $('#poolPanelIdHint').text('ID will be generated when creating the pool panel');
-            
-            // Show Swal warning (this will replace the loading dialog)
-            Swal.fire({
-                icon: 'warning',
-                title: 'ID Generation Warning',
-                text: 'Could not fetch next Pool Panel ID. A new ID will be generated when you create the panel.',
-                timer: 3000,
-                showConfirmButton: false
-            });
-        }
-    });
+    fetchNextPoolPanelId();
 }
 
 function openEditForm(id) {
@@ -2477,7 +2533,7 @@ function resetForm() {
     // Reset ID label and hint for create mode
     $('#poolPanelIdLabel').text('Next Pool Panel ID:');
     $('#poolPanelIdHint').text('This ID will be automatically generated');
-    
+    $('#poolPanelIdContainer').show();
     // Clear validation errors
     $('.is-invalid').removeClass('is-invalid');
     $('.invalid-feedback').remove();
