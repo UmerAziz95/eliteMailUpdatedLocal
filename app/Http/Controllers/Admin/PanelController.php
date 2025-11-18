@@ -114,6 +114,11 @@ class PanelController extends Controller
                 $query->where('remaining_limit', '<=', $request->max_remaining);
             }
 
+            // Apply provider_type filter
+            if ($request->filled('provider_type') && $request->provider_type !== 'all') {
+                $query->where('provider_type', $request->provider_type);
+            }
+
             // Apply ordering
             $order = $request->get('order', 'desc');
             $query->orderBy('id', $order);
@@ -140,8 +145,10 @@ class PanelController extends Controller
                     'auto_generated_id' => $panel->auto_generated_id,
                     'title' => $panel->title,
                     'description' => $panel->description,
+                    'provider_type' => $panel->provider_type,
                     'limit' => $panel->limit,
                     'used' => $used,
+                    'panel_sr_no' => $panel->panel_sr_no,
                     'remaining_limit' => $panel->remaining_limit,
                     'is_active' => $panel->is_active,
                     'created_by' => $panel->created_by,
@@ -149,7 +156,7 @@ class PanelController extends Controller
                     'total_orders' => $panel->total_orders,
                     'can_edit' => $used === 0, // Can edit only if no space is used
                     'can_delete' => $used === 0, // Can delete only if no space is used
-                    'show_edit_delete_buttons' => $panel->remaining_limit == env('PANEL_CAPACITY', 358), // Show buttons only if remaining_limit is equal to PANEL_CAPACITY
+                    'show_edit_delete_buttons' => $used === 0, // Show buttons only when no space is used
                     'recent_orders' => $recentOrders->map(function ($orderPanel) {
                         return [
                             'id' => $orderPanel->order->id ?? 'N/A',
@@ -1179,23 +1186,31 @@ class PanelController extends Controller
             // Get all panel statistics
             $panelCapacity = env('PANEL_CAPACITY', 1790);
             
+            // Build base query
+            $baseQuery = Panel::query();
+            
+            // Apply provider_type filter if provided
+            if ($request->filled('provider_type') && $request->provider_type !== 'all') {
+                $baseQuery->where('provider_type', $request->provider_type);
+            }
+            
             // Total panels count
-            $totalPanels = Panel::count();
+            $totalPanels = (clone $baseQuery)->count();
             
             // Available capacity (sum of all remaining limits)
-            $availableCapacity = Panel::where('is_active', true)->sum('remaining_limit');
+            $availableCapacity = (clone $baseQuery)->where('is_active', true)->sum('remaining_limit');
             
             // Used capacity (sum of all used space)
-            $usedCapacity = Panel::where('is_active', true)
+            $usedCapacity = (clone $baseQuery)->where('is_active', true)
                 ->selectRaw('SUM(CASE WHEN `remaining_limit` <= `limit` THEN `limit` - `remaining_limit` ELSE 0 END) as used')
                 ->value('used') ?? 0;
             
             // Archived panels count (inactive panels)
-            $archivedPanels = Panel::where('is_active', false)->count();
+            $archivedPanels = (clone $baseQuery)->where('is_active', false)->count();
             
             // Additional statistics
-            $activePanels = Panel::where('is_active', true)->count();
-            $totalCapacity = Panel::where('is_active', true)->sum('limit');
+            $activePanels = (clone $baseQuery)->where('is_active', true)->count();
+            $totalCapacity = (clone $baseQuery)->where('is_active', true)->sum('limit');
             
             return response()->json([
                 'success' => true,
@@ -1227,12 +1242,13 @@ class PanelController extends Controller
     public function getAvailablePanelCount(Request $request)
     {
         try {
-            $panelCapacity = env('PANEL_CAPACITY', 1790);
-            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
+            // get configuration values
+            $panelCapacity = Configuration::get('PANEL_CAPACITY', 1790) ?? env('PANEL_CAPACITY', 1790);
+            $maxSplitCapacity = Configuration::get('MAX_SPLIT_CAPACITY', 1790) ?? env('MAX_SPLIT_CAPACITY', 1790);
             
             $availablePanelCount = Panel::where('is_active', true)
-                ->where('limit', $panelCapacity)
-                ->where('remaining_limit', '>=', $maxSplitCapacity)
+                // ->where('limit', $panelCapacity)
+                // ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
             
             return response()->json([
