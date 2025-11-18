@@ -140,6 +140,7 @@ class PanelController extends Controller
                     'auto_generated_id' => $panel->auto_generated_id,
                     'title' => $panel->title,
                     'description' => $panel->description,
+                    'provider_type' => $panel->provider_type,
                     'limit' => $panel->limit,
                     'used' => $used,
                     'remaining_limit' => $panel->remaining_limit,

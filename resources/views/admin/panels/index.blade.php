@@ -942,6 +942,12 @@
     const PROVIDER_CAPACITIES = @json($capacityMap ?? []);
 
 
+    const PROVIDER_BADGE_MAP = {
+        'Google': { className: 'bg-danger text-white', icon: 'fab fa-google' },
+        'Microsoft 365': { className: 'bg-primary text-white', icon: 'fab fa-microsoft' },
+        'Private SMTP': { className: 'bg-success text-white', icon: 'fas fa-lock' },
+    };
+
     function getCapacityForProvider(providerType) {
         if (providerType && Object.prototype.hasOwnProperty.call(PROVIDER_CAPACITIES, providerType)) {
             const capacity = Number(PROVIDER_CAPACITIES[providerType]);
@@ -950,6 +956,20 @@
             }
         }
         return PANEL_CAPACITY_FALLBACK;
+    }
+
+    function getProviderBadge(providerType) {
+        if (!providerType) {
+            return '';
+        }
+
+        const config = PROVIDER_BADGE_MAP[providerType] || { className: 'bg-secondary text-white', icon: 'fas fa-globe' };
+        return `
+            <span class="badge ${config.className} ms-2 d-inline-flex align-items-center gap-1">
+                <i class="${config.icon}"></i>
+                ${providerType}
+            </span>
+        `;
     }
 
     document.getElementById("openSecondOffcanvasBtn").addEventListener("click", function () {
@@ -1528,6 +1548,7 @@
             const used = panel.limit - panel.remaining_limit;
             const remaining = panel.remaining_limit;
             const totalOrders = panel.recent_orders ? panel.recent_orders.length : 0;
+            const providerLabel = getProviderBadge(panel.provider_type);
             
             // Generate edit/delete buttons only if conditions are met
             let actionButtons = '';
@@ -1594,7 +1615,10 @@
             return `
                 <div class="card p-3 d-flex flex-column gap-1" style="${archivedStyle}">                    
                     <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
-                        <small class="mb-0 opacity-75">${'PNL-' + panel.id || panel.auto_generated_id}</small>
+                        <div class="d-flex align-items-center gap-2">
+                            <small class="mb-0 opacity-75">${'PNL-' + panel.id || panel.auto_generated_id}</small>
+                            ${providerLabel}
+                        </div>
                         <h6>Title: ${panel.title || 'N/A'} ${!panel.is_active ? '<span class="badge bg-secondary ms-2">Archived</span>' : ''}</h6>
                     </div>
 
