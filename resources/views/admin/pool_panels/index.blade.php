@@ -573,13 +573,21 @@
                     </button>
                 </li>
             </ul>
-
-            {{-- create pool panel button --}}
-            <button type="button" class="btn btn-primary btn-sm border-0 px-3" data-bs-toggle="offcanvas" data-bs-target="#poolPanelFormOffcanvas"
-                onclick="openCreateForm();">
-                <i class="fa-solid fa-plus me-2"></i>
-                Create New Pool Panel
-            </button>
+            <div class="d-flex align-items-center">
+                {{-- Provider Type Filter Dropdown --}}
+                <select class="form-select form-select-sm me-2" id="providerTypeFilter" style="width: auto; min-width: 180px;"
+                    onchange="filterByProviderType()">
+                    <option value="all">All Providers</option>
+                    <option value="Google">Google</option>
+                    <option value="Microsoft 365">Microsoft 365</option>
+                </select>
+                {{-- create pool panel button --}}
+                <button type="button" class="btn btn-primary btn-sm border-0 px-3" data-bs-toggle="offcanvas"
+                    data-bs-target="#poolPanelFormOffcanvas" onclick="openCreateForm();">
+                    <i class="fa-solid fa-plus me-2"></i>
+                    Create New Pool Panel
+                </button>
+            </div>
         </div>
 
         <!-- Loading state -->
@@ -790,6 +798,20 @@
                     }
                 });
             });
+
+            document.getElementById('poolPanelFormOffcanvas')
+            .addEventListener('hidden.bs.offcanvas', function () {
+                cleanOffcanvasBackdrop();
+            });
+
+
+            function cleanOffcanvasBackdrop() {
+                document.querySelectorAll('.offcanvas-backdrop').forEach(backdrop => backdrop.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }
+
 
             // Filter form submission
             $('#filterForm').on('submit', function(e) {
@@ -2118,6 +2140,24 @@
             $('#resetSpinner').hide();
         }
 
+        // Filter panels by provider type
+        function filterByProviderType() {
+            const selectedProvider = document.getElementById('providerTypeFilter').value;
+
+            // Store the current filter
+            window.currentProviderFilter = selectedProvider;
+
+            // Add provider type filter to current filters
+            if (selectedProvider !== 'all') {
+                currentFilters.provider_type = selectedProvider;
+            } else {
+                delete currentFilters.provider_type;
+            }
+
+            // Reset pagination and reload panels
+            currentPage = 1;
+            loadPoolPanels(currentFilters, 1, false);
+        }
         // No longer needed - ID generation happens in the backend
 
         function fetchNextPoolPanelId(options = {}) {
@@ -2229,6 +2269,12 @@
                     const poolPanel = response.poolPanel;
 
                     // Populate form
+                    $('#provider_type').val(poolPanel.provider_type || 'Google');
+                    $('#panel_limit').val(poolPanel.limit || getCapacityForProvider(poolPanel.provider_type));
+
+                    // Make provider type and limit readonly for editing
+                    $('#provider_type').prop('disabled', true);
+                    $('#panel_limit').prop('readonly', true);
                     $('#pool_panel_id').val(poolPanel.auto_generated_id);
                     $('#pool_panel_title').val(poolPanel.title);
                     $('#pool_panel_description').val(poolPanel.description);
@@ -2615,6 +2661,10 @@
             $('#poolPanelIdHint').text('This ID will be automatically generated');
             $('#poolPanelIdContainer').show();
             // Clear validation errors
+            $('#provider_type').prop('disabled', false);
+            $('#panel_limit').prop('readonly', true);
+            $('#poolPanelFormOffcanvasLabel').text('Pool Panel');
+            $('#submitPoolPanelFormBtn').text('Submit');
             $('.is-invalid').removeClass('is-invalid');
             $('.invalid-feedback').remove();
         }
