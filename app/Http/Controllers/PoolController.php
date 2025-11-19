@@ -318,6 +318,13 @@ class PoolController extends Controller
 
             $pool = Pool::create($data);
 
+            // Automatically assign panel to the newly created pool
+            try {
+                \Artisan::call('pool:assigned-panel');
+            } catch (\Exception $e) {
+                \Log::error('Failed to auto-assign panel for pool ' . $pool->id . ': ' . $e->getMessage());
+            }
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
