@@ -193,6 +193,36 @@
             margin-left: 4px;
             margin-right: 0;
         }
+
+        #reassignPoolSplitModal .modal-body {
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+
+        .pool-split-reassign-card {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .pool-split-reassign-card.selected {
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 2px rgba(23, 162, 184, 0.25);
+            background: rgba(23, 162, 184, 0.1);
+        }
+
+        .pool-split-reassign-card .badge {
+            font-size: 10px;
+        }
+
+        .pool-split-reassign-card.disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
     </style>
 @endpush
 
@@ -350,6 +380,39 @@
                             <span class="visually-hidden">Loading pools...</span>
                         </div>
                         <p class="mt-2 mb-0">Loading pools...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pool Split Reassign Modal -->
+        <div class="modal fade" id="reassignPoolSplitModal" tabindex="-1"
+            aria-labelledby="reassignPoolSplitModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content bg-dark text-white">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title" id="reassignPoolSplitModalLabel">Reassign Pool Split</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="poolSplitReassignSummary" class="mb-3 text-white-50 small"></div>
+                        <div id="poolSplitReassignLoader" class="text-center py-4 d-none">
+                            <div class="spinner-border text-info" role="status">
+                                <span class="visually-hidden">Loading available pool panels...</span>
+                            </div>
+                            <p class="mt-3 mb-0">Loading available pool panels...</p>
+                        </div>
+                        <div id="poolSplitReassignPanelsContainer" class="d-flex flex-column gap-3"></div>
+                        <div id="poolSplitReassignEmpty" class="alert alert-warning d-none">
+                            <i class="fas fa-exclamation-triangle me-2"></i>No suitable pool panels are available for this split.
+                        </div>
+                        <div id="poolSplitReassignError" class="alert alert-danger d-none"></div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="confirmPoolSplitReassignBtn" disabled>
+                            <i class="fas fa-random me-1"></i>Reassign Split
+                        </button>
                     </div>
                 </div>
             </div>
@@ -648,6 +711,7 @@
 @push('scripts')
     <script>
         let currentPoolPanelId = null;
+        let currentViewedPoolPanelId = null;
         let isEditMode = false;
         let currentPage = 1;
         let hasMorePages = true;
@@ -655,8 +719,27 @@
         let currentFilters = {};
         let poolPanels = [];
         let charts = {}; // Store chart instances
+        let poolSplitReassignState = {
+            splitId: null,
+            sourcePanelId: null,
+            targetPanelId: null,
+            targetPanelTitle: null,
+            splitInfo: {}
+        };
         const PANEL_CAPACITY_FALLBACK = {{ env('PANEL_CAPACITY', 1790) }};
         const DEFAULT_PROVIDER_TYPE = 'Google';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const reassignBtn = document.getElementById('confirmPoolSplitReassignBtn');
+            if (reassignBtn) {
+                reassignBtn.addEventListener('click', confirmPoolSplitReassignment);
+            }
+
+            const reassignModalElement = document.getElementById('reassignPoolSplitModal');
+            if (reassignModalElement) {
+                reassignModalElement.addEventListener('hidden.bs.modal', resetPoolSplitReassignModal);
+            }
+        });
 
         function getCapacityForProvider(providerType) {
             // In the future, you can expand this with a map from the backend if capacities differ
@@ -1165,6 +1248,8 @@
                 console.error('Invalid pool panel id supplied to viewPoolPanelPools:', poolPanelId);
                 return;
             }
+
+            currentViewedPoolPanelId = safePoolPanelId;
 
             const container = document.getElementById('poolPanelPoolsContainer');
             if (container) {
@@ -1810,6 +1895,22 @@
                     const panelId = splitPanel.auto_generated_id || (splitPanel.id ? `PPN-${splitPanel.id}` : poolPanel?.auto_generated_id || (
                         poolPanel?.id ? `PPN-${poolPanel.id}` : 'N/A'));
                     const panelTitle = splitPanel.title || poolPanel?.title || 'N/A';
+                    const splitMetaPayload = encodeURIComponent(JSON.stringify({
+                        assigned_space: split.assigned_space ?? 0,
+                        total_inboxes: totalInboxes,
+                        panel_identifier: panelId,
+                        panel_title: panelTitle,
+                        domains_count: domainCount,
+                        pool_id: split.pool_id ?? null
+                    }));
+                    const showReassignButton = Boolean(poolPanel?.is_active === false && poolPanel?.id && splitPanel?.id === poolPanel.id && split.id);
+                    const reassignButton = showReassignButton ? `
+                            <button type="button" class="btn btn-sm btn-outline-warning text-white"
+                                style="font-size: 11px;"
+                                onclick="event.stopPropagation(); openPoolSplitReassignModal(${split.id}, ${poolPanel.id}, '${splitMetaPayload}')">
+                                <i class="fas fa-random me-1"></i>Reassign
+                            </button>
+                        ` : '';
 
                     const collapseId = `domains-split-${poolPanel?.id ?? 'panel'}-${split.id ?? index}`;
                     const iconId = `icon-${collapseId}`;
@@ -1843,6 +1944,7 @@
                             <small class="text-white">Inboxes: ${totalInboxes}</small>
                         </div>
                         <div class="d-flex align-items-center gap-2">
+                            ${reassignButton}
                             <i class="fa-solid fa-copy text-white" style="font-size: 11px; cursor: pointer; opacity: 0.85;"
                                 title="Copy domain list"
                                 onclick="event.stopPropagation(); copyDomainsToClipboardFromEncoded('${encodedDomains}');"></i>
@@ -2650,6 +2752,288 @@
                     console.error('Error refreshing pool panel capacity alert:', error);
                 }
             });
+        }
+
+        function openPoolSplitReassignModal(splitId, sourcePanelId, encodedMeta = '') {
+            if (!splitId || !sourcePanelId) {
+                console.warn('Missing identifiers for pool split reassignment.', { splitId, sourcePanelId });
+                return;
+            }
+
+            const modalElement = document.getElementById('reassignPoolSplitModal');
+            if (!modalElement) {
+                console.error('Reassign modal element not found.');
+                return;
+            }
+
+            const splitInfo = parseSplitMeta(encodedMeta);
+            const assignedSpace = Number(splitInfo.assigned_space ?? 0);
+            const fallbackSpace = Number(splitInfo.total_inboxes ?? 0);
+            const spaceRequired = splitInfo.space_required ? Number(splitInfo.space_required) : Math.max(assignedSpace, fallbackSpace, 0);
+
+            poolSplitReassignState = {
+                splitId,
+                sourcePanelId,
+                targetPanelId: null,
+                targetPanelTitle: null,
+                splitInfo: {
+                    ...splitInfo,
+                    space_required: spaceRequired
+                }
+            };
+
+            const summaryElement = document.getElementById('poolSplitReassignSummary');
+            if (summaryElement) {
+                const lines = [];
+                if (splitInfo.panel_identifier) {
+                    lines.push(`<strong>Source Panel:</strong> ${splitInfo.panel_identifier}`);
+                }
+                if (splitInfo.panel_title) {
+                    lines.push(`<strong>Panel Title:</strong> ${splitInfo.panel_title}`);
+                }
+                lines.push(`<strong>Space Needed:</strong> ${spaceRequired || 'N/A'} inboxes`);
+                if (splitInfo.domains_count) {
+                    lines.push(`<strong>Domains:</strong> ${splitInfo.domains_count}`);
+                }
+                summaryElement.innerHTML = lines.map(line => `<div>${line}</div>`).join('');
+            }
+
+            const container = document.getElementById('poolSplitReassignPanelsContainer');
+            const loader = document.getElementById('poolSplitReassignLoader');
+            const emptyState = document.getElementById('poolSplitReassignEmpty');
+            const errorElement = document.getElementById('poolSplitReassignError');
+            const confirmBtn = document.getElementById('confirmPoolSplitReassignBtn');
+
+            if (container) container.innerHTML = '';
+            if (loader) loader.classList.remove('d-none');
+            if (emptyState) emptyState.classList.add('d-none');
+            if (errorElement) errorElement.classList.add('d-none');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fas fa-random me-1"></i>Reassign Split';
+            }
+
+            bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            fetchAvailablePoolPanelsForSplit();
+        }
+
+        function parseSplitMeta(encodedMeta) {
+            if (!encodedMeta) {
+                return {};
+            }
+
+            try {
+                return JSON.parse(decodeURIComponent(encodedMeta));
+            } catch (error) {
+                console.warn('Failed to parse split metadata:', error);
+                return {};
+            }
+        }
+
+        async function fetchAvailablePoolPanelsForSplit() {
+            const { splitId, sourcePanelId } = poolSplitReassignState || {};
+            if (!splitId || !sourcePanelId) {
+                return;
+            }
+
+            const container = document.getElementById('poolSplitReassignPanelsContainer');
+            const loader = document.getElementById('poolSplitReassignLoader');
+            const emptyState = document.getElementById('poolSplitReassignEmpty');
+            const errorElement = document.getElementById('poolSplitReassignError');
+
+            if (loader) loader.classList.remove('d-none');
+            if (emptyState) emptyState.classList.add('d-none');
+            if (errorElement) errorElement.classList.add('d-none');
+
+            try {
+                const response = await fetch(`/admin/pool-panel-splits/${splitId}/available-panels?pool_panel_id=${sourcePanelId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.message || 'Failed to load available pool panels.');
+                }
+
+                if (data.split && data.split.space_required) {
+                    poolSplitReassignState.splitInfo.space_required = data.split.space_required;
+                }
+
+                const panels = data.panels || [];
+                if (!panels.length) {
+                    if (emptyState) emptyState.classList.remove('d-none');
+                    if (container) container.innerHTML = '';
+                    return;
+                }
+
+                if (container) {
+                    container.innerHTML = renderAvailablePoolPanelsForSplit(panels);
+                }
+            } catch (error) {
+                console.error('Error loading available pool panels:', error);
+                if (errorElement) {
+                    errorElement.textContent = error.message || 'Failed to load available pool panels.';
+                    errorElement.classList.remove('d-none');
+                }
+            } finally {
+                if (loader) loader.classList.add('d-none');
+            }
+        }
+
+        function renderAvailablePoolPanelsForSplit(panels) {
+            const spaceRequired = poolSplitReassignState?.splitInfo?.space_required ?? 0;
+
+            return panels.map(panel => {
+                const safeTitle = (panel.title || `Panel #${panel.id || ''}`).toString();
+                const escapedTitle = safeTitle.replace(/'/g, "\\'");
+                const panelLabel = panel.auto_generated_id || (panel.id ? `PPN-${panel.id}` : 'N/A');
+
+                return `
+                <div class="pool-split-reassign-card" data-panel-id="${panel.id}"
+                    onclick="selectPoolSplitTargetPanel(${panel.id}, '${escapedTitle}', this)">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <h6 class="mb-0">${safeTitle}</h6>
+                            <small class="text-white-50">${panelLabel}</small>
+                        </div>
+                        <span class="badge bg-primary">${panel.provider_type || 'N/A'}</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-secondary">Limit: ${panel.limit ?? 0}</span>
+                        <span class="badge bg-success">Remaining: ${panel.remaining_limit ?? 0}</span>
+                        <span class="badge bg-info text-dark">Used: ${panel.used_limit ?? 0}</span>
+                        <span class="badge bg-warning text-dark">Space after move: ${panel.space_available ?? 0}</span>
+                    </div>
+                    <div class="mt-2 small text-white-50">Requires ${spaceRequired} inboxes</div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function selectPoolSplitTargetPanel(panelId, panelTitle, element) {
+            poolSplitReassignState.targetPanelId = panelId;
+            poolSplitReassignState.targetPanelTitle = panelTitle;
+
+            document.querySelectorAll('.pool-split-reassign-card').forEach(card => card.classList.remove('selected'));
+            if (element) {
+                element.classList.add('selected');
+            } else {
+                const card = document.querySelector(`.pool-split-reassign-card[data-panel-id="${panelId}"]`);
+                if (card) {
+                    card.classList.add('selected');
+                }
+            }
+
+            const confirmBtn = document.getElementById('confirmPoolSplitReassignBtn');
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                const label = panelTitle ? panelTitle : `Panel #${panelId}`;
+                confirmBtn.innerHTML = `<i class="fas fa-random me-1"></i>Reassign to ${label}`;
+            }
+        }
+
+        async function confirmPoolSplitReassignment() {
+            const { splitId, sourcePanelId, targetPanelId } = poolSplitReassignState || {};
+            if (!splitId || !sourcePanelId || !targetPanelId) {
+                return;
+            }
+
+            const confirmBtn = document.getElementById('confirmPoolSplitReassignBtn');
+            const errorElement = document.getElementById('poolSplitReassignError');
+
+            if (errorElement) errorElement.classList.add('d-none');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Reassigning...';
+            }
+
+            try {
+                const response = await fetch(`/admin/pool-panel-splits/${splitId}/reassign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        target_pool_panel_id: targetPanelId,
+                        current_pool_panel_id: sourcePanelId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.message || 'Failed to reassign pool split.');
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Split Reassigned',
+                    text: data.message || 'Pool split reassigned successfully.'
+                });
+
+                const modalElement = document.getElementById('reassignPoolSplitModal');
+                if (modalElement) {
+                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                }
+
+                if (currentViewedPoolPanelId) {
+                    viewPoolPanelPools(currentViewedPoolPanelId);
+                }
+
+                loadPoolPanels(true);
+            } catch (error) {
+                console.error('Failed to reassign pool split:', error);
+                if (errorElement) {
+                    errorElement.textContent = error.message || 'Failed to reassign pool split.';
+                    errorElement.classList.remove('d-none');
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: error.message || 'Failed to reassign pool split.'
+                    });
+                }
+            } finally {
+                if (confirmBtn) {
+                    const targetLabel = poolSplitReassignState?.targetPanelTitle;
+                    confirmBtn.disabled = !targetLabel;
+                    confirmBtn.innerHTML = `<i class="fas fa-random me-1"></i>${targetLabel ? `Reassign to ${targetLabel}` : 'Reassign Split'}`;
+                }
+            }
+        }
+
+        function resetPoolSplitReassignModal() {
+            poolSplitReassignState = {
+                splitId: null,
+                sourcePanelId: null,
+                targetPanelId: null,
+                targetPanelTitle: null,
+                splitInfo: {}
+            };
+
+            const container = document.getElementById('poolSplitReassignPanelsContainer');
+            const loader = document.getElementById('poolSplitReassignLoader');
+            const emptyState = document.getElementById('poolSplitReassignEmpty');
+            const errorElement = document.getElementById('poolSplitReassignError');
+            const confirmBtn = document.getElementById('confirmPoolSplitReassignBtn');
+
+            if (container) container.innerHTML = '';
+            if (loader) loader.classList.add('d-none');
+            if (emptyState) emptyState.classList.add('d-none');
+            if (errorElement) errorElement.classList.add('d-none');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fas fa-random me-1"></i>Reassign Split';
+            }
         }
 
         function resetForm() {

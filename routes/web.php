@@ -233,6 +233,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/pool-panels/next-id', [App\Http\Controllers\PoolPanelController::class, 'getNextId'])->name('pool-panels.next-id');
         Route::get('pool-panels/data', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanelsData'])->name('pool-panels.data');
         Route::get('pool-panels/{poolPanel}/pools', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanelPools'])->name('pool-panels.pools');
+        Route::get('pool-panel-splits/{poolPanelSplit}/available-panels', [App\Http\Controllers\PoolPanelController::class, 'getAvailablePanelsForSplit'])->name('pool-panels.splits.available-panels');
+        Route::post('pool-panel-splits/{poolPanelSplit}/reassign', [App\Http\Controllers\PoolPanelController::class, 'reassignPoolPanelSplit'])->name('pool-panels.splits.reassign');
         Route::resource('pool-panels', App\Http\Controllers\PoolPanelController::class);
         Route::get('pool-panels/{id}/get', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanel'])->name('pool-panels.get');
         Route::post('pool-panels/{id}/toggle-status', [App\Http\Controllers\PoolPanelController::class, 'toggleStatus'])->name('pool-panels.toggle-status');
