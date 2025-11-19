@@ -425,9 +425,18 @@
             <div class="col-md-6 mb-3">
                 <label for="purchase_date">Purchase Date</label>
                 <input type="date" id="purchase_date" name="purchase_date" class="form-control" 
-                       value="{{ isset($pool) && $pool->purchase_date ? $pool->purchase_date : '' }}">
+                       value="{{ isset($pool) && $pool->purchase_date ? \Carbon\Carbon::parse($pool->purchase_date)->format('Y-m-d') : '' }}">
                 <div class="invalid-feedback" id="purchase_date-error"></div>
                 <small class="text-muted">Optional: Date when the pool was purchased</small>
+            </div>
+
+            <!-- Expiry Date (Auto-calculated) -->
+            <div class="col-md-6 mb-3" id="expiry_date_container" style="display: {{ isset($pool) && $pool->purchase_date ? 'block' : 'none' }};">
+                <label for="expiry_date">Expiry Date (12 months from purchase)</label>
+                <input type="text" id="expiry_date" class="form-control" readonly 
+                       style="background-color: #2a2a2a; cursor: not-allowed;"
+                       value="{{ isset($pool) && $pool->purchase_date ? \Carbon\Carbon::parse($pool->purchase_date)->addMonths(12)->format('F j, Y') : '' }}">
+                <small class="text-muted">Automatically calculated: Purchase Date + 12 months</small>
             </div>
 
                 <!-- Remaining Inboxes Progress Bar -->
@@ -1225,6 +1234,41 @@
     // Initialize field visibility on page load
     $(document).ready(function() {
         toggleMasterInboxEmail();
+        
+        // Initialize expiry date calculation on page load
+        calculateExpiryDate();
+    });
+
+    // Function to calculate and display expiry date (12 months from purchase date)
+    function calculateExpiryDate() {
+        const purchaseDateInput = $('#purchase_date');
+        const expiryDateInput = $('#expiry_date');
+        const expiryDateContainer = $('#expiry_date_container');
+        
+        if (purchaseDateInput.val()) {
+            const purchaseDate = new Date(purchaseDateInput.val());
+            
+            // Add 12 months to purchase date
+            const expiryDate = new Date(purchaseDate);
+            expiryDate.setMonth(expiryDate.getMonth() + 12);
+            
+            // Format the expiry date
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedExpiryDate = expiryDate.toLocaleDateString('en-US', options);
+            
+            // Display expiry date
+            expiryDateInput.val(formattedExpiryDate);
+            expiryDateContainer.show();
+        } else {
+            // Hide expiry date if no purchase date is selected
+            expiryDateContainer.hide();
+            expiryDateInput.val('');
+        }
+    }
+
+    // Listen for changes to purchase date
+    $(document).on('change', '#purchase_date', function() {
+        calculateExpiryDate();
     });
 
     // Initialize domain arrays early for global functions
