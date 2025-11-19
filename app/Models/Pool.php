@@ -71,6 +71,7 @@ class Pool extends Model
         'master_inbox_confirmation',
         'additional_info',
         'coupon_code',
+        'purchase_date',
         'is_splitting',
     ];
 
@@ -86,6 +87,7 @@ class Pool extends Model
         'timer_paused_at' => 'datetime',
         'rejected_at' => 'datetime',
         'paid_at' => 'datetime',
+        'purchase_date' => 'date',
         'is_internal' => 'boolean',
         'is_internal_order_assignment' => 'boolean',
         'is_shared' => 'boolean',

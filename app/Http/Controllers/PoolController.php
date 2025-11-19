@@ -247,6 +247,7 @@ class PoolController extends Controller
             'additional_info' => 'nullable|string',
             'prefix_variants' => 'nullable|array',
             'prefix_variants_details' => 'nullable|array',
+            'purchase_date' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {
@@ -399,6 +400,7 @@ class PoolController extends Controller
             'additional_info' => 'nullable|string',
             'prefix_variants' => 'nullable|array',
             'prefix_variants_details' => 'nullable|array',
+            'purchase_date' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {

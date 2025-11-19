@@ -421,6 +421,15 @@
                 <p class="note mb-0">(Warming: Pool is being prepared. Available: Pool is ready for use.)</p>
             </div>
 
+            <!-- Purchase Date -->
+            <div class="col-md-6 mb-3">
+                <label for="purchase_date">Purchase Date</label>
+                <input type="date" id="purchase_date" name="purchase_date" class="form-control" 
+                       value="{{ isset($pool) && $pool->purchase_date ? $pool->purchase_date : '' }}">
+                <div class="invalid-feedback" id="purchase_date-error"></div>
+                <small class="text-muted">Optional: Date when the pool was purchased</small>
+            </div>
+
                 <!-- Remaining Inboxes Progress Bar -->
                 <div class="col-md-12 remaining">
                     <div class="mb-3">
