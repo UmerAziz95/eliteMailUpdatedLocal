@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -433,6 +434,7 @@ class PoolPanelController extends Controller
                         'limit' => $poolPanel->limit,
                         'remaining_limit' => $poolPanel->remaining_limit,
                         'used_limit' => $poolPanel->used_limit,
+                        'is_active' => (bool) $poolPanel->is_active,
                     ],
                     'pools' => [],
                 ]);
@@ -474,6 +476,7 @@ class PoolPanelController extends Controller
 
                     return [
                         'id' => $split->id,
+                        'pool_id' => $split->pool_id,
                         'inboxes_per_domain' => $split->inboxes_per_domain,
                         'domains_count' => $domainCount,
                         'domain_names' => $domainNames,
@@ -552,6 +555,7 @@ class PoolPanelController extends Controller
                     'limit' => $poolPanel->limit,
                     'remaining_limit' => $poolPanel->remaining_limit,
                     'used_limit' => $poolPanel->used_limit,
+                    'is_active' => (bool) $poolPanel->is_active,
                 ],
                 'pools' => $poolsData,
             ]);
@@ -861,5 +865,151 @@ class PoolPanelController extends Controller
                 ];
             })
             ->values();
+    }
+
+    /**
+     * Fetch available pool panels that can accept the given split.
+     */
+    public function getAvailablePanelsForSplit(Request $request, PoolPanelSplit $poolPanelSplit)
+    {
+        $currentPanelId = (int) $request->query('pool_panel_id', $poolPanelSplit->pool_panel_id);
+
+        if ($currentPanelId !== (int) $poolPanelSplit->pool_panel_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Split does not belong to the specified pool panel.',
+            ], 422);
+        }
+
+        $spaceRequired = $this->calculateSplitSpace($poolPanelSplit);
+
+        $availablePanelsQuery = PoolPanel::query()
+            ->where('is_active', true)
+            ->where('id', '!=', $currentPanelId)
+            ->where('remaining_limit', '>=', $spaceRequired);
+
+        if (!empty($poolPanelSplit->pool_id)) {
+            $availablePanelsQuery->whereDoesntHave('poolPanelSplits', function ($query) use ($poolPanelSplit) {
+                $query->where('pool_id', $poolPanelSplit->pool_id);
+            });
+        }
+
+        $availablePanels = $availablePanelsQuery
+            ->orderByDesc('remaining_limit')
+            ->get()
+            ->map(function (PoolPanel $panel) use ($spaceRequired) {
+                return [
+                    'id' => $panel->id,
+                    'auto_generated_id' => $panel->auto_generated_id ?? ('PPN-' . $panel->id),
+                    'title' => $panel->title,
+                    'remaining_limit' => $panel->remaining_limit,
+                    'limit' => $panel->limit,
+                    'used_limit' => $panel->used_limit,
+                    'provider_type' => $panel->provider_type,
+                    'space_available' => max($panel->remaining_limit - $spaceRequired, 0),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'panels' => $availablePanels,
+            'split' => [
+                'id' => $poolPanelSplit->id,
+                'pool_id' => $poolPanelSplit->pool_id,
+                'assigned_space' => $poolPanelSplit->assigned_space,
+                'space_required' => $spaceRequired,
+                'total_inboxes' => $poolPanelSplit->getTotalInboxes(),
+            ],
+        ]);
+    }
+
+    /**
+     * Reassign a pool panel split to another pool panel.
+     */
+    public function reassignPoolPanelSplit(Request $request, PoolPanelSplit $poolPanelSplit)
+    {
+        $validated = $request->validate([
+            'target_pool_panel_id' => ['required', 'integer', 'different:current_pool_panel_id', 'exists:pool_panels,id'],
+            'current_pool_panel_id' => ['required', 'integer', 'exists:pool_panels,id'],
+        ]);
+
+        if ((int) $poolPanelSplit->pool_panel_id !== (int) $validated['current_pool_panel_id']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Split does not belong to the specified pool panel.',
+            ], 422);
+        }
+
+        $targetPanel = PoolPanel::findOrFail($validated['target_pool_panel_id']);
+
+        if (!$targetPanel->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Target pool panel must be active to receive splits.',
+            ], 422);
+        }
+
+        $spaceRequired = $this->calculateSplitSpace($poolPanelSplit);
+
+        if ($targetPanel->remaining_limit < $spaceRequired) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Target pool panel does not have enough remaining capacity.',
+            ], 422);
+        }
+
+        if (!empty($poolPanelSplit->pool_id)) {
+            $exists = $targetPanel->poolPanelSplits()
+                ->where('pool_id', $poolPanelSplit->pool_id)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Target pool panel already contains this pool.',
+                ], 422);
+            }
+        }
+
+        $sourcePanelId = (int) $poolPanelSplit->pool_panel_id;
+
+        DB::transaction(function () use ($poolPanelSplit, $targetPanel, $sourcePanelId, $spaceRequired) {
+            $sourcePanel = PoolPanel::lockForUpdate()->find($sourcePanelId);
+            $destinationPanel = PoolPanel::lockForUpdate()->find($targetPanel->id);
+
+            if (!$sourcePanel || !$destinationPanel) {
+                throw new \RuntimeException('Pool panels could not be locked for reassignment.');
+            }
+
+            $sourcePanel->remaining_limit = min($sourcePanel->limit, $sourcePanel->remaining_limit + $spaceRequired);
+            $sourcePanel->used_limit = max(0, $sourcePanel->used_limit - $spaceRequired);
+            $sourcePanel->save();
+
+            if ($destinationPanel->remaining_limit < $spaceRequired) {
+                throw ValidationException::withMessages([
+                    'target_pool_panel_id' => 'Target pool panel no longer has enough capacity.',
+                ]);
+            }
+
+            $destinationPanel->remaining_limit = max(0, $destinationPanel->remaining_limit - $spaceRequired);
+            $destinationPanel->used_limit = min($destinationPanel->limit, $destinationPanel->used_limit + $spaceRequired);
+            $destinationPanel->save();
+
+            $poolPanelSplit->pool_panel_id = $destinationPanel->id;
+            $poolPanelSplit->save();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pool split reassigned successfully.',
+        ]);
+    }
+
+    private function calculateSplitSpace(PoolPanelSplit $poolPanelSplit): int
+    {
+        $assignedSpace = (int) ($poolPanelSplit->assigned_space ?? 0);
+        $totalInboxes = (int) $poolPanelSplit->getTotalInboxes();
+
+        return max($assignedSpace, $totalInboxes, 0);
     }
 }
