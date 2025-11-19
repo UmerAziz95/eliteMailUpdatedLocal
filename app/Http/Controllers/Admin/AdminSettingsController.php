@@ -22,12 +22,13 @@ class AdminSettingsController extends Controller
         $configurations = Configuration::getPanelConfigurations();
         $chargebeeConfigs = Configuration::getChargebeeConfigurations();
         $systemConfigs = Configuration::getSystemConfigurations();
+        $poolConfigs = Configuration::getPoolConfigurations();
         $providerTypes = Configuration::getProviderTypes();
         
         // Get backups from last 30 days
         $backups = $this->getBackupFiles();
         
-        return view('admin.config.index', compact('configurations', 'chargebeeConfigs', 'systemConfigs', 'providerTypes', 'backups'));
+        return view('admin.config.index', compact('configurations', 'chargebeeConfigs', 'systemConfigs', 'poolConfigs', 'providerTypes', 'backups'));
     }
 
     /**
@@ -229,6 +230,19 @@ class AdminSettingsController extends Controller
     }
 
     /**
+     * Get pool configurations
+     */
+    public function getPoolConfigurations()
+    {
+        $configurations = Configuration::getPoolConfigurations();
+
+        return response()->json([
+            'success' => true,
+            'data' => $configurations
+        ]);
+    }
+
+    /**
      * Update a configuration value
      */
     public function updateConfiguration(Request $request)
@@ -267,6 +281,67 @@ class AdminSettingsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update configuration: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update pool configurations
+     */
+    public function updatePoolConfigurations(Request $request)
+    {
+        try {
+            $key = $request->input('key', 'POOL_WARMING_PERIOD');
+
+            if ($key !== 'POOL_WARMING_PERIOD') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid pool configuration key.'
+                ], 422);
+            }
+
+            $value = $request->has('value')
+                ? $request->input('value')
+                : $request->input('POOL_WARMING_PERIOD');
+
+            $validator = validator(
+                ['value' => $value],
+                ['value' => 'required|integer|min:0']
+            );
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $type = $request->input('type', 'number');
+
+            Configuration::updateOrCreate(
+                ['key' => $key],
+                [
+                    'value' => $value,
+                    'type' => $type,
+                    'description' => $request->input('description')
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pool configuration updated successfully'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update pool configuration: ' . $e->getMessage()
             ], 500);
         }
     }

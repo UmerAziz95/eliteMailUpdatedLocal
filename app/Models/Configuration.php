@@ -98,6 +98,18 @@ class Configuration extends Model
     }
 
     /**
+     * Get pool-related configurations.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public static function getPoolConfigurations()
+    {
+        return self::whereIn('key', [
+            'POOL_WARMING_PERIOD',
+        ])->get();
+    }
+
+    /**
      * Get available provider types
      *
      * @return array
