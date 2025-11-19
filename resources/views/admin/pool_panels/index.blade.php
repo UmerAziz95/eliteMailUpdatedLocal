@@ -727,16 +727,30 @@
                             showConfirmButton: false
                         });
 
-                        // Close offcanvas
+                        // Close offcanvas and clean up backdrop
                         const offcanvasElement = document.getElementById('poolPanelFormOffcanvas');
                         const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                        
+                        // Listen for the hidden event to clean up and reload
+                        offcanvasElement.addEventListener('hidden.bs.offcanvas', function() {
+                            // Remove any lingering backdrops
+                            document.querySelectorAll('.offcanvas-backdrop').forEach(backdrop => {
+                                backdrop.remove();
+                            });
+                            
+                            // Remove modal-open class from body if present
+                            document.body.classList.remove('modal-open');
+                            document.body.style.overflow = '';
+                            document.body.style.paddingRight = '';
+                            
+                            // Reset form
+                            resetForm();
+                            
+                            // Reload data
+                            resetAndReload();
+                        }, { once: true });
+                        
                         offcanvas.hide();
-
-                        // Reload data
-                        resetAndReload();
-
-                        // Reset form
-                        resetForm();
                     },
                     error: function(xhr) {
                         Swal.close(); // Close the loading dialog
