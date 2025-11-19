@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Pool;
+use App\Models\Configuration;
 use Carbon\Carbon;
 
 class UpdatePoolStatus extends Command
@@ -27,15 +28,20 @@ class UpdatePoolStatus extends Command
      */
     public function handle()
     {
+        
         $this->info('Starting pool status update process...');
-        
-        // Calculate the date 3 weeks ago
-        $threeWeeksAgo = Carbon::now()->subWeeks(3);
-        
-        $this->info("Looking for pools created before: {$threeWeeksAgo->format('Y-m-d H:i:s')}");
 
-        // Find pools that are older than 3 weeks and still in warming status
-        $query = Pool::where('created_at', '<=', $threeWeeksAgo)
+        $warmingPeriodDays = (int) Configuration::get('POOL_WARMING_PERIOD', 21);
+        if ($warmingPeriodDays < 0) {
+            $warmingPeriodDays = 0;
+        }
+
+        $cutoffDate = Carbon::now()->subDays($warmingPeriodDays);
+        $this->info("Configured warming period: {$warmingPeriodDays} day(s)");
+        $this->info("Looking for pools created before: {$cutoffDate->format('Y-m-d H:i:s')}");
+
+        // Find pools that are older than configured warming period and still in warming status
+        $query = Pool::where('created_at', '<=', $cutoffDate)
             ->where(function ($q) {
                 $q->where('status_manage_by_admin', 'warming')
                   ->orWhereNull('status_manage_by_admin');
@@ -139,7 +145,7 @@ class UpdatePoolStatus extends Command
         \Log::info("Pool status update completed. Updated {$updatedCount} pools and their domains to available status.", [
             'command' => 'pools:update-status',
             'updated_count' => $updatedCount,
-            'cutoff_date' => $threeWeeksAgo->toDateTimeString(),
+            'cutoff_date' => $cutoffDate->toDateTimeString(),
             'updated_domains' => 'Domain statuses also updated from warming to available'
         ]);
 
