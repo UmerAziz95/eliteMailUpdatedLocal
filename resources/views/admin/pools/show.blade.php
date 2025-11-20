@@ -677,7 +677,7 @@ $(function() {
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'customer_name', name: 'customer_name' },
-            { data: 'customer_email', name: 'customer_email' },
+            { data: 'customer_email', name: 'customer_email', visible: false },
             { data: 'domain_id', name: 'domain_id', visible: false },
             { data: 'pool_id', name: 'pool_id', visible: false },
             { data: 'pool_order_id', name: 'pool_order_id', visible: false },
