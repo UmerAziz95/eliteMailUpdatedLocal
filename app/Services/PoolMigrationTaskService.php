@@ -237,6 +237,52 @@ class PoolMigrationTaskService
     }
 
     /**
+     * Reassign pool migration task to another user
+     * 
+     * @param PoolOrderMigrationTask $task
+     * @param int $userId
+     * @param string|null $notes
+     * @return array Response data
+     */
+    public function reassignTask(PoolOrderMigrationTask $task, int $userId, ?string $notes = null): array
+    {
+        try {
+            $oldAssigneeId = $task->assigned_to;
+
+            if ($oldAssigneeId === $userId) {
+                return [
+                    'success' => false,
+                    'message' => 'This task is already assigned to this user.',
+                    'statusCode' => 400
+                ];
+            }
+
+            $updateData = [
+                'assigned_to' => $userId,
+                'status' => 'in-progress', // Or keep current status if preferred
+            ];
+
+            if ($notes) {
+                $updateData['notes'] = $task->notes ? $task->notes . "\n" . $notes : $notes;
+            }
+
+            $task->update($updateData);
+            
+            Log::info("Pool migration task {$task->id} reassigned from user {$oldAssigneeId} to user {$userId}");
+            
+            return [
+                'success' => true,
+                'message' => 'Task reassigned successfully',
+                'task' => $task->fresh(),
+                'statusCode' => 200
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error reassigning pool migration task: ' . $e->getMessage(), ['exception' => $e]);
+            return ['success' => false, 'message' => 'Failed to reassign task: ' . $e->getMessage(), 'statusCode' => 500];
+        }
+    }
+
+    /**
      * Get pool migration task details with full order information
      * 
      * @param int $taskId

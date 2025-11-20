@@ -39,20 +39,21 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('pool_id')->references('id')->on('pools')->onDelete('cascade');
-            $table->foreign('pool_panel_id')->references('id')->on('pool_panels')->onDelete('cascade');
-            $table->foreign('from_pool_panel_id')->references('id')->on('pool_panels')->onDelete('set null');
-            $table->foreign('to_pool_panel_id')->references('id')->on('pool_panels')->onDelete('set null');
-            $table->foreign('pool_panel_split_id')->references('id')->on('pool_panel_splits')->onDelete('set null');
-            $table->foreign('reassigned_by')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('assigned_to')->references('id')->on('users')->onDelete('set null');
+$table->foreign('pool_panel_id')->references('id')->on('pool_panels')->onDelete('cascade');
+$table->foreign('from_pool_panel_id')->references('id')->on('pool_panels')->onDelete('set null');
+$table->foreign('to_pool_panel_id')->references('id')->on('pool_panels')->onDelete('set null');
+$table->foreign('pool_panel_split_id')->references('id')->on('pool_panel_splits')->onDelete('set null');
+$table->foreign('reassigned_by')->references('id')->on('users')->onDelete('cascade');
+$table->foreign('assigned_to')->references('id')->on('users')->onDelete('set null');
 
-            $table->index('pool_id');
-            $table->index('pool_panel_id');
-            $table->index(['from_pool_panel_id', 'to_pool_panel_id']);
-            $table->index('pool_panel_split_id');
-            $table->index('reassignment_date');
-            $table->index('status');
-            $table->index('action_type');
+$table->index('pool_id');
+$table->index('pool_panel_id');
+$table->index(['from_pool_panel_id', 'to_pool_panel_id'], 'pp_from_to_idx'); // ← FIXED
+$table->index('pool_panel_split_id');
+$table->index('reassignment_date');
+$table->index('status');
+$table->index('action_type');
+
         });
     }
 

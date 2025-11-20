@@ -644,54 +644,48 @@
         </div>
     </section>
 
-    <!-- Pool Panel Reassignment Modal -->
-    <div class="modal fade" id="poolReassignModal" tabindex="-1" aria-labelledby="poolReassignModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-warning bg-opacity-10">
-                    <h5 class="modal-title" id="poolReassignModalLabel">Reassign Pool Panel Split</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="poolReassignAlert" class="alert alert-danger d-none" role="alert"></div>
-                    <div class="mb-3">
-                        <strong>Reassignment:</strong> Select a target pool panel that has capacity and does not already contain this pool.
-                    </div>
-                    <div class="mb-3">
-                        <label for="poolReassignReason" class="form-label">Reason for Reassignment (Optional)</label>
-                        <textarea class="form-control" id="poolReassignReason" rows="2" placeholder="Provide context for this reassignment"></textarea>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Pool Panel</th>
-                                    <th>Remaining</th>
-                                    <th>Total Splits</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="poolReassignTableBody">
-                                <tr>
-                                    <td colspan="4" class="text-center py-4">
-                                        <div class="spinner-border text-warning" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-warning" id="confirmPoolReassignBtn" disabled onclick="confirmPoolReassignment()">
-                        <i class="fas fa-exchange-alt me-1"></i>Select Panel First
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+   <!-- Panel Reassignment Modal -->
+   <div class="modal fade" id="poolReassignModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
+       <div class="modal-dialog modal-lg">
+           <div class="modal-content">
+               <div class="modal-header">
+                   <h5 class="modal-title" id="poolReassignModalLabel">Reassign Pool Panel</h5>
+                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+               </div>
+               <div class="modal-body">
+                   <div class="alert alert-info d-none" id="poolReassignAlert"></div>
+                   <div class="table-responsive">
+                       <table class="table table-hover">
+                           <thead>
+                               <tr>
+                                   <th>Panel</th>
+                                   <th>Remaining Capacity</th>
+                                   <th>Total Splits</th>
+                                   <th>Action</th>
+                               </tr>
+                           </thead>
+                           <tbody id="poolReassignTableBody">
+                               <!-- Available panels will be loaded here -->
+                           </tbody>
+                       </table>
+                   </div>
+                   <div class="mt-3">
+                       <label for="poolReassignReason" class="form-label">Reason for reassignment (optional)</label>
+                       <textarea class="form-control" id="poolReassignReason" rows="3"
+                           placeholder="Enter reason for reassignment..."></textarea>
+                   </div>
+               </div>
+               <div class="modal-footer">
+                   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                   <button type="button" class="btn btn-warning" id="confirmPoolReassignBtn" disabled
+                       onclick="confirmPoolReassignment()">
+                       <i class="fas fa-exchange-alt me-1"></i>Select Panel First
+                   </button>
+               </div>
+           </div>
+       </div>
+   </div>
+
 @endsection
 
 @push('scripts')
@@ -2743,7 +2737,7 @@
             showPoolReassignLoading(true);
 
             const modalElement = document.getElementById('poolReassignModal');
-            poolReassignModalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+            poolReassignModalInstance = new bootstrap.Modal(modalElement);
             poolReassignModalInstance.show();
 
             const url = '{{ route('admin.pool-panels.available-for-reassignment', ['poolId' => '__POOL_ID__', 'poolPanelId' => '__POOL_PANEL_ID__']) }}'

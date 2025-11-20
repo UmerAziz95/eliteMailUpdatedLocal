@@ -162,6 +162,12 @@
                     {{-- <span class="badge bg-info text-white ms-1" id="pool-migration-count">0</span> --}}
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pool-panel-reassignment-tab" data-bs-toggle="tab" data-bs-target="#pool-panel-reassignment-tab-pane"
+                    type="button" role="tab" aria-controls="pool-panel-reassignment-tab-pane" aria-selected="false">
+                    <i class="ti ti-arrows-shuffle me-1"></i>Pool Panel Reassignment
+                </button>
+            </li>
             
             <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="in-progress-tab" data-bs-toggle="tab" data-bs-target="#in-progress-tab-pane"
@@ -219,6 +225,22 @@
                 </div>
                 <div class="text-center mt-4">
                     <button id="load-more-pool-migration" class="btn btn-outline-light btn-sm d-none">
+                        <i class="fas fa-plus me-1"></i> Load More
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pool Panel Reassignment Tasks Tab -->
+            <div class="tab-pane fade" id="pool-panel-reassignment-tab-pane" role="tabpanel" aria-labelledby="pool-panel-reassignment-tab" tabindex="0">
+                <div id="pool-panel-reassignment-tasks-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
+                    <!-- Loading state -->
+                    <div class="loading-state text-center" style="grid-column: 1 / -1;">
+                        <div class="loading-spinner"></div>
+                        <p class="text-white-50 mt-2">Loading pool panel reassignment tasks...</p>
+                    </div>
+                </div>
+                <div class="text-center mt-4">
+                    <button id="load-more-pool-panel-reassignment" class="btn btn-outline-light btn-sm d-none">
                         <i class="fas fa-plus me-1"></i> Load More
                     </button>
                 </div>
@@ -289,6 +311,28 @@
                         <span class="visually-hidden">Loading panel reassignment details...</span>
                     </div>
                     <p class="mt-2 text-white">Loading panel reassignment details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pool Panel Reassignment Task Details Offcanvas -->
+    <div class="offcanvas offcanvas-bottom" style="height: 100vh;" tabindex="-1" id="pool-panel-task-details-view"
+        aria-labelledby="pool-panel-task-details-viewLabel" data-bs-backdrop="true" data-bs-scroll="false">
+        <div class="offcanvas-header border-0 pb-0" style="background-color: transparent">
+            <h5 class="offcanvas-title text-white" id="pool-panel-task-details-viewLabel">Pool Panel Reassignment Details</h5>
+            <button type="button" class="bg-transparent border-0" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="fas fa-times fs-5 text-white"></i>
+            </button>
+        </div>
+        <div class="offcanvas-body pt-2">
+            <div id="poolPanelTaskDetailsContainer">
+                <!-- Dynamic content will be loaded here -->
+                <div id="poolPanelTaskLoadingState" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading pool panel reassignment details...</span>
+                    </div>
+                    <p class="mt-2 text-white">Loading pool panel reassignment details...</p>
                 </div>
             </div>
         </div>
@@ -410,6 +454,7 @@
         pending: [],
         'shifted-pending': [],
         'pool-migration': [],
+        'pool-panel-reassignment': [],
         'in-progress': [],
         completed: []
     };
@@ -417,6 +462,7 @@
         pending: { currentPage: 1, hasMore: false },
         'shifted-pending': { currentPage: 1, hasMore: false },
         'pool-migration': { currentPage: 1, hasMore: false },
+        'pool-panel-reassignment': { currentPage: 1, hasMore: false },
         'in-progress': { currentPage: 1, hasMore: false },
         completed: { currentPage: 1, hasMore: false }
     };
@@ -424,7 +470,7 @@
     let activeTab = 'pending';
 
     // Initialize the page
-    document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function() {
         loadTasks('pending');
         
         // Tab change handlers
@@ -440,6 +486,9 @@
                 } else if (tabId === 'pool-migration-tab-pane') {
                     activeTab = 'pool-migration';
                     if (tasks['pool-migration'].length === 0) loadPoolMigrationTasks();
+                } else if (tabId === 'pool-panel-reassignment-tab-pane') {
+                    activeTab = 'pool-panel-reassignment';
+                    if (tasks['pool-panel-reassignment'].length === 0) loadPoolPanelReassignmentTasks();
                 } else if (tabId === 'in-progress-tab-pane') {
                     activeTab = 'in-progress';
                     if (tasks['in-progress'].length === 0) loadTasks('in-progress');
@@ -499,6 +548,12 @@
         document.getElementById('load-more-pool-migration').addEventListener('click', function() {
             if (pagination['pool-migration'].hasMore && !isLoading) {
                 loadPoolMigrationTasks(true);
+            }
+        });
+
+        document.getElementById('load-more-pool-panel-reassignment').addEventListener('click', function() {
+            if (pagination['pool-panel-reassignment'].hasMore && !isLoading) {
+                loadPoolPanelReassignmentTasks(true);
             }
         });
     });
@@ -650,6 +705,69 @@
         }
     }
 
+    // Load pool panel reassignment tasks function
+    async function loadPoolPanelReassignmentTasks(append = false) {
+        if (isLoading) return;
+
+        isLoading = true;
+        const container = document.getElementById('pool-panel-reassignment-tasks-container');
+        const status = 'pool-panel-reassignment';
+
+        try {
+            if (!append) {
+                container.innerHTML = `
+                    <div class="loading-state text-center" style="grid-column: 1 / -1;">
+                        <div class="loading-spinner"></div>
+                        <p class="text-white-50 mt-2">Loading pool panel reassignment tasks...</p>
+                    </div>
+                `;
+            }
+
+            const page = append ? pagination[status].currentPage + 1 : 1;
+            const params = new URLSearchParams({
+                page: page,
+                per_page: 12,
+            });
+
+            const response = await fetch(`{{ route('admin.taskInQueue.pool-panel-reassignment-tasks') }}?${params}`);
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load pool panel reassignment tasks');
+            }
+
+            if (append) {
+                tasks[status] = [...tasks[status], ...data.data];
+            } else {
+                tasks[status] = data.data;
+            }
+
+            pagination[status] = {
+                currentPage: data.pagination.current_page,
+                hasMore: data.pagination.has_more_pages,
+            };
+
+            renderPoolPanelReassignmentTasks(append);
+            updateLoadMoreButton(status);
+        } catch (error) {
+            console.error('Error loading pool panel reassignment tasks:', error);
+            if (!append) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        <h5>Error Loading Pool Panel Reassignment Tasks</h5>
+                        <p>${error.message}</p>
+                        <button class="btn btn-outline-light btn-sm" onclick="loadPoolPanelReassignmentTasks()">
+                            <i class="fas fa-redo me-1"></i> Retry
+                        </button>
+                    </div>
+                `;
+            }
+        } finally {
+            isLoading = false;
+        }
+    }
+
     // Render pool migration tasks function
     function renderPoolMigrationTasks(append = false) {
         const container = document.getElementById('pool-migration-tasks-container');
@@ -676,6 +794,135 @@
             const taskCard = createPoolMigrationCard(task);
             container.appendChild(taskCard);
         });
+    }
+
+    // Render pool panel reassignment tasks function
+    function renderPoolPanelReassignmentTasks(append = false) {
+        const container = document.getElementById('pool-panel-reassignment-tasks-container');
+        const tasksList = tasks['pool-panel-reassignment'];
+
+        if (tasksList.length === 0 && !append) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="fas fa-exchange-alt" style="font-size: 4rem; opacity: 0.5;"></i>
+                    <h5>No Pool Panel Reassignment Tasks Found</h5>
+                    <p>There are no pool panel reassignment tasks to display.</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (!append) {
+            container.innerHTML = '';
+        }
+
+        const tasksToRender = append
+            ? tasksList.slice(tasks['pool-panel-reassignment'].length - (tasksList.length - tasks['pool-panel-reassignment'].length))
+            : tasksList;
+
+        tasksToRender.forEach((task) => {
+            const taskCard = createPoolPanelReassignmentCard(task);
+            container.appendChild(taskCard);
+        });
+    }
+
+    // Create pool panel reassignment task card
+    function createPoolPanelReassignmentCard(task) {
+        const div = document.createElement('div');
+        div.className = 'card task-card p-3 rounded-4 border-0 shadow';
+
+        const statusClass = getStatusClass(task.status);
+
+        div.innerHTML = `
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <span class="text-white-50 small mb-1">Task #${task.task_id}</span>
+                    <span class="badge px-2 py-1 rounded ${statusClass} ms-1">
+                        ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+                    </span>
+                </div>
+                ${task.status === 'pending' && !task.assigned_to ? `
+                    <button class="btn btn-sm border-0 assign-btn" 
+                            style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
+                            onclick="assignPoolPanelReassignmentTaskToMe(${task.task_id})"
+                            title="Assign to Me">
+                        <i class="fas fa-user-plus text-white"></i>
+                    </button>
+                ` : `
+                    <button class="btn btn-sm border-0"
+                            style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
+                            onclick="viewPoolPanelReassignmentTaskDetails(${task.task_id})"
+                            data-bs-toggle="offcanvas" 
+                            data-bs-target="#pool-panel-task-details-view"
+                            title="View Task Details">
+                        <i class="fas fa-eye text-white"></i>
+                    </button>
+                `}
+            </div>
+
+            <!-- Pool Info -->
+            <div class="mb-3">
+                <div class="glass-box mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-white-50">Pool ID</span>
+                        <span class="fw-bold text-white">#${task.pool_id}</span>
+                    </div>
+                </div>
+                ${task.domain_url ? `
+                    <div class="glass-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Domain URL</span>
+                            <span class="fw-bold text-white">${task.domain_url}</span>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+
+            <!-- Movement Info -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="glass-box text-center">
+                        <small class="text-white-50 d-block mb-1">From Panel</small>
+                        <span class="fw-semibold text-white">${task.from_panel ? task.from_panel.title : 'N/A'}</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="glass-box text-center">
+                        <small class="text-white-50 d-block mb-1">To Panel</small>
+                        <span class="fw-semibold text-white">${task.to_panel ? task.to_panel.title : 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="glass-box text-center">
+                        <small class="text-white-50 d-block mb-1">Space Transferred</small>
+                        <span class="fw-semibold text-white">${task.space_transferred || 0}</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="glass-box text-center">
+                        <small class="text-white-50 d-block mb-1">Splits</small>
+                        <span class="fw-semibold text-white">${task.splits_count || 0}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignment Info -->
+            ${task.assigned_to_name ? `
+                <div class="glass-box mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-white-50">Assigned To</span>
+                        <span class="fw-bold text-white">${task.assigned_to_name}</span>
+                    </div>
+                </div>
+            ` : ''}
+        `;
+
+        return div;
     }
 
     // Create pool migration task card
@@ -1299,7 +1546,8 @@
             'shifted-pending': 'load-more-shifted-pending',
             'in-progress': 'load-more-progress',
             'completed': 'load-more-completed',
-            'pool-migration': 'load-more-pool-migration'
+            'pool-migration': 'load-more-pool-migration',
+            'pool-panel-reassignment': 'load-more-pool-panel-reassignment'
         };
         
         const btn = document.getElementById(loadMoreBtnMap[status]);
@@ -1316,7 +1564,8 @@
             'shifted-pending': 'shifted-pending-tasks-container',
             'in-progress': 'in-progress-tasks-container',
             'completed': 'completed-tasks-container',
-            'pool-migration': 'pool-migration-tasks-container'
+            'pool-migration': 'pool-migration-tasks-container',
+            'pool-panel-reassignment': 'pool-panel-reassignment-tasks-container'
         };
         
         const container = document.getElementById(containerMap[status]);
@@ -2251,9 +2500,229 @@
                 } else if (typeof split.domains === 'object' && split.domains !== null) {
                     const domainValues = Object.values(split.domains).filter(d => d && typeof d === 'string');
                     allDomains = allDomains.concat(domainValues);
-                }
             }
-        });
+        }
+    });
+
+    // Assign pool panel reassignment task to current admin
+    async function assignPoolPanelReassignmentTaskToMe(taskId) {
+        try {
+            const result = await Swal.fire({
+                title: 'Assign Pool Panel Reassignment Task?',
+                text: 'Do you want to assign this pool panel reassignment task to yourself?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, assign to me!',
+                cancelButtonText: 'Cancel',
+            });
+
+            if (!result.isConfirmed) return;
+
+            const response = await fetch(`/admin/taskInQueue/pool-panel-reassignment/${taskId}/assign`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to assign pool panel reassignment task');
+            }
+
+            await Swal.fire({
+                title: 'Success!',
+                text: data.message,
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+            });
+
+            tasks['pool-panel-reassignment'] = [];
+            pagination['pool-panel-reassignment'] = { currentPage: 1, hasMore: false };
+            loadPoolPanelReassignmentTasks();
+        } catch (error) {
+            console.error('Error assigning pool panel reassignment task:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to assign pool panel reassignment task',
+                icon: 'error',
+            });
+        }
+    }
+
+    // View pool panel reassignment task details
+    async function viewPoolPanelReassignmentTaskDetails(taskId) {
+        try {
+            const container = document.getElementById('poolPanelTaskDetailsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div id="poolPanelTaskLoadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading pool panel reassignment details...</span>
+                        </div>
+                        <p class="mt-2 text-white">Loading pool panel reassignment details...</p>
+                    </div>
+                `;
+            }
+
+            const offcanvasElement = document.getElementById('pool-panel-task-details-view');
+            const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+
+            offcanvasElement.addEventListener('hidden.bs.offcanvas', function () {
+                const backdrops = document.querySelectorAll('.offcanvas-backdrop, .modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+
+                document.body.classList.remove('offcanvas-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }, { once: true });
+
+            offcanvas.show();
+
+            const response = await fetch(`/admin/taskInQueue/pool-panel-reassignment/${taskId}/details`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch pool panel reassignment task details');
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load pool panel reassignment task details');
+            }
+
+            renderPoolPanelReassignmentDetails(data);
+        } catch (error) {
+            console.error('Error loading pool panel reassignment task details:', error);
+            const container = document.getElementById('poolPanelTaskDetailsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-triangle text-danger fs-3 mb-3"></i>
+                        <h5 class="text-white">Error Loading Pool Panel Reassignment Details</h5>
+                        <p class="text-white-50">Failed to load pool panel reassignment details. Please try again.</p>
+                        <button class="btn btn-primary" onclick="viewPoolPanelReassignmentTaskDetails(${taskId})">Retry</button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // Render pool panel reassignment task details
+    function renderPoolPanelReassignmentDetails(data) {
+        const container = document.getElementById('poolPanelTaskDetailsContainer');
+        const task = data.task;
+        const pool = data.pool;
+        const fromPanel = data.from_panel;
+        const toPanel = data.to_panel;
+
+        const statusBadge = getStatusClass(task.status);
+
+        const poolTitle = pool && pool.id ? `Pool #${pool.id}` : 'Pool Details';
+        const offcanvasTitle = document.getElementById('pool-panel-task-details-viewLabel');
+        if (offcanvasTitle) {
+            offcanvasTitle.innerHTML = poolTitle;
+        }
+
+        container.innerHTML = `
+            <div class="mb-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-white">Pool Panel Reassignment Task #${task.task_id}</h6>
+                        <p class="text-white-50 small mb-0">Status: <span class="badge ${statusBadge}">${task.status}</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="card p-3 mb-3 text-white">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-sitemap"></i>
+                            </div>
+                            Pool Details
+                        </h6>
+                        <div class="d-flex flex-column mt-2">
+                            <span class="opacity-50 small">Pool ID</span>
+                            <small class="text-white">${pool?.id || 'N/A'}</small>
+                        </div>
+                        <div class="d-flex flex-column mt-2">
+                            <span class="opacity-50 small">Domain URL</span>
+                            <small class="text-white">${pool?.domain_url || 'N/A'}</small>
+                        </div>
+                        <div class="d-flex flex-column mt-2">
+                            <span class="opacity-50 small">Total Inboxes</span>
+                            <small class="text-white">${pool?.total_inboxes ?? 'N/A'}</small>
+                        </div>
+                        <div class="d-flex flex-column mt-2">
+                            <span class="opacity-50 small">Status</span>
+                            <small class="text-white">${pool?.status || 'N/A'}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="card p-3 mb-3 text-white">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-exchange-alt"></i>
+                            </div>
+                            Reassignment Details
+                        </h6>
+
+                        <div class="row g-2 mt-2">
+                            <div class="col-md-6">
+                                <div class="glass-box">
+                                    <small class="text-white-50 d-block mb-1">From Pool Panel</small>
+                                    <span class="fw-semibold text-white">${fromPanel ? (fromPanel.auto_generated_id || fromPanel.title || 'N/A') : 'N/A'}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="glass-box">
+                                    <small class="text-white-50 d-block mb-1">To Pool Panel</small>
+                                    <span class="fw-semibold text-white">${toPanel ? (toPanel.auto_generated_id || toPanel.title || 'N/A') : 'N/A'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mt-3">
+                            <div class="col-md-6">
+                                <div class="glass-box">
+                                    <small class="text-white-50 d-block mb-1">Space Transferred</small>
+                                    <span class="fw-semibold text-white">${task.space_transferred || 0}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="glass-box">
+                                    <small class="text-white-50 d-block mb-1">Splits</small>
+                                    <span class="fw-semibold text-white">${task.splits_count || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50 small">Reason</span>
+                            <small class="text-white">${task.reason || 'N/A'}</small>
+                        </div>
+
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50 small">Notes</span>
+                            <small class="text-white">${task.notes || 'N/A'}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
         
         if (allDomains.length === 0) {
             return '<div class="text-center py-3"><small class="text-white">No domains available</small></div>';

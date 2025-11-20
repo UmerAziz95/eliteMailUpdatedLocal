@@ -438,6 +438,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
         Route::get('/panel-configurations', [AdminSettingsController::class, 'getPanelConfigurations'])->name('panel.configurations.get');
         Route::post('/panel-configurations/update', [AdminSettingsController::class, 'updateConfiguration'])->name('panel.configurations.update');
+        Route::get('/pool-configurations', [AdminSettingsController::class, 'getPoolConfigurations'])->name('pool.configurations.get');
+        Route::post('/pool-configurations/update', [AdminSettingsController::class, 'updatePoolConfigurations'])->name('pool.configurations.update');
         Route::get('/chargebee-configurations', [AdminSettingsController::class, 'getChargebeeConfigurations'])->name('chargebee.configurations.get');
         Route::post('/chargebee-configurations/update', [AdminSettingsController::class, 'updateChargebeeConfigurations'])->name('chargebee.configurations.update');
         Route::get('/system-configurations', [AdminSettingsController::class, 'getSystemConfigurations'])->name('system.configurations.get');
@@ -467,6 +469,12 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('taskInQueue/pool-migration/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolMigrationTaskDetails'])->name("taskInQueue.pool-migration-details");
         Route::post('taskInQueue/pool-migration/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignPoolMigrationTaskToMe'])->name("taskInQueue.pool-migration-assign");
         Route::put('taskInQueue/pool-migration/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updatePoolMigrationTaskStatus'])->name("taskInQueue.pool-migration-status");
+        Route::post('taskInQueue/pool-migration/{id}/reassign', [App\Http\Controllers\Admin\TaskQueueController::class, 'reassignPoolMigrationTask'])->name("taskInQueue.pool-migration-reassign");
+
+        // Pool Panel Reassignment Task Routes (specific routes must come before generic {id} routes)
+        Route::get('taskInQueue/pool-panel-reassignment-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolPanelReassignmentTasks'])->name("taskInQueue.pool-panel-reassignment-tasks");
+        Route::get('taskInQueue/pool-panel-reassignment/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolPanelReassignmentTaskDetails'])->name("taskInQueue.pool-panel-reassignment-details");
+        Route::post('taskInQueue/pool-panel-reassignment/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignPoolPanelReassignmentTaskToMe'])->name("taskInQueue.pool-panel-reassignment-assign");
         
         // Generic task routes (must come AFTER specific routes to avoid conflicts)
         Route::get('taskInQueue/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTaskDetails'])->name("taskInQueue.details");
