@@ -40,12 +40,12 @@ class UpdatePoolStatus extends Command
         $this->info("Checking domains with end_date on or before: {$today}");
 
         // Find all pools that have domains with warming status
-        $query = Pool::where(function ($q) {
-            $q->where('status_manage_by_admin', 'warming')
-              ->orWhereNull('status_manage_by_admin');
-        });
-
-        $poolsToCheck = $query->get();
+        // $query = Pool::where(function ($q) {
+        //     $q->where('status_manage_by_admin', 'warming')
+        //       ->orWhereNull('status_manage_by_admin');
+        // });
+        
+        $poolsToCheck = Pool::all();
         $poolsToUpdate = collect();
         
         // Filter pools that have domains with expired warming period
@@ -78,11 +78,13 @@ class UpdatePoolStatus extends Command
         
         // Display the pools that will be updated
         $this->table(
-            ['Pool ID', 'Created Date', 'Current Status', 'Domains Status', 'Expired Domains'],
+            ['Pool ID', 'Created Date', 'Current Status', 'Domains Status', 'Expired Domains', 'Expired Domain Names', 'Available Domain Names'],
             $poolsToUpdate->map(function ($pool) use ($today) {
                 // Check domains status
                 $domainStatusInfo = 'N/A';
                 $expiredDomains = 0;
+                $expiredDomainNames = [];
+                $availableDomainNames = [];
                 
                 if ($pool->domains && is_array($pool->domains)) {
                     $warmingCount = 0;
@@ -96,9 +98,11 @@ class UpdatePoolStatus extends Command
                             // Check if warming period expired
                             if (isset($domain['end_date']) && $domain['end_date'] <= $today) {
                                 $expiredDomains++;
+                                $expiredDomainNames[] = $domain['name'] ?? 'N/A';
                             }
                         } elseif ($status === 'available') {
                             $availableCount++;
+                            $availableDomainNames[] = $domain['name'] ?? 'N/A';
                         } else {
                             $otherCount++;
                         }
@@ -115,7 +119,9 @@ class UpdatePoolStatus extends Command
                     $pool->created_at->format('Y-m-d H:i:s'),
                     $pool->status_manage_by_admin ?? 'warming (null)',
                     $domainStatusInfo,
-                    $expiredDomains
+                    $expiredDomains,
+                    implode(', ', $expiredDomainNames) ?: 'None',
+                    implode(', ', $availableDomainNames) ?: 'None'
                 ];
             })
         );
