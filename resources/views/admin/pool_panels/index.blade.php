@@ -643,6 +643,46 @@
             <p class="mb-3">No pool panels match your current filters.</p>
         </div>
     </section>
+
+    <!-- Pool Panel Reassignment Modal -->
+    <div class="modal fade" id="poolReassignModal" tabindex="-1" aria-labelledby="poolReassignModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="poolReassignModalLabel">Reassign Pool Panel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Pool Panel Reassignment:</strong> Select a target pool panel within this pool that has capacity and is not already assigned.
+                    </div>
+
+                    <div id="poolReassignAlert" class="alert alert-danger d-none" role="alert"></div>
+
+                    <div id="poolReassignLoader" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 mb-0">Loading available pool panels...</p>
+                    </div>
+
+                    <div id="availablePoolPanelsContainer"></div>
+
+                    <div class="mt-3" id="poolReassignReasonContainer" style="display: none;">
+                        <label for="poolReassignReason" class="form-label">Reason for reassignment (optional)</label>
+                        <textarea class="form-control" id="poolReassignReason" rows="3" placeholder="Enter reason for reassignment..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" id="confirmPoolReassignBtn" disabled onclick="confirmPoolReassignment()">
+                        <i class="fas fa-exchange-alt me-1"></i>Select Panel First
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -657,6 +697,8 @@
         let charts = {}; // Store chart instances
         const PANEL_CAPACITY_FALLBACK = {{ env('PANEL_CAPACITY', 1790) }};
         const DEFAULT_PROVIDER_TYPE = 'Google';
+        let currentPoolReassignData = {};
+        let poolReassignModalInstance = null;
 
         function getCapacityForProvider(providerType) {
             // In the future, you can expand this with a map from the backend if capacities differ
@@ -1290,6 +1332,11 @@
                                     <td>${split.inboxes_per_domain ?? 0}</td>
                                     <td>${split.total_inboxes ?? 0}</td>
                                     <td>${split.created_at ? formatDate(split.created_at) : 'N/A'}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-warning" onclick="openPoolReassignModal(${pool.pool_id}, ${splitPanel?.id || poolPanel.id}, ${split.id}, '${panelTitle.replace(/'/g, "\\'")}')">
+                                            <i class="fas fa-exchange-alt"></i> Reassign
+                                        </button>
+                                    </td>
                                 </tr>
                             `;
                     })()}
@@ -1332,6 +1379,7 @@
                         <th>Inboxes/Domain</th>
                         <th>Total Inboxes</th>
                         <th>Created</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -2667,6 +2715,400 @@
             $('#submitPoolPanelFormBtn').text('Submit');
             $('.is-invalid').removeClass('is-invalid');
             $('.invalid-feedback').remove();
+        }
+
+        // ========================
+        // Pool Panel Reassignment
+        // ========================
+        function openPoolReassignModal(poolId, currentPoolPanelId, splitId, panelTitle) {
+            currentPoolReassignData = {
+                poolId,
+                currentPoolPanelId,
+                splitId,
+                targetPoolPanelId: null,
+                targetPanelTitle: null,
+                panelTitle
+            };
+
+            document.getElementById('poolReassignReason').value = '';
+            showPoolReassignError('');
+            showPoolReassignLoading(true);
+
+            const modalElement = document.getElementById('poolReassignModal');
+            poolReassignModalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+            poolReassignModalInstance.show();
+
+            document.getElementById('poolReassignModalLabel').innerHTML = `Reassign Pool Panel: ${'PPN-' + currentPoolPanelId} ${panelTitle || ''}`;
+
+            loadAvailablePoolPanels(poolId, currentPoolPanelId);
+        }
+
+        async function loadAvailablePoolPanels(poolId, currentPoolPanelId) {
+            try {
+                showPoolReassignLoading(true);
+                const url = '{{ route('admin.pool-panels.available-for-reassignment', ['poolId' => '__POOL_ID__', 'poolPanelId' => '__POOL_PANEL_ID__']) }}'
+                    .replace('__POOL_ID__', poolId)
+                    .replace('__POOL_PANEL_ID__', currentPoolPanelId);
+
+                const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load available pool panels');
+                }
+
+                renderAvailablePoolPanels(data.panels || [], data.space_needed || 0);
+                document.getElementById('poolReassignReasonContainer').style.display = 'block';
+            } catch (error) {
+                console.error('Failed to load pool panels for reassignment', error);
+                showPoolReassignError(error.message || 'Failed to load available pool panels');
+            } finally {
+                showPoolReassignLoading(false);
+            }
+        }
+
+        function renderAvailablePoolPanels(panels, spaceNeeded = 0) {
+            const container = document.getElementById('availablePoolPanelsContainer');
+            const button = document.getElementById('confirmPoolReassignBtn');
+
+            if (!Array.isArray(panels) || panels.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle text-muted mb-3" style="font-size: 2rem;"></i>
+                        <p class="text-muted mb-0">No pool panels available for reassignment</p>
+                    </div>
+                `;
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
+                return;
+            }
+
+            const searchHtml = `
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="poolPanelSearchInput"
+                               placeholder="Search pool panels by ID or title..." onkeyup="filterPoolPanels()">
+                    </div>
+                </div>
+            `;
+
+            const panelsHtml = panels.map(panel => `
+                <div class="pool-panel-option mb-2 border rounded-3 shadow-sm position-relative overflow-hidden pool-panel-card"
+                     data-panel-id="${panel.panel_id}" data-panel-title="${(panel.panel_title || '').toLowerCase()}"
+                     data-space-needed="${panel.space_needed || 0}" data-panel-limit="${panel.panel_limit}"
+                     data-panel-remaining="${panel.panel_remaining_limit}"
+                     onclick="selectPoolReassignTarget(${panel.panel_id}, '${panel.panel_title || 'N/A'}', ${panel.space_needed || 0}, ${panel.panel_remaining_limit})"
+                     style="cursor: pointer; transition: all 0.2s ease;">
+
+                    <div class="p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="panel-icon me-2">
+                                    <div class="d-flex align-items-center justify-content-center rounded-circle bg-warning bg-gradient"
+                                         style="width: 35px; height: 35px;">
+                                        <i class="fas fa-exchange-alt text-white"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">
+                                        <span class="badge bg-info bg-gradient me-2 px-2 py-1 small">PPN-${panel.panel_id}</span>
+                                        <span class="panel-title-text">${panel.panel_title || 'N/A'}</span>
+                                    </h6>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-outline-warning btn-sm px-3 select-btn">
+                                <i class="fas fa-arrow-right me-1"></i>Select
+                            </button>
+                        </div>
+
+                        <div class="row g-2 mt-1">
+                            <div class="col-3">
+                                <div class="text-center p-2 rounded bg-light">
+                                    <div class="fw-bold text-success pool-panel-space-needed" style="font-size: 0.9rem;">${spaceNeeded}</div>
+                                    <small class="text-muted">Need</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-center p-2 rounded bg-light">
+                                    <div class="fw-bold text-primary" style="font-size: 0.9rem;">${panel.total_splits || 0}</div>
+                                    <small class="text-muted">Splits</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-center p-2 rounded bg-light">
+                                    <div class="fw-bold text-warning" style="font-size: 0.9rem;">${panel.panel_limit}</div>
+                                    <small class="text-muted">Limit</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-center p-2 rounded bg-light">
+                                    <div class="fw-bold text-danger pool-panel-remaining" style="font-size: 0.9rem;">${panel.panel_remaining_limit}</div>
+                                    <small class="text-muted">Free</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = searchHtml + '<div id="poolPanelsList">' + panelsHtml + '</div>';
+
+            const style = document.createElement('style');
+            style.textContent = `
+                .pool-panel-card{ border:1px solid #dee2e6; }
+                .pool-panel-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; }
+                .pool-panel-card.selected { border-color: #ffc107 !important; background: linear-gradient(135deg, rgba(255,193,7,0.15) 0%, rgba(255,193,7,0.05) 100%) !important; box-shadow: 0 0 0 2px rgba(255,193,7,0.25) !important; }
+            `;
+            document.head.appendChild(style);
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
+        }
+
+        function filterPoolPanels() {
+            const searchTerm = document.getElementById('poolPanelSearchInput').value.toLowerCase();
+            const panelCards = document.querySelectorAll('.pool-panel-card');
+            let visibleCount = 0;
+
+            panelCards.forEach(card => {
+                const panelId = card.getAttribute('data-panel-id');
+                const panelTitle = card.getAttribute('data-panel-title');
+                const isVisible = panelId.includes(searchTerm) || panelTitle.includes(searchTerm);
+
+                if (isVisible) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            const panelsList = document.getElementById('poolPanelsList');
+            let noResultsDiv = document.getElementById('poolNoSearchResults');
+
+            if (visibleCount === 0 && searchTerm.length > 0) {
+                if (!noResultsDiv) {
+                    noResultsDiv = document.createElement('div');
+                    noResultsDiv.id = 'poolNoSearchResults';
+                    noResultsDiv.className = 'text-center py-4';
+                    noResultsDiv.innerHTML = `
+                        <i class="fas fa-search text-muted mb-2" style="font-size: 1.5rem;"></i>
+                        <p class="text-muted mb-0">No pool panels found matching "${searchTerm}"</p>
+                    `;
+                    panelsList.appendChild(noResultsDiv);
+                }
+            } else if (noResultsDiv) {
+                noResultsDiv.remove();
+            }
+        }
+
+        function selectPoolReassignTarget(panelId, panelTitle, spaceNeeded = 0, remainingSpace = 0) {
+            document.querySelectorAll('.pool-panel-card').forEach(option => option.classList.remove('selected'));
+
+            const selectedPanel = document.querySelector(`[data-panel-id="${panelId}"]`);
+            if (selectedPanel) {
+                selectedPanel.classList.add('selected');
+            }
+
+            updatePoolPanelSpaceValues(panelId, spaceNeeded);
+
+            currentPoolReassignData.targetPoolPanelId = panelId;
+            currentPoolReassignData.targetPanelTitle = panelTitle;
+            currentPoolReassignData.spaceNeeded = spaceNeeded;
+            currentPoolReassignData.remainingSpace = remainingSpace;
+
+            const button = document.getElementById('confirmPoolReassignBtn');
+            button.disabled = false;
+            button.innerHTML = `<i class="fas fa-exchange-alt me-1"></i>Reassign to ${panelTitle}`;
+            showPoolReassignError('');
+        }
+
+        function updatePoolPanelSpaceValues(selectedPanelId, spaceToMove) {
+            const currentSpaceNeeded = spaceToMove;
+
+            document.querySelectorAll('.pool-panel-card').forEach(panelOption => {
+                const originalSpaceNeeded = parseInt(panelOption.getAttribute('data-space-needed')) || 0;
+                const originalRemaining = parseInt(panelOption.getAttribute('data-panel-remaining')) || 0;
+
+                const spaceNeededElement = panelOption.querySelector('.pool-panel-space-needed');
+                const remainingElement = panelOption.querySelector('.pool-panel-remaining');
+
+                if (spaceNeededElement) {
+                    spaceNeededElement.textContent = originalSpaceNeeded;
+                    spaceNeededElement.style.color = '';
+                    spaceNeededElement.style.fontWeight = '';
+                }
+                if (remainingElement) {
+                    remainingElement.textContent = originalRemaining;
+                    remainingElement.style.color = '';
+                    remainingElement.style.fontWeight = '';
+                }
+            });
+
+            document.querySelectorAll('.pool-panel-card').forEach(panelOption => {
+                const panelId = panelOption.getAttribute('data-panel-id');
+                const originalRemaining = parseInt(panelOption.getAttribute('data-panel-remaining')) || 0;
+                const remainingElement = panelOption.querySelector('.pool-panel-remaining');
+
+                if (panelId == selectedPanelId && remainingElement) {
+                    const newRemaining = originalRemaining - currentSpaceNeeded;
+                    remainingElement.textContent = newRemaining;
+                    remainingElement.style.color = newRemaining < 0 ? '#dc3545' : '#dc3545';
+                    remainingElement.style.fontWeight = 'bold';
+                }
+            });
+        }
+
+        async function confirmPoolReassignment() {
+            if (!currentPoolReassignData.targetPoolPanelId) {
+                showPoolReassignError('Please select a target pool panel');
+                return;
+            }
+
+            try {
+                const result = await Swal.fire({
+                    title: 'Confirm Pool Panel Reassignment?',
+                    html: `
+                        <div class="text-start">
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #ffc107 0%, #f7d46a 100%);">
+                                        <div class="card-body text-center text-dark">
+                                            <i class="fas fa-exchange-alt fs-2 mb-2"></i>
+                                            <h4 class="card-title mb-1 fw-bold">PPN-${currentPoolReassignData.currentPoolPanelId}</h4>
+                                            <p class="mb-1 fw-semibold">${currentPoolReassignData.panelTitle || ''}</p>
+                                            <small class="text-dark">From Pool Panel</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
+                                        <div class="card-body text-center text-white">
+                                            <i class="fas fa-arrow-right fs-2 mb-2"></i>
+                                            <h4 class="card-title mb-1 fw-bold">${currentPoolReassignData.spaceNeeded || 0}</h4>
+                                            <p class="mb-1 fw-semibold">Inboxes</p>
+                                            <small class="text-white-50">Capacity to move</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #28a745 0%, #5dd39e 100%);">
+                                        <div class="card-body text-center text-white">
+                                            <i class="fas fa-server fs-2 mb-2"></i>
+                                            <h4 class="card-title mb-1 fw-bold">PPN-${currentPoolReassignData.targetPoolPanelId}</h4>
+                                            <p class="mb-1 fw-semibold">${currentPoolReassignData.targetPanelTitle}</p>
+                                            <small class="text-white-50">To Pool Panel</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-warning mb-0">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <span class="badge bg-warning text-dark">Reassignment</span>
+                                    </div>
+                                    <div>
+                                        <p class="mb-0 text-dark">This will move the selected pool panel split and adjust remaining limits accordingly.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Reassign',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#ffc107',
+                    focusConfirm: false,
+                });
+
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                showPoolReassignLoading(true);
+
+                const response = await fetch('{{ route('admin.pool-panels.reassign') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        from_pool_panel_id: currentPoolReassignData.currentPoolPanelId,
+                        to_pool_panel_id: currentPoolReassignData.targetPoolPanelId,
+                        split_id: currentPoolReassignData.splitId,
+                        pool_id: currentPoolReassignData.poolId,
+                        reason: document.getElementById('poolReassignReason').value
+                    })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.message || 'Reassignment failed');
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Reassignment Successful!',
+                    text: data.message || 'Pool panel split reassigned successfully',
+                    confirmButtonColor: '#ffc107',
+                });
+
+                resetPoolReassignModal();
+                poolReassignModalInstance?.hide();
+                loadPoolPanels();
+            } catch (error) {
+                console.error('Pool panel reassignment failed', error);
+                showPoolReassignError(error.message || 'Reassignment failed');
+            } finally {
+                showPoolReassignLoading(false);
+            }
+        }
+
+        function showPoolReassignLoading(show) {
+            const loader = document.getElementById('poolReassignLoader');
+            const container = document.getElementById('availablePoolPanelsContainer');
+            const button = document.getElementById('confirmPoolReassignBtn');
+
+            if (show) {
+                loader.style.display = 'block';
+                container.innerHTML = '';
+                button.disabled = true;
+            } else {
+                loader.style.display = 'none';
+            }
+        }
+
+        function showPoolReassignError(message) {
+            const alertBox = document.getElementById('poolReassignAlert');
+            if (!alertBox) return;
+
+            if (!message) {
+                alertBox.classList.add('d-none');
+                alertBox.innerHTML = '';
+                return;
+            }
+
+            alertBox.classList.remove('d-none');
+            alertBox.innerHTML = message;
+        }
+
+        function resetPoolReassignModal() {
+            currentPoolReassignData = {};
+            document.getElementById('poolReassignReason').value = '';
+            document.getElementById('poolReassignReasonContainer').style.display = 'none';
+            const button = document.getElementById('confirmPoolReassignBtn');
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
+            }
+            showPoolReassignError('');
         }
     </script>
 @endpush
