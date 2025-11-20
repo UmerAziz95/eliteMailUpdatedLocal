@@ -78,7 +78,7 @@ class UpdatePoolStatus extends Command
         
         // Display the pools that will be updated
         $this->table(
-            ['Pool ID', 'Created Date', 'Current Status', 'Domains Status', 'Expired Domains', 'Expired Domain Names', 'Available Domain Names'],
+            ['Pool ID', 'Created Date', 'Current Status', 'Domains Status', 'Expired Domains', 'Warming Expired Names', 'Available Domain Names'],
             $poolsToUpdate->map(function ($pool) use ($today) {
                 // Check domains status
                 $domainStatusInfo = 'N/A';
