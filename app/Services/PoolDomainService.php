@@ -192,6 +192,7 @@ class PoolDomainService
                 'pool_order_status' => $poolOrderStatus,
                 'pool_order_admin_status' => $poolOrderAdminStatus,
                 'is_used' => (bool) ($domain['is_used'] ?? false),
+                'end_date' => $domain['end_date'] ?? null,
             ];
         }
     }
@@ -445,6 +446,7 @@ class PoolDomainService
                 'pool_order_status' => $poolOrderStatus,
                 'pool_order_admin_status' => $poolOrderAdminStatus,
                 'is_used' => (bool) ($domain['is_used'] ?? false),
+                'end_date' => $domain['end_date'] ?? null,
             ];
         }
     }
