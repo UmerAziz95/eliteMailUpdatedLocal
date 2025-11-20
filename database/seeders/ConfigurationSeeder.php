@@ -50,6 +50,12 @@ class ConfigurationSeeder extends Seeder
                 'description' => 'Maximum capacity for Microsoft 365 panel assignments'
             ],
             [
+                'key' => 'POOL_WARMING_PERIOD',
+                'value' => '21',
+                'type' => 'number',
+                'description' => 'Number of days a pool remains in warming before allocation'
+            ],
+            [
                 'key' => 'CHARGEBEE_PUBLISHABLE_API_KEY',
                 'value' => 'test_AhIaXMucdYCKah7boupv0BdwxrB3ljcdSk',
                 'type' => 'string',

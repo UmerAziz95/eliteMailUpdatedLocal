@@ -98,6 +98,11 @@
                     type="button" role="tab" aria-controls="panel_configuration-tab-pane" aria-selected="false"><i
                         class="fa-solid fa-sliders"></i> Panel Configurations</button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pool-config-tab" data-bs-toggle="tab" data-bs-target="#pool_configuration-pane"
+                    type="button" role="tab" aria-controls="pool_configuration-tab-pane" aria-selected="false"><i
+                        class="fa-solid fa-water"></i> Pool Configurations</button>
+            </li>
         </ul>
 
         <div class="tab-content mt-4" id="myTabContent">
@@ -359,6 +364,76 @@
                                     @empty
                                         <tr>
                                             <td colspan="4" class="text-center text-muted">No panel configurations found.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pool_configuration-pane" role="tabpanel"
+                 aria-labelledby="pool_configuration-tab" tabindex="0">
+                <div class="card mb-4 p-3">
+                    <h5 class="card-header">Pool Configurations</h5>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead class="">
+                                    <tr>
+                                        <th>Configuration Key</th>
+                                        <th>Label / Description</th>
+                                        <th>Type</th>
+                                        <th>Value</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $poolConfigsCollection = collect($poolConfigs ?? []);
+                                    @endphp
+
+                                    @forelse ($poolConfigsCollection as $config)
+                                        @php
+                                            $type = strtolower($config->type ?? 'string');
+                                            $rawValue = $config->value ?? '';
+                                            $displayValue = ($rawValue === null || $rawValue === '') ? '--' : $rawValue;
+                                            $badgeClass = null;
+
+                                            if ($type === 'boolean') {
+                                                $isTrue = filter_var($rawValue, FILTER_VALIDATE_BOOLEAN);
+                                                $displayValue = $isTrue ? 'true' : 'false';
+                                                $badgeClass = $isTrue ? 'bg-label-success' : 'bg-label-danger';
+                                            } elseif ($type === 'number') {
+                                                $badgeClass = 'bg-label-warning';
+                                            }
+
+                                            $keySlug = \Illuminate\Support\Str::slug($config->key, '-');
+                                        @endphp
+                                        <tr>
+                                            <td><strong>{{ $config->key }}</strong></td>
+                                            <td id="desc-{{ $keySlug }}" class="text-muted">
+                                                {{ $config->description ?? '--' }}
+                                            </td>
+                                            <td>{{ strtoupper($config->type ?? 'STRING') }}</td>
+                                            <td id="value-{{ $keySlug }}">
+                                                @if ($badgeClass)
+                                                    <span class="badge {{ $badgeClass }}">{{ $displayValue }}</span>
+                                                @else
+                                                    {{ $displayValue }}
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        onclick="editConfig('{{ $config->key }}', null, null, null, 'pool')">
+                                                    <i class="fa fa-edit me-1"></i>Edit
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No pool configurations found.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -695,6 +770,18 @@
     let currentConfigKey = '';
     let currentConfigType = '';
     let isSelectInputMode = false;
+    let currentConfigSource = 'panel';
+
+    const configRoutes = {
+        panel: {
+            get: '{{ route("admin.panel.configurations.get") }}',
+            update: '{{ route("admin.panel.configurations.update") }}'
+        },
+        pool: {
+            get: '{{ route("admin.pool.configurations.get") }}',
+            update: '{{ route("admin.pool.configurations.update") }}'
+        }
+    };
 
     function getConfigBadgeHtml(key, type, value) {
         if (type === 'boolean') {
@@ -717,7 +804,7 @@
         return '';
     }
 
-    function editConfig(key, value = null, type = null, description = null) {
+    function editConfig(key, value = null, type = null, description = null, source = 'panel') {
         // Show loading state
         Swal.fire({
             title: 'Loading...',
@@ -729,8 +816,21 @@
             }
         });
 
+        currentConfigSource = source;
+        const fetchRoute = configRoutes[source]?.get;
+        if (!fetchRoute) {
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Invalid configuration source selected',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         // Fetch fresh data from the server
-        fetch('{{ route("admin.panel.configurations.get") }}', {
+        fetch(fetchRoute, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -856,7 +956,19 @@
         });
         
         // Make AJAX call to save to the backend
-        fetch('{{ route("admin.panel.configurations.update") }}', {
+        const updateRoute = configRoutes[currentConfigSource]?.update;
+        if (!updateRoute) {
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Invalid configuration source selected',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        fetch(updateRoute, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

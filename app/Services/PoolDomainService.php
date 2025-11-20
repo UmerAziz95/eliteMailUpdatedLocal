@@ -62,7 +62,9 @@ class PoolDomainService
                 $query->select('id', 'name', 'email');
             }])
             ->select('id', 'user_id', 'domains', 'prefix_variants')
-            ->whereNotNull('domains');
+            ->whereNotNull('domains')
+            ->whereNotNull('purchase_date')
+            ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()');
             
             $poolOrderQuery = PoolOrder::with(['user' => function($query) {
                 $query->select('id', 'name', 'email');
@@ -351,6 +353,8 @@ class PoolDomainService
             }])
             ->select('id', 'user_id', 'domains', 'prefix_variants')
             ->whereNotNull('domains')
+            ->whereNotNull('purchase_date')
+            ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()')
             ->chunk($this->chunkSize, function ($pools) use (&$results, $poolOrdersByDomain, $searchTerm) {
                 foreach ($pools as $pool) {
                     $this->processPoolDomainsWithSearch($pool, $poolOrdersByDomain, $results, $searchTerm);
@@ -478,6 +482,8 @@ class PoolDomainService
             $totalDomains = 0;
             
             Pool::whereNotNull('domains')
+                ->whereNotNull('purchase_date')
+                ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()')
                 ->chunk($this->chunkSize, function ($pools) use (&$totalDomains) {
                     foreach ($pools as $pool) {
                         if (is_array($pool->domains)) {
@@ -501,6 +507,8 @@ class PoolDomainService
         $totalDomains = 0;
         
         Pool::whereNotNull('domains')
+            ->whereNotNull('purchase_date')
+            ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()')
             ->chunk($this->chunkSize, function ($pools) use (&$totalDomains) {
                 foreach ($pools as $pool) {
                     if (is_array($pool->domains)) {
