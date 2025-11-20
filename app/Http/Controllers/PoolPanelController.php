@@ -17,6 +17,7 @@ use App\Models\PoolPanel;
 use App\Models\Pool;
 use App\Models\PoolPanelSplit;
 use App\Models\Configuration;
+use App\Services\PoolPanelReassignmentService;
 
 class PoolPanelController extends Controller
 {
@@ -664,6 +665,104 @@ class PoolPanelController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to archive/unarchive pool panel'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available pool panels for reassignment.
+     */
+    public function getAvailablePoolPanelsForReassignment(int $poolId, int $poolPanelId)
+    {
+        try {
+            $service = new PoolPanelReassignmentService();
+            return response()->json(
+                $service->getAvailablePoolPanelsForReassignment($poolId, $poolPanelId)
+            );
+        } catch (\Exception $e) {
+            Log::error('Error getting available pool panels for reassignment', [
+                'pool_id' => $poolId,
+                'pool_panel_id' => $poolPanelId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get available pool panels: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Reassign pool panel splits.
+     */
+    public function reassignPoolPanelSplit(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'from_pool_panel_id' => 'required|integer|exists:pool_panels,id',
+                'to_pool_panel_id' => 'required|integer|exists:pool_panels,id',
+                'split_id' => 'nullable|integer|exists:pool_panel_splits,id',
+                'pool_id' => 'required|integer|exists:pools,id',
+                'reason' => 'nullable|string|max:500',
+            ]);
+
+            $service = new PoolPanelReassignmentService();
+            $result = $service->reassignPoolPanelSplit(
+                (int) $validated['from_pool_panel_id'],
+                (int) $validated['to_pool_panel_id'],
+                $validated['split_id'] ?? null,
+                auth()->id(),
+                $validated['reason'] ?? null
+            );
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'data' => $result,
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $result['error'] ?? 'Pool panel reassignment failed',
+            ], 400);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error: ' . collect($e->errors())->flatten()->implode(', '),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Pool panel reassignment failed', [
+                'payload' => $request->all(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Pool panel reassignment failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get pool panel reassignment history for a pool.
+     */
+    public function getReassignmentHistory(int $poolId)
+    {
+        try {
+            $service = new PoolPanelReassignmentService();
+            return response()->json($service->getReassignmentHistory($poolId));
+        } catch (\Exception $e) {
+            Log::error('Error getting pool panel reassignment history', [
+                'pool_id' => $poolId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get reassignment history: ' . $e->getMessage(),
             ], 500);
         }
     }
