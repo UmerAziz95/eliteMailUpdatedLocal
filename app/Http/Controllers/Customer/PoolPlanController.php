@@ -1063,7 +1063,7 @@ class PoolPlanController extends Controller
     {
         // Use database query with indexes for better performance
         $pools = Pool::select('id', 'domains', 'inboxes_per_domain', 'prefix_variants')
-            ->where('status_manage_by_admin', 'available')
+            // ->where('status_manage_by_admin', 'available')
             ->whereNotNull('domains')
             ->whereNotNull('inboxes_per_domain')
             ->where('inboxes_per_domain', '>', 0)
@@ -1110,7 +1110,7 @@ class PoolPlanController extends Controller
     private function getAvailableDomainsWithPagination($page = 1, $perPage = 50, $search = '')
     {
         $query = Pool::select('id', 'domains', 'inboxes_per_domain', 'prefix_variants')
-            ->where('status_manage_by_admin', 'available')
+            // ->where('status_manage_by_admin', 'available')
             ->whereNotNull('domains')
             ->whereNotNull('purchase_date')
             ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()')
