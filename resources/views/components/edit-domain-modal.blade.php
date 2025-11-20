@@ -212,6 +212,18 @@ $('#editDomainForm').on('submit', function(e) {
         url: '{{ route("admin.pool-domains.update") }}',
         type: 'POST',
         data: formData,
+        beforeSend: function() {
+            Swal.fire({
+                title: 'Updating domain...',
+                html: 'Please wait while we save your changes.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        },
         success: function(response) {
             $('#editDomainModal').modal('hide');
             toastr.success(response.message || 'Domain updated successfully');
@@ -237,8 +249,10 @@ $('#editDomainForm').on('submit', function(e) {
                     $(selector).DataTable().ajax.reload(null, false);
                 }
             });
+            Swal.close();
         },
         error: function(xhr) {
+            Swal.close();
             const errorMsg = xhr.responseJSON?.message || 'Error updating domain';
             toastr.error(errorMsg);
         }
