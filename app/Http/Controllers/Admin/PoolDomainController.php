@@ -26,8 +26,11 @@ class PoolDomainController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            // Get all pool domains without our custom pagination
-            $allData = $this->poolDomainService->getPoolDomainsData(true); // Use cache
+            $poolId = $request->get('pool_id');
+            $userId = $request->get('user_id');
+
+            // Get all pool domains, optionally filtered by user or pool
+            $allData = $this->poolDomainService->getPoolDomainsData(true, $userId, $poolId);
             
             return DataTables::of($allData)
                 ->addIndexColumn()

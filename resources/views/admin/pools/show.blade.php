@@ -325,46 +325,28 @@
                         Pool Domains
                     </h6>
 
-                    @php
-                    $poolDomains = $pool->domains ?? [];
-                    @endphp
-
-                    @if(count($poolDomains) > 0)
                     <div class="table-responsive">
-                        <table class="table table-striped">
+                        <table id="pool-specific-domains-table" class="table table-hover w-100">
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>Customer</th>
+                                    <th>Email</th>
                                     <th>Domain ID</th>
+                                    <th>Pool ID</th>
+                                    <th>Trial Order ID</th>
                                     <th>Domain Name</th>
                                     <th>Status</th>
+                                    <th>Usage</th>
+                                    <th>Order Status</th>
+                                    <th>Per Inbox</th>
+                                    <th>Prefixes</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @foreach($poolDomains as $index => $domain)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td><span class="badge bg-secondary">{{ $domain['id'] ?? 'N/A' }}</span></td>
-                                    <td><strong>{{ $domain['name'] ?? 'N/A' }}</strong></td>
-                                    <td>
-                                        <!-- is_used -->
-                                        @if($domain['is_used'])
-                                            <span class="badge bg-success">Active</span>
-                                        @else
-                                            <span class="badge bg-danger">Inactive</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
-                    @else
-                    <div class="text-center text-muted py-4">
-                        <i class="fa-solid fa-inbox fa-3x mb-3"></i>
-                        <p>No domains assigned to this pool</p>
-                    </div>
-                    @endif
                 </div>
             </div>
         </div>
@@ -614,6 +596,8 @@
     </div>
 </section>
 
+<x-edit-domain-modal />
+
 @push('scripts')
 <script>
 $(function() {
@@ -627,7 +611,7 @@ $(function() {
                 text: 'Please select a helper',
                 confirmButtonColor: '#3085d6'
             });
-            return;
+                    return;
         }
         
         performReassignment(helperId);
@@ -676,6 +660,45 @@ $(function() {
             }
         });
     }
+});
+
+// Pool domains table (filtered to this pool)
+$(function() {
+    const poolDomainsTable = $('#pool-specific-domains-table').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "{{ route('admin.pool-domains.index') }}",
+            type: 'GET',
+            data: {
+                pool_id: "{{ $pool->id }}"
+            }
+        },
+        columns: [
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'customer_name', name: 'customer_name' },
+            { data: 'customer_email', name: 'customer_email' },
+            { data: 'domain_id', name: 'domain_id', visible: false },
+            { data: 'pool_id', name: 'pool_id', visible: false },
+            { data: 'pool_order_id', name: 'pool_order_id', visible: false },
+            { data: 'domain_name', name: 'domain_name' },
+            { data: 'status_badge', name: 'status', orderable: false },
+            { data: 'usage_badge', name: 'is_used', orderable: false, visible: false },
+            { data: 'pool_order_status_badge', name: 'pool_order_status', orderable: false, visible: false },
+            { data: 'per_inbox', name: 'per_inbox', visible: false },
+            { data: 'prefixes_formatted', name: 'prefixes', orderable: false, searchable: false },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false }
+        ],
+        order: [[1, 'asc']],
+        pageLength: 25,
+        responsive: true,
+        dom: 'Bfrtip'
+    });
+
+    // Adjust columns once the Domains tab is visible
+    $('button[data-bs-target="#domains-tab-pane"]').on('shown.bs.tab', function () {
+        poolDomainsTable.columns.adjust().draw(false);
+    });
 });
 </script>
 @endpush
