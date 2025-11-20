@@ -215,7 +215,28 @@ $('#editDomainForm').on('submit', function(e) {
         success: function(response) {
             $('#editDomainModal').modal('hide');
             toastr.success(response.message || 'Domain updated successfully');
-            $('#pool-domains-table').DataTable().ajax.reload();
+            // Reload any DataTables that may show domains across pages
+            const selectorSet = new Set([
+                '#pool-domains-table',
+                '#pool-specific-domains-table',
+                '#all-pool-orders-table',
+                '#pool-orders-table',
+                '#in-queue-orders-table'
+            ]);
+
+            // Include any table that opts in via data attribute
+            $('table[data-reload-on-domain-update]').each(function() {
+                const id = $(this).attr('id');
+                if (id) {
+                    selectorSet.add(`#${id}`);
+                }
+            });
+
+            selectorSet.forEach(selector => {
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable(selector)) {
+                    $(selector).DataTable().ajax.reload(null, false);
+                }
+            });
         },
         error: function(xhr) {
             const errorMsg = xhr.responseJSON?.message || 'Error updating domain';

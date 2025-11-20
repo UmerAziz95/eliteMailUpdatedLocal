@@ -169,7 +169,7 @@
         <div class="tab-pane fade show active" id="all-domains-tab-pane" role="tabpanel" aria-labelledby="all-domains-tab" tabindex="0">
             <div class="card py-3 px-4 mb-4 shadow-sm border-0">
                 <div class="table-responsive">
-                    <table id="pool-domains-table" class="table table-hover w-100">
+                    <table id="pool-domains-table" class="table table-hover w-100" data-reload-on-domain-update="true">
                         <thead>
                             <tr>
                                 <th>#</th>

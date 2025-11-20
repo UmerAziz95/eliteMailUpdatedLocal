@@ -326,7 +326,7 @@
                     </h6>
 
                     <div class="table-responsive">
-                        <table id="pool-specific-domains-table" class="table table-hover w-100">
+                        <table id="pool-specific-domains-table" class="table table-hover w-100" data-reload-on-domain-update="true">
                             <thead>
                                 <tr>
                                     <th>#</th>
