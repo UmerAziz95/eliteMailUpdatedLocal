@@ -291,9 +291,10 @@ class AdminSettingsController extends Controller
     public function updatePoolConfigurations(Request $request)
     {
         try {
-            $key = $request->input('key', 'POOL_WARMING_PERIOD');
+            $allowedKeys = ['POOL_WARMING_PERIOD', 'CANCELLATION_POOL_WARMING_PERIOD'];
+            $key = $request->input('key', $allowedKeys[0]);
 
-            if ($key !== 'POOL_WARMING_PERIOD') {
+            if (!in_array($key, $allowedKeys, true)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid pool configuration key.'

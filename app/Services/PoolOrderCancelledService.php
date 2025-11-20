@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\PoolOrder;
 use App\Models\Pool;
 use App\Models\User;
+use App\Models\Configuration;
 use App\Services\ActivityLogService;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -412,6 +413,21 @@ class PoolOrderCancelledService
         
         $stats['total'] = count($domains);
         Log::info("freeDomains: Processing {$stats['total']} domain(s)");
+
+        // Determine warming period for cancellations (in days)
+        $cancellationWarmingDays = (int) Configuration::get(
+            'CANCELLATION_POOL_WARMING_PERIOD',
+            Configuration::get('POOL_WARMING_PERIOD', 21)
+        );
+        if ($cancellationWarmingDays < 0) {
+            $cancellationWarmingDays = 0;
+        }
+
+        $warmingStartDate = Carbon::now();
+        $warmingDates = [
+            'start_date' => $warmingStartDate->format('Y-m-d'),
+            'end_date' => $warmingStartDate->copy()->addDays($cancellationWarmingDays)->format('Y-m-d')
+        ];
         
         foreach ($domains as $index => $domain) {
             try {
@@ -470,7 +486,7 @@ class PoolOrderCancelledService
                 }
 
                 // Process pool domains
-                $result = $this->updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName);
+                $result = $this->updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, $warmingDates);
                 
                 if ($result['changed']) {
                     // Save updated domains
@@ -548,7 +564,7 @@ class PoolOrderCancelledService
     /**
      * Update domain status in pool domains array
      */
-    private function updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName)
+    private function updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, array $warmingDates = null)
     {
         $updatedDomains = [];
         $hasChanges = false;
@@ -571,6 +587,11 @@ class PoolOrderCancelledService
                 // Update domain status
                 // $poolDomain['is_used'] = false;
                 $poolDomain['status'] = 'warming';
+
+                if ($warmingDates) {
+                    $poolDomain['start_date'] = $warmingDates['start_date'];
+                    $poolDomain['end_date'] = $warmingDates['end_date'];
+                }
                 
                 $hasChanges = true;
                 

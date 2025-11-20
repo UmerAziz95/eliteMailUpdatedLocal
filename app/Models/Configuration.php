@@ -106,6 +106,7 @@ class Configuration extends Model
     {
         return self::whereIn('key', [
             'POOL_WARMING_PERIOD',
+            'CANCELLATION_POOL_WARMING_PERIOD',
         ])->get();
     }
 

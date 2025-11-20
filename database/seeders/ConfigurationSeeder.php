@@ -56,6 +56,12 @@ class ConfigurationSeeder extends Seeder
                 'description' => 'Number of days a pool remains in warming before allocation'
             ],
             [
+                'key' => 'CANCELLATION_POOL_WARMING_PERIOD',
+                'value' => '7',
+                'type' => 'number',
+                'description' => 'Number of days domains stay in warming after a cancellation before reuse'
+            ],
+            [
                 'key' => 'CHARGEBEE_PUBLISHABLE_API_KEY',
                 'value' => 'test_AhIaXMucdYCKah7boupv0BdwxrB3ljcdSk',
                 'type' => 'string',
