@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
 use App\Models\ReorderInfo;
+use App\Models\Configuration;
 use App\Mail\AdminPanelNotificationMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -58,7 +59,8 @@ class CheckPanelCapacity extends Command
     {
         parent::__construct();
         $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 1790); // Default to 1790 if not set in config
-        $this->MAX_SPLIT_CAPACITY = env('MAX_SPLIT_CAPACITY', 358); // Maximum inboxes per split
+        // Prefer configured value; fall back to env for backwards compatibility
+        $this->MAX_SPLIT_CAPACITY = Configuration::get('MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358));
     }
     
     /**
