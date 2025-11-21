@@ -240,7 +240,7 @@
                         </select>
                     </div>
                     
-                    <div class="alert alert-info small">
+                    <div class="alert alert-info small d-none">
                         <i class="fa fa-info-circle me-1"></i>
                         Note: Once an order is cancelled, its status cannot be changed.
                     </div>
@@ -525,18 +525,18 @@ function changePoolOrderStatus(orderId, currentStatus) {
     if (currentStatus === 'in-progress') {
         // When in-progress, only show completed and cancelled options
         statusSelect.append('<option value="completed">Completed</option>');
-        statusSelect.append('<option value="cancelled">Cancelled</option>');
+        // statusSelect.append('<option value="cancelled">Cancelled</option>');
         statusSelect.val('completed'); // Default to completed
     } else if (currentStatus === 'pending') {
         // When pending, show in-progress and cancelled options
         statusSelect.append('<option value="in-progress">In Progress</option>');
-        statusSelect.append('<option value="cancelled">Cancelled</option>');
+        // statusSelect.append('<option value="cancelled">Cancelled</option>');
         statusSelect.val('in-progress'); // Default to in-progress
     } else {
         // For other statuses, show all options
         statusSelect.append('<option value="in-progress">In Progress</option>');
         statusSelect.append('<option value="completed">Completed</option>');
-        statusSelect.append('<option value="cancelled">Cancelled</option>');
+        // statusSelect.append('<option value="cancelled">Cancelled</option>');
         statusSelect.val(currentStatus);
     }
     

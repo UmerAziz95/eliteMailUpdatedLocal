@@ -492,7 +492,7 @@ class PoolDomainController extends Controller
                 })
                 ->addColumn('actions', function ($row) {
                     return $this->poolOrderService->getActionsDropdown($row, [
-                        'showAssignToMe' => true
+                        'showAssignToMe' => $row->status_manage_by_admin !== 'draft',
                     ]);
                 })
                 ->rawColumns(['status_badge', 'actions'])

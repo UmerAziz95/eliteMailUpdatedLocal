@@ -334,44 +334,10 @@ class PoolOrderCancelledService
             ];
         }
 
-        // Step 4: Free domains (non-critical, log errors but don't fail the request)
-        try {
-            Log::info("Starting domain freeing process");
-
-            // Refresh the model to ensure we have latest data
-            $poolOrder->refresh();
-            $domains = $poolOrder->domains;
-            
-            Log::info('Domain data retrieved', [
-                'domains_type' => gettype($domains),
-                'is_array' => is_array($domains),
-                'count' => is_array($domains) ? count($domains) : 'N/A'
-            ]);
-            
-            if ($this->isValidArray($domains)) {
-                $freed = $this->freeDomains($domains);
-                
-                Log::info('Domain freeing completed', [
-                    'pool_order_id' => $poolOrder->id,
-                    'freed_count' => $freed['freed'],
-                    'skipped_count' => $freed['skipped'],
-                    'total' => $freed['total']
-                ]);
-            } else {
-                Log::warning('No valid domains to free', [
-                    'pool_order_id' => $poolOrder->id,
-                    'domains_type' => gettype($domains)
-                ]);
-            }
-        } catch (\Exception $e) {
-            // Log but don't fail - domain freeing is not critical
-            Log::error('Domain freeing failed (non-critical)', [
-                'error' => $e->getMessage(),
-                'pool_order_id' => $poolOrderId,
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-        }
+        // Step 4: Free domains (handled after cancellation migration task completion)
+        Log::info('Domain freeing deferred to cancellation migration task completion', [
+            'pool_order_id' => $poolOrder->id
+        ]);
 
         Log::info("=== POOL ORDER CANCELLATION COMPLETED SUCCESSFULLY ===", [
             'pool_order_id' => $poolOrder->id
@@ -521,6 +487,47 @@ class PoolOrderCancelledService
         
         Log::info("freeDomains: Process completed", $stats);
         return $stats;
+    }
+
+    /**
+     * Public helper to free domains for a given pool order
+     */
+    public function freeDomainsFromPoolOrder(\App\Models\PoolOrder $poolOrder): array
+    {
+        $poolOrder->refresh();
+        $domains = $poolOrder->domains;
+
+        if (is_string($domains)) {
+            try {
+                $decoded = json_decode($domains, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $domains = $decoded;
+                }
+            } catch (\Exception $e) {
+                Log::warning('freeDomainsFromPoolOrder: Failed to decode domains JSON', [
+                    'pool_order_id' => $poolOrder->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        if (!$this->isValidArray($domains)) {
+            Log::warning('freeDomainsFromPoolOrder: No valid domains to free', [
+                'pool_order_id' => $poolOrder->id
+            ]);
+            return ['freed' => 0, 'skipped' => 0, 'total' => 0];
+        }
+
+        $freed = $this->freeDomains($domains);
+
+        Log::info('freeDomainsFromPoolOrder: Domain freeing completed', [
+            'pool_order_id' => $poolOrder->id,
+            'freed_count' => $freed['freed'] ?? 0,
+            'skipped_count' => $freed['skipped'] ?? 0,
+            'total' => $freed['total'] ?? 0
+        ]);
+
+        return $freed;
     }
 
     /**
