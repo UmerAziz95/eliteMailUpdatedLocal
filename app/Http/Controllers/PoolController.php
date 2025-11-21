@@ -91,6 +91,29 @@ class PoolController extends Controller
     }
 
     /**
+     * Apply domain-status-based filtering so pools can appear in multiple tabs.
+     */
+    private function applyDomainStatusFilter($query, string $statusFilter): void
+    {
+        $statusFilter = strtolower($statusFilter);
+        $poolTable = (new Pool())->getTable();
+        $jsonStatusesPath = "JSON_EXTRACT({$poolTable}.domains, '$[*].status')";
+
+        if ($statusFilter === 'warming') {
+            $query->where(function ($q) use ($jsonStatusesPath, $poolTable) {
+                $q->whereRaw("JSON_SEARCH({$jsonStatusesPath}, 'one', ?) IS NOT NULL", ['warming'])
+                  ->orWhereNull("{$poolTable}.status_manage_by_admin")
+                  ->orWhere("{$poolTable}.status_manage_by_admin", 'warming');
+            });
+        } elseif ($statusFilter === 'available') {
+            $query->where(function ($q) use ($jsonStatusesPath, $poolTable) {
+                $q->whereRaw("JSON_SEARCH({$jsonStatusesPath}, 'one', ?) IS NOT NULL", ['available'])
+                  ->orWhere("{$poolTable}.status_manage_by_admin", 'available');
+            });
+        }
+    }
+
+    /**
      * Handle DataTable AJAX requests
      */
     private function getDataTableData(Request $request)
@@ -100,15 +123,7 @@ class PoolController extends Controller
 
             // Handle status filtering for tabs
             if ($request->has('status_filter')) {
-                $statusFilter = $request->status_filter;
-                if ($statusFilter === 'warming') {
-                    $query->where(function ($q) {
-                        $q->where('status_manage_by_admin', 'warming')
-                          ->orWhereNull('status_manage_by_admin');
-                    });
-                } elseif ($statusFilter === 'available') {
-                    $query->where('status_manage_by_admin', 'available');
-                }
+                $this->applyDomainStatusFilter($query, $request->status_filter);
             }
 
             // Handle DataTable search
