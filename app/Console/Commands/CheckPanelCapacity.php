@@ -58,7 +58,13 @@ class CheckPanelCapacity extends Command
     public function __construct()
     {
         parent::__construct();
-        $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 1790); // Default to 1790 if not set in config
+        // Resolve provider-specific panel capacity with sensible fallbacks
+        $providerType = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+        if (strtolower($providerType) === 'Microsoft 365') {
+            $this->PANEL_CAPACITY = Configuration::get('MICROSOFT_365_CAPACITY', 300);
+        } else {
+            $this->PANEL_CAPACITY = Configuration::get('GOOGLE_PANEL_CAPACITY', env('PANEL_CAPACITY', 1790));
+        }
         // Prefer configured value; fall back to env for backwards compatibility
         $this->MAX_SPLIT_CAPACITY = Configuration::get('MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358));
     }
