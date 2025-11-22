@@ -9,7 +9,9 @@
     $panelCapacity = $panelCapacity ?? (strtolower($providerType) === 'microsoft 365'
         ? \App\Models\Configuration::get('MICROSOFT_365_CAPACITY', env('MICROSOFT_365_CAPACITY', env('PANEL_CAPACITY', 1790)))
         : \App\Models\Configuration::get('GOOGLE_PANEL_CAPACITY', env('GOOGLE_PANEL_CAPACITY', env('PANEL_CAPACITY', 1790))));
-    $maxSplitCapacity = $maxSplitCapacity ?? \App\Models\Configuration::get('MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358));
+    $maxSplitCapacity = $maxSplitCapacity ?? (strtolower($providerType) === 'microsoft 365'
+        ? \App\Models\Configuration::get('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)))
+        : \App\Models\Configuration::get('GOOGLE_MAX_SPLIT_CAPACITY', env('GOOGLE_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358))));
 
     // Build alert data on initial render
     $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')

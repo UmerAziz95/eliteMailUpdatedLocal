@@ -512,6 +512,18 @@ class PanelController extends Controller
         return (int) Configuration::get($key, $fallback);
     }
 
+    private function getProviderMaxSplitCapacity(?string $providerType): int
+    {
+        $fallback = (int) env('MAX_SPLIT_CAPACITY', 358);
+
+        $key = match (strtolower((string) $providerType)) {
+            'microsoft 365' => 'MICROSOFT_365_MAX_SPLIT_CAPACITY',
+            default => 'GOOGLE_MAX_SPLIT_CAPACITY',
+        };
+
+        return (int) Configuration::get($key, $fallback);
+    }
+
     /**
      * Calculate panel capacity needs - extracted from the blade template logic
      */
@@ -519,6 +531,10 @@ class PanelController extends Controller
     {
         try {
             // Get pending orders that require panel capacity
+            $providerType = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+            $panelCapacity = $this->getProviderCapacity($providerType);
+            $maxSplitCapacity = $this->getProviderMaxSplitCapacity($providerType);
+
             $pendingOrders = OrderTracking::where('status', 'pending')
                 ->whereNotNull('total_inboxes')
                 ->where('total_inboxes', '>', 0)
@@ -526,8 +542,6 @@ class PanelController extends Controller
             
             $insufficientSpaceOrders = [];
             $totalPanelsNeeded = 0;
-            $panelCapacity = env('PANEL_CAPACITY', 1790);
-            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
             
             foreach ($pendingOrders as $order) {
                 // Get inboxes per domain from order details or use default
@@ -535,10 +549,11 @@ class PanelController extends Controller
                 
                 // Calculate available space for this order based on logic
                 $availableSpace = $this->getAvailablePanelSpaceForOrder(
-                    $order->total_inboxes, 
-                    $inboxesPerDomain, 
-                    $panelCapacity, 
-                    $maxSplitCapacity
+                    $order->total_inboxes,
+                    $inboxesPerDomain,
+                    $panelCapacity,
+                    $maxSplitCapacity,
+                    $providerType
                 );
                 
                 if ($order->total_inboxes > $availableSpace) {
@@ -552,6 +567,7 @@ class PanelController extends Controller
             // Adjust total panels needed based on available panels (same logic as Console Command)
             $availablePanelCount = Panel::where('is_active', true)
                 ->where('limit', $panelCapacity)
+                ->where('provider_type', $providerType)
                 ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
             
@@ -842,8 +858,9 @@ class PanelController extends Controller
             $totalInboxes = $orderTrackingRecords->sum('total_inboxes');
             
             // Calculate panels needed using the same logic as the console command
-            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
-            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $providerType = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+            $panelCapacity = $this->getProviderCapacity($providerType);
+            $maxSplitCapacity = $this->getProviderMaxSplitCapacity($providerType);
             $totalPanelsNeeded = 0;
             
             foreach ($orderTrackingRecords as $tracking) {
@@ -857,6 +874,7 @@ class PanelController extends Controller
             // Get available panel count (panels that can accommodate at least one split)
             $availablePanelCount = Panel::where('is_active', true)
                 ->where('limit', $panelCapacity)
+                ->where('provider_type', $providerType)
                 ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
             
@@ -979,6 +997,10 @@ class PanelController extends Controller
     public function getCapacityAlert(Request $request)
     {
         try {
+            $providerType = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+            $panelCapacity = $this->getProviderCapacity($providerType);
+            $maxSplitCapacity = $this->getProviderMaxSplitCapacity($providerType);
+
             // Get pending orders that require panel capacity
             $pendingOrders = OrderTracking::where('status', 'pending')
                 ->whereNotNull('total_inboxes')
@@ -987,13 +1009,12 @@ class PanelController extends Controller
             
             $insufficientSpaceOrders = [];
             $totalPanelsNeeded = 0;
-            $panelCapacity = env('PANEL_CAPACITY', 1790);
-            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
             
             Log::info("Panel capacity alert calculation started", [
                 'pending_orders_count' => $pendingOrders->count(),
                 'panel_capacity' => $panelCapacity,
-                'max_split_capacity' => $maxSplitCapacity
+                'max_split_capacity' => $maxSplitCapacity,
+                'provider_type' => $providerType
             ]);
             
             foreach ($pendingOrders as $order) {
@@ -1002,10 +1023,11 @@ class PanelController extends Controller
                 
                 // Calculate available space for this order based on logic
                 $availableSpace = $this->getAvailablePanelSpaceForOrder(
-                    $order->total_inboxes, 
-                    $inboxesPerDomain, 
-                    $panelCapacity, 
-                    $maxSplitCapacity
+                    $order->total_inboxes,
+                    $inboxesPerDomain,
+                    $panelCapacity,
+                    $maxSplitCapacity,
+                    $providerType
                 );
                 
                 if ($order->total_inboxes > $availableSpace) {
@@ -1035,6 +1057,7 @@ class PanelController extends Controller
             // Adjust total panels needed based on available panels (same logic as Console Command)
             $availablePanelCount = Panel::where('is_active', true)
                 ->where('limit', $panelCapacity)
+                ->where('provider_type', $providerType)
                 ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
             
@@ -1057,6 +1080,7 @@ class PanelController extends Controller
                 'insufficient_orders' => $insufficientSpaceOrders,
                 'panel_capacity' => $panelCapacity,
                 'max_split_capacity' => $maxSplitCapacity,
+                'provider_type' => $providerType,
                 'last_updated' => now()->toDateTimeString()
             ]);
             
@@ -1077,12 +1101,13 @@ class PanelController extends Controller
      * Get available panel space for specific order size
      * This method mirrors the logic from Console\Commands\CheckPanelCapacity.php
      */
-    private function getAvailablePanelSpaceForOrder(int $orderSize, int $inboxesPerDomain, int $panelCapacity, int $maxSplitCapacity): int
+    private function getAvailablePanelSpaceForOrder(int $orderSize, int $inboxesPerDomain, int $panelCapacity, int $maxSplitCapacity, ?string $providerType): int
     {
         if ($orderSize >= $panelCapacity) {
             // For large orders, prioritize full capacity panels
             $fullCapacityPanels = Panel::where('is_active', 1)
                                         ->where('limit', $panelCapacity)
+                                        ->where('provider_type', $providerType)
                                         ->where('remaining_limit', '>=', $inboxesPerDomain)
                                         ->get();
             
@@ -1104,6 +1129,7 @@ class PanelController extends Controller
             // For smaller orders, use any panel with remaining space that can accommodate at least one domain
             $availablePanels = Panel::where('is_active', 1)
                                     ->where('limit', $panelCapacity)
+                                    ->where('provider_type', $providerType)
                                     ->where('remaining_limit', '>=', $inboxesPerDomain)
                                     ->get();
             
@@ -1134,9 +1160,9 @@ class PanelController extends Controller
             $totalOrders = $orderTrackingRecords->count();
             $totalInboxes = $orderTrackingRecords->sum('total_inboxes');
             
-            // Calculate panels needed using the same logic as the console command
-            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
-            $panelCapacity = env('PANEL_CAPACITY', 1790);
+            $providerType = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+            $panelCapacity = $this->getProviderCapacity($providerType);
+            $maxSplitCapacity = $this->getProviderMaxSplitCapacity($providerType);
             $totalPanelsNeeded = 0;
             
             foreach ($orderTrackingRecords as $tracking) {
@@ -1150,6 +1176,7 @@ class PanelController extends Controller
             // Get available panel count
             $availablePanelCount = Panel::where('is_active', true)
                 ->where('limit', $panelCapacity)
+                ->where('provider_type', $providerType)
                 ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
             
@@ -1242,13 +1269,14 @@ class PanelController extends Controller
     public function getAvailablePanelCount(Request $request)
     {
         try {
-            // get configuration values
-            $panelCapacity = Configuration::get('PANEL_CAPACITY', 1790) ?? env('PANEL_CAPACITY', 1790);
-            $maxSplitCapacity = Configuration::get('MAX_SPLIT_CAPACITY', 1790) ?? env('MAX_SPLIT_CAPACITY', 1790);
+            $providerType = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+            $panelCapacity = $this->getProviderCapacity($providerType);
+            $maxSplitCapacity = $this->getProviderMaxSplitCapacity($providerType);
             
             $availablePanelCount = Panel::where('is_active', true)
-                // ->where('limit', $panelCapacity)
-                // ->where('remaining_limit', '>=', $maxSplitCapacity)
+                ->where('limit', $panelCapacity)
+                ->where('provider_type', $providerType)
+                ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
             
             return response()->json([
