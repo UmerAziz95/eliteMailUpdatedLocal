@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Configuration;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -243,6 +244,61 @@ class AdminSettingsController extends Controller
     }
 
     /**
+     * Get configuration history by key
+     */
+    public function getConfigurationHistory(string $key)
+    {
+        $config = Configuration::where('key', $key)->first();
+
+        if (!$config) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Configuration not found.'
+            ], 404);
+        }
+
+        $rawHistory = $config->last_change;
+        if (is_string($rawHistory)) {
+            $decoded = json_decode($rawHistory, true);
+            $rawHistory = json_last_error() === JSON_ERROR_NONE ? $decoded : [];
+        }
+
+        $history = collect($rawHistory ?? []);
+
+        if ($history->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'data' => []
+            ]);
+        }
+
+        $userIds = $history->pluck('user_id')->filter()->unique()->values();
+        $users = User::whereIn('id', $userIds)->get()->keyBy('id');
+
+        $history = $history->map(function ($entry) use ($users) {
+            $userId = $entry['user_id'] ?? null;
+            $user = $userId ? $users->get($userId) : null;
+
+            return [
+                'previous_value' => $entry['previous_value'] ?? null,
+                'previous_type' => $entry['previous_type'] ?? null,
+                'new_value' => $entry['new_value'] ?? null,
+                'new_type' => $entry['new_type'] ?? null,
+                'previous_description' => $entry['previous_description'] ?? null,
+                'new_description' => $entry['new_description'] ?? null,
+                'user_id' => $userId,
+                'user_name' => $user?->name,
+                'changed_at' => $entry['changed_at'] ?? null,
+            ];
+        })->sortByDesc('changed_at')->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $history
+        ]);
+    }
+
+    /**
      * Update a configuration value
      */
     public function updateConfiguration(Request $request)
@@ -291,9 +347,10 @@ class AdminSettingsController extends Controller
     public function updatePoolConfigurations(Request $request)
     {
         try {
-            $key = $request->input('key', 'POOL_WARMING_PERIOD');
+            $allowedKeys = ['POOL_WARMING_PERIOD', 'CANCELLATION_POOL_WARMING_PERIOD'];
+            $key = $request->input('key', $allowedKeys[0]);
 
-            if ($key !== 'POOL_WARMING_PERIOD') {
+            if (!in_array($key, $allowedKeys, true)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid pool configuration key.'

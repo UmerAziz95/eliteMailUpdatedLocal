@@ -20,16 +20,28 @@ class ConfigurationSeeder extends Seeder
                 'description' => 'Maximum capacity for panel assignments (total inboxes per panel)'
             ],
             [
-                'key' => 'MAX_SPLIT_CAPACITY',
-                'value' => '1790',
+                'key' => 'GOOGLE_MAX_SPLIT_CAPACITY',
+                'value' => '358',
                 'type' => 'number',
-                'description' => 'Maximum split capacity for dividing panels across multiple contractors'
+                'description' => 'Maximum split capacity for dividing Google panels across multiple contractors'
             ],
             [
-                'key' => 'ENABLE_MAX_SPLIT_CAPACITY',
-                'value' => 'false',
+                'key' => 'MICROSOFT_365_MAX_SPLIT_CAPACITY',
+                'value' => '300',
+                'type' => 'number',
+                'description' => 'Maximum split capacity for dividing Microsoft 365 panels across multiple contractors'
+            ],
+            [
+                'key' => 'ENABLE_GOOGLE_MAX_SPLIT_CAPACITY',
+                'value' => 'true',
                 'type' => 'boolean',
-                'description' => 'Enable or disable the maximum split capacity feature for panel management'
+                'description' => 'Enable max split capacity logic for Google panels'
+            ],
+            [
+                'key' => 'ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY',
+                'value' => 'true',
+                'type' => 'boolean',
+                'description' => 'Enable max split capacity logic for Microsoft 365 panels'
             ],
             [
                 'key' => 'PLAN_FLAT_QUANTITY',
@@ -54,6 +66,12 @@ class ConfigurationSeeder extends Seeder
                 'value' => '21',
                 'type' => 'number',
                 'description' => 'Number of days a pool remains in warming before allocation'
+            ],
+            [
+                'key' => 'CANCELLATION_POOL_WARMING_PERIOD',
+                'value' => '7',
+                'type' => 'number',
+                'description' => 'Number of days domains stay in warming after a cancellation before reuse'
             ],
             [
                 'key' => 'CHARGEBEE_PUBLISHABLE_API_KEY',

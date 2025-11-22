@@ -85,9 +85,9 @@ class PoolDomainService
             }
 
             // First, process pool orders to create lookup map
-            $poolOrderQuery->chunk($this->chunkSize, function ($poolOrders) use (&$poolOrdersByDomain) {
+            $poolOrderQuery->chunk($this->chunkSize, function ($poolOrders) use (&$poolOrdersByDomain, $poolId) {
                 foreach ($poolOrders as $poolOrder) {
-                    $this->processPoolOrderForLookup($poolOrder, $poolOrdersByDomain);
+                    $this->processPoolOrderForLookup($poolOrder, $poolOrdersByDomain, $poolId);
                 }
             });
 
@@ -115,7 +115,7 @@ class PoolDomainService
     /**
      * Process pool order for lookup map creation
      */
-    private function processPoolOrderForLookup($poolOrder, &$poolOrdersByDomain)
+    private function processPoolOrderForLookup($poolOrder, &$poolOrdersByDomain, $poolId = null)
     {
         if (!is_array($poolOrder->domains)) {
             return;
@@ -124,10 +124,15 @@ class PoolDomainService
         foreach ($poolOrder->domains as $orderDomain) {
             // Normalize domain keys for consistency
             $domainId = $orderDomain['domain_id'] ?? $orderDomain['id'] ?? null;
-            $poolId = $orderDomain['pool_id'] ?? null;
+            $poolIdFromDomain = $orderDomain['pool_id'] ?? null;
+
+            // When filtering by pool, only include matching domains
+            if ($poolId && (int) $poolIdFromDomain !== (int) $poolId) {
+                continue;
+            }
             
-            if ($domainId && $poolId) {
-                $lookupKey = $domainId . '_' . $poolId;
+            if ($domainId && $poolIdFromDomain) {
+                $lookupKey = $domainId . '_' . $poolIdFromDomain;
                 $poolOrdersByDomain[$lookupKey] = [
                     'id' => (int) $poolOrder->id,
                     'user' => $poolOrder->user ?? $this->createDefaultUser(),
@@ -192,6 +197,7 @@ class PoolDomainService
                 'pool_order_status' => $poolOrderStatus,
                 'pool_order_admin_status' => $poolOrderAdminStatus,
                 'is_used' => (bool) ($domain['is_used'] ?? false),
+                'end_date' => $domain['end_date'] ?? null,
             ];
         }
     }
@@ -304,15 +310,17 @@ class PoolDomainService
         $search = $request->get('search')['value'] ?? '';
         $start = (int) ($request->get('start') ?? 0);
         $length = (int) ($request->get('length') ?? 10);
+        $userId = $request->get('user_id');
+        $poolId = $request->get('pool_id');
         
         // Always get all data first, then apply search and pagination
         // This ensures we don't miss any domains
         if (!empty(trim($search))) {
-            return $this->getFilteredPoolDomainsData($search, $start, $length);
+            return $this->getFilteredPoolDomainsData($search, $start, $length, $userId, $poolId);
         }
         
         // For no search, get all cached data and apply pagination
-        $data = $this->getPoolDomainsData(true); // Use cache
+        $data = $this->getPoolDomainsData(true, $userId, $poolId); // Use cache
         
         // Apply pagination if length is specified and > 0
         if ($length > 0) {
@@ -325,7 +333,7 @@ class PoolDomainService
     /**
      * Get filtered pool domains data using database queries for better performance
      */
-    private function getFilteredPoolDomainsData($search, $start = 0, $length = 10)
+    private function getFilteredPoolDomainsData($search, $start = 0, $length = 10, $userId = null, $poolId = null)
     {
         try {
             $results = [];
@@ -341,9 +349,12 @@ class PoolDomainService
             }])
             ->select('id', 'user_id', 'domains', 'status', 'status_manage_by_admin')
             ->whereNotNull('domains')
-            ->chunk($this->chunkSize, function ($poolOrders) use (&$poolOrdersByDomain) {
+            ->when($userId, function ($query) use ($userId) {
+                $query->where('user_id', (int) $userId);
+            })
+            ->chunk($this->chunkSize, function ($poolOrders) use (&$poolOrdersByDomain, $poolId) {
                 foreach ($poolOrders as $poolOrder) {
-                    $this->processPoolOrderForLookup($poolOrder, $poolOrdersByDomain);
+                    $this->processPoolOrderForLookup($poolOrder, $poolOrdersByDomain, $poolId);
                 }
             });
             
@@ -355,9 +366,15 @@ class PoolDomainService
             ->whereNotNull('domains')
             ->whereNotNull('purchase_date')
             ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()')
-            ->chunk($this->chunkSize, function ($pools) use (&$results, $poolOrdersByDomain, $searchTerm) {
+            ->when($userId, function ($query) use ($userId) {
+                $query->where('user_id', (int) $userId);
+            })
+            ->when($poolId, function ($query) use ($poolId) {
+                $query->where('id', (int) $poolId);
+            })
+            ->chunk($this->chunkSize, function ($pools) use (&$results, $poolOrdersByDomain, $searchTerm, $poolId) {
                 foreach ($pools as $pool) {
-                    $this->processPoolDomainsWithSearch($pool, $poolOrdersByDomain, $results, $searchTerm);
+                    $this->processPoolDomainsWithSearch($pool, $poolOrdersByDomain, $results, $searchTerm, $poolId);
                 }
             });
             
@@ -372,7 +389,7 @@ class PoolDomainService
             Log::error('Error filtering pool domains data: ' . $e->getMessage());
             
             // Fallback to original method if database search fails
-            $data = $this->getPoolDomainsData();
+            $data = $this->getPoolDomainsData(true, $userId, $poolId);
             return $this->applyPhpSearch($data, $search, $start, $length);
         }
     }
@@ -380,7 +397,7 @@ class PoolDomainService
     /**
      * Process pool domains with search filtering
      */
-    private function processPoolDomainsWithSearch($pool, $poolOrdersByDomain, &$results, $searchTerm)
+    private function processPoolDomainsWithSearch($pool, $poolOrdersByDomain, &$results, $searchTerm, $poolId = null)
     {
         $poolDomains = $pool->domains;
         if (!is_array($poolDomains)) {
@@ -445,6 +462,7 @@ class PoolDomainService
                 'pool_order_status' => $poolOrderStatus,
                 'pool_order_admin_status' => $poolOrderAdminStatus,
                 'is_used' => (bool) ($domain['is_used'] ?? false),
+                'end_date' => $domain['end_date'] ?? null,
             ];
         }
     }

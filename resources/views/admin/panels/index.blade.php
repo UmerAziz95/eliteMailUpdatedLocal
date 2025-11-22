@@ -521,171 +521,9 @@
             </form>
         </div>
     </div>
-    <div class="offcanvas offcanvas-start" style="min-width: 70%;  background-color: var(--filter-color); backdrop-filter: blur(5px); border: 3px solid var(--second-primary);" tabindex="-1" id="secondOffcanvas" aria-labelledby="secondOffcanvasLabel">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="secondOffcanvasLabel">Order Awaited Panel Allocation</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-            <div class="counters mb-3">
-                <div class="p-3 filter">
-                    <div>
-                        <div class="d-flex align-items-start justify-content-between">
-                            <div class="content-left">
-                                <h6 class="text-heading">Number of Orders</h6>
-                                <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2 fs-2" id="orders_counter">0</h4>
-                                    <p class="text-success mb-0"></p>
-                                </div>
-                                <small class="mb-0"></small>
-                            </div>
-                            <div class="avatar">
-                                <i class="fa-brands fa-first-order fs-2"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-3 filter">
-                    <div>
-                        <div class="d-flex align-items-start justify-content-between">
-                            <div class="content-left">
-                                <h6 class="text-heading">Number of Inboxes</h6>
-                                <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2 fs-2" id="inboxes_counter">0</h4>
-                                    <p class="text-success mb-0"></p>
-                                </div>
-                                <small class="mb-0"></small>
-                            </div>
-                            <div class="avatar">
-                                <i class="fa-solid fa-inbox fs-2"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-3 filter">
-                    <div>
-                        <div class="d-flex align-items-start justify-content-between">
-                            <div class="content-left">
-                                <h6 class="text-heading">Panels Required</h6>
-                                <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2 fs-2" id="panels_counter">0</h4>
-                                    <p class="text-success mb-0"></p>
-                                </div>
-                                <small class="mb-0"></small>
-                            </div>
-                            <div class="avatar">
-                                <i class="fa-solid fa-solar-panel fs-2"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table id="myTable" class="w-100 display">
-                    <thead style="position: sticky; top: 0;">
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Date</th>
-                            <th>Plan</th>
-                            <th>Domain URL</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="overflow-y-auto" id="orderTrackingTableBody">
-                        <!-- Dynamic data will be loaded here -->
-                    </tbody>
-                    
-                </table>
-            </div>
-        </div>
-    </div>
+    <x-panel.order-awaiting-offcanvas />
         <!-- Panel Capacity Alert -->
-        @php
-            // Get panel capacity alert data using the same logic as the AJAX endpoint
-            $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')
-                ->whereNotNull('total_inboxes')
-                ->where('total_inboxes', '>', 0)
-                ->get();
-            
-            $insufficientSpaceOrders = [];
-            $totalPanelsNeeded = 0;
-            $panelCapacity = env('PANEL_CAPACITY', 1790);
-            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
-            
-            // Helper function to get available panel space for specific order
-            $getAvailablePanelSpaceForOrder = function(int $orderSize, int $inboxesPerDomain) use ($panelCapacity, $maxSplitCapacity) {
-                if ($orderSize >= $panelCapacity) {
-                    // For large orders, prioritize full capacity panels
-                    $fullCapacityPanels = \App\Models\Panel::where('is_active', 1)
-                                                ->where('limit', $panelCapacity)
-                                                ->where('remaining_limit', '>=', $inboxesPerDomain)
-                                                ->get();
-                    
-                    $fullCapacitySpace = 0;
-                    foreach ($fullCapacityPanels as $panel) {
-                        $fullCapacitySpace += min($panel->remaining_limit, $maxSplitCapacity);
-                    }
-                    
-                    return $fullCapacitySpace;
-                    
-                } else {
-                    // For smaller orders, use any panel with remaining space that can accommodate at least one domain
-                    $availablePanels = \App\Models\Panel::where('is_active', 1)
-                                            ->where('limit', $panelCapacity)
-                                            ->where('remaining_limit', '>=', $inboxesPerDomain)
-                                            ->get();
-                    
-                    $totalSpace = 0;
-                    foreach ($availablePanels as $panel) {
-                        $totalSpace += min($panel->remaining_limit, $maxSplitCapacity);
-                    }
-                    
-                    return $totalSpace;
-                }
-            };
-            
-            foreach ($pendingOrders as $order) {
-                // Get inboxes per domain from order details or use default
-                $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
-                
-                // Calculate available space for this order based on logic
-                $availableSpace = $getAvailablePanelSpaceForOrder(
-                    $order->total_inboxes, 
-                    $inboxesPerDomain
-                );
-                
-                if ($order->total_inboxes > $availableSpace) {
-                    // Calculate panels needed for this order (same logic as Console Command)
-                    $panelsNeeded = ceil($order->total_inboxes / $maxSplitCapacity);
-                    $insufficientSpaceOrders[] = $order;
-                    $totalPanelsNeeded += $panelsNeeded;
-                }
-            }
-            
-            // Adjust total panels needed based on available panels (same logic as Console Command)
-            $availablePanelCount = \App\Models\Panel::where('is_active', true)
-                ->where('limit', $panelCapacity)
-                ->where('remaining_limit', '>=', $maxSplitCapacity)
-                ->count();
-            
-            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
-        @endphp
-
-        @if($adjustedPanelsNeeded > 0)
-        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
-            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
-            <i class="ti ti-server me-2 alert-icon"></i>
-            <strong>Panel Capacity Alert:</strong>
-            {{ $adjustedPanelsNeeded }} new panel{{ $adjustedPanelsNeeded != 1 ? 's' : '' }} required for {{ count($insufficientSpaceOrders) }} pending order{{ count($insufficientSpaceOrders) != 1 ? 's' : '' }}.
-            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
-            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
-                aria-label="Close"></button>
-        </div>
-        @endif
+        <x-panel.panel-capacity-alert />
         <div class="counters mb-3">
             <div class="card p-3 counter_1">
                 <div>
@@ -1009,19 +847,6 @@
         `;
     }
 
-    document.getElementById("openSecondOffcanvasBtn").addEventListener("click", function () {
-        const secondOffcanvasElement = document.getElementById("secondOffcanvas");
-        const secondOffcanvas = new bootstrap.Offcanvas(secondOffcanvasElement, {
-            backdrop: false, // no backdrop to prevent it from dismissing others
-            scroll: true     // allows scrolling while multiple are open
-        });
-        secondOffcanvas.show();
-        // Initialize DataTable when offcanvas is shown
-        setTimeout(function() {
-            initializeOrderTrackingTable();
-        }, 300); // Small delay to ensure offcanvas is fully shown
-    });
-
     // Fetch next panel ID when panelFormOffcanvas is opened
     // document.getElementById('panelFormOffcanvas').addEventListener('shown.bs.offcanvas', function () {
         
@@ -1120,127 +945,6 @@
                     console.error(error);
                 }
             });
-    }
-
-    let orderTrackingTable = null;
-
-    function initializeOrderTrackingTable() {
-        // Destroy existing table if it exists
-        if (orderTrackingTable) {
-            orderTrackingTable.destroy();
-        }
-
-        // Initialize DataTable
-        orderTrackingTable = $('#myTable').DataTable({
-            pageLength: 10,         // Show 10 rows per page
-            lengthMenu: [10, 25, 50, 100], // Optional dropdown for page length
-            ordering: true,         // Enable column sorting
-            searching: false,        // Enable search box
-            scrollX: true,          // Enable horizontal scroll if needed
-            processing: true,       // Show processing indicator
-            ajax: {
-                url: '/admin/panels/order-tracking',
-                type: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                dataSrc: function(json) {
-                    if (json.success) {
-                        // Update counters with server-calculated data
-                        if (json.counters) {
-                            console.log('Updating counters from server:', json.counters);
-                            $('#orders_counter').text(json.counters.total_orders || 0);
-                            $('#inboxes_counter').text(json.counters.total_inboxes || 0);
-                            $('#panels_counter').text(json.counters.panels_required || 0);
-                        }
-                        return json.data;
-                    } else {
-                        console.error('Error fetching data:', json.message);
-                        return [];
-                    }
-                }
-            },
-            columns: [
-                { data: 'order_id', title: 'Order ID', render: function(data) { return '#' + data; } },
-                { data: 'date', title: 'Date' },
-                { data: 'plan', title: 'Plan' },
-                { data: 'domain_url', title: 'Domain URL' },
-                { data: 'total', title: 'Total' },
-                { 
-                    data: 'status', 
-                    title: 'Status',
-                    render: function(data) {
-                        let badgeClass = 'bg-label-secondary';
-                        switch(data) {
-                            case 'completed':
-                                badgeClass = 'bg-label-success';
-                                break;
-                            case 'active':
-                                badgeClass = 'bg-label-success';
-                                break;
-                            case 'pending':
-                                badgeClass = 'bg-label-warning';
-                                break;
-                            case 'failed':
-                                badgeClass = 'bg-label-danger';
-                                break;
-                        }
-                        return '<span class="badge ' + badgeClass + ' rounded-1 px-2 py-1">' + data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
-                    }
-                }
-            ]
-        });
-    }
-    // Function to update counters - now using server-side calculation
-    async function updateCounters(data = null) {
-        try {
-            // If we have data with counters, use that first
-            if (data && typeof data === 'object' && data.counters) {
-                console.log('Using provided counter data:', data.counters);
-                $('#orders_counter').text(data.counters.total_orders || 0);
-                $('#inboxes_counter').text(data.counters.total_inboxes || 0);
-                $('#panels_counter').text(data.counters.panels_required || 0);
-                return;
-            }
-            
-            // Otherwise fetch from server
-            console.log('Fetching counters from server...');
-            const response = await fetch('/admin/panels/counters', {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            
-            if (result.success && result.counters) {
-                console.log('Counters from server:', result.counters);
-                
-                $('#orders_counter').text(result.counters.total_orders || 0);
-                $('#inboxes_counter').text(result.counters.total_inboxes || 0);
-                $('#panels_counter').text(result.counters.panels_required || 0);
-            } else {
-                console.error('Failed to fetch counters:', result.message);
-                // Fallback to 0 values if server returns error
-                $('#orders_counter').text(0);
-                $('#inboxes_counter').text(0);
-                $('#panels_counter').text(0);
-            }
-        } catch (error) {
-            console.error('Error updating counters:', error);
-            // Fallback to 0 values on error
-            $('#orders_counter').text(0);
-            $('#inboxes_counter').text(0);
-            $('#panels_counter').text(0);
-        }
     }
 
     // Function to update panel counters with dynamic data
@@ -3934,7 +3638,9 @@ $(document).ready(function() {
     
     // Auto-refresh panel capacity alert and counters every 60 seconds
     setInterval(function() {
-        refreshPanelCapacityAlert();
+        if (typeof refreshPanelCapacityAlert === 'function') {
+            refreshPanelCapacityAlert();
+        }
         
         // Refresh panel counters
         updatePanelCounters();
@@ -3948,57 +3654,6 @@ $(document).ready(function() {
         }
     }, 60000); // 60 seconds
 });
-
-/**
- * Refresh the panel capacity alert without refreshing the entire page
- */
-function refreshPanelCapacityAlert() {
-    $.ajax({
-        url: '{{ route("admin.panels.capacity-alert") }}',
-        method: 'GET',
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-            'Accept': 'application/json'
-        },
-        success: function(response) {
-            if (response.success) {
-                // Update the alert section
-                const alertContainer = $('#panelCapacityAlert').parent();
-                
-                if (response.show_alert) {
-                    // Show/update the alert
-                    const alertHtml = `
-                        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
-                            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
-                            <i class="ti ti-server me-2 alert-icon"></i>
-                            <strong>Panel Capacity Alert:</strong>
-                            ${response.total_panels_needed} new panel${response.total_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_orders_count} pending order${response.insufficient_orders_count != 1 ? 's' : ''}.
-                            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
-                            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
-                                aria-label="Close"></button>
-                        </div>
-                    `;
-                    
-                    if ($('#panelCapacityAlert').length) {
-                        // Update existing alert
-                        $('#panelCapacityAlert').replaceWith(alertHtml);
-                    } else {
-                        // Insert new alert after the order tracking table
-                        $('#orderTrackingTableBody').closest('.card').after(alertHtml);
-                    }
-                } else {
-                    // Hide the alert if no longer needed
-                    $('#panelCapacityAlert').remove();
-                }
-                
-                console.log('Panel capacity alert refreshed at:', new Date().toLocaleTimeString());
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('Error refreshing panel capacity alert:', error);
-        }
-    });
-}
 
 // Panel Reassignment Functions (from orders.blade.php)
 let currentReassignData = {};
