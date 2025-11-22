@@ -193,6 +193,16 @@
             margin-left: 4px;
             margin-right: 0;
         }
+        /* Change Status Modal Styles */
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+
+        .modal-header .btn-close {
+            filter: invert(1);
+        }
     </style>
 @endpush
 
@@ -644,47 +654,48 @@
         </div>
     </section>
 
-   <!-- Panel Reassignment Modal -->
-   <div class="modal fade" id="poolReassignModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
-       <div class="modal-dialog modal-lg">
-           <div class="modal-content">
-               <div class="modal-header">
-                   <h5 class="modal-title" id="poolReassignModalLabel">Reassign Pool Panel</h5>
-                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-               </div>
-               <div class="modal-body">
-                   <div class="alert alert-info d-none" id="poolReassignAlert"></div>
-                   <div class="table-responsive">
-                       <table class="table table-hover">
-                           <thead>
-                               <tr>
-                                   <th>Panel</th>
-                                   <th>Remaining Capacity</th>
-                                   <th>Total Splits</th>
-                                   <th>Action</th>
-                               </tr>
-                           </thead>
-                           <tbody id="poolReassignTableBody">
-                               <!-- Available panels will be loaded here -->
-                           </tbody>
-                       </table>
-                   </div>
-                   <div class="mt-3">
-                       <label for="poolReassignReason" class="form-label">Reason for reassignment (optional)</label>
-                       <textarea class="form-control" id="poolReassignReason" rows="3"
-                           placeholder="Enter reason for reassignment..."></textarea>
-                   </div>
-               </div>
-               <div class="modal-footer">
-                   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                   <button type="button" class="btn btn-warning" id="confirmPoolReassignBtn" disabled
-                       onclick="confirmPoolReassignment()">
-                       <i class="fas fa-exchange-alt me-1"></i>Select Panel First
-                   </button>
-               </div>
-           </div>
-       </div>
-   </div>
+    <!-- Panel Reassignment Modal -->
+<div class="modal fade" id="poolReassignModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reassignModalLabel">Reassign Panel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Panel Reassignment:</strong> Select a target panel within the same order to reassign the split(s) to. 
+                        This will move all domains and capacity from the current panel to the selected panel.
+                    </div>
+                </div>
+                <!-- Loading State -->
+                <div id="reassignLoader" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading available panels...</p>
+                </div>
+                
+                <!-- Available Panels Container -->
+                <div id="availablePanelsContainer"></div>
+                
+                <!-- Reassignment Reason - ADD THIS MISSING SECTION -->
+                <div class="mt-3" style="display: none;" id="reassignReasonContainer">
+                    <label for="reassignReason" class="form-label">Reason for reassignment (optional)</label>
+                    <textarea class="form-control" id="reassignReason" rows="3" placeholder="Enter reason for reassignment..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmReassignBtn" disabled onclick="confirmPoolReassignment()">
+                    <i class="fas fa-exchange-alt me-1"></i>Select Panel First
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection
 
@@ -1336,8 +1347,10 @@
                                     <td>${split.total_inboxes ?? 0}</td>
                                     <td>${split.created_at ? formatDate(split.created_at) : 'N/A'}</td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-warning" onclick="openPoolReassignModal(${pool.pool_id}, ${splitPanel?.id || poolPanel.id}, ${split.id}, '${panelTitle.replace(/'/g, "\\'")}')">
-                                            <i class="fas fa-exchange-alt"></i> Reassign
+                                       <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success" 
+                                            type="button" openPoolReassignModal(${pool.pool_id}, ${splitPanel?.id || poolPanel.id}, ${split.id}, '${panelTitle.replace(/'/g, "\\'")}')" 
+                                            title="Reassign to another panel">
+                                            Reassign
                                         </button>
                                     </td>
                                 </tr>
@@ -2720,185 +2733,467 @@
             $('.invalid-feedback').remove();
         }
 
-        // ========================
-        // Pool Panel Reassignment
-        // ========================
-        function openPoolReassignModal(poolId, currentPoolPanelId, splitId, panelTitle) {
-            currentPoolReassignData = {
-                poolId,
-                currentPoolPanelId,
-                splitId,
-                targetPoolPanelId: null,
-                panelTitle
-            };
+/**
+ * Open the pool panel reassignment modal
+ */
+function openPoolReassignModal(poolId, currentPoolPanelId, splitId, panelTitle) {
+    // PRESERVE all original data - don't reset the entire object
+    currentPoolReassignData.poolId = poolId;
+    currentPoolReassignData.currentPoolPanelId = currentPoolPanelId;
+    currentPoolReassignData.splitId = splitId;
+    currentPoolReassignData.panelTitle = panelTitle;
+    currentPoolReassignData.targetPoolPanelId = null;
+    currentPoolReassignData.targetPanelTitle = null;
+    currentPoolReassignData.remainingSpace = null;
 
-            document.getElementById('poolReassignReason').value = '';
-            showPoolReassignError('');
-            showPoolReassignLoading(true);
+    // Reset modal state
+    resetPoolReassignModal();
+    
+    // Update modal title
+    document.getElementById('reassignModalLabel').innerHTML = `Reassign Pool Split: ${panelTitle || ''}`;
+    
+    // Load available pool panels
+    loadAvailablePoolPanels(poolId, currentPoolPanelId);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('poolReassignModal'));
+    modal.show();
+}
 
-            const modalElement = document.getElementById('poolReassignModal');
-            poolReassignModalInstance = new bootstrap.Modal(modalElement);
-            poolReassignModalInstance.show();
+/**
+ * Load available pool panels for reassignment
+ */
+async function loadAvailablePoolPanels(poolId, poolPanelId) {
+    try {
+        showPoolReassignLoading(true);
+        
+        const url = '{{ route('admin.pool-panels.available-for-reassignment', ['poolId' => '__POOL_ID__', 'poolPanelId' => '__POOL_PANEL_ID__']) }}'
+            .replace('__POOL_ID__', poolId)
+            .replace('__POOL_PANEL_ID__', poolPanelId);
 
-            const url = '{{ route('admin.pool-panels.available-for-reassignment', ['poolId' => '__POOL_ID__', 'poolPanelId' => '__POOL_PANEL_ID__']) }}'
-                .replace('__POOL_ID__', poolId)
-                .replace('__POOL_PANEL_ID__', currentPoolPanelId);
-
-            fetch(url, {
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.success) {
-                        throw new Error(data.error || 'Failed to load available pool panels');
-                    }
-                    renderAvailablePoolPanels(data.panels || []);
-                    document.getElementById('poolReassignModalLabel').innerHTML = `Reassign Pool Split from ${panelTitle || ''}`;
-                    showPoolReassignLoading(false);
-                })
-                .catch(error => {
-                    console.error('Failed to load pool panels for reassignment', error);
-                    showPoolReassignError(error.message || 'Failed to load available pool panels');
-                    showPoolReassignLoading(false);
-                });
-        }
-
-        function renderAvailablePoolPanels(panels) {
-            const tbody = document.getElementById('poolReassignTableBody');
-            const button = document.getElementById('confirmPoolReassignBtn');
-
-            if (!Array.isArray(panels) || panels.length === 0) {
-                tbody.innerHTML = `
-                <tr>
-                    <td colspan="4" class="text-center text-muted py-4">
-                        No pool panels available for reassignment.
-                    </td>
-                </tr>`;
-                button.disabled = true;
-                button.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
-                return;
+        const response = await fetch(url, {
+            headers: {
+                'Accept': 'application/json'
             }
-
-            tbody.innerHTML = panels.map(panel => `
-                <tr>
-                    <td>
-                        <div class="fw-semibold">${panel.panel_title || 'N/A'}</div>
-                        <small class="text-muted">PPN-${panel.panel_id}</small>
-                    </td>
-                    <td>${panel.panel_remaining_limit ?? 0}</td>
-                    <td>${panel.total_splits ?? 0}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-warning" onclick="setPoolReassignTarget(${panel.panel_id}, '${panel.panel_title ? panel.panel_title.replace(/'/g, "\\'") : 'N/A'}')">
-                            <i class="fas fa-arrow-right"></i> Select
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            renderAvailablePoolPanels(data.panels || []);
+        } else {
+            showPoolReassignError(data.error || 'Failed to load available pool panels');
         }
+    } catch (error) {
+        console.error('Error loading available pool panels:', error);
+        showPoolReassignError('Failed to load available pool panels');
+    } finally {
+        showPoolReassignLoading(false);
+    }
+}
 
-        function setPoolReassignTarget(panelId, panelTitle) {
-            currentPoolReassignData.targetPoolPanelId = panelId;
-            currentPoolReassignData.targetPanelTitle = panelTitle;
+/**
+ * Render available pool panels in the modal
+ */
+function renderAvailablePoolPanels(panels) {
+    const container = document.getElementById('availablePanelsContainer');
+    
+    if (!panels || panels.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-info-circle text-muted mb-3" style="font-size: 2rem;"></i>
+                <p class="text-muted mb-0">No pool panels available for reassignment</p>
+            </div>
+        `;
+        return;
+    }
 
-            const button = document.getElementById('confirmPoolReassignBtn');
-            button.disabled = false;
-            button.innerHTML = `<i class="fas fa-exchange-alt me-1"></i>Reassign to ${panelTitle}`;
-            showPoolReassignError('');
-        }
-
-        function confirmPoolReassignment() {
-            if (!currentPoolReassignData.targetPoolPanelId) {
-                showPoolReassignError('Please select a target pool panel');
-                return;
-            }
-
-            showPoolReassignLoading(true);
-            fetch('{{ route('admin.pool-panels.reassign') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({
-                    from_pool_panel_id: currentPoolReassignData.currentPoolPanelId,
-                    to_pool_panel_id: currentPoolReassignData.targetPoolPanelId,
-                    split_id: currentPoolReassignData.splitId,
-                    pool_id: currentPoolReassignData.poolId,
-                    reason: document.getElementById('poolReassignReason').value
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.success) {
-                        throw new Error(data.message || 'Reassignment failed');
-                    }
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Reassignment Successful!',
-                        text: data.message || 'Pool panel split reassigned successfully',
-                        confirmButtonColor: '#ffc107',
-                    });
-
-                    resetPoolReassignModal();
-                    poolReassignModalInstance?.hide();
-                    loadPoolPanels();
-                })
-                .catch(error => {
-                    console.error('Pool panel reassignment failed', error);
-                    showPoolReassignError(error.message || 'Reassignment failed');
-                })
-                .finally(() => {
-                    showPoolReassignLoading(false);
-                });
-        }
-
-        function showPoolReassignLoading(show) {
-            const tbody = document.getElementById('poolReassignTableBody');
-            const button = document.getElementById('confirmPoolReassignBtn');
-
-            if (show) {
-                tbody.innerHTML = `
-                <tr>
-                    <td colspan="4" class="text-center py-4">
-                        <div class="spinner-border text-warning" role="status">
-                            <span class="visually-hidden">Loading...</span>
+    // Add search input
+    const searchHtml = `
+        <div class="mb-3">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                <input type="text" class="form-control border-start-0" id="poolPanelSearchInput" 
+                       placeholder="Search pool panels by ID or title..." onkeyup="filterPoolPanels()">
+            </div>
+        </div>
+    `;
+    
+    const panelsHtml = panels.map(panel => `
+        <div class="panel-option mb-2 border rounded-3 shadow-sm position-relative overflow-hidden pool-panel-card" 
+             data-panel-id="${panel.panel_id}"
+             data-panel-title="${(panel.panel_title || '').toLowerCase()}"
+             data-panel-remaining="${panel.panel_remaining_limit || 0}"
+             onclick="selectPoolReassignTarget(${panel.panel_id}, '${(panel.panel_title || 'N/A').replace(/'/g, "\\'")}', ${panel.panel_remaining_limit || 0})" 
+             style="cursor: pointer; transition: all 0.2s ease;">
+            
+            <div class="p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="panel-icon me-2">
+                            <div class="d-flex align-items-center justify-content-center rounded-circle bg-warning bg-gradient" 
+                                 style="width: 35px; height: 35px;">
+                                <i class="fas fa-layer-group text-white"></i>
+                            </div>
                         </div>
-                    </td>
-                </tr>`;
-                button.disabled = true;
+                        <div>
+                            <h6 class="mb-0 fw-bold">
+                                <span class="badge bg-warning bg-gradient me-2 px-2 py-1 small">PPN-${panel.panel_id}</span>
+                                <span class="panel-title-text">${panel.panel_title || 'N/A'}</span>
+                            </h6>
+                            <small class="text-muted">Pool Panel</small>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-outline-warning btn-sm px-3 select-btn" 
+                         onclick="event.stopPropagation(); selectPoolReassignTarget(${panel.panel_id}, '${(panel.panel_title || 'N/A').replace(/'/g, "\\'")}', ${panel.panel_remaining_limit || 0})">
+                        <i class="fas fa-arrow-right me-1"></i>Select
+                    </button>
+                </div>
+                
+                <div class="row g-2 mt-1">
+                    <div class="col-4">
+                        <div class="text-center p-2 rounded bg-light">
+                            <div class="fw-bold text-primary" style="font-size: 0.9rem;">${panel.total_splits || 0}</div>
+                            <small class="text-muted">Total Splits</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center p-2 rounded bg-light">
+                            <div class="fw-bold text-warning" style="font-size: 0.9rem;">${panel.panel_limit || 0}</div>
+                            <small class="text-muted">Limit</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center p-2 rounded bg-light">
+                            <div class="fw-bold text-success panel-remaining" style="font-size: 0.9rem;">${panel.panel_remaining_limit || 0}</div>
+                            <small class="text-muted">Free Space</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = searchHtml + '<div id="poolPanelsList">' + panelsHtml + '</div>';
+}
+
+/**
+ * Filter pool panels based on search input
+ */
+function filterPoolPanels() {
+    const searchTerm = document.getElementById('poolPanelSearchInput').value.toLowerCase();
+    const panelCards = document.querySelectorAll('.pool-panel-card');
+    let visibleCount = 0;
+    
+    panelCards.forEach(card => {
+        const panelId = card.getAttribute('data-panel-id');
+        const panelTitle = card.getAttribute('data-panel-title');
+        
+        const isVisible = panelId.includes(searchTerm) || panelTitle.includes(searchTerm);
+        
+        if (isVisible) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    // Show/hide no results message
+    const panelsList = document.getElementById('poolPanelsList');
+    let noResultsDiv = document.getElementById('noPoolSearchResults');
+    
+    if (visibleCount === 0 && searchTerm.length > 0) {
+        if (!noResultsDiv) {
+            noResultsDiv = document.createElement('div');
+            noResultsDiv.id = 'noPoolSearchResults';
+            noResultsDiv.className = 'text-center py-4';
+            noResultsDiv.innerHTML = `
+                <i class="fas fa-search text-muted mb-2" style="font-size: 1.5rem;"></i>
+                <p class="text-muted mb-0">No pool panels found matching "${searchTerm}"</p>
+            `;
+            panelsList.appendChild(noResultsDiv);
+        }
+    } else if (noResultsDiv) {
+        noResultsDiv.remove();
+    }
+}
+
+/**
+ * Select target pool panel for reassignment
+ */
+function selectPoolReassignTarget(targetPanelId, targetPanelTitle, remainingSpace = 0) {
+    // Remove previous selection
+    document.querySelectorAll('.pool-panel-card').forEach(option => {
+        option.classList.remove('selected');
+    });
+
+    // Highlight selected panel
+    const selectedPanel = document.querySelector(`.pool-panel-card[data-panel-id="${targetPanelId}"]`);
+    if (selectedPanel) {
+        selectedPanel.classList.add('selected');
+    }
+
+    // ONLY update target-related data - preserve original data
+    currentPoolReassignData.targetPoolPanelId = targetPanelId;
+    currentPoolReassignData.targetPanelTitle = targetPanelTitle;
+    currentPoolReassignData.remainingSpace = remainingSpace;
+
+    // Enable reassign button
+    const reassignBtn = document.getElementById('confirmReassignBtn');
+    reassignBtn.disabled = false;
+    reassignBtn.innerHTML = `<i class="fas fa-exchange-alt me-1"></i>Reassign to ${targetPanelTitle}`;
+    
+    // Show reason container
+    document.getElementById('reassignReasonContainer').style.display = 'block';
+}
+
+/**
+ * Confirm pool panel reassignment
+ */
+async function confirmPoolReassignment() {
+    if (!currentPoolReassignData.targetPoolPanelId) {
+        showPoolReassignError('Please select a target pool panel');
+        return;
+    }
+
+    try {
+        // Show SweetAlert2 confirmation dialog
+        const result = await Swal.fire({
+            title: 'Confirm Pool Split Reassignment?',
+            html: `
+                <div class="text-start">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <div class="card-body text-center text-white">
+                                    <i class="fas fa-exchange-alt fs-2 mb-2"></i>
+                                    <h4 class="card-title mb-1 fw-bold">PPN-${currentPoolReassignData.currentPoolPanelId}</h4>
+                                    <p class="mb-1 fw-semibold">${currentPoolReassignData.panelTitle}</p>
+                                    <small class="text-white-50">From Panel</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
+                                <div class="card-body text-center text-white">
+                                    <i class="fas fa-arrow-right fs-2 mb-2"></i>
+                                    <h4 class="card-title mb-1 fw-bold">PPN-${currentPoolReassignData.targetPoolPanelId}</h4>
+                                    <p class="mb-1 fw-semibold">${currentPoolReassignData.targetPanelTitle}</p>
+                                    <small class="text-white-50">To Panel</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                <div class="card-body text-center text-white">
+                                    <i class="fas fa-layer-group fs-2 mb-2"></i>
+                                    <h4 class="card-title mb-1 fw-bold">${currentPoolReassignData.remainingSpace || 0}</h4>
+                                    <small class="text-white-50">Free Space</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3 mb-0" style="font-size: 14px;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> This will move all domains and capacity from the current pool panel to the selected panel.
+                    </div>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-exchange-alt me-1"></i>Confirm Reassignment',
+            cancelButtonText: '<i class="fas fa-times me-1"></i>Cancel',
+            reverseButtons: true,
+            customClass: {
+                popup: 'swal-wide'
             }
+        });
+
+        // If user cancels, return early
+        if (!result.isConfirmed) {
+            return;
         }
 
-        function showPoolReassignError(message) {
-            const alertBox = document.getElementById('poolReassignAlert');
-            if (!alertBox) return;
-
-            if (!message) {
-                alertBox.classList.add('d-none');
-                alertBox.innerHTML = '';
-                return;
+        // Show SweetAlert2 loading dialog
+        Swal.fire({
+            title: 'Reassigning Pool Split...',
+            html: `
+                <div class="text-center">
+                    <div class="spinner-border text-warning mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Please wait while we reassign the pool split...</p>
+                    <small class="text-muted">This may take a few moments</small>
+                </div>
+            `,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            customClass: {
+                popup: 'swal-loading'
             }
+        });
 
-            alertBox.classList.remove('d-none');
-            alertBox.innerHTML = message;
-        }
+        // Get reason if available
+        const reasonElement = document.getElementById('reassignReason');
+        const reason = reasonElement ? reasonElement.value : null;
 
-        function resetPoolReassignModal() {
-            currentPoolReassignData = {};
-            document.getElementById('poolReassignReason').value = '';
-            const button = document.getElementById('confirmPoolReassignBtn');
-            if (button) {
-                button.disabled = true;
-                button.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
+        const formData = {
+            from_pool_panel_id: currentPoolReassignData.currentPoolPanelId,
+            to_pool_panel_id: currentPoolReassignData.targetPoolPanelId,
+            split_id: currentPoolReassignData.splitId,
+            pool_id: currentPoolReassignData.poolId,
+            reason: reason
+        };
+
+        const response = await fetch('{{ route('admin.pool-panels.reassign') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Close loading dialog and show success
+            await Swal.fire({
+                title: 'Reassignment Successful!',
+                html: `
+                    <div class="text-center">
+                        <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
+                        <p class="mb-2">${data.message || 'Pool panel split reassigned successfully'}</p>
+                        <small class="text-muted">Pool split has been successfully reassigned</small>
+                    </div>
+                `,
+                icon: 'success',
+                confirmButtonColor: '#28a745',
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: true,
+                confirmButtonText: 'Great!'
+            });
+            
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('poolReassignModal')).hide();
+            
+            // Refresh the pool panels view
+            if (typeof loadPoolPanels === 'function') {
+                loadPoolPanels();
             }
-            showPoolReassignError('');
+            
+            // Reset modal after successful reassignment
+            resetPoolReassignModal();
+        } else {
+            // Close loading dialog and show error
+            await Swal.fire({
+                title: 'Reassignment Failed!',
+                html: `
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
+                        <p class="mb-2">${data.message || 'Reassignment failed'}</p>
+                        <small class="text-muted">Please try again or contact support</small>
+                    </div>
+                `,
+                icon: 'error',
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'Try Again'
+            });
+            
+            showPoolReassignError(data.message || 'Reassignment failed');
         }
-    </script>
+    } catch (error) {
+        console.error('Error during pool panel reassignment:', error);
+        
+        // Close loading dialog and show error
+        await Swal.fire({
+            title: 'Error!',
+            html: `
+                <div class="text-center">
+                    <i class="fas fa-times-circle text-danger mb-3" style="font-size: 3rem;"></i>
+                    <p class="mb-2">An error occurred during reassignment</p>
+                    <small class="text-muted">Please check your connection and try again</small>
+                </div>
+            `,
+            icon: 'error',
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'OK'
+        });
+        
+        showPoolReassignError('An error occurred during reassignment');
+    }
+}
+
+/**
+ * Show/hide loading state in pool reassign modal
+ */
+function showPoolReassignLoading(show) {
+    const loader = document.getElementById('reassignLoader');
+    const container = document.getElementById('availablePanelsContainer');
+    
+    if (show) {
+        loader.style.display = 'block';
+        container.style.display = 'none';
+    } else {
+        loader.style.display = 'none';
+        container.style.display = 'block';
+    }
+}
+
+/**
+ * Show error in pool reassign modal
+ */
+function showPoolReassignError(message) {
+    const container = document.getElementById('availablePanelsContainer');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            ${message}
+        </div>
+    `;
+}
+
+/**
+ * Reset pool reassign modal UI
+ */
+function resetPoolReassignModal() {
+    // Only reset the UI elements
+    const container = document.getElementById('availablePanelsContainer');
+    if (container) container.innerHTML = '';
+    
+    const reasonInput = document.getElementById('reassignReason');
+    if (reasonInput) reasonInput.value = '';
+    
+    const reasonContainer = document.getElementById('reassignReasonContainer');
+    if (reasonContainer) reasonContainer.style.display = 'none';
+    
+    const reassignBtn = document.getElementById('confirmReassignBtn');
+    if (reassignBtn) {
+        reassignBtn.disabled = true;
+        reassignBtn.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
+    }
+    
+    // Remove any search results
+    const noResultsDiv = document.getElementById('noPoolSearchResults');
+    if (noResultsDiv) {
+        noResultsDiv.remove();
+    }
+    
+    // Remove selections
+    document.querySelectorAll('.pool-panel-card').forEach(option => {
+        option.classList.remove('selected');
+    });
+}    
+</script>
 @endpush
