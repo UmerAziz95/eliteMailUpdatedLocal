@@ -13,7 +13,12 @@ class Configuration extends Model
         'key',
         'value',
         'type',
-        'description'
+        'description',
+        'last_change'
+    ];
+
+    protected $casts = [
+        'last_change' => 'array',
     ];
 
     /**
@@ -51,6 +56,25 @@ class Configuration extends Model
                 'type' => $type
             ]
         );
+    }
+
+    protected static function booted()
+    {
+        static::updating(function (Configuration $config) {
+            // Only track when value or type actually changes
+            if ($config->isDirty(['value', 'type'])) {
+                $history = $config->last_change ?? [];
+                $history[] = [
+                    'previous_value' => $config->getOriginal('value'),
+                    'previous_type' => $config->getOriginal('type'),
+                    'new_value' => $config->value,
+                    'new_type' => $config->type,
+                    'user_id' => auth()->id(),
+                    'changed_at' => now()->toISOString(),
+                ];
+                $config->last_change = $history;
+            }
+        });
     }
 
     /**
