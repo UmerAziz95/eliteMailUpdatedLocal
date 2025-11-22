@@ -75,7 +75,8 @@
         ->where('remaining_limit', '>=', $maxSplitCapacity)
         ->count();
 
-    $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
+    // Panels needed reflect total pending requirement; available count is informational
+    $adjustedPanelsNeeded = max(0, $totalPanelsNeeded);
 @endphp
 
 @if ($adjustedPanelsNeeded > 0)

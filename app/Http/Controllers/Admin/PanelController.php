@@ -571,7 +571,8 @@ class PanelController extends Controller
                 ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
             
-            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
+            // Panels required are based on total pending need; available panels are informational
+            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded);
 
             return [
                 'total_panels_needed' => $totalPanelsNeeded,
@@ -1059,7 +1060,7 @@ class PanelController extends Controller
                 ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
             
-            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
+            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded);
             
             Log::info("Panel capacity alert calculation completed", [
                 'total_panels_needed_raw' => $totalPanelsNeeded,
