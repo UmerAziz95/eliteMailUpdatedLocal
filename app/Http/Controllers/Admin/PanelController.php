@@ -922,7 +922,8 @@ class PanelController extends Controller
                 'data' => $orderTrackingData,
                 'counters' => [
                     'total_orders' => $totalOrders,
-                    'total_inboxes' => $totalInboxes,
+                    'total_inboxes' => $remainingAfterAvailable,
+                    'raw_total_inboxes' => $totalInboxes,
                     'panels_required' => $panelsRequired,
                     'total_panels_needed_raw' => $totalPanelsNeeded,
                     'available_panel_count' => $availablePanelCount,
