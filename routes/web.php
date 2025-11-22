@@ -437,6 +437,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/panel-configurations/update', [AdminSettingsController::class, 'updateConfiguration'])->name('panel.configurations.update');
         Route::get('/pool-configurations', [AdminSettingsController::class, 'getPoolConfigurations'])->name('pool.configurations.get');
         Route::post('/pool-configurations/update', [AdminSettingsController::class, 'updatePoolConfigurations'])->name('pool.configurations.update');
+        Route::get('/configurations/{key}/history', [AdminSettingsController::class, 'getConfigurationHistory'])->name('configurations.history');
         Route::get('/chargebee-configurations', [AdminSettingsController::class, 'getChargebeeConfigurations'])->name('chargebee.configurations.get');
         Route::post('/chargebee-configurations/update', [AdminSettingsController::class, 'updateChargebeeConfigurations'])->name('chargebee.configurations.update');
         Route::get('/system-configurations', [AdminSettingsController::class, 'getSystemConfigurations'])->name('system.configurations.get');

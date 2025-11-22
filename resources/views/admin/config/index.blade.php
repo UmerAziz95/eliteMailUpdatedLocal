@@ -354,7 +354,10 @@
                                                 @endif
                                             </td>
                                             <td class="text-center">
-                                                
+                                                <button type="button" class="btn btn-sm btn-outline-secondary me-1"
+                                                        onclick="viewConfigHistory('{{ $config->key }}')">
+                                                    <i class="fa fa-clock-rotate-left me-1"></i>History
+                                                </button>
                                                 <button type="button" class="btn btn-sm btn-outline-primary" 
                                                         onclick="editConfig('{{ $config->key }}')">
                                                     <i class="fa fa-edit me-1"></i>Edit
@@ -363,7 +366,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="text-center text-muted">No panel configurations found.</td>
+                                            <td colspan="5" class="text-center text-muted">No panel configurations found.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -425,6 +428,10 @@
                                                 @endif
                                             </td>
                                             <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary me-1"
+                                                        onclick="viewConfigHistory('{{ $config->key }}')">
+                                                    <i class="fa fa-clock-rotate-left me-1"></i>History
+                                                </button>
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
                                                         onclick="editConfig('{{ $config->key }}', null, null, null, 'pool')">
                                                     <i class="fa fa-edit me-1"></i>Edit
@@ -685,6 +692,8 @@
         </form>
     </div>
 </div>
+
+<x-panel.config-history-offcanvas />
 
 <div class="modal fade" style="scrollbar-width: none" id="edit" tabindex="-1" aria-labelledby="editLabel"
     aria-hidden="true">

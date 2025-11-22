@@ -61,14 +61,16 @@ class Configuration extends Model
     protected static function booted()
     {
         static::updating(function (Configuration $config) {
-            // Only track when value or type actually changes
-            if ($config->isDirty(['value', 'type'])) {
+            // Track when value, type, or description changes
+            if ($config->isDirty(['value', 'type', 'description'])) {
                 $history = $config->last_change ?? [];
                 $history[] = [
                     'previous_value' => $config->getOriginal('value'),
                     'previous_type' => $config->getOriginal('type'),
                     'new_value' => $config->value,
                     'new_type' => $config->type,
+                    'previous_description' => $config->getOriginal('description'),
+                    'new_description' => $config->description,
                     'user_id' => auth()->id(),
                     'changed_at' => now()->toISOString(),
                 ];
