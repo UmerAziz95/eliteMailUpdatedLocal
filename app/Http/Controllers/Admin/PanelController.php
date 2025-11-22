@@ -863,6 +863,7 @@ class PanelController extends Controller
             $panelCapacity = $this->getProviderCapacity($providerType);
             $maxSplitCapacity = $this->getProviderMaxSplitCapacity($providerType);
             $totalPanelsNeeded = 0;
+            $totalSpaceAvailable = 0;
             
             foreach ($orderTrackingRecords as $tracking) {
                 $orderInboxes = (int) ($tracking->total_inboxes ?? 0);
@@ -871,15 +872,22 @@ class PanelController extends Controller
                 }
             }
             
-            // Get available panel count for context (provider-aware)
-            $availablePanelCount = Panel::where('is_active', true)
+            // Available panels and usable space (provider-aware)
+            $availablePanels = Panel::where('is_active', true)
                 ->where('limit', $panelCapacity)
                 ->where('provider_type', $providerType)
-                ->where('remaining_limit', '>=', $maxSplitCapacity)
-                ->count();
+                ->where('remaining_limit', '>', 0)
+                ->get();
+            $availablePanelCount = $availablePanels->filter(function ($panel) use ($maxSplitCapacity) {
+                return $panel->remaining_limit >= $maxSplitCapacity;
+            })->count();
+            foreach ($availablePanels as $panel) {
+                $totalSpaceAvailable += min($panel->remaining_limit, $maxSplitCapacity);
+            }
             
-            // Panels required based purely on pending load to avoid undercounting
-            $panelsRequired = $totalPanelsNeeded;
+            // Panels required after applying available space
+            $remainingAfterAvailable = max(0, $totalInboxes - $totalSpaceAvailable);
+            $panelsRequired = (int) ceil($remainingAfterAvailable / $maxSplitCapacity);
 
             // Get paginated results
             $orderTrackingData = $orderTrackingRecords->map(function ($tracking) {
@@ -1163,6 +1171,7 @@ class PanelController extends Controller
             $panelCapacity = $this->getProviderCapacity($providerType);
             $maxSplitCapacity = $this->getProviderMaxSplitCapacity($providerType);
             $totalPanelsNeeded = 0;
+            $totalSpaceAvailable = 0;
             
             foreach ($orderTrackingRecords as $tracking) {
                 $orderInboxes = (int) ($tracking->total_inboxes ?? 0);
@@ -1171,20 +1180,27 @@ class PanelController extends Controller
                 }
             }
             
-            // Get available panel count for context (provider-aware)
-            $availablePanelCount = Panel::where('is_active', true)
+            // Available panels and usable space (provider-aware)
+            $availablePanels = Panel::where('is_active', true)
                 ->where('limit', $panelCapacity)
                 ->where('provider_type', $providerType)
-                ->where('remaining_limit', '>=', $maxSplitCapacity)
-                ->count();
+                ->where('remaining_limit', '>', 0)
+                ->get();
+            $availablePanelCount = $availablePanels->filter(function ($panel) use ($maxSplitCapacity) {
+                return $panel->remaining_limit >= $maxSplitCapacity;
+            })->count();
+            foreach ($availablePanels as $panel) {
+                $totalSpaceAvailable += min($panel->remaining_limit, $maxSplitCapacity);
+            }
             
-            // Panels required based purely on pending load to avoid undercounting
-            $panelsRequired = $totalPanelsNeeded;
+            $remainingAfterAvailable = max(0, $totalInboxes - $totalSpaceAvailable);
+            $panelsRequired = (int) ceil($remainingAfterAvailable / $maxSplitCapacity);
             return response()->json([
                 'success' => true,
                 'counters' => [
                     'total_orders' => $totalOrders,
-                    'total_inboxes' => $totalInboxes,
+                    'total_inboxes' => $remainingAfterAvailable,
+                    'raw_total_inboxes' => $totalInboxes,
                     'panels_required' => $panelsRequired,
                     'total_panels_needed_raw' => $totalPanelsNeeded,
                     'available_panel_count' => $availablePanelCount,

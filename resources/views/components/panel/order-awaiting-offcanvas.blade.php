@@ -31,6 +31,7 @@
             <div class="p-3 filter">
                 <div>
                     <div class="d-flex align-items-start justify-content-between">
+                        
                         <div class="content-left">
                             <h6 class="text-heading">Number of Inboxes</h6>
                             <div class="d-flex align-items-center my-1">

@@ -21,6 +21,7 @@
 
     $insufficientSpaceOrders = [];
     $totalPanelsNeeded = 0;
+    $totalInboxes = 0;
 
     $getAvailablePanelSpaceForOrder = function (int $orderSize, int $inboxesPerDomain) use ($panelCapacity, $maxSplitCapacity, $providerType) {
         if ($orderSize >= $panelCapacity) {
@@ -56,6 +57,7 @@
 
     foreach ($pendingOrders as $order) {
         $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
+        $totalInboxes += $order->total_inboxes ?? 0;
 
         $availableSpace = $getAvailablePanelSpaceForOrder(
             $order->total_inboxes,
@@ -75,8 +77,21 @@
         ->where('remaining_limit', '>=', $maxSplitCapacity)
         ->count();
 
-    // Panels needed reflect total pending requirement; available count is informational
-    $adjustedPanelsNeeded = max(0, $totalPanelsNeeded);
+    // Account for free space on active panels to avoid over-counting required panels
+    $availablePanels = \App\Models\Panel::where('is_active', true)
+        ->where('limit', $panelCapacity)
+        ->where('provider_type', $providerType)
+        ->where('remaining_limit', '>', 0)
+        ->get();
+
+    $totalSpaceAvailable = 0;
+    foreach ($availablePanels as $panel) {
+        $totalSpaceAvailable += min($panel->remaining_limit, $maxSplitCapacity);
+    }
+
+    $remainingAfterAvailable = max(0, $totalInboxes - $totalSpaceAvailable);
+    $adjustedPanelsNeeded = (int) max(0, ceil($remainingAfterAvailable / $maxSplitCapacity));
+
 @endphp
 
 @if ($adjustedPanelsNeeded > 0)
