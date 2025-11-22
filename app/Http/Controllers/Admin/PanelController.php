@@ -864,23 +864,21 @@ class PanelController extends Controller
             $totalPanelsNeeded = 0;
             
             foreach ($orderTrackingRecords as $tracking) {
-                $orderInboxes = $tracking->total_inboxes ?? 0;
+                $orderInboxes = (int) ($tracking->total_inboxes ?? 0);
                 if ($orderInboxes > 0) {
-                    $panelsNeeded = ceil($orderInboxes / $maxSplitCapacity);
-                    $totalPanelsNeeded += $panelsNeeded;
+                    $totalPanelsNeeded += (int) ceil($orderInboxes / $maxSplitCapacity);
                 }
             }
             
-            // Get available panel count (panels that can accommodate at least one split)
+            // Get available panel count for context (provider-aware)
             $availablePanelCount = Panel::where('is_active', true)
                 ->where('limit', $panelCapacity)
                 ->where('provider_type', $providerType)
                 ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
             
-            // Adjust total panels needed based on available panels (same logic as Console Command)
-            $panelsRequired = max(0, $totalPanelsNeeded - $availablePanelCount);
-            $totalInboxes -= $panelsRequired * $maxSplitCapacity; // Adjust total inboxes based on panels required
+            // Panels required based purely on pending load to avoid undercounting
+            $panelsRequired = $totalPanelsNeeded;
 
             // Get paginated results
             $orderTrackingData = $orderTrackingRecords->map(function ($tracking) {
@@ -1166,23 +1164,21 @@ class PanelController extends Controller
             $totalPanelsNeeded = 0;
             
             foreach ($orderTrackingRecords as $tracking) {
-                $orderInboxes = $tracking->total_inboxes ?? 0;
+                $orderInboxes = (int) ($tracking->total_inboxes ?? 0);
                 if ($orderInboxes > 0) {
-                    $panelsNeeded = ceil($orderInboxes / $maxSplitCapacity);
-                    $totalPanelsNeeded += $panelsNeeded;
+                    $totalPanelsNeeded += (int) ceil($orderInboxes / $maxSplitCapacity);
                 }
             }
             
-            // Get available panel count
+            // Get available panel count for context (provider-aware)
             $availablePanelCount = Panel::where('is_active', true)
                 ->where('limit', $panelCapacity)
                 ->where('provider_type', $providerType)
                 ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
             
-            // Adjust total panels needed based on available panels
-            $panelsRequired = max(0, $totalPanelsNeeded - $availablePanelCount);
-            $totalInboxes -= $panelsRequired * $maxSplitCapacity;
+            // Panels required based purely on pending load to avoid undercounting
+            $panelsRequired = $totalPanelsNeeded;
             return response()->json([
                 'success' => true,
                 'counters' => [

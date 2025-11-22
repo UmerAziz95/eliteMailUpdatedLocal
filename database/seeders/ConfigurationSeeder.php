@@ -20,10 +20,16 @@ class ConfigurationSeeder extends Seeder
                 'description' => 'Maximum capacity for panel assignments (total inboxes per panel)'
             ],
             [
-                'key' => 'MAX_SPLIT_CAPACITY',
-                'value' => '1790',
+                'key' => 'GOOGLE_MAX_SPLIT_CAPACITY',
+                'value' => '358',
                 'type' => 'number',
-                'description' => 'Maximum split capacity for dividing panels across multiple contractors'
+                'description' => 'Maximum split capacity for dividing Google panels across multiple contractors'
+            ],
+            [
+                'key' => 'MICROSOFT_365_MAX_SPLIT_CAPACITY',
+                'value' => '200',
+                'type' => 'number',
+                'description' => 'Maximum split capacity for dividing Microsoft 365 panels across multiple contractors'
             ],
             [
                 'key' => 'ENABLE_MAX_SPLIT_CAPACITY',
