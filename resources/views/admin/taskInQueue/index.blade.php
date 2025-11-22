@@ -830,6 +830,7 @@
     function createPoolPanelReassignmentCard(task) {
         const div = document.createElement('div');
         div.className = 'card task-card p-3 rounded-4 border-0 shadow';
+        div.dataset.taskId = task.task_id; // Store task ID in data attribute
 
         const statusClass = getStatusClass(task.status);
 
@@ -845,14 +846,14 @@
                 ${task.status === 'pending' && !task.assigned_to ? `
                     <button class="btn btn-sm border-0 assign-btn" 
                             style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
-                            onclick="assignPoolPanelReassignmentTaskToMe(${task.task_id})"
+                            data-action="assign"
                             title="Assign to Me">
                         <i class="fas fa-user-plus text-white"></i>
                     </button>
                 ` : `
-                    <button class="btn btn-sm border-0"
+                    <button class="btn btn-sm border-0 view-btn"
                             style="background: linear-gradient(145deg, #3f3f62, #1d2239); box-shadow: 0 0 10px #0077ff;"
-                            onclick="viewPoolPanelReassignmentTaskDetails(${task.task_id})"
+                            data-action="view"
                             data-bs-toggle="offcanvas" 
                             data-bs-target="#pool-panel-task-details-view"
                             title="View Task Details">
@@ -924,6 +925,25 @@
 
         return div;
     }
+
+    // Add event delegation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Event delegation for pool panel reassignment cards
+        document.addEventListener('click', function(e) {
+            const card = e.target.closest('.task-card');
+            if (!card) return;
+
+            const taskId = card.dataset.taskId;
+            
+            if (e.target.closest('.assign-btn')) {
+                e.preventDefault();
+                assignPoolPanelReassignmentTaskToMe(parseInt(taskId));
+            } else if (e.target.closest('.view-btn')) {
+                e.preventDefault();
+                viewPoolPanelReassignmentTaskDetails(parseInt(taskId));
+            }
+        });
+    });
 
     // Create pool migration task card
     function createPoolMigrationCard(task) {
@@ -1021,53 +1041,52 @@
     }
 
     // Assign pool migration task to current admin
-    async function assignPoolMigrationTaskToMe(taskId) {
+    async function assignPoolPanelReassignmentTaskToMe(taskId) {
         try {
             const result = await Swal.fire({
-                title: 'Assign Pool Migration Task?',
-                text: 'Do you want to assign this pool migration task to yourself?',
+                title: 'Assign Pool Panel Reassignment Task?',
+                text: 'Do you want to assign this pool panel reassignment task to yourself?',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
                 confirmButtonText: 'Yes, assign to me!',
-                cancelButtonText: 'Cancel'
+                cancelButtonText: 'Cancel',
             });
-            
+
             if (!result.isConfirmed) return;
-            
-            const response = await fetch(`/admin/taskInQueue/pool-migration/${taskId}/assign`, {
+
+            const response = await fetch(`/admin/taskInQueue/pool-panel-reassignment/${taskId}/assign`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
             });
-            
+
             const data = await response.json();
-            
-            if (data.success) {
-                Swal.fire({
-                    title: 'Success!',
-                    text: data.message,
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-                
-                // Reload pool migration tasks
-                tasks['pool-migration'] = [];
-                pagination['pool-migration'] = { currentPage: 1, hasMore: false };
-                loadPoolMigrationTasks();
-            } else {
-                throw new Error(data.message);
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to assign pool panel reassignment task');
             }
+
+            await Swal.fire({
+                title: 'Success!',
+                text: data.message,
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+            });
+
+            tasks['pool-panel-reassignment'] = [];
+            pagination['pool-panel-reassignment'] = { currentPage: 1, hasMore: false };
+            loadPoolPanelReassignmentTasks();
         } catch (error) {
-            console.error('Error assigning pool migration task:', error);
+            console.error('Error assigning pool panel reassignment task:', error);
             Swal.fire({
                 title: 'Error!',
-                text: error.message || 'Failed to assign pool migration task',
-                icon: 'error'
+                text: error.message || 'Failed to assign pool panel reassignment task',
+                icon: 'error',
             });
         }
     }
