@@ -73,6 +73,12 @@ class CheckPanelCapacity extends Command
             $this->PANEL_CAPACITY = Configuration::get('GOOGLE_PANEL_CAPACITY', env('GOOGLE_PANEL_CAPACITY', env('PANEL_CAPACITY', 1790)));
             $this->MAX_SPLIT_CAPACITY = Configuration::get('GOOGLE_MAX_SPLIT_CAPACITY', env('GOOGLE_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
         }
+
+        // get ENABLE_MAX_SPLIT_CAPACITY
+        $enableMaxSplit = Configuration::get('ENABLE_MAX_SPLIT_CAPACITY', env('ENABLE_MAX_SPLIT_CAPACITY', true));
+        if (!$enableMaxSplit) {
+            $this->MAX_SPLIT_CAPACITY = $this->PANEL_CAPACITY;
+        }
     }
     
     /**
