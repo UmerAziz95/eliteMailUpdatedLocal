@@ -27,15 +27,21 @@ class ConfigurationSeeder extends Seeder
             ],
             [
                 'key' => 'MICROSOFT_365_MAX_SPLIT_CAPACITY',
-                'value' => '200',
+                'value' => '300',
                 'type' => 'number',
                 'description' => 'Maximum split capacity for dividing Microsoft 365 panels across multiple contractors'
             ],
             [
-                'key' => 'ENABLE_MAX_SPLIT_CAPACITY',
-                'value' => 'false',
+                'key' => 'ENABLE_GOOGLE_MAX_SPLIT_CAPACITY',
+                'value' => 'true',
                 'type' => 'boolean',
-                'description' => 'Enable or disable the maximum split capacity feature for panel management'
+                'description' => 'Enable max split capacity logic for Google panels'
+            ],
+            [
+                'key' => 'ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY',
+                'value' => 'true',
+                'type' => 'boolean',
+                'description' => 'Enable max split capacity logic for Microsoft 365 panels'
             ],
             [
                 'key' => 'PLAN_FLAT_QUANTITY',

@@ -88,10 +88,11 @@ class Configuration extends Model
     public static function getPanelConfigurations()
     {
         return self::whereIn('key', [
-            'ENABLE_MAX_SPLIT_CAPACITY',
             'GOOGLE_PANEL_CAPACITY',
             'GOOGLE_MAX_SPLIT_CAPACITY',
             'MICROSOFT_365_MAX_SPLIT_CAPACITY',
+            'ENABLE_GOOGLE_MAX_SPLIT_CAPACITY',
+            'ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY',
             'PLAN_FLAT_QUANTITY',
             'PROVIDER_TYPE',
             'MICROSOFT_365_CAPACITY'
