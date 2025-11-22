@@ -604,88 +604,7 @@
         </div>
     </div>
         <!-- Panel Capacity Alert -->
-        @php
-            // Get panel capacity alert data using the same logic as the AJAX endpoint
-            $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')
-                ->whereNotNull('total_inboxes')
-                ->where('total_inboxes', '>', 0)
-                ->get();
-            
-            $insufficientSpaceOrders = [];
-            $totalPanelsNeeded = 0;
-            $panelCapacity = env('PANEL_CAPACITY', 1790);
-            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
-            
-            // Helper function to get available panel space for specific order
-            $getAvailablePanelSpaceForOrder = function(int $orderSize, int $inboxesPerDomain) use ($panelCapacity, $maxSplitCapacity) {
-                if ($orderSize >= $panelCapacity) {
-                    // For large orders, prioritize full capacity panels
-                    $fullCapacityPanels = \App\Models\Panel::where('is_active', 1)
-                                                ->where('limit', $panelCapacity)
-                                                ->where('remaining_limit', '>=', $inboxesPerDomain)
-                                                ->get();
-                    
-                    $fullCapacitySpace = 0;
-                    foreach ($fullCapacityPanels as $panel) {
-                        $fullCapacitySpace += min($panel->remaining_limit, $maxSplitCapacity);
-                    }
-                    
-                    return $fullCapacitySpace;
-                    
-                } else {
-                    // For smaller orders, use any panel with remaining space that can accommodate at least one domain
-                    $availablePanels = \App\Models\Panel::where('is_active', 1)
-                                            ->where('limit', $panelCapacity)
-                                            ->where('remaining_limit', '>=', $inboxesPerDomain)
-                                            ->get();
-                    
-                    $totalSpace = 0;
-                    foreach ($availablePanels as $panel) {
-                        $totalSpace += min($panel->remaining_limit, $maxSplitCapacity);
-                    }
-                    
-                    return $totalSpace;
-                }
-            };
-            
-            foreach ($pendingOrders as $order) {
-                // Get inboxes per domain from order details or use default
-                $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
-                
-                // Calculate available space for this order based on logic
-                $availableSpace = $getAvailablePanelSpaceForOrder(
-                    $order->total_inboxes, 
-                    $inboxesPerDomain
-                );
-                
-                if ($order->total_inboxes > $availableSpace) {
-                    // Calculate panels needed for this order (same logic as Console Command)
-                    $panelsNeeded = ceil($order->total_inboxes / $maxSplitCapacity);
-                    $insufficientSpaceOrders[] = $order;
-                    $totalPanelsNeeded += $panelsNeeded;
-                }
-            }
-            
-            // Adjust total panels needed based on available panels (same logic as Console Command)
-            $availablePanelCount = \App\Models\Panel::where('is_active', true)
-                ->where('limit', $panelCapacity)
-                ->where('remaining_limit', '>=', $maxSplitCapacity)
-                ->count();
-            
-            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
-        @endphp
-
-        @if($adjustedPanelsNeeded > 0)
-        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
-            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
-            <i class="ti ti-server me-2 alert-icon"></i>
-            <strong>Panel Capacity Alert:</strong>
-            {{ $adjustedPanelsNeeded }} new panel{{ $adjustedPanelsNeeded != 1 ? 's' : '' }} required for {{ count($insufficientSpaceOrders) }} pending order{{ count($insufficientSpaceOrders) != 1 ? 's' : '' }}.
-            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
-            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
-                aria-label="Close"></button>
-        </div>
-        @endif
+        <x-panel.panel-capacity-alert />
         <div class="counters mb-3">
             <div class="card p-3 counter_1">
                 <div>
@@ -3934,7 +3853,9 @@ $(document).ready(function() {
     
     // Auto-refresh panel capacity alert and counters every 60 seconds
     setInterval(function() {
-        refreshPanelCapacityAlert();
+        if (typeof refreshPanelCapacityAlert === 'function') {
+            refreshPanelCapacityAlert();
+        }
         
         // Refresh panel counters
         updatePanelCounters();
@@ -3948,57 +3869,6 @@ $(document).ready(function() {
         }
     }, 60000); // 60 seconds
 });
-
-/**
- * Refresh the panel capacity alert without refreshing the entire page
- */
-function refreshPanelCapacityAlert() {
-    $.ajax({
-        url: '{{ route("admin.panels.capacity-alert") }}',
-        method: 'GET',
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-            'Accept': 'application/json'
-        },
-        success: function(response) {
-            if (response.success) {
-                // Update the alert section
-                const alertContainer = $('#panelCapacityAlert').parent();
-                
-                if (response.show_alert) {
-                    // Show/update the alert
-                    const alertHtml = `
-                        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
-                            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
-                            <i class="ti ti-server me-2 alert-icon"></i>
-                            <strong>Panel Capacity Alert:</strong>
-                            ${response.total_panels_needed} new panel${response.total_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_orders_count} pending order${response.insufficient_orders_count != 1 ? 's' : ''}.
-                            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
-                            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
-                                aria-label="Close"></button>
-                        </div>
-                    `;
-                    
-                    if ($('#panelCapacityAlert').length) {
-                        // Update existing alert
-                        $('#panelCapacityAlert').replaceWith(alertHtml);
-                    } else {
-                        // Insert new alert after the order tracking table
-                        $('#orderTrackingTableBody').closest('.card').after(alertHtml);
-                    }
-                } else {
-                    // Hide the alert if no longer needed
-                    $('#panelCapacityAlert').remove();
-                }
-                
-                console.log('Panel capacity alert refreshed at:', new Date().toLocaleTimeString());
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('Error refreshing panel capacity alert:', error);
-        }
-    });
-}
 
 // Panel Reassignment Functions (from orders.blade.php)
 let currentReassignData = {};
