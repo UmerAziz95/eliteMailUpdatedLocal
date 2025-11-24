@@ -356,11 +356,11 @@
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-outline-secondary me-1"
                                                         onclick="viewConfigHistory('{{ $config->key }}')">
-                                                    <i class="fa fa-clock-rotate-left me-1"></i>History
+                                                    <i class="fa fa-clock-rotate-left me-1"></i>
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-outline-primary" 
                                                         onclick="editConfig('{{ $config->key }}')">
-                                                    <i class="fa fa-edit me-1"></i>Edit
+                                                    <i class="fa fa-edit me-1"></i>
                                                 </button>
                                             </td>
                                         </tr>
@@ -430,11 +430,11 @@
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-outline-secondary me-1"
                                                         onclick="viewConfigHistory('{{ $config->key }}')">
-                                                    <i class="fa fa-clock-rotate-left me-1"></i>History
+                                                    <i class="fa fa-clock-rotate-left me-1"></i>
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
                                                         onclick="editConfig('{{ $config->key }}', null, null, null, 'pool')">
-                                                    <i class="fa fa-edit me-1"></i>Edit
+                                                    <i class="fa fa-edit me-1"></i>
                                                 </button>
                                             </td>
                                         </tr>

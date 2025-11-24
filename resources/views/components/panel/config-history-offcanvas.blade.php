@@ -40,11 +40,15 @@
                 font-size: 0.85rem;
                 color: #cbd5e1;
             }
+            .config-history-offcanvas {
+                --bs-offcanvas-width: 600px;
+                width: min(600px, 95vw);
+            }
         </style>
     @endpush
 @endonce
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="{{ $offcanvasId }}" aria-labelledby="{{ $offcanvasId }}Label">
+<div class="offcanvas offcanvas-end config-history-offcanvas" tabindex="-1" id="{{ $offcanvasId }}" aria-labelledby="{{ $offcanvasId }}Label">
     <div class="offcanvas-header config-history-header">
         <div>
             <h5 class="offcanvas-title mb-1" id="{{ $offcanvasId }}Label">Configuration History</h5>
