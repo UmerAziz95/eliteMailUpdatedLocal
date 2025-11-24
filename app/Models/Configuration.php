@@ -13,12 +13,7 @@ class Configuration extends Model
         'key',
         'value',
         'type',
-        'description',
-        'last_change'
-    ];
-
-    protected $casts = [
-        'last_change' => 'array',
+        'description'
     ];
 
     /**
@@ -58,27 +53,6 @@ class Configuration extends Model
         );
     }
 
-    protected static function booted()
-    {
-        static::updating(function (Configuration $config) {
-            // Track when value, type, or description changes
-            if ($config->isDirty(['value', 'type', 'description'])) {
-                $history = $config->last_change ?? [];
-                $history[] = [
-                    'previous_value' => $config->getOriginal('value'),
-                    'previous_type' => $config->getOriginal('type'),
-                    'new_value' => $config->value,
-                    'new_type' => $config->type,
-                    'previous_description' => $config->getOriginal('description'),
-                    'new_description' => $config->description,
-                    'user_id' => auth()->id(),
-                    'changed_at' => now()->toISOString(),
-                ];
-                $config->last_change = $history;
-            }
-        });
-    }
-
     /**
      * Cast value to appropriate type
      *
@@ -115,10 +89,8 @@ class Configuration extends Model
     {
         return self::whereIn('key', [
             'GOOGLE_PANEL_CAPACITY',
-            'GOOGLE_MAX_SPLIT_CAPACITY',
-            'MICROSOFT_365_MAX_SPLIT_CAPACITY',
-            'ENABLE_GOOGLE_MAX_SPLIT_CAPACITY',
-            'ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY',
+            'MAX_SPLIT_CAPACITY',
+            'ENABLE_MAX_SPLIT_CAPACITY',
             'PLAN_FLAT_QUANTITY',
             'PROVIDER_TYPE',
             'MICROSOFT_365_CAPACITY'
@@ -134,7 +106,6 @@ class Configuration extends Model
     {
         return self::whereIn('key', [
             'POOL_WARMING_PERIOD',
-            'CANCELLATION_POOL_WARMING_PERIOD',
         ])->get();
     }
 

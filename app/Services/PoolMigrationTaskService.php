@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Pool;
 use App\Models\PoolOrderMigrationTask;
 use Illuminate\Support\Facades\Log;
-use App\Services\PoolOrderCancelledService;
 
 class PoolMigrationTaskService
 {
@@ -137,11 +136,9 @@ class PoolMigrationTaskService
             if ($status === 'completed') {
                 $updates['completed_at'] = now();
                 
-                // Update domain statuses based on task type
-                if ($task->task_type !== 'cancellation') {
-                    $this->updateDomainStatusesToUsed($task);
-                }
-
+                // Update domain statuses from 'in-progress' to 'used'
+                $this->updateDomainStatusesToUsed($task);
+                
                 // Update pool order status and completed_at
                 $poolOrder = $task->poolOrder;
                 if ($poolOrder) {
@@ -157,10 +154,6 @@ class PoolMigrationTaskService
                     $poolOrder->save();
                     
                     Log::info("Pool order {$poolOrder->id} status set to completed for task {$task->id}");
-
-                    if ($task->task_type === 'cancellation') {
-                        $this->freeDomainsForCancellationTask($task);
-                    }
                 }
             } elseif ($status === 'in-progress' && !$task->started_at) {
                 $updates['started_at'] = now();
@@ -425,37 +418,6 @@ class PoolMigrationTaskService
             
         } catch (\Exception $e) {
             Log::error("Error updating domain statuses for task {$task->id}: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Free domains once a cancellation task is completed.
-     */
-    private function freeDomainsForCancellationTask(PoolOrderMigrationTask $task): void
-    {
-        $poolOrder = $task->poolOrder;
-
-        if (!$poolOrder) {
-            Log::warning("Pool migration task {$task->id}: No pool order found to free domains");
-            return;
-        }
-
-        try {
-            /** @var PoolOrderCancelledService $cancellationService */
-            $cancellationService = app(PoolOrderCancelledService::class);
-            $result = $cancellationService->freeDomainsFromPoolOrder($poolOrder);
-
-            Log::info("Pool migration cancellation task {$task->id}: Domains freed", [
-                'pool_order_id' => $poolOrder->id,
-                'freed' => $result['freed'] ?? 0,
-                'skipped' => $result['skipped'] ?? 0,
-                'total' => $result['total'] ?? 0,
-            ]);
-        } catch (\Exception $e) {
-            Log::error("Pool migration task {$task->id}: Failed to free domains after cancellation", [
-                'pool_order_id' => $poolOrder->id,
-                'error' => $e->getMessage()
-            ]);
         }
     }
     

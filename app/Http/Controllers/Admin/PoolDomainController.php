@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use App\Services\PoolDomainService;
 use App\Services\PoolOrderService;
 use Yajra\DataTables\DataTables;
-use Carbon\Carbon;
 
 class PoolDomainController extends Controller
 {
@@ -26,11 +25,8 @@ class PoolDomainController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $poolId = $request->get('pool_id');
-            $userId = $request->get('user_id');
-
-            // Get all pool domains, optionally filtered by user or pool
-            $allData = $this->poolDomainService->getPoolDomainsData(true, $userId, $poolId);
+            // Get all pool domains without our custom pagination
+            $allData = $this->poolDomainService->getPoolDomainsData(true); // Use cache
             
             return DataTables::of($allData)
                 ->addIndexColumn()
@@ -69,7 +65,6 @@ class PoolDomainController extends Controller
                     $domainId = $row['domain_id'] ?? '';
                     $domainName = addslashes($row['domain_name'] ?? '');
                     $status = $row['status'] ?? 'available';
-                    $endDate = addslashes($row['end_date'] ?? '');
                     
                     return '
                         <div class="dropdown">
@@ -79,7 +74,7 @@ class PoolDomainController extends Controller
                             <ul class="dropdown-menu">
                                 <li>
                                     <a class="dropdown-item" href="javascript:void(0)" 
-                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\', \'' . $endDate . '\')">
+                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\')">
                                         <i class="fa-solid fa-edit me-1"></i>Edit Domain
                                     </a>
                                 </li>
@@ -176,18 +171,12 @@ class PoolDomainController extends Controller
             'pool_order_id' => 'nullable|integer',
             'domain_id' => 'required',
             'domain_name' => 'required|string',
-            'status' => 'required|in:' . implode(',', array_keys($editableStatuses)),
-            'extend_days' => 'nullable|integer|min:0',
-            'reduce_days' => 'nullable|integer|min:0',
-            'end_date' => 'nullable|date'
+            'status' => 'required|in:' . implode(',', array_keys($editableStatuses))
         ]);
 
         try {
             $updated = false;
             $message = '';
-            $extendDays = (int) $request->input('extend_days', 0);
-            $reduceDays = (int) $request->input('reduce_days', 0);
-            $daysDelta = $extendDays - $reduceDays;
 
             // Try to update in Pool first
             if ($request->pool_id) {
@@ -200,10 +189,6 @@ class PoolDomainController extends Controller
                             $domain['status'] = $request->status;
                             // is_used updated based on status
                             $domain['is_used'] = $request->status === 'available' ? false : true;
-                            if ($daysDelta !== 0) {
-                                $currentEnd = $domain['end_date'] ?? $request->end_date ?? null;
-                                $domain['end_date'] = $this->adjustDomainEndDate($currentEnd, $daysDelta);
-                            }
                             $updated = true;
                             break;
                         }
@@ -230,10 +215,6 @@ class PoolDomainController extends Controller
                             $domain['status'] = $request->status;
                             // is_used updated based on status
                             $domain['is_used'] = $request->status === 'available' ? false : true;
-                            if ($daysDelta !== 0) {
-                                $currentEnd = $domain['end_date'] ?? $request->end_date ?? null;
-                                $domain['end_date'] = $this->adjustDomainEndDate($currentEnd, $daysDelta);
-                            }
                             $updated = true;
                             break;
                         }
@@ -267,34 +248,6 @@ class PoolDomainController extends Controller
                 'success' => false,
                 'message' => 'Error updating domain: ' . $e->getMessage()
             ], 500);
-        }
-    }
-
-    /**
-     * Adjust end_date by a number of days (positive to extend, negative to reduce)
-     */
-    private function adjustDomainEndDate($currentEndDate, int $daysDelta)
-    {
-        if ($daysDelta === 0) {
-            return $currentEndDate;
-        }
-
-        try {
-            $date = $currentEndDate
-                ? Carbon::createFromFormat('Y-m-d', $currentEndDate)->startOfDay()
-                : Carbon::now()->startOfDay();
-
-            $date->addDays($daysDelta);
-
-            return $date->toDateString();
-        } catch (\Exception $e) {
-            \Log::warning('Failed to adjust domain end_date', [
-                'current_end_date' => $currentEndDate,
-                'days_delta' => $daysDelta,
-                'error' => $e->getMessage()
-            ]);
-
-            return $currentEndDate;
         }
     }
 
@@ -492,7 +445,7 @@ class PoolDomainController extends Controller
                 })
                 ->addColumn('actions', function ($row) {
                     return $this->poolOrderService->getActionsDropdown($row, [
-                        'showAssignToMe' => $row->status_manage_by_admin !== 'draft',
+                        'showAssignToMe' => true
                     ]);
                 })
                 ->rawColumns(['status_badge', 'actions'])
@@ -708,3 +661,7 @@ class PoolDomainController extends Controller
         }
     }
 }
+
+
+
+
