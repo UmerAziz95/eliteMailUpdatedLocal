@@ -1336,8 +1336,10 @@
                                     <td>${split.total_inboxes ?? 0}</td>
                                     <td>${split.created_at ? formatDate(split.created_at) : 'N/A'}</td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-warning" onclick="openPoolReassignModal(${pool.pool_id}, ${splitPanel?.id || poolPanel.id}, ${split.id}, '${panelTitle.replace(/'/g, "\\'")}')">
-                                            <i class="fas fa-exchange-alt"></i> Reassign
+                                       <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success" 
+                                            type="button" openPoolReassignModal(${pool.pool_id}, ${splitPanel?.id || poolPanel.id}, ${split.id}, '${panelTitle.replace(/'/g, "\\'")}')" 
+                                            title="Reassign to another panel">
+                                            Reassign
                                         </button>
                                     </td>
                                 </tr>
