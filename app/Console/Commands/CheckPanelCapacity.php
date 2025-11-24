@@ -9,7 +9,6 @@ use App\Models\Order;
 use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
 use App\Models\ReorderInfo;
-use App\Models\Configuration;
 use App\Mail\AdminPanelNotificationMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -37,11 +36,6 @@ class CheckPanelCapacity extends Command
      * Panel capacity
      */
     public $PANEL_CAPACITY;
-
-    /**
-     * Provider type used when fetching panels
-     */
-    public $PROVIDER_TYPE;
     
     /**
      * Maximum inboxes per panel split
@@ -63,27 +57,8 @@ class CheckPanelCapacity extends Command
     public function __construct()
     {
         parent::__construct();
-        // Resolve provider-specific panel capacity with sensible fallbacks
-        $providerType = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
-        $this->PROVIDER_TYPE = $providerType;
-        if (strtolower($providerType) === 'microsoft 365') {
-            $this->PANEL_CAPACITY = Configuration::get('MICROSOFT_365_CAPACITY', env('MICROSOFT_365_CAPACITY', env('PANEL_CAPACITY', 1790)));
-            $this->MAX_SPLIT_CAPACITY = Configuration::get('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
-        } else {
-            $this->PANEL_CAPACITY = Configuration::get('GOOGLE_PANEL_CAPACITY', env('GOOGLE_PANEL_CAPACITY', env('PANEL_CAPACITY', 1790)));
-            $this->MAX_SPLIT_CAPACITY = Configuration::get('GOOGLE_MAX_SPLIT_CAPACITY', env('GOOGLE_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
-        }
-    
-        // Provider-specific split toggles
-        $enableMaxSplit = true;
-        if (strtolower($providerType) === 'microsoft 365') {
-            $enableMaxSplit = Configuration::get('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', env('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', true));
-        } else {
-            $enableMaxSplit = Configuration::get('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', env('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', true));
-        }
-        if (!$enableMaxSplit) {
-            $this->MAX_SPLIT_CAPACITY = $this->PANEL_CAPACITY;
-        }
+        $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 1790); // Default to 1790 if not set in config
+        $this->MAX_SPLIT_CAPACITY = env('MAX_SPLIT_CAPACITY', 358); // Maximum inboxes per split
     }
     
     /**
@@ -126,7 +101,6 @@ class CheckPanelCapacity extends Command
             // For large orders, prioritize full capacity panels
             $fullCapacityPanels = Panel::where('is_active', 1)
                                         ->where('limit', $this->PANEL_CAPACITY)
-                                        ->where('provider_type', $this->PROVIDER_TYPE)
                                         // ->where('remaining_limit', $this->PANEL_CAPACITY)
                                         ->where('remaining_limit', '>=', $inboxesPerDomain)
                                         ->get();
@@ -145,7 +119,6 @@ class CheckPanelCapacity extends Command
             // For smaller orders, use any panel with remaining space that can accommodate at least one domain
             $availablePanels = Panel::where('is_active', 1)
                                     ->where('limit', $this->PANEL_CAPACITY)
-                                    ->where('provider_type', $this->PROVIDER_TYPE)
                                     ->where('remaining_limit', '>=', $inboxesPerDomain)
                                     ->get();
             
@@ -378,7 +351,6 @@ class CheckPanelCapacity extends Command
             // get panel greater than max split 
             $availablePanelCount = Panel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
-                ->where('provider_type', $this->PROVIDER_TYPE)
                 ->where('remaining_limit', '>=', $this->MAX_SPLIT_CAPACITY)
                 ->count();
             $totalPanelsNeeded -= $availablePanelCount; // Adjust total panels needed based on available panels
@@ -481,7 +453,6 @@ class CheckPanelCapacity extends Command
             // Exclude panels that have already been used for this order
             $availablePanel = Panel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
-                ->where('provider_type', $this->PROVIDER_TYPE)
                 // ->where('remaining_limit', '>', 0)
                 ->where('remaining_limit', '>=', $reorderInfo->inboxes_per_domain)
                 ->whereNotIn('id', $usedPanelIds) // Exclude already used panels
@@ -579,7 +550,6 @@ class CheckPanelCapacity extends Command
     {
         return Panel::where('is_active', true)
             ->where('limit', $this->PANEL_CAPACITY)
-            ->where('provider_type', $this->PROVIDER_TYPE)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
             ->first();
@@ -591,7 +561,6 @@ class CheckPanelCapacity extends Command
     {
         return Panel::where('is_active', true)
             ->where('limit', $this->PANEL_CAPACITY)
-            ->where('provider_type', $this->PROVIDER_TYPE)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with most available space first for efficiency
             ->first();
