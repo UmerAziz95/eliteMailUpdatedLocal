@@ -32,12 +32,13 @@
             style="height: 30px; width: 30px; border-radius: 50px; background-color: #525252c6;">
             <i class="fa-solid fa-chevron-left"></i>
         </a>
-        @if($poolOrder->status === 'completed' && $poolOrder->status_manage_by_admin === 'completed')
+        {{-- @if($poolOrder->status === 'completed' && $poolOrder->status_manage_by_admin === 'completed')
         <button class="c-btn text-decoration-none subscribe-btn" onclick="window.location.href='{{ route('customer.order.create') }}'">
             <i class="fa-solid fa-cart-plus"></i>
             New Order
         </button>
-        @endif
+        @endif --}}
+        
     </div>
 
     <div class="d-flex align-items-center justify-content-between mt-3">

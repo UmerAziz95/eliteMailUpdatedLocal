@@ -7,12 +7,30 @@ use App\Models\User;
 use App\Models\Plan;
 use App\Models\HostingPlatform;
 use App\Models\SendingPlatform;
+use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class PoolController extends Controller
 {
+    /**
+     * Get start and end dates for domain warming period
+     *
+     * @return array ['start_date' => string, 'end_date' => string]
+     */
+    private function getDomainWarmingDates()
+    {
+        $startDate = Carbon::now();
+        $warmingPeriodDays = (int) Configuration::get('POOL_WARMING_PERIOD', 21);
+        $endDate = $startDate->copy()->addDays($warmingPeriodDays);
+        
+        return [
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => $endDate->format('Y-m-d')
+        ];
+    }
     /**
      * Display a listing of the resource.
      */
@@ -73,6 +91,29 @@ class PoolController extends Controller
     }
 
     /**
+     * Apply domain-status-based filtering so pools can appear in multiple tabs.
+     */
+    private function applyDomainStatusFilter($query, string $statusFilter): void
+    {
+        $statusFilter = strtolower($statusFilter);
+        $poolTable = (new Pool())->getTable();
+        $jsonStatusesPath = "JSON_EXTRACT({$poolTable}.domains, '$[*].status')";
+
+        if ($statusFilter === 'warming') {
+            $query->where(function ($q) use ($jsonStatusesPath, $poolTable) {
+                $q->whereRaw("JSON_SEARCH({$jsonStatusesPath}, 'one', ?) IS NOT NULL", ['warming'])
+                  ->orWhereNull("{$poolTable}.status_manage_by_admin")
+                  ->orWhere("{$poolTable}.status_manage_by_admin", 'warming');
+            });
+        } elseif ($statusFilter === 'available') {
+            $query->where(function ($q) use ($jsonStatusesPath, $poolTable) {
+                $q->whereRaw("JSON_SEARCH({$jsonStatusesPath}, 'one', ?) IS NOT NULL", ['available'])
+                  ->orWhere("{$poolTable}.status_manage_by_admin", 'available');
+            });
+        }
+    }
+
+    /**
      * Handle DataTable AJAX requests
      */
     private function getDataTableData(Request $request)
@@ -82,15 +123,7 @@ class PoolController extends Controller
 
             // Handle status filtering for tabs
             if ($request->has('status_filter')) {
-                $statusFilter = $request->status_filter;
-                if ($statusFilter === 'warming') {
-                    $query->where(function ($q) {
-                        $q->where('status_manage_by_admin', 'warming')
-                          ->orWhereNull('status_manage_by_admin');
-                    });
-                } elseif ($statusFilter === 'available') {
-                    $query->where('status_manage_by_admin', 'available');
-                }
+                $this->applyDomainStatusFilter($query, $request->status_filter);
             }
 
             // Handle DataTable search
@@ -269,6 +302,8 @@ class PoolController extends Controller
                 $domains = json_decode($request->domains, true);
                 $processedDomains = [];
                 $sequence = 1;
+                $warmingDates = $this->getDomainWarmingDates();
+                
                 foreach ($domains as $domain) {
                     // If domain is string, convert to object
                     if (is_string($domain)) {
@@ -276,7 +311,9 @@ class PoolController extends Controller
                             'id' => 'new_' . $sequence++,
                             'name' => $domain,
                             'is_used' => false,
-                            'status' => 'warming'
+                            'status' => 'warming',
+                            'start_date' => $warmingDates['start_date'],
+                            'end_date' => $warmingDates['end_date']
                         ];
                     } elseif (is_array($domain)) {
                         $isUsed = $domain['is_used'] ?? false;
@@ -291,13 +328,18 @@ class PoolController extends Controller
                             'id' => $domain['id'] ?? ('new_' . $sequence++),
                             'name' => $domain['name'] ?? '',
                             'is_used' => $isUsed,
-                            'status' => $status
+                            'status' => $status,
+                            'start_date' => $domain['start_date'] ?? $warmingDates['start_date'],
+                            'end_date' => $domain['end_date'] ?? $warmingDates['end_date']
                         ];
                     }
                 }
                 $data['domains'] = $processedDomains;
             }
-
+            // log domains being created
+            \Log::info('Creating Pool - Domains Processed', [
+                'domains' => $data['domains']
+            ]);
             // Handle prefix variants JSON conversion
             if ($request->has('prefix_variants') && is_array($request->prefix_variants)) {
                 $data['prefix_variants'] = $request->prefix_variants;
@@ -459,6 +501,8 @@ class PoolController extends Controller
                 
                 // ABSOLUTE DOMAIN ID PRESERVATION ALGORITHM
                 // Process each submitted domain with GUARANTEED ID preservation
+                $warmingDates = $this->getDomainWarmingDates();
+                
                 foreach ($domains as $domainIndex => $domain) {
                     $domainData = null;
                     
@@ -475,6 +519,13 @@ class PoolController extends Controller
                             // If domain is used, set status to in-progress
                             if (isset($domainData['is_used']) && $domainData['is_used']) {
                                 $domainData['status'] = 'in-progress';
+                            }
+                            // Preserve existing dates if they exist
+                            if (!isset($domainData['start_date'])) {
+                                $domainData['start_date'] = $warmingDates['start_date'];
+                            }
+                            if (!isset($domainData['end_date'])) {
+                                $domainData['end_date'] = $warmingDates['end_date'];
                             }
                             $usedProtectedIds[] = $domainData['id'];
                         }
@@ -493,7 +544,9 @@ class PoolController extends Controller
                                 'id' => $existingAtPosition['id'], // FORCE preserve existing ID
                                 'name' => $domainName,
                                 'is_used' => $isUsed,
-                                'status' => $status
+                                'status' => $status,
+                                'start_date' => $existingAtPosition['start_date'] ?? $warmingDates['start_date'],
+                                'end_date' => $existingAtPosition['end_date'] ?? $warmingDates['end_date']
                             ];
                             $usedProtectedIds[] = $existingAtPosition['id'];
                             
@@ -510,7 +563,9 @@ class PoolController extends Controller
                                 'id' => $pool->id . '_new_' . $newDomainSequence++,
                                 'name' => $domainName,
                                 'is_used' => false,
-                                'status' => 'warming'
+                                'status' => 'warming',
+                                'start_date' => $warmingDates['start_date'],
+                                'end_date' => $warmingDates['end_date']
                             ];
                         }
                     }
@@ -533,7 +588,9 @@ class PoolController extends Controller
                                 'id' => $domain['id'], // PROTECTED - NEVER change
                                 'name' => $domainName,
                                 'is_used' => $isUsed,
-                                'status' => $status
+                                'status' => $status,
+                                'start_date' => $domain['start_date'] ?? $existingDomain['start_date'] ?? $warmingDates['start_date'],
+                                'end_date' => $domain['end_date'] ?? $existingDomain['end_date'] ?? $warmingDates['end_date']
                             ];
                             $usedProtectedIds[] = $domain['id'];
                             
@@ -558,7 +615,9 @@ class PoolController extends Controller
                                 'id' => $domain['original_id'], // PROTECTED - use original ID
                                 'name' => $domainName,
                                 'is_used' => $isUsed,
-                                'status' => $status
+                                'status' => $status,
+                                'start_date' => $domain['start_date'] ?? $existingDomain['start_date'] ?? $warmingDates['start_date'],
+                                'end_date' => $domain['end_date'] ?? $existingDomain['end_date'] ?? $warmingDates['end_date']
                             ];
                             $usedProtectedIds[] = $domain['original_id'];
                         }
@@ -577,6 +636,13 @@ class PoolController extends Controller
                             if (isset($domainData['is_used']) && $domainData['is_used']) {
                                 $domainData['status'] = 'in-progress';
                             }
+                            // Preserve or set dates
+                            if (!isset($domainData['start_date'])) {
+                                $domainData['start_date'] = $domain['start_date'] ?? $warmingDates['start_date'];
+                            }
+                            if (!isset($domainData['end_date'])) {
+                                $domainData['end_date'] = $domain['end_date'] ?? $warmingDates['end_date'];
+                            }
                             $usedProtectedIds[] = $domainData['id'];
                         }
                         // Position-based matching
@@ -594,7 +660,9 @@ class PoolController extends Controller
                                 'id' => $existingAtPosition['id'], // FORCE preserve existing ID
                                 'name' => $domainName,
                                 'is_used' => $isUsed,
-                                'status' => $status
+                                'status' => $status,
+                                'start_date' => $domain['start_date'] ?? $existingAtPosition['start_date'] ?? $warmingDates['start_date'],
+                                'end_date' => $domain['end_date'] ?? $existingAtPosition['end_date'] ?? $warmingDates['end_date']
                             ];
                             $usedProtectedIds[] = $existingAtPosition['id'];
                         }
@@ -612,7 +680,9 @@ class PoolController extends Controller
                                 'id' => isset($domain['id']) ? $domain['id'] : ($pool->id . '_new_' . $newDomainSequence++),
                                 'name' => $domainName,
                                 'is_used' => $isUsed,
-                                'status' => $status
+                                'status' => $status,
+                                'start_date' => $domain['start_date'] ?? $warmingDates['start_date'],
+                                'end_date' => $domain['end_date'] ?? $warmingDates['end_date']
                             ];
                         }
                     }

@@ -21,14 +21,13 @@ class UpdatePoolStatus extends Command
      *
      * @var string
      */
-    protected $description = 'Update pool and domain status from warming to available after 3 weeks of creation';
+    protected $description = 'Update pool and domain status from warming to available based on domain end_date';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        
         $this->info('Starting pool status update process...');
 
         $warmingPeriodDays = (int) Configuration::get('POOL_WARMING_PERIOD', 21);
@@ -36,18 +35,38 @@ class UpdatePoolStatus extends Command
             $warmingPeriodDays = 0;
         }
 
-        $cutoffDate = Carbon::now()->subDays($warmingPeriodDays);
+        $today = Carbon::now()->format('Y-m-d');
         $this->info("Configured warming period: {$warmingPeriodDays} day(s)");
-        $this->info("Looking for pools created before: {$cutoffDate->format('Y-m-d H:i:s')}");
+        $this->info("Checking domains with end_date on or before: {$today}");
 
-        // Find pools that are older than configured warming period and still in warming status
-        $query = Pool::where('created_at', '<=', $cutoffDate)
-            ->where(function ($q) {
-                $q->where('status_manage_by_admin', 'warming')
-                  ->orWhereNull('status_manage_by_admin');
-            });
-
-        $poolsToUpdate = $query->get();
+        // Find all pools that have domains with warming status
+        // $query = Pool::where(function ($q) {
+        //     $q->where('status_manage_by_admin', 'warming')
+        //       ->orWhereNull('status_manage_by_admin');
+        // });
+        
+        $poolsToCheck = Pool::all();
+        $poolsToUpdate = collect();
+        
+        // Filter pools that have domains with expired warming period
+        foreach ($poolsToCheck as $pool) {
+            if ($pool->domains && is_array($pool->domains)) {
+                $hasExpiredDomains = false;
+                foreach ($pool->domains as $domain) {
+                    if (isset($domain['status']) && $domain['status'] === 'warming') {
+                        // Check if domain has end_date and it's expired
+                        if (isset($domain['end_date']) && $domain['end_date'] <= $today) {
+                            $hasExpiredDomains = true;
+                            break;
+                        }
+                    }
+                }
+                if ($hasExpiredDomains) {
+                    $poolsToUpdate->push($pool);
+                }
+            }
+        }
+        
         $totalCount = $poolsToUpdate->count();
 
         if ($totalCount === 0) {
@@ -59,12 +78,14 @@ class UpdatePoolStatus extends Command
         
         // Display the pools that will be updated
         $this->table(
-            ['Pool ID', 'Created Date', 'Current Status', 'Domains Status', 'Days Old'],
-            $poolsToUpdate->map(function ($pool) {
-                $daysOld = $pool->created_at->diffInDays(now());
-                
+            ['Pool ID', 'Created Date', 'Current Status', 'Domains Status', 'Expired Domains', 'Warming Expired Names', 'Available Domain Names'],
+            $poolsToUpdate->map(function ($pool) use ($today) {
                 // Check domains status
                 $domainStatusInfo = 'N/A';
+                $expiredDomains = 0;
+                $expiredDomainNames = [];
+                $availableDomainNames = [];
+                
                 if ($pool->domains && is_array($pool->domains)) {
                     $warmingCount = 0;
                     $availableCount = 0;
@@ -74,8 +95,14 @@ class UpdatePoolStatus extends Command
                         $status = $domain['status'] ?? 'warming';
                         if ($status === 'warming') {
                             $warmingCount++;
+                            // Check if warming period expired
+                            if (isset($domain['end_date']) && $domain['end_date'] <= $today) {
+                                $expiredDomains++;
+                                $expiredDomainNames[] = $domain['name'] ?? 'N/A';
+                            }
                         } elseif ($status === 'available') {
                             $availableCount++;
+                            $availableDomainNames[] = $domain['name'] ?? 'N/A';
                         } else {
                             $otherCount++;
                         }
@@ -92,7 +119,9 @@ class UpdatePoolStatus extends Command
                     $pool->created_at->format('Y-m-d H:i:s'),
                     $pool->status_manage_by_admin ?? 'warming (null)',
                     $domainStatusInfo,
-                    $daysOld
+                    $expiredDomains,
+                    implode(', ', $expiredDomainNames) ?: 'None',
+                    implode(', ', $availableDomainNames) ?: 'None'
                 ];
             })
         );
@@ -113,40 +142,74 @@ class UpdatePoolStatus extends Command
 
         // Perform the update
         $updatedCount = 0;
+        $totalDomainsUpdated = 0;
         
         foreach ($poolsToUpdate as $pool) {
-            // Update the pool status
-            $pool->status_manage_by_admin = 'available';
+            $poolUpdated = false;
+            $domainsUpdatedInPool = 0;
             
-            // Update domains status from warming to available
+            // Update domains status from warming to available based on end_date
             if ($pool->domains && is_array($pool->domains)) {
                 $updatedDomains = [];
                 foreach ($pool->domains as $domain) {
+                    // Check if domain warming period has expired
                     if (isset($domain['status']) && $domain['status'] === 'warming') {
-                        $domain['status'] = 'available';
+                        if (isset($domain['end_date']) && $domain['end_date'] <= $today) {
+                            $domain['status'] = 'available';
+                            $domainsUpdatedInPool++;
+                            $poolUpdated = true;
+                        }
                     } elseif (!isset($domain['status'])) {
                         // Add status field if it doesn't exist (backward compatibility)
-                        $domain['status'] = 'available';
+                        // Check end_date if available
+                        if (isset($domain['end_date']) && $domain['end_date'] <= $today) {
+                            $domain['status'] = 'available';
+                            $domainsUpdatedInPool++;
+                            $poolUpdated = true;
+                        } else {
+                            $domain['status'] = 'warming';
+                        }
                     }
                     $updatedDomains[] = $domain;
                 }
                 $pool->domains = $updatedDomains;
             }
             
-            $pool->updated_at = now();
-            $pool->save();
-            $updatedCount++;
+            // Check if all domains are now available or non-warming status
+            $allDomainsReady = true;
+            if ($pool->domains && is_array($pool->domains)) {
+                foreach ($pool->domains as $domain) {
+                    if (isset($domain['status']) && $domain['status'] === 'warming') {
+                        $allDomainsReady = false;
+                        break;
+                    }
+                }
+            }
+            
+            // Update pool status only if all domains are ready
+            if ($allDomainsReady && ($pool->status_manage_by_admin === 'warming' || $pool->status_manage_by_admin === null)) {
+                $pool->status_manage_by_admin = 'available';
+                $poolUpdated = true;
+            }
+            
+            if ($poolUpdated) {
+                $pool->updated_at = now();
+                $pool->save();
+                $updatedCount++;
+                $totalDomainsUpdated += $domainsUpdatedInPool;
+            }
         }
 
-        $this->info("Successfully updated {$updatedCount} pool(s) status to 'available'.");
-        $this->info("Also updated domain statuses from 'warming' to 'available' where applicable.");
+        $this->info("Successfully updated {$updatedCount} pool(s).");
+        $this->info("Total domains updated from 'warming' to 'available': {$totalDomainsUpdated}");
         
         // Log the action
-        \Log::info("Pool status update completed. Updated {$updatedCount} pools and their domains to available status.", [
+        \Log::info("Pool status update completed based on domain end_date.", [
             'command' => 'pools:update-status',
-            'updated_count' => $updatedCount,
-            'cutoff_date' => $cutoffDate->toDateTimeString(),
-            'updated_domains' => 'Domain statuses also updated from warming to available'
+            'updated_pools' => $updatedCount,
+            'updated_domains' => $totalDomainsUpdated,
+            'check_date' => $today,
+            'method' => 'Domain end_date based expiration'
         ]);
 
         return 0;
