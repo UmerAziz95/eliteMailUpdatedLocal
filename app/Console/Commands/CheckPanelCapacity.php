@@ -26,7 +26,9 @@ class CheckPanelCapacity extends Command
      */
     protected $signature = 'panels:check-capacity 
                             {--dry-run : Run without sending actual emails}
-                            {--force : Force send even if already sent today}';    /**
+                            {--force : Force send even if already sent today}
+                            {--provider= : Force provider type (Google or Microsoft 365) instead of configuration}';    
+    /**
      * The console command description.
      *
      * @var string
@@ -63,27 +65,11 @@ class CheckPanelCapacity extends Command
     public function __construct()
     {
         parent::__construct();
-        // Resolve provider-specific panel capacity with sensible fallbacks
-        $providerType = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
-        $this->PROVIDER_TYPE = $providerType;
-        if (strtolower($providerType) === 'microsoft 365') {
-            $this->PANEL_CAPACITY = Configuration::get('MICROSOFT_365_CAPACITY', env('MICROSOFT_365_CAPACITY', env('PANEL_CAPACITY', 1790)));
-            $this->MAX_SPLIT_CAPACITY = Configuration::get('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
-        } else {
-            $this->PANEL_CAPACITY = Configuration::get('GOOGLE_PANEL_CAPACITY', env('GOOGLE_PANEL_CAPACITY', env('PANEL_CAPACITY', 1790)));
-            $this->MAX_SPLIT_CAPACITY = Configuration::get('GOOGLE_MAX_SPLIT_CAPACITY', env('GOOGLE_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
-        }
-    
-        // Provider-specific split toggles
-        $enableMaxSplit = true;
-        if (strtolower($providerType) === 'microsoft 365') {
-            $enableMaxSplit = Configuration::get('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', env('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', true));
-        } else {
-            $enableMaxSplit = Configuration::get('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', env('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', true));
-        }
-        if (!$enableMaxSplit) {
-            $this->MAX_SPLIT_CAPACITY = $this->PANEL_CAPACITY;
-        }
+        // Provider type will be set in handle() method after options are available
+        $this->PROVIDER_TYPE = null;
+        // Capacities will be initialized in handle() method
+        $this->PANEL_CAPACITY = null;
+        $this->MAX_SPLIT_CAPACITY = null;
     }
     
     /**
@@ -98,8 +84,15 @@ class CheckPanelCapacity extends Command
     {
         $isDryRun = $this->option('dry-run');
         $isForce = $this->option('force');
+        $forceProvider = $this->option('provider');
+        
+        // Initialize provider type and capacities
+        $this->initializeProviderSettings($forceProvider);
         
         $this->info('🔍 Starting panel capacity check...');
+        $this->info("   Provider: {$this->PROVIDER_TYPE}");
+        $this->info("   Panel Capacity: {$this->PANEL_CAPACITY}");
+        $this->info("   Max Split Capacity: {$this->MAX_SPLIT_CAPACITY}");
         
         try {            
             // Update order status to completed where space is available
@@ -116,6 +109,43 @@ class CheckPanelCapacity extends Command
         
         return 0;
     }    
+    
+    /**
+     * Initialize provider type and capacity settings
+     */
+    private function initializeProviderSettings(?string $forceProvider): void
+    {
+        // Determine provider type
+        if ($forceProvider) {
+            // Use forced provider from command option
+            $this->PROVIDER_TYPE = $forceProvider;
+            $this->info("🔧 Using forced provider type: {$forceProvider}");
+        } else {
+            // Use configuration table
+            $this->PROVIDER_TYPE = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+            $this->info("📋 Using provider type from configuration: {$this->PROVIDER_TYPE}");
+        }
+        
+        // Resolve provider-specific panel capacity with sensible fallbacks
+        if (strtolower($this->PROVIDER_TYPE) === 'microsoft 365') {
+            $this->PANEL_CAPACITY = Configuration::get('MICROSOFT_365_CAPACITY', env('MICROSOFT_365_CAPACITY', env('PANEL_CAPACITY', 1790)));
+            $this->MAX_SPLIT_CAPACITY = Configuration::get('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
+        } else {
+            $this->PANEL_CAPACITY = Configuration::get('GOOGLE_PANEL_CAPACITY', env('GOOGLE_PANEL_CAPACITY', env('PANEL_CAPACITY', 1790)));
+            $this->MAX_SPLIT_CAPACITY = Configuration::get('GOOGLE_MAX_SPLIT_CAPACITY', env('GOOGLE_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
+        }
+    
+        // Provider-specific split toggles
+        $enableMaxSplit = true;
+        if (strtolower($this->PROVIDER_TYPE) === 'microsoft 365') {
+            $enableMaxSplit = Configuration::get('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', env('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', true));
+        } else {
+            $enableMaxSplit = Configuration::get('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', env('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', true));
+        }
+        if (!$enableMaxSplit) {
+            $this->MAX_SPLIT_CAPACITY = $this->PANEL_CAPACITY;
+        }
+    }
     
     /**
      * Get available panel space for specific order size

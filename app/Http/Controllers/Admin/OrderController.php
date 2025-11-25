@@ -32,6 +32,8 @@ use App\Services\OrderContractorReassignmentService;
 use App\Services\SlackNotificationService;
 use App\Services\TextExportService;
 use App\Services\EmailExportService;
+use App\Services\OrderSplitResetService;
+use App\Services\OrderCapacityService;
 class OrderController extends Controller
 {
     private $statuses;
@@ -2154,21 +2156,13 @@ class OrderController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-
+            
             $adminId = Auth::id();
             $newProviderType = $request->input('provider_type');
             $reason = $request->input('reason');
 
-            // Find the order
-            $order = Order::findOrFail($orderId);
-            
-            // Only allow provider type change for completed orders
-            // if ($order->status_manage_by_admin !== 'completed') {
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => 'Provider type can only be changed for completed orders'
-            //     ], 400);
-            // }
+            // Find the order with the relationships we need to clean up
+            $order = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderTracking'])->findOrFail($orderId);
 
             $oldProviderType = $order->provider_type;
             
@@ -2179,11 +2173,31 @@ class OrderController extends Controller
                     'message' => 'Order already has the selected provider type.'
                 ], 400);
             }
+
+            // Validate that the target provider has enough panel space for this order (shared logic with command)
+            $capacityService = app(OrderCapacityService::class);
+            $capacityCheck = $capacityService->validateProviderCapacity($order, $newProviderType);
+            if (!$capacityCheck['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $capacityCheck['message'] ?? 'Insufficient capacity for provider change.',
+                    'data' => $capacityCheck['data'] ?? []
+                ], 422);
+            }
             
-            // Update provider type
-            $order->provider_type = $newProviderType;
-            $order->save();
-            
+            $splitResetService = app(OrderSplitResetService::class);
+            $splitCleanup = DB::transaction(function () use ($order, $newProviderType, $splitResetService, $adminId, $reason) {
+                // Update provider type
+                $order->provider_type = $newProviderType;
+                $order->save();
+
+                // Clear existing splits and re-queue split creation with the new provider
+                return $splitResetService->resetOrderSplits($order, $adminId, $reason, false);
+            });
+            // call cmd this php artisan panels:check-capacity with flag provider.
+            \Artisan::call('panels:check-capacity', [
+                '--provider' => $newProviderType
+            ]);
             // Log the activity
             ActivityLogService::log(
                 'admin_order_provider_type_updated',
@@ -2194,6 +2208,7 @@ class OrderController extends Controller
                     'old_provider_type' => $oldProviderType,
                     'new_provider_type' => $newProviderType,
                     'reason' => $reason,
+                    'split_cleanup' => $splitCleanup,
                     'changed_by' => $adminId,
                     'changed_by_type' => 'admin'
                 ],
@@ -2210,7 +2225,8 @@ class OrderController extends Controller
                     'order_id' => $orderId,
                     'old_provider_type' => $oldProviderType,
                     'new_provider_type' => $newProviderType,
-                    'reason' => $reason
+                    'reason' => $reason,
+                    'split_cleanup' => $splitCleanup
                 ]
             ]);
             
