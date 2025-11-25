@@ -449,6 +449,10 @@
                     const data = await response.json();
 
                     if (data.success) {
+                        // Capture IDs before we potentially reset shared state
+                        const targetPanelId = currentReassignData.currentPanelId;
+                        const targetOrderId = currentReassignData.orderId;
+
                         await Swal.fire({
                             title: 'Reassignment Successful!',
                             html: `
@@ -471,14 +475,24 @@
                             modalInstance.hide();
                         }
 
-                        const currentPanelId = currentReassignData.currentPanelId;
-                        if (currentPanelId) {
+                        if (typeof viewPanelOrders === 'function' && targetPanelId) {
                             setTimeout(() => {
-                                viewPanelOrders(currentPanelId);
+                                viewPanelOrders(targetPanelId);
                             }, 1000);
                         }
 
-                        loadPanels(currentFilters, 1, false);
+                        if (typeof viewOrderSplits === 'function' && targetOrderId) {
+                            setTimeout(() => {
+                                viewOrderSplits(targetOrderId);
+                            }, 1000);
+                        }
+
+                        if (typeof loadPanels === 'function') {
+                            loadPanels(typeof currentFilters !== 'undefined' ? currentFilters : {}, 1, false);
+                        }
+                        if (typeof loadOrders === 'function') {
+                            loadOrders(typeof currentFilters !== 'undefined' ? currentFilters : {}, 1, false);
+                        }
                         resetReassignModal();
                     } else {
                         await Swal.fire({
