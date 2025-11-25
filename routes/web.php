@@ -488,12 +488,13 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         
         // Specific routes must come before generic {taskId} routes
         Route::get('myTask/pool-migration-tasks', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyPoolMigrationTasks'])->name("myTask.pool-migration-tasks");
+        Route::get('myTask/pool-panel-reassignment-tasks', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyPoolPanelReassignmentTasks'])->name("myTask.pool-panel-migration-tasks");
         
         // Generic task routes (must come AFTER specific routes)
         Route::get('myTask/{taskId}/details', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
         Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
         Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Admin\MyTaskController::class, 'completeTask'])->name("myTask.complete");
-
+        Route::post('myTask/pool-panel-reassignment/{taskId}/complete', [App\Http\Controllers\Admin\MyTaskController::class, 'completePoolPanelReassignmentTask'])->name("myTask.reassignmentTask.complete");
 
        //profile settings
         Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');

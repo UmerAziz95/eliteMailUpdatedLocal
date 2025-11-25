@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
+use Carbon\Carbon;
+use App\Models\OrderEmail;
 use Illuminate\Http\Request;
 use App\Models\DomainRemovalTask;
+use App\Http\Controllers\Controller;
 use App\Models\PanelReassignmentHistory;
-use App\Models\OrderEmail;
-use Carbon\Carbon;
+use App\Models\PoolPanelReassignmentHistory;
+use App\Services\PoolPanelReassignmentService;
 
 class MyTaskController extends Controller
 {
@@ -386,6 +388,22 @@ class MyTaskController extends Controller
         }
     }
 
+    public function completePoolPanelReassignmentTask($taskId)
+    {
+        try {
+            $poolPanelService = new PoolPanelReassignmentService();
+            $result = $poolPanelService->completeReassignmentTask($taskId);
+            
+            return response()->json($result);
+        } catch (\Exception $e) {
+            \Log::error('Error completing task: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error completing task'
+            ], 500);
+        }
+    }
+
     /**
      * Get pool migration tasks assigned to the current admin
      */
@@ -410,4 +428,126 @@ class MyTaskController extends Controller
         
         return response()->json($result, $statusCode);
     }
+
+    /**
+     * Get pool panel reassignment tasks (pool_panels / pool_panel_splits).
+     */
+    public function getMyPoolPanelReassignmentTasks(Request $request)
+    {
+        try {
+            $query = PoolPanelReassignmentHistory::with([
+                'pool',
+                'poolPanel',
+                'fromPoolPanel',
+                'toPoolPanel',
+                'reassignedBy',
+                'assignedTo',
+            ]);
+
+            // --------------------------------------------------
+            // 1. SHOW ONLY TASKS ASSIGNED TO CURRENT USER
+            // --------------------------------------------------
+            $query->where('assigned_to', auth()->id());
+
+            // --------------------------------------------------
+            // 2. STATUS FILTER (Default: in-progress + completed)
+            // --------------------------------------------------
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            } else {
+                // Show in-progress and completed, exclude pending
+                $query->whereIn('status', ['in-progress', 'completed']);
+            }
+
+            // --------------------------------------------------
+            // 3. OTHER FILTERS
+            // --------------------------------------------------
+            if ($request->filled('pool_id')) {
+                $query->where('pool_id', $request->pool_id);
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('reassignment_date', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('reassignment_date', '<=', $request->date_to);
+            }
+
+            // --------------------------------------------------
+            // 4. ORDER
+            // --------------------------------------------------
+            $query->orderBy('reassignment_date', 'desc');
+
+            // --------------------------------------------------
+            // 5. PAGINATION
+            // --------------------------------------------------
+            $perPage = (int) $request->get('per_page', 12);
+            $page = (int) $request->get('page', 1);
+
+            $paginatedTasks = $query->paginate($perPage, ['*'], 'page', $page);
+
+            // --------------------------------------------------
+            // 6. DIRECT TRANSFORM (NO action_type filtering)
+            // --------------------------------------------------
+            $tasksData = $paginatedTasks->getCollection()->map(function (PoolPanelReassignmentHistory $task) {
+
+                return [
+                    'id' => $task->id,
+                    'task_id' => $task->id,
+                    'type' => 'pool_panel_reassignment',
+                    'pool_id' => $task->pool_id,
+                    'pool_name' => $task->pool->plan->name ?? null,
+                    'domain_url' => $task->pool->domain_url ?? null,
+
+                    'from_panel' => $task->fromPoolPanel ? [
+                        'id' => $task->fromPoolPanel->id,
+                        'title' => $task->fromPoolPanel->title, // Fixed: fromPanel to fromPoolPanel
+                    ] : null,
+
+                    'to_panel' => $task->toPoolPanel ? [
+                        'id' => $task->toPoolPanel->id,
+                        'title' => $task->toPoolPanel->title, // Fixed: toPanel to toPoolPanel
+                    ] : null,
+
+                    'action_type' => $task->action_type,
+                    'space_transferred' => $task->space_transferred,
+                    'splits_count' => $task->splits_count,
+                    'status' => $task->status,
+                    'reason' => $task->reason ?? 'Pool panel reassignment task',
+                    'reassignment_date' => $task->reassignment_date,
+                    'created_at' => $task->created_at,
+
+                    'assigned_to' => $task->assigned_to,
+                    'assigned_to_name' => $task->assignedTo->name ?? null,
+                    'reassigned_by_name' => $task->reassignedBy->name ?? null,
+
+                    'notes' => $task->notes,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $tasksData->values()->toArray(),
+                'pagination' => [
+                    'current_page' => $paginatedTasks->currentPage(),
+                    'last_page' => $paginatedTasks->lastPage(),
+                    'per_page' => $paginatedTasks->perPage(),
+                    'total' => $paginatedTasks->total(),
+                    'has_more_pages' => $paginatedTasks->hasMorePages(),
+                    'from' => $paginatedTasks->firstItem(),
+                    'to' => $paginatedTasks->lastItem(),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching pool panel reassignment tasks: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching pool panel reassignment tasks: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }

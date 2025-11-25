@@ -1078,11 +1078,11 @@ class TaskQueueController extends Controller
                 'assignedTo',
             ]);
 
-            // Fixed: By default show pending and in-progress tasks
+            // Query ALL statuses initially to check relationships
             if ($request->filled('status')) {
                 $query->where('status', $request->status);
             } else {
-                $query->whereIn('status', ['pending', 'in-progress']);
+                // Don't filter by status here - we'll filter later
             }
 
             // Filter by assigned status if provided
@@ -1119,9 +1119,13 @@ class TaskQueueController extends Controller
             $filteredTasks = collect();
             
             foreach ($groupedTasks as $poolId => $tasks) {
-                // If there's only one task for this pool, include it
+                // If there's only one task for this pool, check if it's pending
                 if ($tasks->count() === 1) {
-                    $filteredTasks->push($tasks->first());
+                    $singleTask = $tasks->first();
+                    // Only include if it's pending
+                    if ($singleTask->status === 'pending') {
+                        $filteredTasks->push($singleTask);
+                    }
                     continue;
                 }
                 
@@ -1129,27 +1133,38 @@ class TaskQueueController extends Controller
                 $removedTask = $tasks->firstWhere('action_type', 'removed');
                 $addedTask = $tasks->firstWhere('action_type', 'added');
 
-                // If there's a removed task and it's NOT completed, show only the removed task
+                // If there's a removed task and it's NOT completed, check if it's pending
                 if ($removedTask && $removedTask->status !== 'completed') {
-                    $filteredTasks->push($removedTask);
+                    // Only show removed task if it's pending
+                    if ($removedTask->status === 'pending') {
+                        $filteredTasks->push($removedTask);
+                    }
                 } 
-                // If removed task is completed and there's an added task, show the added task
+                // If removed task is completed and there's an added task, check if added task is pending
                 elseif ($removedTask && $removedTask->status === 'completed' && $addedTask) {
-                    $filteredTasks->push($addedTask);
+                    // Only show added task if it's pending
+                    if ($addedTask->status === 'pending') {
+                        $filteredTasks->push($addedTask);
+                    }
                 }
-                // If no removed task but there's an added task, show the added task
+                // If no removed task but there's an added task, check if added task is pending
                 elseif (!$removedTask && $addedTask) {
-                    $filteredTasks->push($addedTask);
+                    // Only show added task if it's pending
+                    if ($addedTask->status === 'pending') {
+                        $filteredTasks->push($addedTask);
+                    }
                 }
-                // Default: show all tasks if none of the above conditions match
+                // Default: show all pending tasks if none of the above conditions match
                 else {
                     foreach ($tasks as $task) {
-                        $filteredTasks->push($task);
+                        if ($task->status === 'pending') {
+                            $filteredTasks->push($task);
+                        }
                     }
                 }
             }
 
-            // Transform the filtered tasks
+            // Transform the filtered tasks (all should be pending now)
             $tasksData = $filteredTasks->map(function (PoolPanelReassignmentHistory $task) {
                 $pool = $task->pool;
                 $fromPanel = $task->fromPoolPanel;

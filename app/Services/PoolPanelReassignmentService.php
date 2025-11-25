@@ -5,9 +5,9 @@ namespace App\Services;
  use App\Models\PoolPanel;
  use App\Models\PoolPanelSplit;
  use App\Models\PoolPanelReassignmentHistory;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class PoolPanelReassignmentService
 {
@@ -280,6 +280,52 @@ class PoolPanelReassignmentService
                 'success' => false,
                 'error' => $e->getMessage(),
                 'history' => collect(),
+            ];
+        }
+    }
+    
+    public function completeReassignmentTask($taskId)
+    {
+        try {
+            // Find the task
+            $task = PoolPanelReassignmentHistory::find($taskId);
+            
+            if (!$task) {
+                return [
+                    'success' => false,
+                    'message' => 'Task not found'
+                ];
+            }
+            
+            // Check if task is already completed
+            if ($task->status === 'completed') {
+                return [
+                    'success' => false,
+                    'message' => 'Task is already completed'
+                ];
+            }
+            
+            // Update task status to completed
+            $task->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+            
+            return [
+                'success' => true,
+                'message' => 'Task marked as completed successfully',
+                'task' => [
+                    'id' => $task->id,
+                    'status' => $task->status,
+                    'completed_at' => $task->completed_at,
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            \Log::error('Error completing reassignment task: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error completing task: ' . $e->getMessage()
             ];
         }
     }
