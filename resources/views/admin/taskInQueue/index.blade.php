@@ -833,14 +833,20 @@
         div.dataset.taskId = task.task_id; // Store task ID in data attribute
 
         const statusClass = getStatusClass(task.status);
+        const actionType = task.action_type; // 'removed' or 'added'
+        const actionTypeColor = actionType === 'removed' ? 'danger' : 'success';
+        const actionTypeText = actionType === 'removed' ? 'Removal' : 'Addition';
 
         div.innerHTML = `
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                    <span class="text-white-50 small mb-1">Task #${task.task_id}</span>
+                    <span class="text-white-50 small mb-1"><i class="fas fa-exchange-alt me-1"></i> #${task.task_id}</span>
                     <span class="badge px-2 py-1 rounded ${statusClass} ms-1">
                         ${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+                    </span>
+                    <span class="badge bg-${actionTypeColor} px-2 py-1 rounded ms-1">
+                        ${actionTypeText}
                     </span>
                 </div>
                 ${task.status === 'pending' && !task.assigned_to ? `
@@ -875,6 +881,14 @@
                         <div class="d-flex justify-content-between">
                             <span class="small text-white-50">Domain URL</span>
                             <span class="fw-bold text-white">${task.domain_url}</span>
+                        </div>
+                    </div>
+                ` : ''}
+                ${task.pool_name ? `
+                    <div class="glass-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-white-50">Plan</span>
+                            <span class="fw-bold text-white">${task.pool_name}</span>
                         </div>
                     </div>
                 ` : ''}
@@ -918,6 +932,16 @@
                     <div class="d-flex justify-content-between">
                         <span class="small text-white-50">Assigned To</span>
                         <span class="fw-bold text-white">${task.assigned_to_name}</span>
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Reason -->
+            ${task.reason ? `
+                <div class="glass-box">
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-white-50">Reason</span>
+                        <span class="fw-bold text-white">${task.reason}</span>
                     </div>
                 </div>
             ` : ''}
@@ -3109,7 +3133,8 @@
         updateTabCounts();
     }
 
-    // Alternative implementation if you need to access Echo outside of DOMContentLoaded
+    // Alternati
+    // ve implementation if you need to access Echo outside of DOMContentLoaded
     function initializeTaskWebSocket() {
         if (typeof window.Echo !== 'undefined') {
             console.log('🔌 Initializing Laravel Echo for real-time task updates...', window.Echo);

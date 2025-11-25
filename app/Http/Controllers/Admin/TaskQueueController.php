@@ -1078,11 +1078,11 @@ class TaskQueueController extends Controller
                 'assignedTo',
             ]);
 
-            // By default show only pending tasks
+            // Fixed: By default show pending and in-progress tasks
             if ($request->filled('status')) {
                 $query->where('status', $request->status);
             } else {
-                $query->where('status', 'pending');
+                $query->whereIn('status', ['pending', 'in-progress']);
             }
 
             // Filter by assigned status if provided
@@ -1113,7 +1113,44 @@ class TaskQueueController extends Controller
 
             $paginatedTasks = $query->paginate($perPage, ['*'], 'page', $page);
 
-            $tasksData = $paginatedTasks->getCollection()->map(function (PoolPanelReassignmentHistory $task) {
+            // Group tasks by pool_id and filter based on action_type and status
+            $groupedTasks = $paginatedTasks->getCollection()->groupBy('pool_id');
+            
+            $filteredTasks = collect();
+            
+            foreach ($groupedTasks as $poolId => $tasks) {
+                // If there's only one task for this pool, include it
+                if ($tasks->count() === 1) {
+                    $filteredTasks->push($tasks->first());
+                    continue;
+                }
+                
+                // Find removed and added tasks
+                $removedTask = $tasks->firstWhere('action_type', 'removed');
+                $addedTask = $tasks->firstWhere('action_type', 'added');
+
+                // If there's a removed task and it's NOT completed, show only the removed task
+                if ($removedTask && $removedTask->status !== 'completed') {
+                    $filteredTasks->push($removedTask);
+                } 
+                // If removed task is completed and there's an added task, show the added task
+                elseif ($removedTask && $removedTask->status === 'completed' && $addedTask) {
+                    $filteredTasks->push($addedTask);
+                }
+                // If no removed task but there's an added task, show the added task
+                elseif (!$removedTask && $addedTask) {
+                    $filteredTasks->push($addedTask);
+                }
+                // Default: show all tasks if none of the above conditions match
+                else {
+                    foreach ($tasks as $task) {
+                        $filteredTasks->push($task);
+                    }
+                }
+            }
+
+            // Transform the filtered tasks
+            $tasksData = $filteredTasks->map(function (PoolPanelReassignmentHistory $task) {
                 $pool = $task->pool;
                 $fromPanel = $task->fromPoolPanel;
                 $toPanel = $task->toPoolPanel;
