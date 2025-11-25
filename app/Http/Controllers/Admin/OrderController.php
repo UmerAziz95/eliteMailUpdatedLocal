@@ -2161,14 +2161,6 @@ class OrderController extends Controller
 
             // Find the order
             $order = Order::findOrFail($orderId);
-            
-            // Only allow provider type change for completed orders
-            // if ($order->status_manage_by_admin !== 'completed') {
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => 'Provider type can only be changed for completed orders'
-            //     ], 400);
-            // }
 
             $oldProviderType = $order->provider_type;
             
