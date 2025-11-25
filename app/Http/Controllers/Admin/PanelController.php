@@ -284,6 +284,7 @@ class PanelController extends Controller
                     'panel_id' => $orderPanel->panel_id,
                     'panel_title' => $orderPanel->panel->title ?? 'N/A',
                     'order_id' => $order->id ?? 'N/A',
+                    'provider_type'=>$order->provider_type ??'N/A',
                     'timer_order'=>$order,
                     'customer_name' => $order->user->name ?? 'N/A',
                     'space_assigned' => $orderPanel->space_assigned,

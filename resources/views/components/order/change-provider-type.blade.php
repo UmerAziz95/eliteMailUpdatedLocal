@@ -49,11 +49,12 @@
                 const modalId = 'changeProviderTypeModal';
                 const orderIdAttr = 'data-order-id';
                 const currentProviderAttr = 'data-current-provider';
+                const panelIdAttr = 'data-panel-id';
 
                 const getModalEl = () => document.getElementById(modalId);
                 const getField = (id) => document.getElementById(id);
 
-                window.openChangeProviderTypeModal = function (orderId, currentProviderType) {
+                window.openChangeProviderTypeModal = function (orderId, currentProviderType, panelId = null) {
                     const modalEl = getModalEl();
                     if (!modalEl) return;
 
@@ -84,6 +85,7 @@
 
                     modalEl.setAttribute(orderIdAttr, orderId);
                     modalEl.setAttribute(currentProviderAttr, currentProviderType || '');
+                    modalEl.setAttribute(panelIdAttr, panelId ?? '');
 
                     const modal = new bootstrap.Modal(modalEl);
                     modal.show();
@@ -100,6 +102,7 @@
                     if (!providerSelect) return;
                     const newProviderType = providerSelect.value;
                     const reason = reasonField ? reasonField.value : '';
+                    const panelId = modal.getAttribute(panelIdAttr) || null;
 
                     if (!newProviderType) {
                         Swal.fire({
@@ -162,6 +165,10 @@
 
                             if (typeof viewOrderSplits === 'function') {
                                 viewOrderSplits(orderId);
+                            }
+
+                            if (panelId && typeof viewPanelOrders === 'function') {
+                                viewPanelOrders(panelId);
                             }
 
                             if (typeof loadOrders === 'function') {
