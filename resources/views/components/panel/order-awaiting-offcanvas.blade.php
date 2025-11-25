@@ -162,7 +162,7 @@
                         return;
                     }
 
-                    const response = await fetch('/admin/panels/counters', {
+                    const response = await fetch('/admin/panels/order-tracking', {
                         method: 'GET',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',

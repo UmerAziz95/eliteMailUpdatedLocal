@@ -722,6 +722,7 @@
 
 <!-- Panel Reassignment Modal -->
 <x-panel.reassign-modal />
+@include('components.order.change-provider-type')
 
 @endsection
 
@@ -1530,6 +1531,12 @@
                                     <small>ORDER ID: #${order.order_id || 0 }</small>
                                     <small class="text-light"><i class="fas fa-envelope me-1"></i><span>Inboxes:</span> <span class="fw-bold">${order.space_assigned || order.inboxes_per_domain || 0}</span>${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `<span> (${order.remaining_order_panels.length} more split${order.remaining_order_panels.length > 1 ? 's' : ''}</span>)` : ''}</small>
                                     <div class="d-flex align-items-center gap-2">
+                                        <button class="btn btn-info btn-sm px-2 py-1"
+                                            onclick="openChangeProviderTypeModal(${order.order_id}, '${order.provider_type || ''}', ${panel.id})"
+                                            style="font-size: 11px;">
+                                            <i class="${order.provider_type === 'Google' ? 'fab fa-google' : order.provider_type === 'Microsoft 365' ? 'fab fa-microsoft' : 'fas fa-exchange-alt'} me-1"></i>
+                                            ${order.provider_type ? `Change Provider (${order.provider_type})` : 'Set Provider'}
+                                        </button>
                                         ${order.order_status === 'pending' ? `<span class="badge ${getStatusBadgeClass(order.order_status)}" style="font-size: 10px;">${order.order_status || 'Unknown'}</span>` : `
                                             <span class="badge ${getStatusBadgeClass(order.order_status)}" style="font-size: 10px;">
                                                 ${order.order_status || 'Unknown'}
