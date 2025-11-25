@@ -1051,7 +1051,7 @@
                 totalPanels = pagination.total || 0;
                 
                 
-                renderPanels(append);
+                renderPanels(append, newPanels);
                 updatePaginationInfo();
                 updateLoadMoreButton();
                 
@@ -1120,11 +1120,14 @@
                 </div>
             `;
         }
-          // Render panels
-        function renderPanels(append = false) {
+        // Render panels
+        function renderPanels(append = false, appendedPanels = []) {
             if (!append) {
                 hideLoading();
             }
+            
+            // Use only newly fetched panels when appending to avoid duplicating existing cards/IDs
+            const dataSource = append ? appendedPanels : panels;
             
             const googleContainer = document.getElementById('googlePanelsContainer');
             const microsoftContainer = document.getElementById('microsoftPanelsContainer');
@@ -1139,7 +1142,7 @@
                 return;
             }
               
-            if (panels.length === 0 && !append) {
+            if (dataSource.length === 0 && !append) {
                 // Show empty state
                 googleSection.style.display = 'none';
                 microsoftSection.style.display = 'none';
@@ -1151,8 +1154,8 @@
             emptyState.style.display = 'none';
             
             // Separate panels by provider type
-            const googlePanels = panels.filter(p => p.provider_type === 'Google');
-            const microsoftPanels = panels.filter(p => p.provider_type === 'Microsoft 365');
+            const googlePanels = dataSource.filter(p => p.provider_type === 'Google');
+            const microsoftPanels = dataSource.filter(p => p.provider_type === 'Microsoft 365');
 
             if (append) {
                 // For pagination, append to respective containers
@@ -1161,6 +1164,14 @@
                 
                 if (googleHtml) googleContainer.insertAdjacentHTML('beforeend', googleHtml);
                 if (microsoftHtml) microsoftContainer.insertAdjacentHTML('beforeend', microsoftHtml);
+                
+                // Ensure sections are visible when new panels are appended
+                if (googlePanels.length > 0 && googleSection) {
+                    googleSection.style.display = 'block';
+                }
+                if (microsoftPanels.length > 0 && microsoftSection) {
+                    microsoftSection.style.display = 'block';
+                }
                 
                 // Initialize charts for new panels
                 setTimeout(() => {
