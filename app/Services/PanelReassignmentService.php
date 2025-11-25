@@ -26,6 +26,10 @@ class PanelReassignmentService
     public function getAvailablePanelsForReassignment($orderId, $currentOrderPanelId)
     {
         try {
+            // Ensure the order exists and capture its provider type for filtering
+            $order = Order::findOrFail($orderId);
+            $orderProviderType = $order->provider_type;
+
             // Get the current order panel to calculate space needed
             $currentOrderPanel = OrderPanel::with(['orderPanelSplits'])
                 ->findOrFail($currentOrderPanelId);
@@ -49,6 +53,9 @@ class PanelReassignmentService
                 }
             ])
                 ->where('is_active', true)
+                ->when($orderProviderType, function ($query) use ($orderProviderType) {
+                    $query->where('provider_type', $orderProviderType);
+                })
                 ->whereNotIn('id', $usedPanelIds)
                 ->where('remaining_limit', '>=', $spaceNeeded)
                 ->get();
@@ -81,7 +88,8 @@ class PanelReassignmentService
                     'contractor' => $contractorInfo,
                     'created_at' => $panel->created_at->format('Y-m-d H:i:s'),
                     'is_reassignable' => true, // All returned panels are reassignable
-                    'total_orders' => $panel->order_panels->count()
+                    'total_orders' => $panel->order_panels->count(),
+                    'provider_type' => $panel->provider_type
                 ];
             }
 
@@ -90,7 +98,8 @@ class PanelReassignmentService
                 'panels' => $panels,
                 'total_count' => count($panels),
                 'space_needed' => $spaceNeeded,
-                'current_order_panel_id' => $currentOrderPanelId
+                'current_order_panel_id' => $currentOrderPanelId,
+                'orderProviderType' => $orderProviderType
             ];
             
         } catch (Exception $e) {
@@ -124,13 +133,20 @@ class PanelReassignmentService
             DB::beginTransaction();
 
             // Validate source order panel
-            $fromOrderPanel = OrderPanel::with(['panel', 'orderPanelSplits', 'userOrderPanelAssignments'])
+            $fromOrderPanel = OrderPanel::with(['panel', 'orderPanelSplits', 'userOrderPanelAssignments', 'order'])
                 ->findOrFail($fromOrderPanelId);
+
+            $orderProviderType = $fromOrderPanel->order?->provider_type;
 
             // Validate destination panel
             $toPanel = Panel::where('id', $toPanelId)
                 ->where('is_active', true)
                 ->firstOrFail();
+
+            // Prevent cross-provider reassignment
+            if ($orderProviderType && $toPanel->provider_type !== $orderProviderType) {
+                throw new Exception('Destination panel provider type does not match order provider type');
+            }
 
             // Get splits to move
             $splitsQuery = OrderPanelSplit::where('order_panel_id', $fromOrderPanelId);

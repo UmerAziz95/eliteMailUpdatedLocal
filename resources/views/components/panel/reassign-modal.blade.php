@@ -134,7 +134,7 @@
                     container.innerHTML = `
                         <div class="text-center py-4">
                             <i class="fas fa-info-circle text-muted mb-3" style="font-size: 2rem;"></i>
-                            <p class="text-muted mb-0">No panels available for reassignment</p>
+                            <p class="mb-0">No panels available for reassignment</p>
                         </div>
                     `;
                     return;
