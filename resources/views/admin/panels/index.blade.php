@@ -3525,6 +3525,9 @@ function resetPanelForm() {
     
     // Ensure panel_limit is readonly for new panels
     $('#panel_limit').prop('readonly', true);
+    
+    // Fetch next panel ID whenever form is reset
+    fetchNextPanelId({ showOffcanvas: false, showLoader: false });
 }
 
 // Initialize on document ready
