@@ -63,7 +63,8 @@ class Panel extends Model
     }
 
     /**
-     * Determine the next sequential panel_sr_no for the given provider.
+     * Determine the next available panel_sr_no for the given provider.
+     * It fills the first missing serial number before moving to max+1.
      */
     public static function getNextSerialForProvider(?string $providerType): int
     {
@@ -77,9 +78,29 @@ class Panel extends Model
             $query->whereNull('provider_type');
         }
 
-        $maxSerial = $query->max('panel_sr_no');
+        /** @var Collection<int,int> $serials */
+        $serials = $query
+            ->whereNotNull('panel_sr_no')
+            ->orderBy('panel_sr_no')
+            ->pluck('panel_sr_no');
 
-        return ((int) $maxSerial) + 1;
+        // Find the smallest missing positive serial number; if none are missing, return max + 1
+        $candidate = 1;
+        foreach ($serials as $serial) {
+            if ($serial < $candidate) {
+                continue;
+            }
+            if ($serial === $candidate) {
+                $candidate++;
+                continue;
+            }
+            // Found a gap
+            if ($serial > $candidate) {
+                break;
+            }
+        }
+
+        return $candidate;
     }
 
     public function order_panels()
