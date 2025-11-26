@@ -2636,7 +2636,36 @@
                     allDomains = allDomains.concat(domainValues);
             }
         }
-    });
+
+          if (allDomains.length === 0) {
+            return '<div class="text-center py-3"><small class="text-white">No domains available</small></div>';
+        }
+        
+        // Create styled domain badges
+        return allDomains
+            .filter(domain => domain && typeof domain === 'string')
+            .map((domain, index) => `
+                <span class="domain-badge" style="
+                    display: inline-block;
+                    background-color: var(--filter-color);
+                    color: white;
+                    min-width: 7rem;
+                    padding: 4px 8px;
+                    margin: 2px 2px;
+                    border-radius: 12px;
+                    font-size: 10px;
+                    font-weight: 200;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                " 
+                title="Click to copy: ${domain}"
+                onclick="copyToClipboard('${domain}')">
+                    <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
+                </span>
+            `).join('');
+        });
+    }
 
     
 
@@ -2807,35 +2836,6 @@
                 </div>
             </div>
         `;
-    }
-        
-        if (allDomains.length === 0) {
-            return '<div class="text-center py-3"><small class="text-white">No domains available</small></div>';
-        }
-        
-        // Create styled domain badges
-        return allDomains
-            .filter(domain => domain && typeof domain === 'string')
-            .map((domain, index) => `
-                <span class="domain-badge" style="
-                    display: inline-block;
-                    background-color: var(--filter-color);
-                    color: white;
-                    min-width: 7rem;
-                    padding: 4px 8px;
-                    margin: 2px 2px;
-                    border-radius: 12px;
-                    font-size: 10px;
-                    font-weight: 200;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    transition: all 0.3s ease;
-                    cursor: pointer;
-                " 
-                title="Click to copy: ${domain}"
-                onclick="copyToClipboard('${domain}')">
-                    <i class="fa-solid fa-globe me-1" style="font-size: 9px;"></i>${domain}
-                </span>
-            `).join('');
     }
 
     // Function to toggle split sections with enhanced animations

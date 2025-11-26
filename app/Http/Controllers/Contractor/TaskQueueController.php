@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\Contractor;
 
-use App\Http\Controllers\Controller;
+use Carbon\Carbon;
+use App\Models\Order;
+use App\Models\OrderEmail;
 use Illuminate\Http\Request;
 use App\Models\DomainRemovalTask;
-use App\Models\Order;
+use App\Http\Controllers\Controller;
 use App\Models\PanelReassignmentHistory;
 use App\Services\PanelReassignmentService;
 use App\Services\PoolMigrationTaskService;
-use Carbon\Carbon;
-use App\Models\OrderEmail;
+use App\Models\PoolPanelReassignmentHistory;
 
 class TaskQueueController extends Controller
 {
@@ -914,6 +915,288 @@ class TaskQueueController extends Controller
                 'success' => false,
                 'message' => 'Failed to update task status'
             ], 500);
+        }
+    }
+
+    /**
+     * Get pool panel reassignment tasks (pool_panels / pool_panel_splits).
+     */
+    public function getPoolPanelReassignmentTasks(Request $request)
+    {
+        try {
+            $query = PoolPanelReassignmentHistory::with([
+                'pool',
+                'poolPanel',
+                'fromPoolPanel',
+                'toPoolPanel',
+                'reassignedBy',
+                'assignedTo',
+            ]);
+
+            // Query ALL statuses initially to check relationships
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            } else {
+                // Don't filter by status here - we'll filter later
+            }
+
+            // Filter by assigned status if provided
+            if ($request->filled('assigned_status')) {
+                if ($request->assigned_status === 'unassigned') {
+                    $query->whereNull('assigned_to');
+                } elseif ($request->assigned_status === 'assigned') {
+                    $query->whereNotNull('assigned_to');
+                }
+            }
+
+            if ($request->filled('pool_id')) {
+                $query->where('pool_id', $request->pool_id);
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('reassignment_date', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('reassignment_date', '<=', $request->date_to);
+            }
+
+            $query->orderBy('reassignment_date', 'desc');
+
+            $perPage = (int) $request->get('per_page', 12);
+            $page = (int) $request->get('page', 1);
+
+            $paginatedTasks = $query->paginate($perPage, ['*'], 'page', $page);
+
+            // Group tasks by pool_id and filter based on action_type and status
+            $groupedTasks = $paginatedTasks->getCollection()->groupBy('pool_id');
+            
+            $filteredTasks = collect();
+            
+            foreach ($groupedTasks as $poolId => $tasks) {
+                // If there's only one task for this pool, check if it's pending
+                if ($tasks->count() === 1) {
+                    $singleTask = $tasks->first();
+                    // Only include if it's pending
+                    if ($singleTask->status === 'pending') {
+                        $filteredTasks->push($singleTask);
+                    }
+                    continue;
+                }
+                
+                // Find removed and added tasks
+                $removedTask = $tasks->firstWhere('action_type', 'removed');
+                $addedTask = $tasks->firstWhere('action_type', 'added');
+
+                // If there's a removed task and it's NOT completed, check if it's pending
+                if ($removedTask && $removedTask->status !== 'completed') {
+                    // Only show removed task if it's pending
+                    if ($removedTask->status === 'pending') {
+                        $filteredTasks->push($removedTask);
+                    }
+                } 
+                // If removed task is completed and there's an added task, check if added task is pending
+                elseif ($removedTask && $removedTask->status === 'completed' && $addedTask) {
+                    // Only show added task if it's pending
+                    if ($addedTask->status === 'pending') {
+                        $filteredTasks->push($addedTask);
+                    }
+                }
+                // If no removed task but there's an added task, check if added task is pending
+                elseif (!$removedTask && $addedTask) {
+                    // Only show added task if it's pending
+                    if ($addedTask->status === 'pending') {
+                        $filteredTasks->push($addedTask);
+                    }
+                }
+                // Default: show all pending tasks if none of the above conditions match
+                else {
+                    foreach ($tasks as $task) {
+                        if ($task->status === 'pending') {
+                            $filteredTasks->push($task);
+                        }
+                    }
+                }
+            }
+
+            // Transform the filtered tasks (all should be pending now)
+            $tasksData = $filteredTasks->map(function (PoolPanelReassignmentHistory $task) {
+                $pool = $task->pool;
+                $fromPanel = $task->fromPoolPanel;
+                $toPanel = $task->toPoolPanel;
+
+                return [
+                    'id' => $task->id,
+                    'task_id' => $task->id,
+                    'type' => 'pool_panel_reassignment',
+                    'pool_id' => $task->pool_id,
+                    'pool_name' => $pool && method_exists($pool, 'plan') && $pool->relationLoaded('plan') ? ($pool->plan->name ?? null) : null,
+                    'domain_url' => $pool->domain_url ?? null,
+                    'from_panel' => $fromPanel ? [
+                        'id' => $fromPanel->id,
+                        'title' => $fromPanel->title,
+                    ] : null,
+                    'to_panel' => $toPanel ? [
+                        'id' => $toPanel->id,
+                        'title' => $toPanel->title,
+                    ] : null,
+                    'action_type' => $task->action_type,
+                    'space_transferred' => $task->space_transferred,
+                    'splits_count' => $task->splits_count,
+                    'status' => $task->status,
+                    'reason' => $task->reason ?? 'Pool panel reassignment task',
+                    'reassignment_date' => $task->reassignment_date,
+                    'created_at' => $task->created_at,
+                    'assigned_to' => $task->assigned_to,
+                    'assigned_to_name' => $task->assignedTo->name ?? null,
+                    'reassigned_by_name' => $task->reassignedBy->name ?? null,
+                    'notes' => $task->notes,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $tasksData->values()->toArray(),
+                'pagination' => [
+                    'current_page' => $paginatedTasks->currentPage(),
+                    'last_page' => $paginatedTasks->lastPage(),
+                    'per_page' => $paginatedTasks->perPage(),
+                    'total' => $paginatedTasks->total(),
+                    'has_more_pages' => $paginatedTasks->hasMorePages(),
+                    'from' => $paginatedTasks->firstItem(),
+                    'to' => $paginatedTasks->lastItem(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching pool panel reassignment tasks: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching pool panel reassignment tasks: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Assign a pool panel reassignment task to current admin.
+     */
+    public function assignPoolPanelReassignmentTaskToMe(Request $request, $taskId)
+    {
+        try {
+            $adminId = auth()->id();
+
+            $task = PoolPanelReassignmentHistory::findOrFail($taskId);
+
+            if ($task->assigned_to) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This pool panel reassignment task is already assigned to another user.',
+                ], 400);
+            }
+
+            $task->markAsStarted($adminId);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pool panel reassignment task assigned successfully!',
+                'task' => [
+                    'id' => $task->id,
+                    'assigned_to' => $adminId,
+                    'status' => $task->status,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error assigning pool panel reassignment task {$taskId}: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign pool panel reassignment task: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get pool panel reassignment task details for offcanvas view.
+     */
+    public function getPoolPanelReassignmentTaskDetails($taskId)
+    {
+        try {
+            $task = PoolPanelReassignmentHistory::with([
+                'pool',
+                'poolPanel',
+                'fromPoolPanel',
+                'toPoolPanel',
+                'reassignedBy',
+                'assignedTo',
+            ])->findOrFail($taskId);
+
+            $pool = $task->pool;
+
+            $taskInfo = [
+                'id' => $task->id,
+                'task_id' => $task->id,
+                'pool_id' => $task->pool_id,
+                'from_pool_panel_id' => $task->from_pool_panel_id,
+                'to_pool_panel_id' => $task->to_pool_panel_id,
+                'action_type' => $task->action_type,
+                'space_transferred' => $task->space_transferred,
+                'splits_count' => $task->splits_count,
+                'status' => $task->status,
+                'reason' => $task->reason,
+                'reassignment_date' => $task->reassignment_date,
+                'task_started_at' => $task->task_started_at,
+                'task_completed_at' => $task->task_completed_at,
+                'completion_notes' => $task->completion_notes,
+                'created_at' => $task->created_at,
+                'updated_at' => $task->updated_at,
+                'assigned_to' => $task->assigned_to,
+                'assigned_to_name' => $task->assignedTo->name ?? null,
+                'reassigned_by_name' => $task->reassignedBy->name ?? null,
+                'notes' => $task->notes,
+            ];
+
+            $poolInfo = null;
+            if ($pool) {
+                $poolInfo = [
+                    'id' => $pool->id,
+                    'plan_name' => method_exists($pool, 'plan') && $pool->relationLoaded('plan') ? ($pool->plan->name ?? null) : null,
+                    'domain_url' => $pool->domain_url ?? null,
+                    'total_inboxes' => $pool->total_inboxes ?? null,
+                    'status' => $pool->status ?? null,
+                    'created_at' => $pool->created_at,
+                ];
+            }
+
+            $fromPanel = $task->fromPoolPanel ? [
+                'id' => $task->fromPoolPanel->id,
+                'title' => $task->fromPoolPanel->title,
+                'auto_generated_id' => $task->fromPoolPanel->auto_generated_id ?? null,
+                'limit' => $task->fromPoolPanel->limit ?? null,
+                'remaining_limit' => $task->fromPoolPanel->remaining_limit ?? null,
+            ] : null;
+
+            $toPanel = $task->toPoolPanel ? [
+                'id' => $task->toPoolPanel->id,
+                'title' => $task->toPoolPanel->title,
+                'auto_generated_id' => $task->toPoolPanel->auto_generated_id ?? null,
+                'limit' => $task->toPoolPanel->limit ?? null,
+                'remaining_limit' => $task->toPoolPanel->remaining_limit ?? null,
+            ] : null;
+
+            return response()->json([
+                'success' => true,
+                'task' => $taskInfo,
+                'pool' => $poolInfo,
+                'from_panel' => $fromPanel,
+                'to_panel' => $toPanel,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching pool panel reassignment task details: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Pool panel reassignment task not found or error fetching details',
+            ], 404);
         }
     }
 }

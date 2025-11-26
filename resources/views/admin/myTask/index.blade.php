@@ -156,7 +156,7 @@
             </div>
         </div>
 
-         <!-- Pool Panel Reassignment Tasks Tab -->
+        <!-- Pool Panel Reassignment Tasks Tab -->
         <div class="tab-pane fade" id="pool-panel-reassignment-tab-pane" role="tabpanel" aria-labelledby="pool-panel-reassignment-tab" tabindex="0">
             <div id="pool-panel-reassignment-tasks-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px !important;">
                 <!-- Loading state -->
@@ -1328,7 +1328,7 @@
         }
     }
 
- // Render pool panel reassignment tasks function
+    // Render pool panel reassignment tasks function
     function renderPoolPanelReassignmentTasks(append = false) {
         const container = document.getElementById('pool-panel-reassignment-tasks-container');
         const tasksList = tasks['pool-panel-reassignment'];

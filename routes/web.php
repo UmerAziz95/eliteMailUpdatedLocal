@@ -791,6 +791,10 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
     Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
 
+    Route::get('taskInQueue/pool-panel-reassignment-tasks', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getPoolPanelReassignmentTasks'])->name("taskInQueue.pool-panel-reassignment-tasks");
+    Route::get('taskInQueue/pool-panel-reassignment/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getPoolPanelReassignmentTaskDetails'])->name("taskInQueue.pool-panel-reassignment-details");
+    Route::post('taskInQueue/pool-panel-reassignment/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignPoolPanelReassignmentTaskToMe'])->name("taskInQueue.pool-panel-reassignment-assign");
+
     // My Task Routes
     Route::get('myTask', [App\Http\Controllers\Contractor\MyTaskController::class, 'index'])->name("myTask.index");
     Route::get('myTask/data', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");
@@ -800,11 +804,15 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('myTask/pool-migration-tasks', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyPoolMigrationTasks'])->name("myTask.pool-migration-tasks");
     Route::get('myTask/pool-migration/{id}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getPoolMigrationTaskDetails'])->name("myTask.pool-migration-details");
     Route::put('myTask/pool-migration/{id}/status', [App\Http\Controllers\Contractor\MyTaskController::class, 'updatePoolMigrationTaskStatus'])->name("myTask.pool-migration-status");
+    Route::get('myTask/pool-panel-reassignment-tasks', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyPoolPanelReassignmentTasks'])->name("myTask.pool-panel-migration-tasks");
+
     
     // Generic task routes (must come AFTER specific routes)
     Route::get('myTask/{taskId}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
     Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
     Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Contractor\MyTaskController::class, 'completeTask'])->name("myTask.complete");
+    Route::post('myTask/pool-panel-reassignment/{taskId}/complete', [App\Http\Controllers\Contractor\MyTaskController::class, 'completePoolPanelReassignmentTask'])->name("myTask.reassignmentTask.complete");
+
 
     // Domains Removal Tasks
     Route::post('/orders/{order}/check-contractor-helpers', [AdminOrderController::class, 'checkContractorInHelpers'])->name('orders.check-contractor-helpers');

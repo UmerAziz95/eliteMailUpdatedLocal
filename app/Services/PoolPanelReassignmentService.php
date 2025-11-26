@@ -308,7 +308,7 @@ class PoolPanelReassignmentService
             // Update task status to completed
             $task->update([
                 'status' => 'completed',
-                'completed_at' => now(),
+                'task_completed_at' => now(),
             ]);
             
             return [

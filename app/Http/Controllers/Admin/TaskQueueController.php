@@ -621,7 +621,7 @@ class TaskQueueController extends Controller
 
     /**
      * Update panel reassignment task status
-     */
+     */ 
     public function updateShiftedTaskStatus(Request $request, $taskId)
     {
         try {
