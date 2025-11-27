@@ -65,11 +65,63 @@ class Panel extends Model
     /**
      * Determine the next available panel_sr_no for the given provider.
      * It fills the first missing serial number before moving to max+1.
+     * Also fixes any null panel_sr_no values by assigning the next available serial number.
      */
+    
     public static function getNextSerialForProvider(?string $providerType): int
     {
         $providerType = $providerType ?: Configuration::get('PROVIDER_TYPE', 'Google');
 
+        // First, check and fix any panels with null panel_sr_no
+        $nullPanelsQuery = static::query()
+            ->whereNull('panel_sr_no');
+        
+        if ($providerType !== null) {
+            $nullPanelsQuery->where('provider_type', $providerType);
+        } else {
+            $nullPanelsQuery->whereNull('provider_type');
+        }
+
+        $nullPanels = $nullPanelsQuery->get();
+
+        if ($nullPanels->isNotEmpty()) {
+            foreach ($nullPanels as $panel) {
+                // Get the next available serial for this provider
+                $query = static::query();
+
+                if ($providerType !== null) {
+                    $query->where('provider_type', $providerType);
+                } else {
+                    $query->whereNull('provider_type');
+                }
+
+                /** @var Collection<int,int> $serials */
+                $serials = $query
+                    ->whereNotNull('panel_sr_no')
+                    ->orderBy('panel_sr_no')
+                    ->pluck('panel_sr_no');
+
+                $candidate = 1;
+                foreach ($serials as $serial) {
+                    if ($serial < $candidate) {
+                        continue;
+                    }
+                    if ($serial === $candidate) {
+                        $candidate++;
+                        continue;
+                    }
+                    if ($serial > $candidate) {
+                        break;
+                    }
+                }
+
+                // Assign the next available serial number
+                $panel->panel_sr_no = $candidate;
+                $panel->save();
+            }
+        }
+
+        // Now find the next available serial number
         $query = static::query();
 
         if ($providerType !== null) {

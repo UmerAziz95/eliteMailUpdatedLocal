@@ -183,6 +183,7 @@ class OrderQueueController extends Controller
                         'order_panel_id' => $orderPanel->id,
                         'panel_id' => $orderPanel->panel_id,
                         'panel_title' => $orderPanel->panel->title ?? 'N/A',
+                        'panel_sr_no' => $orderPanel->panel->panel_sr_no ?? $orderPanel->panel_id ?? null,
                         'inboxes_per_domain' => $split->inboxes_per_domain,
                         'domains' => $domains,
                         'domains_count' => count($domains),
