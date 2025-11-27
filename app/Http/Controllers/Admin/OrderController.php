@@ -329,6 +329,19 @@ class OrderController extends Controller
 
                 })
                 ->editColumn('id', function ($order) {
+                    // Provider type icon
+                    $providerIcon = '';
+                    if ($order->provider_type) {
+                        $providerType = strtolower($order->provider_type);
+                        if ($providerType === 'google') {
+                            $providerIcon = '<i class="fa-brands fa-google text-danger me-1" title="Google"></i>';
+                        } elseif ($providerType === 'microsoft365' || $providerType === 'microsoft 365') {
+                            $providerIcon = '<i class="fa-brands fa-microsoft text-primary me-1" title="Microsoft 365"></i>';
+                        } elseif ($providerType === 'smtp') {
+                            $providerIcon = '<i class="fa-solid fa-envelope text-info me-1" title="SMTP"></i>';
+                        }
+                    }
+                    
                     // Determine icon color based on shared status and helpers assignment
                     $iconColor = 'text-secondary'; // default color
                     if ($order->is_shared) {
@@ -339,7 +352,7 @@ class OrderController extends Controller
                     
                     $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes ' . $iconColor . ' me-2" title="Shared Order"></i>' : '';
                     $share_request_link = '<a href="' . route('admin.orders.shared-order-requests') . '" class="text-primary">' . $sharedIcon . '</a>';
-                    $order_view_link = '<a href="' . route('admin.orders.view', $order->id) . '">' . $order->id . '</a>';
+                    $order_view_link = '<a href="' . route('admin.orders.view', $order->id) . '">' . $providerIcon . $order->id . '</a>';
                     return $order_view_link . ' ' . $share_request_link;
                 })
                 ->editColumn('created_at', function ($order) {
