@@ -170,6 +170,7 @@ class PanelController extends Controller
                         'id' => $split->id,
                         'panel_id' => $orderPanel->panel_id,
                         'panel_title' => $orderPanel->panel->title ?? 'N/A',
+                        'panel_sr_no' => optional($orderPanel->panel)->panel_sr_no ?? $orderPanel->panel_id ?? null,
                         'order_panel_id' => $orderPanel->id,
                         'inboxes_per_domain' => $split->inboxes_per_domain,
                         'order_panel'=>$orderPanel,

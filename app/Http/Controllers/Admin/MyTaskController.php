@@ -293,6 +293,7 @@ class MyTaskController extends Controller
                         'id' => $split->id,
                         'panel_id' => $panel->panel_id,
                         'panel_title' => $panel->panel->title ?? 'N/A',
+                        'panel_sr_no' => optional($panel->panel)->panel_sr_no ?? $panel->panel_id ?? null,
                         'order_panel_id' => $panel->id,
                         'status' => $split->status ?? 'unallocated',
                         'inboxes_per_domain' => $reorderInfo ? $reorderInfo->inboxes_per_domain : 1,

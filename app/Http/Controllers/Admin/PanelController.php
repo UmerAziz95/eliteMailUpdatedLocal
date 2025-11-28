@@ -261,6 +261,7 @@ class PanelController extends Controller
                                 return [
                                     'id' => $split->id,
                                     'panel_id' => $remainingPanel->panel_id,
+                                    'panel_sr_no' => optional($remainingPanel->panel)->panel_sr_no ?? $remainingPanel->panel_id ?? null,
                                     'space_assigned' => $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0),
                                     'inboxes_per_domain' => $split->inboxes_per_domain,
                                     'domains' => is_array($split->domains) ? collect($split->domains)->map(function($domain) {
@@ -330,6 +331,7 @@ class PanelController extends Controller
                         return [
                             'id' => $split->id,
                             'panel_id' => $orderPanel->panel_id,
+                            'panel_sr_no' => optional($orderPanel->panel)->panel_sr_no ?? $orderPanel->panel_id ?? null,
                             'space_assigned' => $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0),
                             'inboxes_per_domain' => $split->inboxes_per_domain,
                             'domains' => is_array($split->domains) ? collect($split->domains)->map(function($domain) {
