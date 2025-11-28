@@ -1414,7 +1414,7 @@
             ? order.splits.map((split, index) => `
                 <tr>
                 <td style="font-size: 10px; padding: 5px !important;">${index + 1}</td>
-                <td style="font-size: 10px; padding: 5px !important;">${split.panel_id || 'N/A'}</td>
+                <td style="font-size: 10px; padding: 5px !important;">${ split.panel_sr_no || split.panel_id || 'N/A'}</td>
                 <td style="font-size: 10px; padding: 5px !important;">${split.inboxes_per_domain || 'N/A'}</td>
                 <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
                 <td style="padding: 5px !important;">
@@ -2049,7 +2049,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                             SPL-${split.id || 'N/A'}
                                         </span>
                                     </td>
-                                     <td>${split?.panel_id || 'N/A'}</td>
+                                     <td>${split?.panel_sr_no || split?.panel_id || 'N/A'}</td>
                                      <td>${split?.panel_title || 'N/A'}</td>
                                     <td>
                                         <span class="py-1 px-2 rounded-1 text-white text-capitalize ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
@@ -2207,7 +2207,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                     Panel Break ${String(index + 1).padStart(2, '0')}
                                                 </span>
-                                                <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>
+                                                <small class="fw-bold text-uppercase">PNL-${split.panel_sr_no || split.panel_id} | ${split.panel_title || 'N/A'}</small>
                                             </div>
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">

@@ -3140,7 +3140,7 @@
 
             const ordersHtml = `
                 <div class="mb-4">
-                    <h6>PNL- ${panel?.id || 'N/A'}</h6>
+                    <h6>PNL- ${ panel?.sr_no || panel?.id || 'N/A'}</h6>
                     <p class="">${panel?.description || 'No description'}</p>
                 </div>
                 
@@ -4293,7 +4293,7 @@
                                 <th scope="row">${index + 1}</th>
                                 <td>
                                     <span class="badge bg-info" style="font-size: 10px;">
-                                        PNL-${split.panel_id || 'N/A'}
+                                        PNL-${ split.panel_sr_no || split.panel_id || 'N/A'}
                                     </span>
                                 </td>
                                 <td>
@@ -4454,7 +4454,7 @@
                                             <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold; display:none;">
                                                 Panel Break ${String(index + 1).padStart(2, '0')}
                                             </span>
-                                            <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>
+                                            <small class="fw-bold text-uppercase">PNL-${ split.panel_sr_no || split.panel_id || 'N/A'} | ${split.panel_title || 'N/A'}</small>
                                         </div>
                                         <div class="d-flex align-items-center">
                                             <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">

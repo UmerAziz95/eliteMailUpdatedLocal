@@ -956,7 +956,7 @@
                                 <div class="text-center">
                                     <small class="mb-1 small">To Panel</small>
                                     <h6 class="fw-semibold mb-0">${task.to_panel ? task.to_panel.title : 'N/A'}</h6>
-                                    <small class="mb-1 small">ID: ${task.to_panel ? task.to_panel.id : 'N/A'}</small>
+                                    <small class="mb-1 small">ID: ${task.to_panel ? task.to_panel.panel_sr_no || task.to_panel.id : 'N/A'}</small>
                                 </div>
                             `}
                         </div>
@@ -2036,7 +2036,7 @@
                                     </div>
                                     <div class="ms-4">
                                         <span class="fw-bold text-white">${fromPanel ? fromPanel.title : 'N/A'}</span>
-                                        <small class="d-block text-white-50">ID: ${fromPanel ? fromPanel.id : 'N/A'}</small>
+                                        <small class="d-block text-white-50">ID: ${fromPanel ?  fromPanel.panel_sr_no || fromPanel.id : 'N/A'}</small>
                                     </div>
                                 </div>
                             </div>
@@ -2049,7 +2049,7 @@
                                     </div>
                                     <div class="ms-4">
                                         <span class="fw-bold text-white">${toPanel ? toPanel.title : 'N/A'}</span>
-                                        <small class="d-block text-white-50">ID: ${toPanel ? toPanel.id : 'N/A'}</small>
+                                        <small class="d-block text-white-50">ID: ${toPanel ?  toPanel.panel_sr_no || toPanel.id : 'N/A'}</small>
                                     </div>
                                 </div>
                             </div>
