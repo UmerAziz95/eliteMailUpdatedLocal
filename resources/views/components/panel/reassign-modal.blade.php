@@ -88,17 +88,19 @@
         <script>
             let currentReassignData = {};
 
-            function openReassignModal(orderId, currentPanelId, orderPanelId, panelTitle) {
+            function openReassignModal(orderId, currentPanelId, orderPanelId, panelTitle, panelSrNo = null) {
                 currentReassignData = {
                     orderId: orderId,
                     currentPanelId: currentPanelId,
                     orderPanelId: orderPanelId,
-                    panelTitle: panelTitle
+                    panelTitle: panelTitle,
+                    panelSrNo: panelSrNo
                 };
 
                 const modalTitle = document.getElementById('reassignModalLabel');
                 if (modalTitle) {
-                    modalTitle.innerHTML = `Reassign Panel: ${'PNL-' + currentPanelId + ' ' + panelTitle}`;
+                    const displayId = panelSrNo || currentPanelId;
+                    modalTitle.innerHTML = `Reassign Panel: ${'PNL-' + displayId + ' ' + panelTitle}`;
                 }
 
                 loadAvailablePanels(orderId, orderPanelId);
@@ -364,7 +366,7 @@
                                         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                                             <div class="card-body text-center text-white">
                                                 <i class="fas fa-exchange-alt fs-2 mb-2"></i>
-                                                <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.currentPanelId}</h4>
+                                                <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.panelSrNo || currentReassignData.currentPanelId}</h4>
                                                 <p class="mb-1 fw-semibold">${currentReassignData.panelTitle}</p>
                                                 <small class="text-white-50">From Panel</small>
                                             </div>
