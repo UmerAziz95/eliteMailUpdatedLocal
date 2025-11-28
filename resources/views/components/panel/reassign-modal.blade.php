@@ -155,6 +155,7 @@
                 const panelsHtml = panels.map(panel => `
                     <div class="panel-option mb-2 border rounded-3 shadow-sm position-relative overflow-hidden panel-card"
                          data-panel-id="${panel.panel_id}"
+                         data-panel-sr-no="${panel.panel_sr_no || panel.panel_id}"
                          data-panel-title="${(panel.panel_title || '').toLowerCase()}"
                          data-space-needed="${panel.space_needed || 0}"
                          data-panel-limit="${panel.panel_limit}"
@@ -175,7 +176,7 @@
                                     </div>
                                     <div>
                                         <h6 class="mb-0 fw-bold">
-                                            <span class="badge bg-info bg-gradient me-2 px-2 py-1 small">PNL-${panel.panel_id}</span>
+                                            <span class="badge bg-info bg-gradient me-2 px-2 py-1 small">PNL-${panel.panel_sr_no || panel.panel_id}</span>
                                             <span class="panel-title-text">${panel.panel_title}</span>
                                         </h6>
                                     </div>
