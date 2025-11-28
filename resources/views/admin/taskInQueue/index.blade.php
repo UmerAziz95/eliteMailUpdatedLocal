@@ -2053,7 +2053,7 @@
                                         SPL-${split.id || 'N/A'}
                                     </span>
                                 </td>
-                                <td>${split?.panel_id || 'N/A'}</td>
+                                <td>${split?.panel_sr_no || split?.panel_id || 'N/A'}</td>
                                 <td>${split?.panel_title || 'N/A'}</td>
                                 <td>${split.inboxes_per_domain || 'N/A'}</td>
                                 <td>
@@ -2197,7 +2197,7 @@
                                             <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                 Panel Break ${String(index + 1).padStart(2, '0')}
                                             </span>
-                                            <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
+                                            <small class="text-white fw-bold">PNL-${split.panel_sr_no || split.panel_id || 'N/A'} Domains</small>
                                         </div>
                                         <div class="d-flex align-items-center">
                                             <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
@@ -2309,7 +2309,7 @@
                                         <span class="fw-bold text-white">From Panel</span>
                                     </div>
                                     <div class="ms-4">
-                                        <p class="mb-1 text-white"><strong>Panel ID:</strong> ${fromPanel?.id || 'N/A'}</p>
+                                        <p class="mb-1 text-white"><strong>Panel ID:</strong> ${fromPanel?.panel_sr_no || fromPanel?.panel_id || 'N/A'}</p>
                                         <p class="mb-0 text-white"><strong>Title:</strong> ${fromPanel?.title || 'N/A'}</p>
                                     </div>
                                 </div>
@@ -2322,7 +2322,7 @@
                                         <span class="fw-bold text-white">To Panel</span>
                                     </div>
                                     <div class="ms-4">
-                                        <p class="mb-1 text-white"><strong>Panel ID:</strong> ${toPanel?.id || 'N/A'}</p>
+                                        <p class="mb-1 text-white"><strong>Panel ID:</strong> ${toPanel?.panel_sr_no || toPanel?.panel_id || 'N/A'}</p>
                                         <p class="mb-0 text-white"><strong>Title:</strong> ${toPanel?.title || 'N/A'}</p>
                                     </div>
                                 </div>
@@ -2396,7 +2396,7 @@
                                         SPL-${split.id || 'N/A'}
                                     </span>
                                 </td>
-                                <td>${split?.panel_id || 'N/A'}</td>
+                                <td>${split?.panel_sr_no || split?.panel_id || 'N/A'}</td>
                                 <td>${split?.panel_title || 'N/A'}</td>
                                 <td>${split.inboxes_per_domain || 'N/A'}</td>
                                 <td>
@@ -2540,7 +2540,7 @@
                                             <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                 Panel Break ${String(index + 1).padStart(2, '0')}
                                             </span>
-                                            <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
+                                            <small class="text-white fw-bold">PNL-${split.panel_sr_no || split.panel_id || 'N/A'} Domains</small>
                                         </div>
                                         <div class="d-flex align-items-center">
                                             <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">

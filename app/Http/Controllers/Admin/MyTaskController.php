@@ -71,11 +71,13 @@ class MyTaskController extends Controller
                     'order_panel_id' => $task->order_panel_id,
                     'from_panel' => $task->fromPanel ? [
                         'id' => $task->fromPanel->id,
-                        'title' => $task->fromPanel->title
+                        'title' => $task->fromPanel->title,
+                        'panel_sr_no' => optional($task->fromPanel)->panel_sr_no ?? $task->from_panel_id ?? null
                     ] : null,
                     'to_panel' => $task->toPanel ? [
                         'id' => $task->toPanel->id,
-                        'title' => $task->toPanel->title
+                        'title' => $task->toPanel->title,
+                        'panel_sr_no' => optional($task->toPanel)->panel_sr_no ?? $task->to_panel_id ?? null
                     ] : null,
                     'action_type' => $task->action_type,
                     'space_transferred' => $task->space_transferred,

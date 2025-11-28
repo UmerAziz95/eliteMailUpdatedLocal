@@ -488,6 +488,7 @@ class MyTaskController extends Controller
                 $fromPanel = [
                     'id' => $task->fromPanel->id,
                     'title' => $task->fromPanel->title,
+                    'panel_sr_no' => optional($task->fromPanel)->panel_sr_no ?? $task->from_panel_id ?? null,
                     'location' => $task->fromPanel->location ?? 'N/A',
                     'capacity' => $task->fromPanel->capacity ?? 'N/A',
                 ];
@@ -499,6 +500,7 @@ class MyTaskController extends Controller
                 $toPanel = [
                     'id' => $task->toPanel->id,
                     'title' => $task->toPanel->title,
+                    'panel_sr_no' => optional($task->toPanel)->panel_sr_no ?? $task->to_panel_id ?? null,
                     'location' => $task->toPanel->location ?? 'N/A',
                     'capacity' => $task->toPanel->capacity ?? 'N/A',
                 ];

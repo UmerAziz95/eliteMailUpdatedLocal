@@ -1704,7 +1704,7 @@
                                         SPL-${split.id || 'N/A'}
                                     </span>
                                 </td>
-                                <td>${split?.panel_id || 'N/A'}</td>
+                                <td>${split?.panel_sr_no || split?.panel_id || 'N/A'}</td>
                                 <td>${split?.panel_title || 'N/A'}</td>
                                 <td>${split.inboxes_per_domain || 'N/A'}</td>
                                 <td>
@@ -1848,7 +1848,7 @@
                                             <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                 Panel Break ${String(index + 1).padStart(2, '0')}
                                             </span>
-                                            <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
+                                            <small class="text-white fw-bold">PNL-${split.panel_sr_no} Domains</small>
                                         </div>
                                         <div class="d-flex align-items-center">
                                             <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
@@ -2120,7 +2120,7 @@
                                         SPL-${split.id || 'N/A'}
                                     </span>
                                 </td>
-                                <td>${split?.panel_id || 'N/A'}</td>
+                                <td>${split?.panel_sr_no || split?.panel_id || 'N/A'}</td>
                                 <td>${split?.panel_title || 'N/A'}</td>
                                 <td>${split.inboxes_per_domain || 'N/A'}</td>
                                 <td>
@@ -2264,7 +2264,7 @@
                                             <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                 Panel Break ${String(index + 1).padStart(2, '0')}
                                             </span>
-                                            <small class="text-white fw-bold">PNL-${split.panel_id} Domains</small>
+                                            <small class="text-white fw-bold">PNL-${split.panel_sr_no || split.panel_id || 'N/A'} Domains</small>
                                         </div>
                                         <div class="d-flex align-items-center">
                                             <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
@@ -2691,7 +2691,7 @@
                                 <div class="card-body p-3">
                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                         <h6 class="card-title mb-0 fw-bold">${panel.title}</h6>
-                                        <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 10px;">ID: PNL-${panel.id}</span>
+                                        <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 10px;">ID: PNL-${panel.panel_sr_no || panel.id || 'N/A'}</span>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="text-center">
