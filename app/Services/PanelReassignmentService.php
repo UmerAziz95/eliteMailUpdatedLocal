@@ -80,6 +80,7 @@ class PanelReassignmentService
 
                 $panels[] = [
                     'panel_id' => $panel->id,
+                    'panel_sr_no' => $panel->panel_sr_no ?? $panel->id ?? 'N/A',
                     'panel_title' => $panel->title ?? 'N/A',
                     'panel_limit' => $panel->limit ?? 0,
                     'panel_remaining_limit' => $panel->remaining_limit ?? 0,

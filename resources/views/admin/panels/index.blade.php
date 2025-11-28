@@ -1527,7 +1527,7 @@
 
             const ordersHtml = `
                 <div class="mb-4">
-                    <h6>PNL- ${panel.id}</h6>
+                    <h6>PNL- ${ panel.panel_sr_no || panel.id}</h6>
                     <h6>Title: ${panel.title}</h6>
                     <p class="text-white small">${panel.description || ''}</p>
                 </div>
@@ -1582,7 +1582,7 @@
                                                 <tr>
                                                     <th scope="row">${index + 1}</th>
 
-                                                    <td>PNL-${order.panel_id || 'N/A'}</td>
+                                                    <td>PNL-${order.panel_sr_no || order.panel_id || 'N/A'}</td>
 
                                                     <td>${panel?.title || 'N/A'}</td>
                                                     
@@ -1643,7 +1643,7 @@
 
                                                             <th scope="row">${index + 1}.${panelIndex + 1}</th>
 
-                                                            <td>PNL-${remainingPanel.panel_id || 'N/A'}</td>
+                                                            <td>PNL-${remainingPanel.panel_sr_no || remainingPanel.panel_id || 'N/A'}</td>
                                                             
                                                             <td>${remainingPanel.panel_title || 'N/A'}</td>
                                                             
@@ -1817,7 +1817,7 @@
                                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold; display:none;">
                                                                     Panel Break 01
                                                                 </span>
-                                                                <small class="text-white fw-bold text-uppercase">PNL-${order.panel_id} | ${order.panel_title || 'N/A'}</small>
+                                                                <small class="text-white fw-bold text-uppercase">PNL-${order.panel_sr_no || order.panel_id} | ${order.panel_title || 'N/A'}</small>
                                                             </div>
                                                             <div class="d-flex align-items-center">
                                                                 <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
@@ -1849,7 +1849,7 @@
                                                                         <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold; display:none;">
                                                                             Panel Break ${String(index + 2).padStart(2, '0')}
                                                                         </span>
-                                                                        <small class="text-white fw-bold text-uppercase">PNL-${panel.panel_id} | ${panel.panel_title || 'N/A'}</small>
+                                                                        <small class="text-white fw-bold text-uppercase">PNL-${panel.panel_sr_no || panel.panel_id} | ${panel.panel_title || 'N/A'}</small>
                                                                     </div>
                                                                     <div class="d-flex align-items-center">
                                                                         <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
