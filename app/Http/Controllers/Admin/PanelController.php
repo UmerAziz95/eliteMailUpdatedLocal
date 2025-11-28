@@ -192,8 +192,8 @@ class PanelController extends Controller
         }
     }
 
- 
-   public function getPanelOrders($panelId, Request $request)
+
+    public function getPanelOrders($panelId, Request $request)
     {
         try {
             $panel = Panel::findOrFail($panelId);
@@ -239,6 +239,7 @@ class PanelController extends Controller
                             'order_panel_data'=> $remainingPanel,
                             'order_panel_id' => $remainingPanel->id,
                             'panel_id' => $remainingPanel->panel_id,
+                            'panel_sr_no' => optional($remainingPanel->panel)->panel_sr_no ?? $remainingPanel->panel_id ?? null,
                             'panel_title' => $remainingPanel->panel->title ?? 'N/A',
                             'space_assigned' => $remainingPanel->space_assigned,
                             'inboxes_per_domain' => $remainingPanel->inboxes_per_domain,
@@ -283,6 +284,7 @@ class PanelController extends Controller
                     'order_panel_data' => $orderPanel,
                     'order_panel_id' => $orderPanel->id,
                     'panel_id' => $orderPanel->panel_id,
+                    'panel_sr_no' => optional($orderPanel->panel)->panel_sr_no ?? $orderPanel->panel_id ?? null,
                     'panel_title' => $orderPanel->panel->title ?? 'N/A',
                     'order_id' => $order->id ?? 'N/A',
                     'provider_type'=>$order->provider_type ??'N/A',
@@ -361,6 +363,7 @@ class PanelController extends Controller
                     'title' => $panel->title,
                     'limit' => $panel->limit,
                     'remaining_limit' => $panel->remaining_limit,
+                    'panel_sr_no' => $panel->panel_sr_no,
                 ],
                 'orders' => $ordersData,
                 
