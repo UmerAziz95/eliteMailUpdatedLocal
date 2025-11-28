@@ -296,7 +296,10 @@
 
                 updatePanelSpaceValues(targetPanelId, spaceNeeded);
 
+                const targetPanelSrNo = selectedPanel ? selectedPanel.getAttribute('data-panel-sr-no') : null;
+
                 currentReassignData.targetPanelId = targetPanelId;
+                currentReassignData.targetPanelSrNo = targetPanelSrNo;
                 currentReassignData.targetPanelTitle = targetPanelTitle;
                 currentReassignData.spaceNeeded = spaceNeeded;
                 currentReassignData.remainingSpace = remainingSpace;
@@ -376,7 +379,7 @@
                                         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
                                             <div class="card-body text-center text-white">
                                                 <i class="fas fa-arrow-right fs-2 mb-2"></i>
-                                                <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.targetPanelId}</h4>
+                                                <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.targetPanelSrNo || currentReassignData.targetPanelId}</h4>
                                                 <p class="mb-1 fw-semibold">${currentReassignData.targetPanelTitle}</p>
                                                 <small class="text-white-50">To Panel</small>
                                             </div>
