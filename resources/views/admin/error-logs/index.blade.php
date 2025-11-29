@@ -169,84 +169,95 @@
     }
 
     /* Pagination Styling */
-    .pagination {
+    .errorlogs-pagination {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 0.85rem 1.25rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    @media (min-width: 768px) {
+        .errorlogs-pagination {
+            flex-direction: row;
+            justify-content: center;
+        }
+    }
+
+    .pagination-pill {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.4rem 0.9rem;
+        border-radius: 999px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        color: #cfd4ff;
+        white-space: nowrap;
+    }
+
+    #paginationContainer .pagination {
         margin: 0;
         display: flex;
-        gap: 0.5rem;
+        gap: 0.45rem;
         list-style: none;
         padding: 0;
     }
 
-    .pagination .page-item {
+    #paginationContainer .pagination .page-item {
         margin: 0;
     }
 
-    .pagination .page-link {
-        background: linear-gradient(145deg, #2c2c54, #1a1a2e);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #fff !important;
-        padding: 0.5rem 0.75rem;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        font-size: 0.875rem;
+    #paginationContainer .pagination .page-link {
+        background: linear-gradient(145deg, #26263d, #1c1c2f);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #d4dcff !important;
+        padding: 0.55rem 0.75rem;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
         text-decoration: none;
-        display: inline-block;
-        min-width: 40px;
-        text-align: center;
+        display: grid;
+        place-items: center;
+        min-width: 44px;
+        min-height: 44px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
     }
 
-    .pagination .page-link:hover:not(.disabled) {
-        background: linear-gradient(145deg, #3a3a6e, #2a2a4e);
-        border-color: rgba(255, 255, 255, 0.3);
-        color: #fff !important;
+    #paginationContainer .pagination .page-link:hover:not(.disabled) {
+        background: linear-gradient(145deg, #2f3052, #24243c);
+        border-color: rgba(255, 255, 255, 0.18);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45);
     }
 
-    .pagination .page-item.active .page-link {
-        background: linear-gradient(45deg, #007bff, #0056b3) !important;
-        border-color: #007bff !important;
+    #paginationContainer .pagination .page-item.active .page-link {
+        background: linear-gradient(145deg, #1f8bff, #0f6bff);
+        border-color: rgba(255, 255, 255, 0.18);
         color: #fff !important;
-        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
-        font-weight: 600;
+        box-shadow: 0 14px 30px rgba(15, 107, 255, 0.35);
+        font-weight: 700;
     }
 
-    .pagination .page-item.disabled .page-link {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-color: rgba(255, 255, 255, 0.05) !important;
-        color: rgba(255, 255, 255, 0.3) !important;
+    #paginationContainer .pagination .page-item.disabled .page-link {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.04);
+        color: rgba(255, 255, 255, 0.35) !important;
         cursor: not-allowed;
         pointer-events: none;
+        box-shadow: none;
     }
 
-    .pagination .page-item.disabled .page-link:hover {
-        transform: none !important;
-        box-shadow: none !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-    }
-
-    /* First/Last page buttons */
-    .pagination .page-item:first-child .page-link,
-    .pagination .page-item:last-child .page-link {
-        font-weight: 600;
-    }
-
-    /* Pagination container */
     #paginationContainer {
         padding: 1rem 0;
     }
 
     #paginationContainer .d-flex {
         background: transparent;
-        padding: 1rem;
+        padding: 0;
         border-radius: 12px;
-    }
-
-    /* Navigation text styling */
-    .pagination .page-link[rel="prev"],
-    .pagination .page-link[rel="next"] {
-        font-weight: 600;
-        padding: 0.5rem 1rem;
     }
 </style>
 @endpush
@@ -442,7 +453,7 @@
         <div id="paginationContainer">
             @if($errorLogs->hasPages())
                 <div class="d-flex justify-content-center mt-4">
-                    {{ $errorLogs->appends(request()->query())->links('pagination::bootstrap-5') }}
+                    {{ $errorLogs->appends(request()->query())->links('admin.error-logs.pagination') }}
                 </div>
             @endif
         </div>
