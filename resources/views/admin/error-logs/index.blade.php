@@ -167,6 +167,87 @@
         70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
         100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
     }
+
+    /* Pagination Styling */
+    .pagination {
+        margin: 0;
+        display: flex;
+        gap: 0.5rem;
+        list-style: none;
+        padding: 0;
+    }
+
+    .pagination .page-item {
+        margin: 0;
+    }
+
+    .pagination .page-link {
+        background: linear-gradient(145deg, #2c2c54, #1a1a2e);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff !important;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-size: 0.875rem;
+        text-decoration: none;
+        display: inline-block;
+        min-width: 40px;
+        text-align: center;
+    }
+
+    .pagination .page-link:hover:not(.disabled) {
+        background: linear-gradient(145deg, #3a3a6e, #2a2a4e);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: #fff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(45deg, #007bff, #0056b3) !important;
+        border-color: #007bff !important;
+        color: #fff !important;
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+        font-weight: 600;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.05) !important;
+        color: rgba(255, 255, 255, 0.3) !important;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .pagination .page-item.disabled .page-link:hover {
+        transform: none !important;
+        box-shadow: none !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* First/Last page buttons */
+    .pagination .page-item:first-child .page-link,
+    .pagination .page-item:last-child .page-link {
+        font-weight: 600;
+    }
+
+    /* Pagination container */
+    #paginationContainer {
+        padding: 1rem 0;
+    }
+
+    #paginationContainer .d-flex {
+        background: transparent;
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    /* Navigation text styling */
+    .pagination .page-link[rel="prev"],
+    .pagination .page-link[rel="next"] {
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+    }
 </style>
 @endpush
 
@@ -361,7 +442,7 @@
         <div id="paginationContainer">
             @if($errorLogs->hasPages())
                 <div class="d-flex justify-content-center mt-4">
-                    {{ $errorLogs->appends(request()->query())->links() }}
+                    {{ $errorLogs->appends(request()->query())->links('pagination::bootstrap-5') }}
                 </div>
             @endif
         </div>
@@ -629,7 +710,7 @@
             clearInterval(autoRefreshInterval);
             isAutoRefreshEnabled = false;
             $('#autoRefreshText').text('Enable Auto Refresh');
-            $('#autoRefreshToggle').removeClass('btn-outline-success').addClass('btn-outline-info');
+            $('#autoRefreshToggle').removeClass('auto-refresh-enabled btn-outline-success').addClass('btn-outline-info');
         } else {
             // Enable auto refresh
             autoRefreshInterval = setInterval(function() {
@@ -637,7 +718,7 @@
             }, REFRESH_INTERVAL);
             isAutoRefreshEnabled = true;
             $('#autoRefreshText').text('Disable Auto Refresh');
-            $('#autoRefreshToggle').removeClass('btn-outline-info').addClass('btn-outline-success');
+            $('#autoRefreshToggle').removeClass('btn-outline-info').addClass('btn-outline-success auto-refresh-enabled');
         }
     }
 
