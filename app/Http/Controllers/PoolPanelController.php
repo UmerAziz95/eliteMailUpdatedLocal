@@ -526,6 +526,7 @@ class PoolPanelController extends Controller
                         'sequencer_password' => $pool->sequencer_password,
                         'backup_codes' => $pool->backup_codes,
                         'domains' => $pool->domains,
+                        'provider_type' => $pool->provider_type,
                     ] : null,
                     'panel' => $panelForPool ? [
                         'id' => $panelForPool->id,

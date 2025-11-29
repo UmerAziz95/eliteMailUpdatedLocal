@@ -241,6 +241,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('pool-panels/{id}/toggle-status', [App\Http\Controllers\PoolPanelController::class, 'toggleStatus'])->name('pool-panels.toggle-status');
         Route::post('pool-panels/{id}/archive', [App\Http\Controllers\PoolPanelController::class, 'archive'])->name('pool-panels.archive');
         Route::get('pool-panels-capacity/alert', [App\Http\Controllers\PoolPanelController::class, 'getCapacityAlert'])->name('pool-panels.capacity-alert');
+        Route::post('/pool/{poolId}/change-provider-type', [App\Http\Controllers\PoolController::class, 'changeProviderType'])->name('pool.change-provider-type');
 
         
         // Special Plans routes (is_discounted = 3)

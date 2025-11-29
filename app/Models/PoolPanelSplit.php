@@ -28,7 +28,7 @@ class PoolPanelSplit extends Model
     {
         return $this->belongsTo(PoolPanel::class);
     }
-
+    
     public function panel()
     {
         return $this->belongsTo(PoolPanel::class, 'pool_panel_id');

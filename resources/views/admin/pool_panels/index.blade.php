@@ -193,6 +193,7 @@
             margin-left: 4px;
             margin-right: 0;
         }
+
         /* Change Status Modal Styles */
         .modal-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -279,8 +280,8 @@
                             <tr>
                                 <th>Pool ID</th>
                                 <th>Date</th>
-                                <!-- <th>Plan</th>
-                                <th>Domain URL</th> -->
+                                {{-- <th>Plan</th>
+                                <th>Domain URL</th> --}}
                                 <th>Total Inboxes</th>
                                 <th>Status</th>
                             </tr>
@@ -655,48 +656,90 @@
     </section>
 
     <!-- Panel Reassignment Modal -->
-<div class="modal fade" id="poolReassignModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="reassignModalLabel">Reassign Panel</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Panel Reassignment:</strong> Select a target panel within the same order to reassign the split(s) to. 
-                        This will move all domains and capacity from the current panel to the selected panel.
+    <div class="modal fade" id="poolReassignModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reassignModalLabel">Reassign Panel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Panel Reassignment:</strong> Select a target panel within the same order to reassign the split(s) to.
+                            This will move all domains and capacity from the current panel to the selected panel.
+                        </div>
+                    </div>
+                    <!-- Loading State -->
+                    <div id="reassignLoader" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading available panels...</p>
+                    </div>
+
+                    <!-- Available Panels Container -->
+                    <div id="availablePanelsContainer"></div>
+
+                    <!-- Reassignment Reason - ADD THIS MISSING SECTION -->
+                    <div class="mt-3" style="display: none;" id="reassignReasonContainer">
+                        <label for="reassignReason" class="form-label">Reason for reassignment (optional)</label>
+                        <textarea class="form-control" id="reassignReason" rows="3" placeholder="Enter reason for reassignment..."></textarea>
                     </div>
                 </div>
-                <!-- Loading State -->
-                <div id="reassignLoader" class="text-center py-4" style="display: none;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2">Loading available panels...</p>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmReassignBtn" disabled onclick="confirmPoolReassignment()">
+                        <i class="fas fa-exchange-alt me-1"></i>Select Panel First
+                    </button>
                 </div>
-                
-                <!-- Available Panels Container -->
-                <div id="availablePanelsContainer"></div>
-                
-                <!-- Reassignment Reason - ADD THIS MISSING SECTION -->
-                <div class="mt-3" style="display: none;" id="reassignReasonContainer">
-                    <label for="reassignReason" class="form-label">Reason for reassignment (optional)</label>
-                    <textarea class="form-control" id="reassignReason" rows="3" placeholder="Enter reason for reassignment..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmReassignBtn" disabled onclick="confirmPoolReassignment()">
-                    <i class="fas fa-exchange-alt me-1"></i>Select Panel First
-                </button>
             </div>
         </div>
     </div>
-</div>
 
+    <div class="modal fade" id="changeProviderTypeModal" tabindex="-1" aria-labelledby="changeProviderTypeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changeProviderTypeModalLabel">
+                        <i class="fas fa-exchange-alt me-2"></i>
+                        Change Provider Type
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Pool ID</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary" id="providerModalPoolId">#</span>
+                            <span>Current:</span>
+                            <span class="badge" id="providerModalCurrentType">None</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newProviderType" class="form-label">Select Provider Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="newProviderType" required>
+                            <option value="">-- Select Provider Type --</option>
+                            <option value="Google">Google</option>
+                            <option value="Microsoft 365">Microsoft 365</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none">
+                        <label for="providerChangeReason" class="form-label">Reason for Change (Optional)</label>
+                        <textarea class="form-control" id="providerChangeReason" rows="3" placeholder="Enter reason for provider type change..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmProviderTypeChange">
+                        <i class="fas fa-save me-1"></i>
+                        Update Provider Type
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -794,26 +837,28 @@
                         // Close offcanvas and clean up backdrop
                         const offcanvasElement = document.getElementById('poolPanelFormOffcanvas');
                         const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
-                        
+
                         // Listen for the hidden event to clean up and reload
                         offcanvasElement.addEventListener('hidden.bs.offcanvas', function() {
                             // Remove any lingering backdrops
                             document.querySelectorAll('.offcanvas-backdrop').forEach(backdrop => {
                                 backdrop.remove();
                             });
-                            
+
                             // Remove modal-open class from body if present
                             document.body.classList.remove('modal-open');
                             document.body.style.overflow = '';
                             document.body.style.paddingRight = '';
-                            
+
                             // Reset form
                             resetForm();
-                            
+
                             // Reload data
                             resetAndReload();
-                        }, { once: true });
-                        
+                        }, {
+                            once: true
+                        });
+
                         offcanvas.hide();
                     },
                     error: function(xhr) {
@@ -856,9 +901,9 @@
             });
 
             document.getElementById('poolPanelFormOffcanvas')
-            .addEventListener('hidden.bs.offcanvas', function () {
-                cleanOffcanvasBackdrop();
-            });
+                .addEventListener('hidden.bs.offcanvas', function() {
+                    cleanOffcanvasBackdrop();
+                });
 
 
             function cleanOffcanvasBackdrop() {
@@ -964,13 +1009,13 @@
                 $('#googlePoolPanelsContainer, #microsoftPoolPanelsContainer').html('');
                 $('#googlePoolPanelsSection, #microsoftPoolPanelsSection, #emptyState').hide();
                 $('#loadingState').html(`
-            <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2 mb-0">Loading pool panels...</p>
-            </div>
-        `);
+                    <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 mb-0">Loading pool panels...</p>
+                    </div>
+                `);
             } else {
                 $('#loadMoreSpinner').show();
                 $('#loadMoreText').text('Loading...');
@@ -1128,95 +1173,96 @@
                 '<span class="badge bg-danger">Inactive</span>';
 
             let actionButtons = `
-        <div class="d-flex flex-column gap-2">
+                <div class="d-flex flex-column gap-2">
 
-            ${poolPanel.show_edit_delete_buttons ? `
-                    ${poolPanel.can_edit ? `
-                    <button class="btn btn-sm btn-outline-primary px-2 py-1"
-                            onclick="openEditForm(${poolPanel.id})"
-                            title="Edit Pool Panel">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                ` : ''}
-                    ${poolPanel.can_delete ? `
-                    <button class="btn btn-sm btn-outline-danger px-2 py-1"
-                            onclick="deletePoolPanel(${poolPanel.id})"
-                            title="Delete Pool Panel">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                ` : ''}
-                ` : ''}
-            ${poolPanel.is_active ? `
-                    <button class="btn btn-sm btn-outline-secondary px-2 py-1"
-                            onclick="archivePoolPanel(${poolPanel.id})"
-                            title="Archive Pool Panel">
-                        <i class="fas fa-archive"></i>
-                    </button>
-                ` : `
-                    <button class="btn btn-sm btn-outline-success px-2 py-1"
-                            onclick="unarchivePoolPanel(${poolPanel.id})"
-                            title="Unarchive Pool Panel">
-                        <i class="fas fa-undo"></i>
-                    </button>
-                `}
-        </div>
-    `;
+                    ${poolPanel.show_edit_delete_buttons ? `
+                                            ${poolPanel.can_edit ? `
+                            <button class="btn btn-sm btn-outline-primary px-2 py-1"
+                                    onclick="openEditForm(${poolPanel.id})"
+                                    title="Edit Pool Panel">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        ` : ''}
+                                            ${poolPanel.can_delete ? `
+                            <button class="btn btn-sm btn-outline-danger px-2 py-1"
+                                    onclick="deletePoolPanel(${poolPanel.id})"
+                                    title="Delete Pool Panel">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                                        ` : ''}
+                    ${poolPanel.is_active ? `
+                                            <button class="btn btn-sm btn-outline-secondary px-2 py-1"
+                                                    onclick="archivePoolPanel(${poolPanel.id})"
+                                                    title="Archive Pool Panel">
+                                                <i class="fas fa-archive"></i>
+                                            </button>
+                                        ` : `
+                                            <button class="btn btn-sm btn-outline-success px-2 py-1"
+                                                    onclick="unarchivePoolPanel(${poolPanel.id})"
+                                                    title="Unarchive Pool Panel">
+                                                <i class="fas fa-undo"></i>
+                                            </button>
+                                        `}
+                </div>
+            `;
 
             const archivedStyle = !poolPanel.is_active ? 'background-color: #334761;' : '';
 
             return `
-        <div class="card p-3 d-flex flex-column gap-2 position-relative" style="${archivedStyle}">
-            <div class="d-flex flex-column gap-1">
-                <small class="opacity-75">${poolPanel.auto_generated_id || 'PPN-' + poolPanel.id}</small>
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <h6 class="mb-0">Title: ${poolPanel.title || 'N/A'}</h6>
-                    ${providerBadge}
-                    ${!poolPanel.is_active ? '<span class="badge bg-secondary ms-1">Archived</span>' : ''}
-                    ${statusBadge}
+                <div class="card p-3 d-flex flex-column gap-2 position-relative" style="${archivedStyle}">
+                    <div class="d-flex flex-column gap-1">
+                        <small class="opacity-75">${poolPanel.auto_generated_id || 'PPN-' + poolPanel.id}</small>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h6 class="mb-0">Title: ${poolPanel.title || 'N/A'}</h6>
+                            ${providerBadge}
+                            ${!poolPanel.is_active ? '<span class="badge bg-secondary ms-1">Archived</span>' : ''}
+                            ${statusBadge}
+                        </div>
+                        <p class="small mb-0 text-light">${poolPanel.description ? poolPanel.description : ''}</p>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <span class="badge bg-primary bg-opacity-25 text-light">
+                                <i class="fa-solid fa-water me-1"></i> Pools: ${totalPools}
+                            </span>
+                            <span class="badge bg-secondary bg-opacity-25 text-light d-none">
+                                <i class="fa-solid fa-layer-group me-1"></i> Splits: ${totalSplits}
+                            </span>
+                            <span class="badge bg-info bg-opacity-25 text-light d-none">
+                                <i class="fa-solid fa-chart-simple me-1"></i> Assigned: ${totalAssigned}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 justify-content-between">
+                        <small class="total">Total: ${total}</small>
+                        <small class="remain">Remaining: ${remaining}</small>
+                        <small class="used">Used: ${used}</small>
+                    </div>
+
+                    <div id="chart-${poolPanel.id}"></div>
+
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <small class="opacity-75">Created by: ${poolPanel.creator ? poolPanel.creator.name : 'Unknown'}</small>
+                        <button style="font-size: 12px"
+                                onclick="viewPoolPanelPools(${poolPanel.id})"
+                                data-bs-toggle="offcanvas"
+                                data-bs-target="#poolPanelPoolsOffcanvas"
+                                class="btn border-0 btn-sm py-0 px-3 rounded-1 btn-primary">
+                            View Pools
+                        </button>
+                    </div>
+
+                    <div class="button-container p-2 rounded-2" style="background-color: var(--filter-color);">
+                        ${actionButtons}
+                    </div>
                 </div>
-                <p class="small mb-0 text-light">${poolPanel.description ? poolPanel.description : ''}</p>
-                <div class="d-flex flex-wrap gap-2 mt-2">
-                    <span class="badge bg-primary bg-opacity-25 text-light">
-                        <i class="fa-solid fa-water me-1"></i> Pools: ${totalPools}
-                    </span>
-                    <span class="badge bg-secondary bg-opacity-25 text-light d-none">
-                        <i class="fa-solid fa-layer-group me-1"></i> Splits: ${totalSplits}
-                    </span>
-                    <span class="badge bg-info bg-opacity-25 text-light d-none">
-                        <i class="fa-solid fa-chart-simple me-1"></i> Assigned: ${totalAssigned}
-                    </span>
-                </div>
-            </div>
-
-            <div class="d-flex gap-3 justify-content-between">
-                <small class="total">Total: ${total}</small>
-                <small class="remain">Remaining: ${remaining}</small>
-                <small class="used">Used: ${used}</small>
-            </div>
-
-            <div id="chart-${poolPanel.id}"></div>
-
-            <div class="d-flex align-items-center justify-content-between gap-2">
-                <small class="opacity-75">Created by: ${poolPanel.creator ? poolPanel.creator.name : 'Unknown'}</small>
-                <button style="font-size: 12px"
-                        onclick="viewPoolPanelPools(${poolPanel.id})"
-                        data-bs-toggle="offcanvas"
-                        data-bs-target="#poolPanelPoolsOffcanvas"
-                        class="btn border-0 btn-sm py-0 px-3 rounded-1 btn-primary">
-                    View Pools
-                </button>
-            </div>
-
-            <div class="button-container p-2 rounded-2" style="background-color: var(--filter-color);">
-                ${actionButtons}
-            </div>
-        </div>
-    `;
+            `;
         }
 
         // Load pool details into offcanvas
         async function viewPoolPanelPools(poolPanelId) {
             const safePoolPanelId = Number(poolPanelId);
+            currentPoolPanelId = poolPanelId
             if (Number.isNaN(safePoolPanelId)) {
                 console.error('Invalid pool panel id supplied to viewPoolPanelPools:', poolPanelId);
                 return;
@@ -1225,13 +1271,13 @@
             const container = document.getElementById('poolPanelPoolsContainer');
             if (container) {
                 container.innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading pools...</span>
-                </div>
-                <p class="mt-2 mb-0">Loading pools...</p>
-            </div>
-        `;
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading pools...</span>
+                        </div>
+                        <p class="mt-2 mb-0">Loading pools...</p>
+                    </div>
+                `;
             }
 
             const offcanvasElement = document.getElementById('poolPanelPoolsOffcanvas');
@@ -1262,13 +1308,13 @@
                 console.error('Error loading pool panel pools:', error);
                 if (container) {
                     container.innerHTML = `
-                <div class="text-center py-5">
-                    <i class="fas fa-exclamation-triangle text-danger fs-3 mb-3"></i>
-                    <h5>Failed to load pools</h5>
-                    <p>${error.message || 'Please try again later.'}</p>
-                    <button class="btn btn-primary" onclick="viewPoolPanelPools(${safePoolPanelId})">Retry</button>
-                </div>
-            `;
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-triangle text-danger fs-3 mb-3"></i>
+                            <h5>Failed to load pools</h5>
+                            <p>${error.message || 'Please try again later.'}</p>
+                            <button class="btn btn-primary" onclick="viewPoolPanelPools(${safePoolPanelId})">Retry</button>
+                        </div>
+                    `;
                 }
             }
         }
@@ -1282,26 +1328,26 @@
 
             if (!Array.isArray(pools) || pools.length === 0) {
                 container.innerHTML = `
-            <div class="text-center py-5">
-                <i class="fas fa-database text-muted fs-3 mb-3"></i>
-                <h5>No Pools Assigned</h5>
-                <p class="mb-0">This pool panel does not have any pools allocated yet.</p>
-            </div>
-        `;
+                    <div class="text-center py-5">
+                        <i class="fas fa-database text-muted fs-3 mb-3"></i>
+                        <h5>No Pools Assigned</h5>
+                        <p class="mb-0">This pool panel does not have any pools allocated yet.</p>
+                    </div>
+                `;
                 return;
             }
 
             const headerHtml = `
-        <div class="mb-4">
-            <h6 class="mb-1">${poolPanel.auto_generated_id || ('PPN-' + (poolPanel.id ?? ''))}</h6>
-            <p class="mb-0 text-light small">${poolPanel.title || ''}</p>
-            <div class="d-flex flex-wrap gap-2 mt-2">
-                <span class="badge bg-primary text-light">Limit: ${poolPanel.limit ?? 0}</span>
-                <span class="badge bg-warning text-dark">Remaining: ${poolPanel.remaining_limit ?? 0}</span>
-                <span class="badge bg-success text-light">Used: ${(poolPanel.limit ?? 0) - (poolPanel.remaining_limit ?? 0)}</span>
-            </div>
-        </div>
-    `;
+                <div class="mb-4">
+                    <h6 class="mb-1">${poolPanel.auto_generated_id || ('PPN-' + (poolPanel.id ?? ''))}</h6>
+                    <p class="mb-0 text-light small">${poolPanel.title || ''}</p>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        <span class="badge bg-primary text-light">Limit: ${poolPanel.limit ?? 0}</span>
+                        <span class="badge bg-warning text-dark">Remaining: ${poolPanel.remaining_limit ?? 0}</span>
+                        <span class="badge bg-success text-light">Used: ${(poolPanel.limit ?? 0) - (poolPanel.remaining_limit ?? 0)}</span>
+                    </div>
+                </div>
+            `;
 
             const accordionHtml = pools.map((pool, index) => {
                 const collapseId = `pool-collapse-${pool.pool_id}`;
@@ -1332,95 +1378,98 @@
 
                 const splitsRows = splits.length ?
                     splits.map((split, splitIndex) => {
-                        return `
-                    ${(() => {
                         const splitPanel = split.panel || headerPanel;
-                        const panelId = splitPanel?.auto_generated_id || (splitPanel?.id ? `PPN-${splitPanel.id}` : poolPanel.auto_generated_id || (poolPanel.id ? `PPN-${poolPanel.id}` : 'N/A'));
+                        const panelId = splitPanel?.auto_generated_id || (splitPanel?.id ? `PPN-${splitPanel.id}` : poolPanel
+                            .auto_generated_id || (poolPanel.id ? `PPN-${poolPanel.id}` : 'N/A'));
                         const panelTitle = splitPanel?.title || poolPanel.title || 'N/A';
 
                         return `
-                                <tr>
-                                    <td>${splitIndex + 1}</td>
-                                    <td>${panelId}</td>
-                                    <td>${panelTitle}</td>
-                                    <td>${split.inboxes_per_domain ?? 0}</td>
-                                    <td>${split.total_inboxes ?? 0}</td>
-                                    <td>${split.created_at ? formatDate(split.created_at) : 'N/A'}</td>
-                                    <td>
-                                       ${!pool.panel.is_active ? `
-                                            <button style="font-size: 12px" 
-                                                class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success" 
-                                                type="button"
-                                                onclick="openPoolReassignModal(${pool.pool_id}, ${splitPanel?.id || poolPanel.id}, ${split.id}, '${panelTitle.replace(/'/g, "\\'")}')"
-                                                title="Reassign to another panel">
-                                                Reassign
-                                            </button>
-                                        ` : ``}
-                                    </td>
-                                </tr>
-                            `;
-                    })()}
-                `;
+                            <tr>
+                                <td>${splitIndex + 1}</td>
+                                <td>${panelId}</td>
+                                <td>${panelTitle}</td>
+                                <td>${split.inboxes_per_domain ?? 0}</td>
+                                <td>${split.total_inboxes ?? 0}</td>
+                                <td>${split.created_at ? formatDate(split.created_at) : 'N/A'}</td>
+                                <td>
+                                    ${!pool.panel.is_active ? `
+                                                        <button style="font-size: 12px" 
+                                                            class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success" 
+                                                            type="button"
+                                                            onclick="openPoolReassignModal(${pool.pool_id}, ${splitPanel?.id || poolPanel.id}, ${split.id}, '${panelTitle.replace(/'/g, "\\'")}')"
+                                                            title="Reassign to another panel">
+                                                            Reassign
+                                                        </button>
+                                                    ` : ``}
+                                </td>
+                            </tr>
+                        `;
                     }).join('') :
                     `<tr><td colspan="6" class="text-center text-muted">No splits recorded for this pool.</td></tr>`;
 
                 return `
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <div class="button p-3 collapsed d-flex align-items-center justify-content-between" type="button"
-                        aria-expanded="false"
-                        aria-controls="${collapseId}"
-                        onclick="togglePoolAccordion('${collapseId}', this, event)">
-                        <div class="d-flex flex-column">
-                            <small>POOL ID: #${pool.pool_id ?? 'N/A'}</small>
-                            <small class="text-light d-none">Splits: ${pool.total_splits ?? splits.length}</small>
-                        </div>
-                        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold; display:none;">Panel ID: ${headerPanel?.auto_generated_id || (headerPanel?.id ? `PPN-${headerPanel.id}` : poolPanel.auto_generated_id || (poolPanel.id ? `PPN-${poolPanel.id}` : 'N/A'))}</span>
-                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold; display:none;">Panel: ${headerPanel?.title || poolPanel.title || 'N/A'}</span>
-                            <span class="badge ${poolStatusClass}" style="font-size: 10px;">${poolStatusLabel}</span>
-                            <span class="badge bg-info bg-opacity-25 text-light" style="font-size: 10px;  display:none;">Total Inboxes: ${totalInboxes}</span>
-                            <span class="badge bg-success bg-opacity-25 text-light" style="font-size: 10px; display:none;">Assigned: ${assignedSpace}</span>
-                            <span class="badge bg-warning bg-opacity-25 text-dark" style="font-size: 10px; display:none;">Available: ${availableSpace}</span>
-                            <i class="fas fa-chevron-down transition-transform" id="${iconId}" style="font-size: 12px;"></i>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <div class="button p-3 collapsed d-flex align-items-center justify-content-between" type="button"
+                                aria-expanded="false"
+                                aria-controls="${collapseId}"
+                                onclick="togglePoolAccordion('${collapseId}', this, event)">
+                                <div class="d-flex flex-column">
+                                    <small>POOL ID: #${pool.pool_id ?? 'N/A'}</small>
+                                    <small class="text-light d-none">Splits: ${pool.total_splits ?? splits.length}</small>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                                    <button class="btn btn-info btn-sm px-2 py-1"
+                                        onclick="openChangeProviderTypeModal(${pool.pool.id}, '${pool.pool.provider_type || ''}')"
+                                        style="font-size: 11px;">
+                                        <i class="${pool.provider_type === 'Google' ? 'fab fa-google' : pool.provider_type === 'Microsoft 365' ? 'fab fa-microsoft' : 'fas fa-exchange-alt'} me-1"></i>
+                                        ${pool.provider_type ? `Change Provider (${pool.provider_type})` : 'Set Provider'}
+                                    </button>
+                                    <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold; display:none;">Panel ID: ${headerPanel?.auto_generated_id || (headerPanel?.id ? `PPN-${headerPanel.id}` : poolPanel.auto_generated_id || (poolPanel.id ? `PPN-${poolPanel.id}` : 'N/A'))}</span>
+                                    <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold; display:none;">Panel: ${headerPanel?.title || poolPanel.title || 'N/A'}</span>
+                                    <span class="badge ${poolStatusClass}" style="font-size: 10px;">${poolStatusLabel}</span>
+                                    <span class="badge bg-info bg-opacity-25 text-light" style="font-size: 10px;  display:none;">Total Inboxes: ${totalInboxes}</span>
+                                    <span class="badge bg-success bg-opacity-25 text-light" style="font-size: 10px; display:none;">Assigned: ${assignedSpace}</span>
+                                    <span class="badge bg-warning bg-opacity-25 text-dark" style="font-size: 10px; display:none;">Available: ${availableSpace}</span>
+                                    <i class="fas fa-chevron-down transition-transform" id="${iconId}" style="font-size: 12px;"></i>
+                                </div>
+                            </div>
+                        </h2>
+                        <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#poolPanelPoolsAccordion">
+                            <div class="accordion-body">
+                                ${detailBadges.length ? `<div class="mb-3 d-flex flex-wrap gap-2">${detailBadges.join('')}</div>` : ''}
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Panel ID</th>
+                                                <th>Panel Name</th>
+                                                <th>Inboxes/Domain</th>
+                                                <th>Total Inboxes</th>
+                                                <th>Created</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${splitsRows}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                ${renderPoolDetailSections(poolInfo, splits, poolPanel)}
+                                ${renderOtherPanelSplits(pool.other_panel_splits || [], poolPanel)}
+                            </div>
                         </div>
                     </div>
-                </h2>
-                <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#poolPanelPoolsAccordion">
-                    <div class="accordion-body">
-        ${detailBadges.length ? `<div class="mb-3 d-flex flex-wrap gap-2">${detailBadges.join('')}</div>` : ''}
-        <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Panel ID</th>
-                        <th>Panel Name</th>
-                        <th>Inboxes/Domain</th>
-                        <th>Total Inboxes</th>
-                        <th>Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${splitsRows}
-                                </tbody>
-                            </table>
-                        </div>
-                        ${renderPoolDetailSections(poolInfo, splits, poolPanel)}
-                        ${renderOtherPanelSplits(pool.other_panel_splits || [], poolPanel)}
-                    </div>
-                </div>
-            </div>
-        `;
+                `;
             }).join('');
 
             container.innerHTML = `
-        ${headerHtml}
-        <div class="accordion accordion-flush" id="poolPanelPoolsAccordion">
-            ${accordionHtml}
-        </div>
-    `;
+                ${headerHtml}
+                <div class="accordion accordion-flush" id="poolPanelPoolsAccordion">
+                    ${accordionHtml}
+                </div>
+            `;
 
             setTimeout(() => {
                 initializePoolSplitAccordions();
@@ -1603,13 +1652,13 @@
             const emptyStateContainer = document.getElementById('emptyState');
             emptyStateContainer.style.display = 'block';
             emptyStateContainer.innerHTML = `
-        <div class="empty-state" style="grid-column: 1 / -1;">
-            <i class="ti ti-alert-circle text-danger"></i>
-            <h5>Error Loading</h5>
-            <p>${message}</p>
-            <button class="btn btn-primary btn-sm" onclick="resetAndReload()">Retry</button>
-        </div>
-    `;
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <i class="ti ti-alert-circle text-danger"></i>
+                    <h5>Error Loading</h5>
+                    <p>${message}</p>
+                    <button class="btn btn-primary btn-sm" onclick="resetAndReload()">Retry</button>
+                </div>
+            `;
 
             // Also show Swal error
             Swal.fire({
@@ -1652,11 +1701,11 @@
             const domainCard = buildDomainsConfigurationCard(poolInfo, splits, poolPanel);
 
             return `
-        <div class="row mt-4">
-            <div class="col-md-6">${emailCard}</div>
-            <div class="col-md-6">${domainCard}</div>
-        </div>
-    `;
+                <div class="row mt-4">
+                    <div class="col-md-6">${emailCard}</div>
+                    <div class="col-md-6">${domainCard}</div>
+                </div>
+            `;
         }
 
         function buildEmailConfigurationsCard(poolInfo, splits) {
@@ -1666,40 +1715,40 @@
             } = computePoolSplitSummary(poolInfo, splits);
 
             return `
-        <div class="card p-3 mb-3">
-            <h6 class="d-flex align-items-center gap-2">
-                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                    <i class="fa-regular fa-envelope"></i>
+                <div class="card p-3 mb-3">
+                    <h6 class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                            <i class="fa-regular fa-envelope"></i>
+                        </div>
+                        Email configurations
+                    </h6>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span>${summaryText}</span>
+                    </div>
+                    ${breakdownHtml ? `<div class="mt-3 text-white small">${breakdownHtml}</div>` : ''}
+                    <hr>
+                    <div class="d-flex flex-column">
+                        <span class="opacity-50">Prefix Variants</span>
+                        ${renderPrefixVariantsFromPool(poolInfo)}
+                    </div>
+                    <div class="d-flex flex-column mt-3">
+                        <span class="opacity-50">Profile Picture URL</span>
+                        <span>${formatLinkValue(poolInfo?.profile_picture_link)}</span>
+                    </div>
+                    <div class="d-flex flex-column mt-3">
+                        <span class="opacity-50">Email Persona Picture URL</span>
+                        <span>${formatLinkValue(poolInfo?.email_persona_picture_link)}</span>
+                    </div>
+                    <div class="d-flex flex-column mt-3">
+                        <span class="opacity-50">Email Persona Password</span>
+                        <span>${formatValue(poolInfo?.email_persona_password)}</span>
+                    </div>
+                    <div class="d-flex flex-column mt-3">
+                        <span class="opacity-50">Persona Password</span>
+                        <span>${formatValue(poolInfo?.persona_password)}</span>
+                    </div>
                 </div>
-                Email configurations
-            </h6>
-            <div class="d-flex align-items-center justify-content-between">
-                <span>${summaryText}</span>
-            </div>
-            ${breakdownHtml ? `<div class="mt-3 text-white small">${breakdownHtml}</div>` : ''}
-            <hr>
-            <div class="d-flex flex-column">
-                <span class="opacity-50">Prefix Variants</span>
-                ${renderPrefixVariantsFromPool(poolInfo)}
-            </div>
-            <div class="d-flex flex-column mt-3">
-                <span class="opacity-50">Profile Picture URL</span>
-                <span>${formatLinkValue(poolInfo?.profile_picture_link)}</span>
-            </div>
-            <div class="d-flex flex-column mt-3">
-                <span class="opacity-50">Email Persona Picture URL</span>
-                <span>${formatLinkValue(poolInfo?.email_persona_picture_link)}</span>
-            </div>
-            <div class="d-flex flex-column mt-3">
-                <span class="opacity-50">Email Persona Password</span>
-                <span>${formatValue(poolInfo?.email_persona_password)}</span>
-            </div>
-            <div class="d-flex flex-column mt-3">
-                <span class="opacity-50">Persona Password</span>
-                <span>${formatValue(poolInfo?.persona_password)}</span>
-            </div>
-        </div>
-    `;
+            `;
         }
 
         function computePoolSplitSummary(poolInfo, splits) {
@@ -1723,11 +1772,11 @@
                 totalInboxes += splitTotalInboxes;
 
                 return `
-            <div class="text-white">
-                <span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Pool Split ${String(index + 1).padStart(2, '0')}</span>
-                Inboxes: ${splitTotalInboxes} (${domainsCount} domains${inboxesPerDomain ? ` x ${inboxesPerDomain}` : ''})
-            </div>
-        `;
+                    <div class="text-white">
+                        <span class="badge bg-white text-dark me-1" style="font-size: 10px; font-weight: bold;">Pool Split ${String(index + 1).padStart(2, '0')}</span>
+                        Inboxes: ${splitTotalInboxes} (${domainsCount} domains${inboxesPerDomain ? ` x ${inboxesPerDomain}` : ''})
+                    </div>
+                `;
             }).join('');
 
             if (!totalInboxes && Number(poolInfo?.total_inboxes)) {
@@ -1736,8 +1785,7 @@
 
             return {
                 summaryText: totalInboxes ?
-                    `<strong>Total Inboxes: ${totalInboxes}${totalDomains ? ` (${totalDomains} domains)` : ''}</strong>` :
-                    'N/A',
+                    `<strong>Total Inboxes: ${totalInboxes}${totalDomains ? ` (${totalDomains} domains)` : ''}</strong>` : 'N/A',
                 breakdownHtml
             };
         }
@@ -1799,67 +1847,67 @@
 
         function buildDomainsConfigurationCard(poolInfo, splits, poolPanel) {
             return `
-        <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
-            <h6 class="d-flex align-items-center gap-2">
-                <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                    <i class="fa-solid fa-earth-europe"></i>
+                <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
+                    <h6 class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                            <i class="fa-solid fa-earth-europe"></i>
+                        </div>
+                        Domains &amp; Configuration
+                    </h6>
+
+                    <div class="d-flex flex-column mb-3">
+                        <span class="opacity-50">Hosting Platform</span>
+                        <span>${formatValue(poolInfo?.hosting_platform || poolInfo?.other_platform)}</span>
+                    </div>
+
+                    <div class="d-flex flex-column mb-3">
+                        <span class="opacity-50">Platform Login</span>
+                        <span>${formatValue(poolInfo?.platform_login)}</span>
+                    </div>
+
+                    <div class="d-flex flex-column mb-3">
+                        <span class="opacity-50">Platform Password</span>
+                        <span>${formatValue(poolInfo?.platform_password)}</span>
+                    </div>
+
+                    <div class="d-flex flex-column mb-3">
+                        <span class="opacity-50">Domain Forwarding Destination URL</span>
+                        <span>${formatLinkValue(poolInfo?.forwarding_url)}</span>
+                    </div>
+
+                    <div class="d-flex flex-column mb-3">
+                        <span class="opacity-50">Sending Platform</span>
+                        <span>${formatValue(poolInfo?.sending_platform)}</span>
+                    </div>
+
+                    <div class="d-flex flex-column mb-3">
+                        <span class="opacity-50">Cold email platform - Login</span>
+                        <span>${formatValue(poolInfo?.sequencer_login)}</span>
+                    </div>
+
+                    <div class="d-flex flex-column mb-3">
+                        <span class="opacity-50">Cold email platform - Password</span>
+                        <span>${formatValue(poolInfo?.sequencer_password)}</span>
+                    </div>
+
+                    <div class="d-flex flex-column">
+                        <span class="opacity-50 mb-3">
+                            <i class="fa-solid fa-globe me-2"></i>All Domains & Pool Splits
+                        </span>
+                        ${renderPoolDomainsList(poolInfo, splits, poolPanel)}
+                    </div>
+
+                    <div class="d-flex flex-column mt-3">
+                        <span class="opacity-50">Additional Notes</span>
+                        <span>${formatValue(poolInfo?.additional_info)}</span>
+                    </div>
+
+                    <div class="d-flex flex-column mt-3">
+                        <span class="opacity-50">Master Inbox Email</span>
+                        <span>${formatValue(poolInfo?.master_inbox_email)}</span>
+                    </div>
                 </div>
-                Domains &amp; Configuration
-            </h6>
-
-            <div class="d-flex flex-column mb-3">
-                <span class="opacity-50">Hosting Platform</span>
-                <span>${formatValue(poolInfo?.hosting_platform || poolInfo?.other_platform)}</span>
-            </div>
-
-            <div class="d-flex flex-column mb-3">
-                <span class="opacity-50">Platform Login</span>
-                <span>${formatValue(poolInfo?.platform_login)}</span>
-            </div>
-
-            <div class="d-flex flex-column mb-3">
-                <span class="opacity-50">Platform Password</span>
-                <span>${formatValue(poolInfo?.platform_password)}</span>
-            </div>
-
-            <div class="d-flex flex-column mb-3">
-                <span class="opacity-50">Domain Forwarding Destination URL</span>
-                <span>${formatLinkValue(poolInfo?.forwarding_url)}</span>
-            </div>
-
-            <div class="d-flex flex-column mb-3">
-                <span class="opacity-50">Sending Platform</span>
-                <span>${formatValue(poolInfo?.sending_platform)}</span>
-            </div>
-
-            <div class="d-flex flex-column mb-3">
-                <span class="opacity-50">Cold email platform - Login</span>
-                <span>${formatValue(poolInfo?.sequencer_login)}</span>
-            </div>
-
-            <div class="d-flex flex-column mb-3">
-                <span class="opacity-50">Cold email platform - Password</span>
-                <span>${formatValue(poolInfo?.sequencer_password)}</span>
-            </div>
-
-            <div class="d-flex flex-column">
-                <span class="opacity-50 mb-3">
-                    <i class="fa-solid fa-globe me-2"></i>All Domains & Pool Splits
-                </span>
-                ${renderPoolDomainsList(poolInfo, splits, poolPanel)}
-            </div>
-
-            <div class="d-flex flex-column mt-3">
-                <span class="opacity-50">Additional Notes</span>
-                <span>${formatValue(poolInfo?.additional_info)}</span>
-            </div>
-
-            <div class="d-flex flex-column mt-3">
-                <span class="opacity-50">Master Inbox Email</span>
-                <span>${formatValue(poolInfo?.master_inbox_email)}</span>
-            </div>
-        </div>
-    `;
+            `;
         }
 
         function renderPoolDomainsList(poolInfo, splits, poolPanel) {
@@ -1886,11 +1934,11 @@
 
                     const domainBadges = domainDetails.length ?
                         domainDetails.map(detail => `
-                        <span class="domain-badge">
-                            <span>${detail.name || 'N/A'}</span>
-                            ${detail.status_badge ?? ''}
-                        </span>
-                    `).join('') :
+                            <span class="domain-badge">
+                                <span>${detail.name || 'N/A'}</span>
+                                ${detail.status_badge ?? ''}
+                            </span>
+                        `).join('') :
                         (normalizedDomains.length ?
                             normalizedDomains.map(domain => `
                             <span class="domain-badge">
@@ -1900,30 +1948,30 @@
                             '<span class="text-muted">No domains listed for this split.</span>');
 
                     return `
-                <div class="domain-split-container mb-3">
-                    <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top"
-                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
-                        onclick="toggleSplit('${collapseId}', '${iconId}')">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel ID: ${panelId}</span>
-                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel: ${panelTitle}</span>
-                            <small class="text-white">${domainCount} domain${domainCount === 1 ? '' : 's'}</small>
-                            <small class="text-white">Inboxes: ${totalInboxes}</small>
+                        <div class="domain-split-container mb-3">
+                            <div class="split-header d-flex align-items-center justify-content-between p-2 rounded-top"
+                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer;"
+                                onclick="toggleSplit('${collapseId}', '${iconId}')">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel ID: ${panelId}</span>
+                                    <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel: ${panelTitle}</span>
+                                    <small class="text-white">${domainCount} domain${domainCount === 1 ? '' : 's'}</small>
+                                    <small class="text-white">Inboxes: ${totalInboxes}</small>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-copy text-white" style="font-size: 11px; cursor: pointer; opacity: 0.85;"
+                                        title="Copy domain list"
+                                        onclick="event.stopPropagation(); copyDomainsToClipboardFromEncoded('${encodedDomains}');"></i>
+                                    <i class="fa-solid fa-chevron-down text-white transition-transform" id="${iconId}" style="font-size: 12px;"></i>
+                                </div>
+                            </div>
+                            <div class="domain-list-content border border-top-0 rounded-bottom p-3 collapse" id="${collapseId}">
+                                <div class="domains-grid">
+                                    ${domainBadges}
+                                </div>
+                            </div>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="fa-solid fa-copy text-white" style="font-size: 11px; cursor: pointer; opacity: 0.85;"
-                                title="Copy domain list"
-                                onclick="event.stopPropagation(); copyDomainsToClipboardFromEncoded('${encodedDomains}');"></i>
-                            <i class="fa-solid fa-chevron-down text-white transition-transform" id="${iconId}" style="font-size: 12px;"></i>
-                        </div>
-                    </div>
-                    <div class="domain-list-content border border-top-0 rounded-bottom p-3 collapse" id="${collapseId}">
-                        <div class="domains-grid">
-                            ${domainBadges}
-                        </div>
-                    </div>
-                </div>
-            `;
+                    `;
                 }).join('');
             }
 
@@ -1937,12 +1985,12 @@
                 .join('');
 
             return `
-        <div class="domain-list-content border rounded p-3">
-            <div class="domains-grid">
-                ${fallbackBadges}
-            </div>
-        </div>
-    `;
+                <div class="domain-list-content border rounded p-3">
+                    <div class="domains-grid">
+                        ${fallbackBadges}
+                    </div>
+                </div>
+            `;
         }
 
         function renderOtherPanelSplits(otherPanels, currentPanel) {
@@ -1951,13 +1999,13 @@
             }
 
             return `
-        <div class="mt-4">
-            <span class="opacity-50 mb-3 d-block">
-                <i class="fa-solid fa-layer-group me-2"></i>Other Pool Panel Splits
-            </span>
-            ${otherPanels.map((panelData, index) => renderOtherPanelCard(panelData, currentPanel, index)).join('')}
-        </div>
-    `;
+                <div class="mt-4">
+                    <span class="opacity-50 mb-3 d-block">
+                        <i class="fa-solid fa-layer-group me-2"></i>Other Pool Panel Splits
+                    </span>
+                    ${otherPanels.map((panelData, index) => renderOtherPanelCard(panelData, currentPanel, index)).join('')}
+                </div>
+            `;
         }
 
         function renderOtherPanelCard(panelData, currentPanel, index) {
@@ -1970,22 +2018,22 @@
             const splitsHtml = renderPoolDomainsList(panelInfo, panelData.splits || [], panelInfo);
 
             return `
-        <div class="card bg-transparent border border-secondary-subtle mb-3">
-            <div class="card-body">
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel ID: ${panelId}</span>
-                    <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel: ${panelTitle}</span>
-                    <span class="badge ${statusBadgeClass}" style="font-size: 10px;">${panelStatus}</span>
-                    <span class="badge bg-info bg-opacity-25 text-light" style="font-size: 10px;">Splits: ${panelData.total_splits ?? (panelData.splits ? panelData.splits.length : 0)}</span>
-                    <span class="badge bg-warning bg-opacity-25 text-dark" style="font-size: 10px;">Domains: ${panelData.total_domains ?? 0}</span>
-                    <span class="badge bg-primary bg-opacity-25 text-light" style="font-size: 10px;">Total Inboxes: ${panelData.total_inboxes ?? 0}</span>
+                <div class="card bg-transparent border border-secondary-subtle mb-3">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel ID: ${panelId}</span>
+                            <span class="badge bg-white text-dark" style="font-size: 10px; font-weight: bold;">Panel: ${panelTitle}</span>
+                            <span class="badge ${statusBadgeClass}" style="font-size: 10px;">${panelStatus}</span>
+                            <span class="badge bg-info bg-opacity-25 text-light" style="font-size: 10px;">Splits: ${panelData.total_splits ?? (panelData.splits ? panelData.splits.length : 0)}</span>
+                            <span class="badge bg-warning bg-opacity-25 text-dark" style="font-size: 10px;">Domains: ${panelData.total_domains ?? 0}</span>
+                            <span class="badge bg-primary bg-opacity-25 text-light" style="font-size: 10px;">Total Inboxes: ${panelData.total_inboxes ?? 0}</span>
+                        </div>
+                        <div class="mt-3">
+                            ${splitsHtml}
+                        </div>
+                    </div>
                 </div>
-                <div class="mt-3">
-                    ${splitsHtml}
-                </div>
-            </div>
-        </div>
-    `;
+            `;
         }
 
         function copyDomainsToClipboardFromEncoded(encodedDomains) {
@@ -2226,7 +2274,6 @@
             currentPage = 1;
             loadPoolPanels(currentFilters, 1, false);
         }
-        // No longer needed - ID generation happens in the backend
 
         function fetchNextPoolPanelId(options = {}) {
             const {
@@ -2737,467 +2784,618 @@
             $('.invalid-feedback').remove();
         }
 
-/**
- * Open the pool panel reassignment modal
- */
-function openPoolReassignModal(poolId, currentPoolPanelId, splitId, panelTitle) {
-    // PRESERVE all original data - don't reset the entire object
-    currentPoolReassignData.poolId = poolId;
-    currentPoolReassignData.currentPoolPanelId = currentPoolPanelId;
-    currentPoolReassignData.splitId = splitId;
-    currentPoolReassignData.panelTitle = panelTitle;
-    currentPoolReassignData.targetPoolPanelId = null;
-    currentPoolReassignData.targetPanelTitle = null;
-    currentPoolReassignData.remainingSpace = null;
+        /**
+         * Open the pool panel reassignment modal
+         */
+        function openPoolReassignModal(poolId, currentPoolPanelId, splitId, panelTitle) {
+            // PRESERVE all original data - don't reset the entire object
+            currentPoolReassignData.poolId = poolId;
+            currentPoolReassignData.currentPoolPanelId = currentPoolPanelId;
+            currentPoolReassignData.splitId = splitId;
+            currentPoolReassignData.panelTitle = panelTitle;
+            currentPoolReassignData.targetPoolPanelId = null;
+            currentPoolReassignData.targetPanelTitle = null;
+            currentPoolReassignData.remainingSpace = null;
 
-    // Reset modal state
-    resetPoolReassignModal();
-    
-    // Update modal title
-    document.getElementById('reassignModalLabel').innerHTML = `Reassign Pool Split: ${panelTitle || ''}`;
-    
-    // Load available pool panels
-    loadAvailablePoolPanels(poolId, currentPoolPanelId);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('poolReassignModal'));
-    modal.show();
-}
-
-/**
- * Load available pool panels for reassignment
- */
-async function loadAvailablePoolPanels(poolId, poolPanelId) {
-    try {
-        showPoolReassignLoading(true);
-        
-        const url = '{{ route('admin.pool-panels.available-for-reassignment', ['poolId' => '__POOL_ID__', 'poolPanelId' => '__POOL_PANEL_ID__']) }}'
-            .replace('__POOL_ID__', poolId)
-            .replace('__POOL_PANEL_ID__', poolPanelId);
-
-        const response = await fetch(url, {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-            renderAvailablePoolPanels(data.panels || []);
-        } else {
-            showPoolReassignError(data.error || 'Failed to load available pool panels');
-        }
-    } catch (error) {
-        console.error('Error loading available pool panels:', error);
-        showPoolReassignError('Failed to load available pool panels');
-    } finally {
-        showPoolReassignLoading(false);
-    }
-}
-
-/**
- * Render available pool panels in the modal
- */
-function renderAvailablePoolPanels(panels) {
-    const container = document.getElementById('availablePanelsContainer');
-    
-    if (!panels || panels.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-4">
-                <i class="fas fa-info-circle text-muted mb-3" style="font-size: 2rem;"></i>
-                <p class="text-muted mb-0">No pool panels available for reassignment</p>
-            </div>
-        `;
-        return;
-    }
-
-    // Add search input
-    const searchHtml = `
-        <div class="mb-3">
-            <div class="input-group">
-                <span class="input-group-text bg-light border-end-0">
-                    <i class="fas fa-search text-muted"></i>
-                </span>
-                <input type="text" class="form-control border-start-0" id="poolPanelSearchInput" 
-                       placeholder="Search pool panels by ID or title..." onkeyup="filterPoolPanels()">
-            </div>
-        </div>
-    `;
-    
-    const panelsHtml = panels.map(panel => `
-        <div class="panel-option mb-2 border rounded-3 shadow-sm position-relative overflow-hidden pool-panel-card" 
-             data-panel-id="${panel.panel_id}"
-             data-panel-title="${(panel.panel_title || '').toLowerCase()}"
-             data-panel-remaining="${panel.panel_remaining_limit || 0}"
-             onclick="selectPoolReassignTarget(${panel.panel_id}, '${(panel.panel_title || 'N/A').replace(/'/g, "\\'")}', ${panel.panel_remaining_limit || 0})" 
-             style="cursor: pointer; transition: all 0.2s ease;">
-            
-            <div class="p-3">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="d-flex align-items-center">
-                        <div class="panel-icon me-2">
-                            <div class="d-flex align-items-center justify-content-center rounded-circle bg-warning bg-gradient" 
-                                 style="width: 35px; height: 35px;">
-                                <i class="fas fa-layer-group text-white"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h6 class="mb-0 fw-bold">
-                                <span class="badge bg-warning bg-gradient me-2 px-2 py-1 small">PPN-${panel.panel_id}</span>
-                                <span class="panel-title-text">${panel.panel_title || 'N/A'}</span>
-                            </h6>
-                            <small class="text-muted">Pool Panel</small>
-                        </div>
-                    </div>
-                    
-                    <button type="button" class="btn btn-outline-warning btn-sm px-3 select-btn" 
-                         onclick="event.stopPropagation(); selectPoolReassignTarget(${panel.panel_id}, '${(panel.panel_title || 'N/A').replace(/'/g, "\\'")}', ${panel.panel_remaining_limit || 0})">
-                        <i class="fas fa-arrow-right me-1"></i>Select
-                    </button>
-                </div>
-                
-                <div class="row g-2 mt-1">
-                    <div class="col-4">
-                        <div class="text-center p-2 rounded bg-light">
-                            <div class="fw-bold text-primary" style="font-size: 0.9rem;">${panel.total_splits || 0}</div>
-                            <small class="text-muted">Total Splits</small>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="text-center p-2 rounded bg-light">
-                            <div class="fw-bold text-warning" style="font-size: 0.9rem;">${panel.panel_limit || 0}</div>
-                            <small class="text-muted">Limit</small>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="text-center p-2 rounded bg-light">
-                            <div class="fw-bold text-success panel-remaining" style="font-size: 0.9rem;">${panel.panel_remaining_limit || 0}</div>
-                            <small class="text-muted">Free Space</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-
-    container.innerHTML = searchHtml + '<div id="poolPanelsList">' + panelsHtml + '</div>';
-}
-
-/**
- * Filter pool panels based on search input
- */
-function filterPoolPanels() {
-    const searchTerm = document.getElementById('poolPanelSearchInput').value.toLowerCase();
-    const panelCards = document.querySelectorAll('.pool-panel-card');
-    let visibleCount = 0;
-    
-    panelCards.forEach(card => {
-        const panelId = card.getAttribute('data-panel-id');
-        const panelTitle = card.getAttribute('data-panel-title');
-        
-        const isVisible = panelId.includes(searchTerm) || panelTitle.includes(searchTerm);
-        
-        if (isVisible) {
-            card.style.display = 'block';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-    
-    // Show/hide no results message
-    const panelsList = document.getElementById('poolPanelsList');
-    let noResultsDiv = document.getElementById('noPoolSearchResults');
-    
-    if (visibleCount === 0 && searchTerm.length > 0) {
-        if (!noResultsDiv) {
-            noResultsDiv = document.createElement('div');
-            noResultsDiv.id = 'noPoolSearchResults';
-            noResultsDiv.className = 'text-center py-4';
-            noResultsDiv.innerHTML = `
-                <i class="fas fa-search text-muted mb-2" style="font-size: 1.5rem;"></i>
-                <p class="text-muted mb-0">No pool panels found matching "${searchTerm}"</p>
-            `;
-            panelsList.appendChild(noResultsDiv);
-        }
-    } else if (noResultsDiv) {
-        noResultsDiv.remove();
-    }
-}
-
-/**
- * Select target pool panel for reassignment
- */
-function selectPoolReassignTarget(targetPanelId, targetPanelTitle, remainingSpace = 0) {
-    // Remove previous selection
-    document.querySelectorAll('.pool-panel-card').forEach(option => {
-        option.classList.remove('selected');
-    });
-
-    // Highlight selected panel
-    const selectedPanel = document.querySelector(`.pool-panel-card[data-panel-id="${targetPanelId}"]`);
-    if (selectedPanel) {
-        selectedPanel.classList.add('selected');
-    }
-
-    // ONLY update target-related data - preserve original data
-    currentPoolReassignData.targetPoolPanelId = targetPanelId;
-    currentPoolReassignData.targetPanelTitle = targetPanelTitle;
-    currentPoolReassignData.remainingSpace = remainingSpace;
-
-    // Enable reassign button
-    const reassignBtn = document.getElementById('confirmReassignBtn');
-    reassignBtn.disabled = false;
-    reassignBtn.innerHTML = `<i class="fas fa-exchange-alt me-1"></i>Reassign to ${targetPanelTitle}`;
-    
-    // Show reason container
-    document.getElementById('reassignReasonContainer').style.display = 'block';
-}
-
-/**
- * Confirm pool panel reassignment
- */
-async function confirmPoolReassignment() {
-    if (!currentPoolReassignData.targetPoolPanelId) {
-        showPoolReassignError('Please select a target pool panel');
-        return;
-    }
-
-    try {
-        // Show SweetAlert2 confirmation dialog
-        const result = await Swal.fire({
-            title: 'Confirm Pool Split Reassignment?',
-            html: `
-                <div class="text-start">
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                <div class="card-body text-center text-white">
-                                    <i class="fas fa-exchange-alt fs-2 mb-2"></i>
-                                    <h4 class="card-title mb-1 fw-bold">PPN-${currentPoolReassignData.currentPoolPanelId}</h4>
-                                    <p class="mb-1 fw-semibold">${currentPoolReassignData.panelTitle}</p>
-                                    <small class="text-white-50">From Panel</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
-                                <div class="card-body text-center text-white">
-                                    <i class="fas fa-arrow-right fs-2 mb-2"></i>
-                                    <h4 class="card-title mb-1 fw-bold">PPN-${currentPoolReassignData.targetPoolPanelId}</h4>
-                                    <p class="mb-1 fw-semibold">${currentPoolReassignData.targetPanelTitle}</p>
-                                    <small class="text-white-50">To Panel</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                                <div class="card-body text-center text-white">
-                                    <i class="fas fa-layer-group fs-2 mb-2"></i>
-                                    <h4 class="card-title mb-1 fw-bold">${currentPoolReassignData.remainingSpace || 0}</h4>
-                                    <small class="text-white-50">Free Space</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="alert alert-warning mt-3 mb-0" style="font-size: 14px;">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Note:</strong> This will move all domains and capacity from the current pool panel to the selected panel.
-                    </div>
-                </div>
-            `,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#ffc107',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: '<i class="fas fa-exchange-alt me-1"></i>Confirm Reassignment',
-            cancelButtonText: '<i class="fas fa-times me-1"></i>Cancel',
-            reverseButtons: true,
-            customClass: {
-                popup: 'swal-wide'
-            }
-        });
-
-        // If user cancels, return early
-        if (!result.isConfirmed) {
-            return;
-        }
-
-        // Show SweetAlert2 loading dialog
-        Swal.fire({
-            title: 'Reassigning Pool Split...',
-            html: `
-                <div class="text-center">
-                    <div class="spinner-border text-warning mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p>Please wait while we reassign the pool split...</p>
-                    <small class="text-muted">This may take a few moments</small>
-                </div>
-            `,
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            customClass: {
-                popup: 'swal-loading'
-            }
-        });
-
-        // Get reason if available
-        const reasonElement = document.getElementById('reassignReason');
-        const reason = reasonElement ? reasonElement.value : null;
-
-        const formData = {
-            from_pool_panel_id: currentPoolReassignData.currentPoolPanelId,
-            to_pool_panel_id: currentPoolReassignData.targetPoolPanelId,
-            split_id: currentPoolReassignData.splitId,
-            pool_id: currentPoolReassignData.poolId,
-            reason: reason
-        };
-
-        const response = await fetch('{{ route('admin.pool-panels.reassign') }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify(formData)
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            // Close loading dialog and show success
-            await Swal.fire({
-                title: 'Reassignment Successful!',
-                html: `
-                    <div class="text-center">
-                        <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
-                        <p class="mb-2">${data.message || 'Pool panel split reassigned successfully'}</p>
-                        <small class="text-muted">Pool split has been successfully reassigned</small>
-                    </div>
-                `,
-                icon: 'success',
-                confirmButtonColor: '#28a745',
-                timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: true,
-                confirmButtonText: 'Great!'
-            });
-            
-            // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('poolReassignModal')).hide();
-            
-            // Refresh the pool panels view
-            if (typeof loadPoolPanels === 'function') {
-                loadPoolPanels();
-            }
-            
-            // Reset modal after successful reassignment
+            // Reset modal state
             resetPoolReassignModal();
-        } else {
-            // Close loading dialog and show error
-            await Swal.fire({
-                title: 'Reassignment Failed!',
-                html: `
-                    <div class="text-center">
-                        <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
-                        <p class="mb-2">${data.message || 'Reassignment failed'}</p>
-                        <small class="text-muted">Please try again or contact support</small>
-                    </div>
-                `,
-                icon: 'error',
-                confirmButtonColor: '#dc3545',
-                confirmButtonText: 'Try Again'
-            });
-            
-            showPoolReassignError(data.message || 'Reassignment failed');
+
+            // Update modal title
+            document.getElementById('reassignModalLabel').innerHTML = `Reassign Pool Split: ${panelTitle || ''}`;
+
+            // Load available pool panels
+            loadAvailablePoolPanels(poolId, currentPoolPanelId);
+
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('poolReassignModal'));
+            modal.show();
         }
-    } catch (error) {
-        console.error('Error during pool panel reassignment:', error);
-        
-        // Close loading dialog and show error
-        await Swal.fire({
-            title: 'Error!',
-            html: `
-                <div class="text-center">
-                    <i class="fas fa-times-circle text-danger mb-3" style="font-size: 3rem;"></i>
-                    <p class="mb-2">An error occurred during reassignment</p>
-                    <small class="text-muted">Please check your connection and try again</small>
+
+        /**
+         * Load available pool panels for reassignment
+         */
+        async function loadAvailablePoolPanels(poolId, poolPanelId) {
+            try {
+                showPoolReassignLoading(true);
+
+                const url =
+                    '{{ route('admin.pool-panels.available-for-reassignment', ['poolId' => '__POOL_ID__', 'poolPanelId' => '__POOL_PANEL_ID__']) }}'
+                    .replace('__POOL_ID__', poolId)
+                    .replace('__POOL_PANEL_ID__', poolPanelId);
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    renderAvailablePoolPanels(data.panels || []);
+                } else {
+                    showPoolReassignError(data.error || 'Failed to load available pool panels');
+                }
+            } catch (error) {
+                console.error('Error loading available pool panels:', error);
+                showPoolReassignError('Failed to load available pool panels');
+            } finally {
+                showPoolReassignLoading(false);
+            }
+        }
+
+        /**
+         * Render available pool panels in the modal
+         */
+        function renderAvailablePoolPanels(panels) {
+            const container = document.getElementById('availablePanelsContainer');
+
+            if (!panels || panels.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle text-muted mb-3" style="font-size: 2rem;"></i>
+                        <p class="text-muted mb-0">No pool panels available for reassignment</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Add search input
+            const searchHtml = `
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="poolPanelSearchInput" 
+                            placeholder="Search pool panels by ID or title..." onkeyup="filterPoolPanels()">
+                    </div>
                 </div>
-            `,
-            icon: 'error',
-            confirmButtonColor: '#dc3545',
-            confirmButtonText: 'OK'
+            `;
+
+            const panelsHtml = panels.map(panel => `
+                <div class="panel-option mb-2 border rounded-3 shadow-sm position-relative overflow-hidden pool-panel-card" 
+                    data-panel-id="${panel.panel_id}"
+                    data-panel-title="${(panel.panel_title || '').toLowerCase()}"
+                    data-panel-remaining="${panel.panel_remaining_limit || 0}"
+                    onclick="selectPoolReassignTarget(${panel.panel_id}, '${(panel.panel_title || 'N/A').replace(/'/g, "\\'")}', ${panel.panel_remaining_limit || 0})" 
+                    style="cursor: pointer; transition: all 0.2s ease;">
+                    
+                    <div class="p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="panel-icon me-2">
+                                    <div class="d-flex align-items-center justify-content-center rounded-circle bg-warning bg-gradient" 
+                                        style="width: 35px; height: 35px;">
+                                        <i class="fas fa-layer-group text-white"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">
+                                        <span class="badge bg-warning bg-gradient me-2 px-2 py-1 small">PPN-${panel.panel_id}</span>
+                                        <span class="panel-title-text">${panel.panel_title || 'N/A'}</span>
+                                    </h6>
+                                    <small class="text-muted">Pool Panel</small>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-outline-warning btn-sm px-3 select-btn" 
+                                onclick="event.stopPropagation(); selectPoolReassignTarget(${panel.panel_id}, '${(panel.panel_title || 'N/A').replace(/'/g, "\\'")}', ${panel.panel_remaining_limit || 0})">
+                                <i class="fas fa-arrow-right me-1"></i>Select
+                            </button>
+                        </div>
+                        
+                        <div class="row g-2 mt-1">
+                            <div class="col-4">
+                                <div class="text-center p-2 rounded bg-light">
+                                    <div class="fw-bold text-primary" style="font-size: 0.9rem;">${panel.total_splits || 0}</div>
+                                    <small class="text-muted">Total Splits</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-center p-2 rounded bg-light">
+                                    <div class="fw-bold text-warning" style="font-size: 0.9rem;">${panel.panel_limit || 0}</div>
+                                    <small class="text-muted">Limit</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-center p-2 rounded bg-light">
+                                    <div class="fw-bold text-success panel-remaining" style="font-size: 0.9rem;">${panel.panel_remaining_limit || 0}</div>
+                                    <small class="text-muted">Free Space</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = searchHtml + '<div id="poolPanelsList">' + panelsHtml + '</div>';
+        }
+
+        /**
+         * Filter pool panels based on search input
+         */
+        function filterPoolPanels() {
+            const searchTerm = document.getElementById('poolPanelSearchInput').value.toLowerCase();
+            const panelCards = document.querySelectorAll('.pool-panel-card');
+            let visibleCount = 0;
+
+            panelCards.forEach(card => {
+                const panelId = card.getAttribute('data-panel-id');
+                const panelTitle = card.getAttribute('data-panel-title');
+
+                const isVisible = panelId.includes(searchTerm) || panelTitle.includes(searchTerm);
+
+                if (isVisible) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide no results message
+            const panelsList = document.getElementById('poolPanelsList');
+            let noResultsDiv = document.getElementById('noPoolSearchResults');
+
+            if (visibleCount === 0 && searchTerm.length > 0) {
+                if (!noResultsDiv) {
+                    noResultsDiv = document.createElement('div');
+                    noResultsDiv.id = 'noPoolSearchResults';
+                    noResultsDiv.className = 'text-center py-4';
+                    noResultsDiv.innerHTML = `
+                        <i class="fas fa-search text-muted mb-2" style="font-size: 1.5rem;"></i>
+                        <p class="text-muted mb-0">No pool panels found matching "${searchTerm}"</p>
+                    `;
+                    panelsList.appendChild(noResultsDiv);
+                }
+            } else if (noResultsDiv) {
+                noResultsDiv.remove();
+            }
+        }
+
+        /**
+         * Select target pool panel for reassignment
+         */
+        function selectPoolReassignTarget(targetPanelId, targetPanelTitle, remainingSpace = 0) {
+            // Remove previous selection
+            document.querySelectorAll('.pool-panel-card').forEach(option => {
+                option.classList.remove('selected');
+            });
+
+            // Highlight selected panel
+            const selectedPanel = document.querySelector(`.pool-panel-card[data-panel-id="${targetPanelId}"]`);
+            if (selectedPanel) {
+                selectedPanel.classList.add('selected');
+            }
+
+            // ONLY update target-related data - preserve original data
+            currentPoolReassignData.targetPoolPanelId = targetPanelId;
+            currentPoolReassignData.targetPanelTitle = targetPanelTitle;
+            currentPoolReassignData.remainingSpace = remainingSpace;
+
+            // Enable reassign button
+            const reassignBtn = document.getElementById('confirmReassignBtn');
+            reassignBtn.disabled = false;
+            reassignBtn.innerHTML = `<i class="fas fa-exchange-alt me-1"></i>Reassign to ${targetPanelTitle}`;
+
+            // Show reason container
+            document.getElementById('reassignReasonContainer').style.display = 'block';
+        }
+
+        /**
+         * Confirm pool panel reassignment
+         */
+        async function confirmPoolReassignment() {
+            if (!currentPoolReassignData.targetPoolPanelId) {
+                showPoolReassignError('Please select a target pool panel');
+                return;
+            }
+
+            try {
+                // Show SweetAlert2 confirmation dialog
+                const result = await Swal.fire({
+                    title: 'Confirm Pool Split Reassignment?',
+                    html: `
+                        <div class="text-start">
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <div class="card-body text-center text-white">
+                                            <i class="fas fa-exchange-alt fs-2 mb-2"></i>
+                                            <h4 class="card-title mb-1 fw-bold">PPN-${currentPoolReassignData.currentPoolPanelId}</h4>
+                                            <p class="mb-1 fw-semibold">${currentPoolReassignData.panelTitle}</p>
+                                            <small class="text-white-50">From Panel</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
+                                        <div class="card-body text-center text-white">
+                                            <i class="fas fa-arrow-right fs-2 mb-2"></i>
+                                            <h4 class="card-title mb-1 fw-bold">PPN-${currentPoolReassignData.targetPoolPanelId}</h4>
+                                            <p class="mb-1 fw-semibold">${currentPoolReassignData.targetPanelTitle}</p>
+                                            <small class="text-white-50">To Panel</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                        <div class="card-body text-center text-white">
+                                            <i class="fas fa-layer-group fs-2 mb-2"></i>
+                                            <h4 class="card-title mb-1 fw-bold">${currentPoolReassignData.remainingSpace || 0}</h4>
+                                            <small class="text-white-50">Free Space</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-warning mt-3 mb-0" style="font-size: 14px;">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Note:</strong> This will move all domains and capacity from the current pool panel to the selected panel.
+                            </div>
+                        </div>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ffc107',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-exchange-alt me-1"></i>Confirm Reassignment',
+                    cancelButtonText: '<i class="fas fa-times me-1"></i>Cancel',
+                    reverseButtons: true,
+                    customClass: {
+                        popup: 'swal-wide'
+                    }
+                });
+
+                // If user cancels, return early
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                // Show SweetAlert2 loading dialog
+                Swal.fire({
+                    title: 'Reassigning Pool Split...',
+                    html: `
+                        <div class="text-center">
+                            <div class="spinner-border text-warning mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Please wait while we reassign the pool split...</p>
+                            <small class="text-muted">This may take a few moments</small>
+                        </div>
+                    `,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'swal-loading'
+                    }
+                });
+
+                // Get reason if available
+                const reasonElement = document.getElementById('reassignReason');
+                const reason = reasonElement ? reasonElement.value : null;
+
+                const formData = {
+                    from_pool_panel_id: currentPoolReassignData.currentPoolPanelId,
+                    to_pool_panel_id: currentPoolReassignData.targetPoolPanelId,
+                    split_id: currentPoolReassignData.splitId,
+                    pool_id: currentPoolReassignData.poolId,
+                    reason: reason
+                };
+
+                const response = await fetch('{{ route('admin.pool-panels.reassign') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Close loading dialog and show success
+                    await Swal.fire({
+                        title: 'Reassignment Successful!',
+                        html: `
+                            <div class="text-center">
+                                <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
+                                <p class="mb-2">${data.message || 'Pool panel split reassigned successfully'}</p>
+                                <small class="text-muted">Pool split has been successfully reassigned</small>
+                            </div>
+                        `,
+                        icon: 'success',
+                        confirmButtonColor: '#28a745',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: true,
+                        confirmButtonText: 'Great!'
+                    });
+
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('poolReassignModal')).hide();
+
+                    // Refresh the pool panels view
+                    if (typeof loadPoolPanels === 'function') {
+                        loadPoolPanels();
+                    }
+
+                    // Reset modal after successful reassignment
+                    resetPoolReassignModal();
+                } else {
+                    // Close loading dialog and show error
+                    await Swal.fire({
+                        title: 'Reassignment Failed!',
+                        html: `
+                            <div class="text-center">
+                                <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
+                                <p class="mb-2">${data.message || 'Reassignment failed'}</p>
+                                <small class="text-muted">Please try again or contact support</small>
+                            </div>
+                        `,
+                        icon: 'error',
+                        confirmButtonColor: '#dc3545',
+                        confirmButtonText: 'Try Again'
+                    });
+
+                    showPoolReassignError(data.message || 'Reassignment failed');
+                }
+            } catch (error) {
+                console.error('Error during pool panel reassignment:', error);
+
+                // Close loading dialog and show error
+                await Swal.fire({
+                    title: 'Error!',
+                    html: `
+                        <div class="text-center">
+                            <i class="fas fa-times-circle text-danger mb-3" style="font-size: 3rem;"></i>
+                            <p class="mb-2">An error occurred during reassignment</p>
+                            <small class="text-muted">Please check your connection and try again</small>
+                        </div>
+                    `,
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'OK'
+                });
+
+                showPoolReassignError('An error occurred during reassignment');
+            }
+        }
+
+        /**
+         * Show/hide loading state in pool reassign modal
+         */
+        function showPoolReassignLoading(show) {
+            const loader = document.getElementById('reassignLoader');
+            const container = document.getElementById('availablePanelsContainer');
+
+            if (show) {
+                loader.style.display = 'block';
+                container.style.display = 'none';
+            } else {
+                loader.style.display = 'none';
+                container.style.display = 'block';
+            }
+        }
+
+        /**
+         * Show error in pool reassign modal
+         */
+        function showPoolReassignError(message) {
+            const container = document.getElementById('availablePanelsContainer');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    ${message}
+                </div>
+            `;
+        }
+
+        /**
+         * Reset pool reassign modal UI
+         */
+        function resetPoolReassignModal() {
+            // Only reset the UI elements
+            const container = document.getElementById('availablePanelsContainer');
+            if (container) container.innerHTML = '';
+
+            const reasonInput = document.getElementById('reassignReason');
+            if (reasonInput) reasonInput.value = '';
+
+            const reasonContainer = document.getElementById('reassignReasonContainer');
+            if (reasonContainer) reasonContainer.style.display = 'none';
+
+            const reassignBtn = document.getElementById('confirmReassignBtn');
+            if (reassignBtn) {
+                reassignBtn.disabled = true;
+                reassignBtn.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
+            }
+
+            // Remove any search results
+            const noResultsDiv = document.getElementById('noPoolSearchResults');
+            if (noResultsDiv) {
+                noResultsDiv.remove();
+            }
+
+            // Remove selections
+            document.querySelectorAll('.pool-panel-card').forEach(option => {
+                option.classList.remove('selected');
+            });
+        }
+
+        /**
+         * Open Change Provider Type Modal for Pool Panels
+         */
+        function openChangeProviderTypeModal(poolId, currentProviderType) {
+            const modalEl = document.getElementById('changeProviderTypeModal');
+            if (!modalEl) return;
+
+            // Update modal content
+            const poolLabel = document.getElementById('providerModalPoolId');
+            if (poolLabel) {
+                poolLabel.textContent = '#' + poolId;
+            }
+
+            const currentBadge = document.getElementById('providerModalCurrentType');
+            if (currentBadge) {
+                if (currentProviderType) {
+                    currentBadge.textContent = currentProviderType;
+                    currentBadge.className = 'badge ' + (currentProviderType === 'Google' ? 'bg-danger' : 'bg-primary');
+                } else {
+                    currentBadge.textContent = 'Not Set';
+                    currentBadge.className = 'badge bg-secondary';
+                }
+            }
+
+            // Reset form
+            const providerSelect = document.getElementById('newProviderType');
+            const reasonField = document.getElementById('providerChangeReason');
+
+            if (providerSelect) providerSelect.value = '';
+            if (reasonField) reasonField.value = '';
+
+            // Store pool ID in modal for later use
+            modalEl.setAttribute('data-pool-id', poolId);
+            modalEl.setAttribute('data-current-provider', currentProviderType || '');
+
+            // Show modal
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        /**
+         * Update Provider Type for Pool Panel
+         */
+        async function updatePoolProviderType() {
+            const modal = document.getElementById('changeProviderTypeModal');
+            if (!modal) return;
+
+            const poolId = modal.getAttribute('data-pool-id');
+            const providerSelect = document.getElementById('newProviderType');
+            const reasonField = document.getElementById('providerChangeReason');
+
+            if (!providerSelect || !poolId) return;
+
+            const newProviderType = providerSelect.value;
+            const reason = reasonField ? reasonField.value : '';
+
+            if (!newProviderType) {
+                Swal.fire({
+                    title: 'Provider Type Required',
+                    text: 'Please select a provider type.',
+                    icon: 'warning',
+                    confirmButtonColor: '#ffc107'
+                });
+                return;
+            }
+
+            // Show loading
+            Swal.fire({
+                title: 'Updating Provider Type...',
+                text: 'Please wait while we update the provider type.',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                const response = await fetch(`/admin/pool/${poolId}/change-provider-type`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        provider_type: newProviderType,
+                        reason: reason
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to update provider type');
+                }
+
+                if (result.success) {
+                    await Swal.fire({
+                        title: 'Success!',
+                        text: result.message || 'Provider type updated successfully!',
+                        icon: 'success',
+                        confirmButtonColor: '#28a745',
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+
+                    // Close modal
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+
+                    if (typeof loadPoolPanels === 'function') {
+                        loadPoolPanels();
+                    }
+
+                    // Refresh the view
+                    if (typeof resetAndReload === 'function') {
+                        resetAndReload();
+                    }
+
+                    // If viewing pool details, refresh them too
+                    if (typeof viewPoolPanelPools === 'function' && currentPoolPanelId) {
+                        viewPoolPanelPools(currentPoolPanelId);
+                    }
+                } else {
+                    throw new Error(result.message || 'Failed to update provider type');
+                }
+            } catch (error) {
+                console.error('Error updating provider type:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: error.message || 'An error occurred while updating the provider type',
+                    icon: 'error',
+                    confirmButtonColor: '#d33'
+                });
+            }
+        }
+
+        // Initialize event listeners when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmBtn = document.getElementById('confirmProviderTypeChange');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', updatePoolProviderType);
+            }
         });
-        
-        showPoolReassignError('An error occurred during reassignment');
-    }
-}
-
-/**
- * Show/hide loading state in pool reassign modal
- */
-function showPoolReassignLoading(show) {
-    const loader = document.getElementById('reassignLoader');
-    const container = document.getElementById('availablePanelsContainer');
-    
-    if (show) {
-        loader.style.display = 'block';
-        container.style.display = 'none';
-    } else {
-        loader.style.display = 'none';
-        container.style.display = 'block';
-    }
-}
-
-/**
- * Show error in pool reassign modal
- */
-function showPoolReassignError(message) {
-    const container = document.getElementById('availablePanelsContainer');
-    if (!container) return;
-
-    container.innerHTML = `
-        <div class="alert alert-danger">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            ${message}
-        </div>
-    `;
-}
-
-/**
- * Reset pool reassign modal UI
- */
-function resetPoolReassignModal() {
-    // Only reset the UI elements
-    const container = document.getElementById('availablePanelsContainer');
-    if (container) container.innerHTML = '';
-    
-    const reasonInput = document.getElementById('reassignReason');
-    if (reasonInput) reasonInput.value = '';
-    
-    const reasonContainer = document.getElementById('reassignReasonContainer');
-    if (reasonContainer) reasonContainer.style.display = 'none';
-    
-    const reassignBtn = document.getElementById('confirmReassignBtn');
-    if (reassignBtn) {
-        reassignBtn.disabled = true;
-        reassignBtn.innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
-    }
-    
-    // Remove any search results
-    const noResultsDiv = document.getElementById('noPoolSearchResults');
-    if (noResultsDiv) {
-        noResultsDiv.remove();
-    }
-    
-    // Remove selections
-    document.querySelectorAll('.pool-panel-card').forEach(option => {
-        option.classList.remove('selected');
-    });
-}    
-</script>
+    </script>
 @endpush

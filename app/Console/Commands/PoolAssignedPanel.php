@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Order;
 use App\Models\OrderPanel;
 use App\Models\ReorderInfo;
+use App\Models\Configuration;
 use App\Mail\AdminPanelNotificationMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +28,8 @@ class PoolAssignedPanel extends Command
                             {--dry-run : Run without sending actual emails}
                             {--force : Force send even if already sent today}
                             {--disable-split-capacity : Disable MAX_SPLIT_CAPACITY functionality}
-                            {--enable-split-capacity : Enable MAX_SPLIT_CAPACITY functionality}';
+                            {--enable-split-capacity : Enable MAX_SPLIT_CAPACITY functionality}
+                            {--provider= : Force provider type (Google or Microsoft 365) instead of configuration}';
 
     /**
      * The console command description.
@@ -64,6 +66,11 @@ class PoolAssignedPanel extends Command
     public $ENABLE_MAX_SPLIT_CAPACITY;
     
     /**
+     * Provider type used when fetching panels
+     */
+    public $PROVIDER_TYPE;
+
+    /**
      * Constructor to initialize dynamic properties
      */
     public function __construct()
@@ -72,6 +79,7 @@ class PoolAssignedPanel extends Command
         $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 1790); // Default to 1790 if not set in config
         $this->MAX_SPLIT_CAPACITY = env('MAX_SPLIT_CAPACITY', 358); // Maximum inboxes per split
         $this->ENABLE_MAX_SPLIT_CAPACITY = env('ENABLE_MAX_SPLIT_CAPACITY', false); // Enable/disable split capacity functionality
+        $this->PROVIDER_TYPE = null; 
     }
     
     /**
@@ -86,6 +94,10 @@ class PoolAssignedPanel extends Command
     {
         $isDryRun = $this->option('dry-run');
         $isForce = $this->option('force');
+        $forceProvider = $this->option('provider');
+        
+        // Initialize provider type and capacities
+        $this->initializeProviderSettings($forceProvider);
         
         // Handle split capacity flag options
         if ($this->option('disable-split-capacity')) {
@@ -95,6 +107,8 @@ class PoolAssignedPanel extends Command
         }
         
         $this->info('🔍 Starting panel capacity check...');
+        $this->info("   Provider: {$this->PROVIDER_TYPE}");
+        $this->info("   Panel Capacity: {$this->PANEL_CAPACITY}");
         $this->info("⚙️  MAX_SPLIT_CAPACITY functionality: " . ($this->ENABLE_MAX_SPLIT_CAPACITY ? 'ENABLED' : 'DISABLED'));
         if ($this->ENABLE_MAX_SPLIT_CAPACITY) {
             $this->info("📏 Max split capacity: {$this->MAX_SPLIT_CAPACITY} inboxes");
@@ -119,7 +133,52 @@ class PoolAssignedPanel extends Command
         }
         
         return 0;
-    }    
+    }
+
+    /**
+     * Initialize provider type and capacity settings
+     */
+    private function initializeProviderSettings(?string $forceProvider): void
+    {
+        // Determine provider type
+        if ($forceProvider) {
+            // Use forced provider from command option
+            $this->PROVIDER_TYPE = $forceProvider;
+            $this->info("🔧 Using forced provider type: {$forceProvider}");
+        } else {
+            // Use configuration table
+            $this->PROVIDER_TYPE = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+            $this->info("📋 Using provider type from configuration: {$this->PROVIDER_TYPE}");
+        }
+        
+        // Resolve provider-specific panel capacity with sensible fallbacks
+        if (strtolower($this->PROVIDER_TYPE) === 'microsoft 365') {
+            $this->PANEL_CAPACITY = Configuration::get('MICROSOFT_365_CAPACITY', env('MICROSOFT_365_CAPACITY', env('PANEL_CAPACITY', 1790)));
+            $this->MAX_SPLIT_CAPACITY = Configuration::get('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
+        } else {
+            $this->PANEL_CAPACITY = Configuration::get('GOOGLE_PANEL_CAPACITY', env('GOOGLE_PANEL_CAPACITY', env('PANEL_CAPACITY', 1790)));
+            $this->MAX_SPLIT_CAPACITY = Configuration::get('GOOGLE_MAX_SPLIT_CAPACITY', env('GOOGLE_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
+        }
+    
+        // Provider-specific split toggles
+        $enableMaxSplit = true;
+        if (strtolower($this->PROVIDER_TYPE) === 'microsoft 365') {
+            $enableMaxSplit = Configuration::get('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', env('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', true));
+        } else {
+            $enableMaxSplit = Configuration::get('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', env('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', true));
+        }
+        
+        // Override with command options if provided
+        if ($this->option('disable-split-capacity')) {
+            $enableMaxSplit = false;
+        } elseif ($this->option('enable-split-capacity')) {
+            $enableMaxSplit = true;
+        }
+        
+        if (!$enableMaxSplit) {
+            $this->MAX_SPLIT_CAPACITY = $this->PANEL_CAPACITY;
+        }
+    }
     
     /**
      * Fix panel used_limit values based on existing pool_panel_splits
@@ -128,8 +187,8 @@ class PoolAssignedPanel extends Command
     {
         $this->info('🔧 Fixing panel used_limit values...');
         
-        // Get all panels
-        $panels = PoolPanel::all();
+        // Get all panels for the current provider
+        $panels = PoolPanel::where('provider_type', $this->PROVIDER_TYPE)->get();
         $fixedCount = 0;
         
         foreach ($panels as $panel) {
@@ -155,6 +214,7 @@ class PoolAssignedPanel extends Command
                 
                 Log::info('Fixed panel capacity values', [
                     'panel_id' => $panel->id,
+                    'provider_type' => $this->PROVIDER_TYPE,
                     'old_used_limit' => $panel->used_limit,
                     'new_used_limit' => $actualUsedSpace,
                     'old_remaining_limit' => $panel->remaining_limit,
@@ -179,6 +239,7 @@ class PoolAssignedPanel extends Command
             // For large orders, prioritize full capacity panels
             $fullCapacityPanels = PoolPanel::where('is_active', 1)
                                         ->where('limit', $this->PANEL_CAPACITY)
+                                        ->where('provider_type', $this->PROVIDER_TYPE)
                                         // ->where('remaining_limit', $this->PANEL_CAPACITY)
                                         ->where('remaining_limit', '>=', $inboxesPerDomain)
                                         ->get();
@@ -201,6 +262,7 @@ class PoolAssignedPanel extends Command
             // For smaller orders, use any panel with remaining space that can accommodate at least one domain
             $availablePanels = PoolPanel::where('is_active', 1)
                                     ->where('limit', $this->PANEL_CAPACITY)
+                                    ->where('provider_type', $this->PROVIDER_TYPE)
                                     ->where('remaining_limit', '>=', $inboxesPerDomain)
                                     ->get();
             
@@ -264,6 +326,7 @@ class PoolAssignedPanel extends Command
                         // Log successful panel split creation
                         Log::info('Panel splits created for pool', [
                             'pool_id' => $pool->id,
+                            'provider_type' => $this->PROVIDER_TYPE,
                             'total_inboxes' => $pool->total_inboxes,
                             'created_at' => Carbon::now()
                         ]);
@@ -272,6 +335,7 @@ class PoolAssignedPanel extends Command
                         $this->error("   ✗ Failed to create panel splits for Pool ID {$pool->id}: " . $splitException->getMessage());
                         Log::error('Failed to create panel splits', [
                             'pool_id' => $pool->id,
+                            'provider_type' => $this->PROVIDER_TYPE,
                             'error' => $splitException->getMessage(),
                             'trace' => $splitException->getTraceAsString()
                         ]);
@@ -310,6 +374,7 @@ class PoolAssignedPanel extends Command
                     $this->error("   ✗ Failed to update Pool ID {$pool->id}: " . $e->getMessage());
                     Log::error('Failed to update pool status', [
                         'pool_id' => $pool->id,
+                        'provider_type' => $this->PROVIDER_TYPE,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]);
@@ -371,8 +436,9 @@ class PoolAssignedPanel extends Command
         }
         
         $logEntry = sprintf(
-            "[%s] Pool status updates - Pools updated: %d, Space allocated: %d inboxes\n",
+            "[%s] Pool status updates - Provider: %s, Pools updated: %d, Space allocated: %d inboxes\n",
             Carbon::now()->format('Y-m-d H:i:s'),
+            $this->PROVIDER_TYPE,
             $updatedCount,
             $spaceUsed
         );
@@ -381,6 +447,7 @@ class PoolAssignedPanel extends Command
         
         // Also log to Laravel log
         Log::info('Pool status updated', [
+            'provider_type' => $this->PROVIDER_TYPE,
             'pools_updated' => $updatedCount,
             'space_allocated' => $spaceUsed
         ]);
@@ -423,6 +490,7 @@ class PoolAssignedPanel extends Command
             
             // Log the notification
             Log::info('Insufficient space notifications sent', [
+                'provider_type' => $this->PROVIDER_TYPE,
                 'orders_count' => count($this->insufficientSpaceOrders),
                 'admins_notified' => $sentCount,
                 'orders' => $this->insufficientSpaceOrders
@@ -431,6 +499,7 @@ class PoolAssignedPanel extends Command
         } catch (\Exception $e) {
             $this->error("❌ Failed to send insufficient space notifications: " . $e->getMessage());
             Log::error('Failed to send insufficient space notifications', [
+                'provider_type' => $this->PROVIDER_TYPE,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -455,6 +524,7 @@ class PoolAssignedPanel extends Command
             $minCapacityRequired = $this->ENABLE_MAX_SPLIT_CAPACITY ? $this->MAX_SPLIT_CAPACITY : 1;
             $availablePanelCount = PoolPanel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
+                ->where('provider_type', $this->PROVIDER_TYPE)
                 ->where('remaining_limit', '>=', $minCapacityRequired)
                 ->count();
             $totalPanelsNeeded -= $availablePanelCount; // Adjust total panels needed based on available panels
@@ -474,6 +544,7 @@ class PoolAssignedPanel extends Command
             $this->error("   ✗ Failed to send to {$admin->email}: " . $e->getMessage());
             Log::error('Failed to send insufficient space notification', [
                 'admin_email' => $admin->email,
+                'provider_type' => $this->PROVIDER_TYPE,
                 'error' => $e->getMessage()
             ]);
             return false;
@@ -521,6 +592,7 @@ class PoolAssignedPanel extends Command
             $totalSpaceNeeded = $domainCount * $pool->inboxes_per_domain;
             
             Log::info("Panel creation started for pool #{$pool->id}", [
+                'provider_type' => $this->PROVIDER_TYPE,
                 'total_space_needed' => $totalSpaceNeeded,
                 'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
                 'panel_capacity' => $this->PANEL_CAPACITY,
@@ -555,6 +627,7 @@ class PoolAssignedPanel extends Command
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Panel creation failed for pool #{$pool->id}", [
+                'provider_type' => $this->PROVIDER_TYPE,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -578,6 +651,7 @@ class PoolAssignedPanel extends Command
             // Exclude panels that have already been used for this order
             $availablePanel = PoolPanel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
+                ->where('provider_type', $this->PROVIDER_TYPE)
                 // ->where('remaining_limit', '>', 0)
                 ->where('remaining_limit', '>=', $pool->inboxes_per_domain)
                 ->whereNotIn('id', $usedPanelIds) // Exclude already used panels
@@ -587,6 +661,7 @@ class PoolAssignedPanel extends Command
             if (!$availablePanel) {
                 // No available panels, skip the remaining pool
                 Log::warning("No available panels found for pool #{$pool->id} - remaining domains will be skipped", [
+                    'provider_type' => $this->PROVIDER_TYPE,
                     'total_space_needed' => $totalSpaceNeeded,
                     'remaining_space' => $remainingSpace,
                     'domains_processed' => $domainsProcessed,
@@ -627,6 +702,7 @@ class PoolAssignedPanel extends Command
                 $usedPanelIds[] = $availablePanel->id;
                 
                 Log::info("Assigned to existing panel #{$availablePanel->id} (split #{$splitNumber}) for pool #{$pool->id}", [
+                    'provider_type' => $this->PROVIDER_TYPE,
                     'space_used' => $actualSpaceUsed,
                     'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
                     'domains_count' => count($domainSlice),
@@ -641,6 +717,7 @@ class PoolAssignedPanel extends Command
             } else {
                 // If we can't use the available panel, break to avoid infinite loop
                 Log::warning("Cannot use available panel #{$availablePanel->id} for pool #{$pool->id}", [
+                    'provider_type' => $this->PROVIDER_TYPE,
                     'actual_space_used' => $actualSpaceUsed,
                     'available_space' => $availableSpace,
                     'max_split_capacity' => $this->MAX_SPLIT_CAPACITY,
@@ -659,6 +736,7 @@ class PoolAssignedPanel extends Command
             
             Log::warning("Incomplete pool processing - rolling back all splits for pool #{$pool->id}", [
                 'pool_id' => $pool->id,
+                'provider_type' => $this->PROVIDER_TYPE,
                 'domains_processed' => $domainsProcessed,
                 'total_domains' => $totalDomainsToProcess,
                 'remaining_domains' => count($remainingDomains),
@@ -681,10 +759,12 @@ class PoolAssignedPanel extends Command
     {
         return PoolPanel::where('is_active', true)
             ->where('limit', $this->PANEL_CAPACITY)
+            ->where('provider_type', $this->PROVIDER_TYPE)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
             ->first();
     }
+    
     /**
      * Find existing PANEL_CAPACITY panel with sufficient space - prioritize full capacity panels
      */
@@ -692,6 +772,7 @@ class PoolAssignedPanel extends Command
     {
         return PoolPanel::where('is_active', true)
             ->where('limit', $this->PANEL_CAPACITY)
+            ->where('provider_type', $this->PROVIDER_TYPE)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with most available space first for efficiency
             ->first();
@@ -727,6 +808,7 @@ class PoolAssignedPanel extends Command
             Log::info("Successfully assigned domains to panel", [
                 'panel_id' => $panel->id,
                 'pool_id' => $pool->id,
+                'provider_type' => $this->PROVIDER_TYPE,
                 'space_assigned' => $spaceToAssign,
                 'domains_count' => count($domainsToAssign),
                 'domain_names' => array_slice($domainsToAssign, 0, 3), // Sample domain names for debugging
@@ -739,6 +821,7 @@ class PoolAssignedPanel extends Command
             Log::error("Failed to assign domains to panel", [
                 'panel_id' => $panel->id,
                 'pool_id' => $pool->id,
+                'provider_type' => $this->PROVIDER_TYPE,
                 'error' => $e->getMessage()
             ]);
             throw $e;
@@ -775,6 +858,7 @@ class PoolAssignedPanel extends Command
                     
                     Log::info("Restored panel capacity", [
                         'panel_id' => $panel->id,
+                        'provider_type' => $this->PROVIDER_TYPE,
                         'space_restored' => $spaceToRestore,
                         'panel_remaining_limit' => $panel->remaining_limit,
                         'panel_used_limit' => $panel->used_limit
@@ -789,12 +873,14 @@ class PoolAssignedPanel extends Command
             
             Log::info("Successfully rolled back all splits for pool #{$pool->id}", [
                 'pool_id' => $pool->id,
+                'provider_type' => $this->PROVIDER_TYPE,
                 'splits_rolled_back' => $rollbackCount
             ]);
             
         } catch (\Exception $e) {
             Log::error("Failed to rollback splits for pool #{$pool->id}", [
                 'pool_id' => $pool->id,
+                'provider_type' => $this->PROVIDER_TYPE,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

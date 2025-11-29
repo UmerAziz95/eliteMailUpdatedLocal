@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('configurations', function (Blueprint $table) {
-            $table->json('last_change')->nullable()->after('description');
+        Schema::table('pools', function (Blueprint $table) {
+            $table->enum('provider_type', ['Google', 'Microsoft 365'])->default('Google')->after('status');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('configurations', function (Blueprint $table) {
-            $table->dropColumn('last_change');
+        Schema::table('pools', function (Blueprint $table) {
+            $table->dropColumn('provider_type');
         });
     }
 };

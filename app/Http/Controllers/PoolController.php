@@ -2,16 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
+use App\Models\Plan;
 use App\Models\Pool;
 use App\Models\User;
-use App\Models\Plan;
+use App\Models\Notification;
+use Illuminate\Http\Request;
+use App\Models\Configuration;
 use App\Models\HostingPlatform;
 use App\Models\SendingPlatform;
-use App\Models\Configuration;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Services\ActivityLogService;
 use Illuminate\Support\Facades\Auth;
+use App\Services\PoolSplitResetService;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
+use App\Services\PoolSplitCapacityService;
 
 class PoolController extends Controller
 {
@@ -944,6 +949,134 @@ class PoolController extends Controller
                 'success' => false,
                 'message' => 'Capacity check failed',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Change order provider type (Google or Microsoft 365)
+     */
+    public function changeProviderType(Request $request, $poolId)
+    {
+
+        try {
+            // Validate the request
+            $validator = Validator::make($request->all(), [
+                'provider_type' => 'required|in:Google,Microsoft 365',
+                'reason' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            
+            $adminId = Auth::id();
+            $newProviderType = $request->input('provider_type');
+            $reason = $request->input('reason');
+
+            // Find the pool
+            $pool = Pool::with(['poolPanelSplits'])->findOrFail($poolId);
+            $oldProviderType = $pool->provider_type;
+            
+            if ($oldProviderType === $newProviderType) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pool already has the selected provider type.'
+                ], 400);
+            }
+            // Validate capacity
+            $capacityService = app(PoolSplitCapacityService::class);
+            $capacityCheck = $capacityService->validateProviderCapacity($pool, $newProviderType);
+
+            if (!$capacityCheck['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $capacityCheck['message'] ?? 'Insufficient capacity for provider change.',
+                    'data' => $capacityCheck['data'] ?? []
+                ], 422);
+            }
+
+            $splitResetService = app(PoolSplitResetService::class);
+            
+            // Perform the change in a transaction
+            $splitCleanup = DB::transaction(function () use ($pool, $newProviderType, $splitResetService, $adminId, $reason) {
+                // Clear existing splits first
+                $cleanupResult = $splitResetService->resetOrderSplits($pool, $adminId, $reason, false);
+                
+                // Update provider type
+                $pool->provider_type = $newProviderType;
+                $pool->save();
+
+                return $cleanupResult;
+            });
+            
+            $pool->update(['status'=> 'pending','is_splitting'=>0]);
+            // Call capacity check command
+            \Artisan::call('pool:assigned-panel', [
+                '--provider' => $newProviderType
+            ]);
+
+            // Log the activity
+            ActivityLogService::log(
+                'admin_pool_provider_type_updated',
+                "Admin changed pool provider type from '{$oldProviderType}' to '{$newProviderType}'" . ($reason ? " with reason: {$reason}" : ""),
+                $pool,
+                [
+                    'pool_id' => $poolId,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => $newProviderType,
+                    'reason' => $reason,
+                    'split_cleanup' => $splitCleanup,
+                    'changed_by' => $adminId,
+                    'changed_by_type' => 'admin'
+                ],
+                $adminId
+            );
+            
+            // Create notification for customer if applicable
+            if ($pool->user_id) {
+                Notification::create([
+                    'user_id' => $pool->user_id,
+                    'type' => 'pool_provider_type_change',
+                    'title' => 'Pool Provider Type Updated',
+                    'message' => "Your pool #{$poolId} provider type has been changed to {$newProviderType}",
+                    'data' => [
+                        'pool_id' => $poolId,
+                        'old_provider_type' => $oldProviderType,
+                        'new_provider_type' => $newProviderType,
+                        'reason' => $reason,
+                        'split_cleanup' => $splitCleanup
+                    ]
+                ]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Provider type successfully changed from '{$oldProviderType}' to '{$newProviderType}'",
+                'data' => [
+                    'pool_id' => $poolId,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => $newProviderType,
+                    'reason' => $reason
+                ]
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
+            
+        } catch (Exception $e) {
+            Log::error("Error in changeProviderType for pool {$poolId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change provider type: ' . $e->getMessage()
             ], 500);
         }
     }
