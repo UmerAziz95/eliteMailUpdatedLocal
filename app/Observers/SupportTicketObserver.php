@@ -30,12 +30,16 @@ class SupportTicketObserver
                 ]
             ]);
             // Send email to assigned contractor
-            Mail::to($contractor->email)
-                ->queue(new TicketCreatedMail(
-                    $ticket,
-                    $ticket->user,
-                    $contractor
-                ));
+            try {
+                Mail::to($contractor->email)
+                    ->queue(new TicketCreatedMail(
+                        $ticket,
+                        $ticket->user,
+                        $contractor
+                    ));
+            } catch (\Exception $e) {
+                Log::error('Failed to send ticket email: ' . $e->getMessage());
+            }
         }
         // not assigned to send all contractors and admins
         // else {
@@ -74,12 +78,17 @@ class SupportTicketObserver
             //         ));
             // }
             // Send email to env admin
-            Mail::to(config('mail.admin_address', 'admin@example.com'))
-                ->queue(new TicketCreatedMail(
-                    $ticket,
-                    $ticket->user,
-                    null
-                ));
+            try {
+                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    ->queue(new TicketCreatedMail(
+                        $ticket,
+                        $ticket->user,
+                        null
+                    ));
+            } catch (\Exception $e) {
+                // Skip SMTP authentication errors silently
+                Log::error('Failed to send ticket email to admin: ' . $e->getMessage());
+            }
         }
 
         // Send Slack notification for new ticket
