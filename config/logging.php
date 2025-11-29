@@ -154,6 +154,14 @@ return [
             'level' => env('WEBHOOK_LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
         ],
+
+        'email-failures' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/email-failures.log'),
+            'level' => 'error',
+            // 'days' => 30,
+            'replace_placeholders' => true,
+        ],
     ],
 
 ];

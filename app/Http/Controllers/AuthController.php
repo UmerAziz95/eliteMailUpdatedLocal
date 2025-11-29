@@ -159,7 +159,16 @@ class AuthController extends Controller
                 Mail::to($userCheck->email)->queue(new EmailVerificationMail($userCheck, $verificationLink));
                 return back()->withErrors(['email' => 'Please verify your account. We have sent you a verification link to your email. Please check your inbox to continue.']);
             } catch (\Exception $e) {
-                Log::error('Failed to send email verification code: '.$userCheck->email.' '.$e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send email verification code', [
+                    'recipient_email' => $userCheck->email,
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'user_id' => $userCheck->id,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'AuthController::login - email verification'
+                ]);
                 return back()->withErrors(['email' => 'Please verify your account. Unable to send verification email at this time. Please try again later.']);
             }
         }
@@ -359,7 +368,16 @@ class AuthController extends Controller
             try {
                 Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
             } catch (\Exception $e) {
-                Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send email verification code', [
+                    'recipient_email' => $existingUser->email,
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'user_id' => $existingUser->id,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'AuthController::registerForStaticPlans - existing unverified user'
+                ]);
             }
 
             return response()->json([
@@ -386,7 +404,16 @@ class AuthController extends Controller
                 try {
                     Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
                 } catch (\Exception $e) {
-                    Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
+                    \Log::channel('email-failures')->error('Failed to send email verification code', [
+                        'recipient_email' => $existingUser->email,
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'user_id' => $existingUser->id,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'AuthController::registerForStaticPlans - existing user with subscription fallback'
+                    ]);
                 }
 
                 return response()->json([
@@ -465,7 +492,16 @@ class AuthController extends Controller
             Log::info("sending email to user: ".$user->email);
             Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));
         } catch (\Exception $e) {
-            Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
+            \Log::channel('email-failures')->error('Failed to send email verification code', [
+                'recipient_email' => $user->email,
+                'exception' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => $user->id,
+                'timestamp' => now()->toDateTimeString(),
+                'context' => 'AuthController::registerForStaticPlans - new user verification'
+            ]);
         }
 
         // Send email to super admin
@@ -473,10 +509,32 @@ class AuthController extends Controller
             Log::info("sending email to super admins");
             $superAdmins = User::whereIn('role_id', [1])->get();
             foreach ($superAdmins as $superAdmin) {
-                Mail::to($superAdmin->email)->queue(new UserRegisteredMail($superAdmin));
+                try {
+                    Mail::to($superAdmin->email)->queue(new UserRegisteredMail($superAdmin));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send registration email to admin', [
+                        'recipient_email' => $superAdmin->email,
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'admin_id' => $superAdmin->id,
+                        'new_user_id' => $user->id,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'AuthController::registerForStaticPlans - admin notification'
+                    ]);
+                }
             }
         } catch (\Exception $e) {
-            Log::error('Failed to send registration email to admin. Error: ' . $e->getMessage());
+            \Log::channel('email-failures')->error('Failed to retrieve super admins for registration notification', [
+                'exception' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'new_user_id' => $user->id,
+                'timestamp' => now()->toDateTimeString(),
+                'context' => 'AuthController::registerForStaticPlans - admin retrieval error'
+            ]);
         }
 
         return response()->json([
@@ -548,7 +606,16 @@ class AuthController extends Controller
                 try {
                     Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
                 } catch (\Exception $e) {
-                    Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
+                    \Log::channel('email-failures')->error('Failed to send email verification code', [
+                        'recipient_email' => $existingUser->email,
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'user_id' => $existingUser->id,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'AuthController::register - existing unverified user'
+                    ]);
                 }
             return response()->json([
                 'message' => 'We have sent you a verification link to your email. Please check your inbox to continue. Thank you!',
@@ -600,7 +667,16 @@ class AuthController extends Controller
                 try {
                     Mail::to($existingUser->email)->queue(new EmailVerificationMail($existingUser, $verificationLink));
                 } catch (\Exception $e) {
-                    Log::error('Failed to send email verification code: '.$existingUser->email.' '.$e->getMessage());
+                    \Log::channel('email-failures')->error('Failed to send email verification code', [
+                        'recipient_email' => $existingUser->email,
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'user_id' => $existingUser->id,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'AuthController::register - existing user no subscription'
+                    ]);
                 }
 
                 return response()->json([
@@ -701,7 +777,16 @@ class AuthController extends Controller
             Log::info("sending email to user: ".$user->email);
             Mail::to($user->email)->queue(new EmailVerificationMail($user, $verificationLink));
         } catch (\Exception $e) {
-            Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
+            \Log::channel('email-failures')->error('Failed to send email verification code', [
+                'recipient_email' => $user->email,
+                'exception' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => $user->id,
+                'timestamp' => now()->toDateTimeString(),
+                'context' => 'AuthController::register - new user verification'
+            ]);
         }
 
         //to super admin
@@ -709,10 +794,32 @@ class AuthController extends Controller
         Log::info("sending email to super admins");
         $superAdmins = User::whereIn('role_id', [1])->get(); // Get both role 1 & 2
         foreach ($superAdmins as $superAdmin) {
-            Mail::to($superAdmin->email)->queue(new UserRegisteredMail($superAdmin));
+            try {
+                Mail::to($superAdmin->email)->queue(new UserRegisteredMail($superAdmin));
+            } catch (\Exception $e) {
+                \Log::channel('email-failures')->error('Failed to send registration email to admin', [
+                    'recipient_email' => $superAdmin->email,
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'admin_id' => $superAdmin->id,
+                    'new_user_id' => $user->id,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'AuthController::register - admin notification'
+                ]);
+            }
         }
         } catch (\Exception $e) {
-            Log::error('Failed to send registration email to admin. Error: ' . $e->getMessage());
+            \Log::channel('email-failures')->error('Failed to retrieve super admins for registration notification', [
+                'exception' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'new_user_id' => $user->id,
+                'timestamp' => now()->toDateTimeString(),
+                'context' => 'AuthController::register - admin retrieval error'
+            ]);
         }
 
 
@@ -999,7 +1106,16 @@ public function resendVerificationEmail(Request $request)
          try {
         Mail::to($user->email)->queue(new EmailVerificationMail($user, ''));
         } catch (\Exception $e) {
-            Log::error('Failed to send email verification code: '.$user->email.' '.$e->getMessage());
+            \Log::channel('email-failures')->error('Failed to send email verification code', [
+                'recipient_email' => $user->email,
+                'exception' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => $user->id,
+                'timestamp' => now()->toDateTimeString(),
+                'context' => 'AuthController::resendVerification - resend verification email'
+            ]);
         }   
         return redirect()->to(url('/email_verification/' . $newEncrypted))
                          ->with('success', 'A new verification code has been sent to your email.');

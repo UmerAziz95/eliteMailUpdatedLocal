@@ -415,7 +415,14 @@ class PlanController extends Controller
                     try {
                         Mail::to($user->email)->queue(new SendPasswordMail($user, $randomPassword));
                     } catch (\Exception $e) {
-                        Log::error('Failed to send user credentials : '.$user->email.' '.$e->getMessage());
+                        \Log::channel('email-failures')->error('Failed to send user credentials email', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Customer\\PlanController::chargebeeHandleSubscriptionActivated'
+                        ]);
                     }
                 }
                 Auth::login($user);
@@ -749,12 +756,24 @@ class PlanController extends Controller
             // Send email notifications
             try {
                 // Send email to user
-                Mail::to($user->email)
-                    ->queue(new OrderCreatedMail(
-                        $order,
-                        $user,
-                        false
-                    ));
+                try {
+                    Mail::to($user->email)
+                        ->queue(new OrderCreatedMail(
+                            $order,
+                            $user,
+                            false
+                        ));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send order creation email to user', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'order_id' => $order->id,
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'Customer\\PlanController::chargebeeHandleSubscriptionActivated'
+                    ]);
+                }
 
                 // Create notification for the customer after sending mail
                 Notification::create([
@@ -773,17 +792,34 @@ class PlanController extends Controller
                $superAdmins = User::where('role_id', 1)->get(); // Only super admins (role_id = 1)
 
                 foreach ($superAdmins as $superAdmin) {
-                    Mail::to($superAdmin->email)->queue(new OrderCreatedMail(
-                        $order,
-                        $user,
-                        true
-                    ));
+                    try {
+                        Mail::to($superAdmin->email)->queue(new OrderCreatedMail(
+                            $order,
+                            $user,
+                            true
+                        ));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order creation email to super admin', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'order_id' => $order->id,
+                            'admin_id' => $superAdmin->id,
+                            'admin_email' => $superAdmin->email,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Customer\\PlanController::chargebeeHandleSubscriptionActivated'
+                        ]);
+                    }
                 }
 
                 
 
             } catch (\Exception $e) {
-                \Log::error('Failed to send order creation emails: ' . $e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send order creation emails - general error', [
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'order_id' => $order->id,
+                    'timestamp' => now()->toDateTimeString()
+                ]);
                 // Continue execution since the order was already created
             }
             
@@ -800,7 +836,15 @@ class PlanController extends Controller
                                     true
                                 ));
                         } catch (\Exception $e) {
-                            \Log::error('Failed to send order notification to contractor: ' . $e->getMessage());
+                            \Log::channel('email-failures')->error('Failed to send order notification to contractor', [
+                                'exception' => $e->getMessage(),
+                                'stack_trace' => $e->getTraceAsString(),
+                                'order_id' => $order->id,
+                                'contractor_id' => $contractor->id,
+                                'contractor_email' => $contractor->email,
+                                'timestamp' => now()->toDateTimeString(),
+                                'context' => 'Customer\\PlanController::chargebeeHandleSubscriptionActivated'
+                            ]);
                         }
                     }
                 }
@@ -1755,24 +1799,52 @@ class PlanController extends Controller
                                     // Send notification for important status changes
                                     if (in_array($existingInvoice->status, ['paid', 'failed'])) {
                                         // Send email to user about status change
-                                        Mail::to($user->email)
-                                            ->queue(new InvoiceGeneratedMail(
-                                                $existingInvoice,
-                                                $user,
-                                                false
-                                            ));
+                                        try {
+                                            Mail::to($user->email)
+                                                ->queue(new InvoiceGeneratedMail(
+                                                    $existingInvoice,
+                                                    $user,
+                                                    false
+                                                ));
+                                        } catch (\Exception $e) {
+                                            \Log::channel('email-failures')->error('Failed to send invoice update email to user', [
+                                                'exception' => $e->getMessage(),
+                                                'stack_trace' => $e->getTraceAsString(),
+                                                'invoice_id' => $existingInvoice->id,
+                                                'user_id' => $user->id,
+                                                'user_email' => $user->email,
+                                                'timestamp' => now()->toDateTimeString(),
+                                                'context' => 'Customer\\PlanController::handleChargebeeInvoice'
+                                            ]);
+                                        }
 
                                         // Send email to admin about status change
-                                        Mail::to(config('mail.admin_address', 'admin@example.com'))
-                                            ->queue(new InvoiceGeneratedMail(
-                                                $existingInvoice,
-                                                $user,
-                                                true
-                                            ));
+                                        try {
+                                            Mail::to(config('mail.admin_address', 'admin@example.com'))
+                                                ->queue(new InvoiceGeneratedMail(
+                                                    $existingInvoice,
+                                                    $user,
+                                                    true
+                                                ));
+                                        } catch (\Exception $e) {
+                                            \Log::channel('email-failures')->error('Failed to send invoice update email to admin', [
+                                                'exception' => $e->getMessage(),
+                                                'stack_trace' => $e->getTraceAsString(),
+                                                'invoice_id' => $existingInvoice->id,
+                                                'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                                                'timestamp' => now()->toDateTimeString(),
+                                                'context' => 'Customer\\PlanController::handleChargebeeInvoice'
+                                            ]);
+                                        }
                                     }
                                 }
                             } catch (\Exception $e) {
-                                Log::error('Failed to send invoice update emails: ' . $e->getMessage());
+                                \Log::channel('email-failures')->error('Failed to send invoice update emails - general error', [
+                                    'exception' => $e->getMessage(),
+                                    'stack_trace' => $e->getTraceAsString(),
+                                    'invoice_id' => $existingInvoice->id,
+                                    'timestamp' => now()->toDateTimeString()
+                                ]);
                             }
                         }
 
@@ -1985,25 +2057,53 @@ class PlanController extends Controller
                             $user = User::find($invoice->user_id);
                             if ($user) {
                                 // Send email to user
-                                Mail::to($user->email)
-                                    ->queue(new InvoiceGeneratedMail(
-                                        $invoice,
-                                        $user,
-                                        false
-                                    ));
+                                try {
+                                    Mail::to($user->email)
+                                        ->queue(new InvoiceGeneratedMail(
+                                            $invoice,
+                                            $user,
+                                            false
+                                        ));
+                                } catch (\Exception $e) {
+                                    \Log::channel('email-failures')->error('Failed to send invoice generated email to user', [
+                                        'exception' => $e->getMessage(),
+                                        'stack_trace' => $e->getTraceAsString(),
+                                        'invoice_id' => $invoice->id,
+                                        'user_id' => $user->id,
+                                        'user_email' => $user->email,
+                                        'timestamp' => now()->toDateTimeString(),
+                                        'context' => 'Customer\\PlanController::handleChargebeeInvoice'
+                                    ]);
+                                }
 
                                 // Send email to admin
-                                Mail::to(config('mail.admin_address', 'admin@example.com'))
-                                    ->queue(new InvoiceGeneratedMail(
-                                        $invoice,
-                                        $user,
-                                        true
-                                    ));
+                                try {
+                                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                                        ->queue(new InvoiceGeneratedMail(
+                                            $invoice,
+                                            $user,
+                                            true
+                                        ));
+                                } catch (\Exception $e) {
+                                    \Log::channel('email-failures')->error('Failed to send invoice generated email to admin', [
+                                        'exception' => $e->getMessage(),
+                                        'stack_trace' => $e->getTraceAsString(),
+                                        'invoice_id' => $invoice->id,
+                                        'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                                        'timestamp' => now()->toDateTimeString(),
+                                        'context' => 'Customer\\PlanController::handleChargebeeInvoice'
+                                    ]);
+                                }
                                 
                                 // Slack notification is now handled by InvoiceObserver
                             }
                         } catch (\Exception $e) {
-                            Log::error('Failed to send invoice generation emails: ' . $e->getMessage());
+                            \Log::channel('email-failures')->error('Failed to send invoice generation emails - general error', [
+                                'exception' => $e->getMessage(),
+                                'stack_trace' => $e->getTraceAsString(),
+                                'invoice_id' => $invoice->id,
+                                'timestamp' => now()->toDateTimeString()
+                            ]);
                         }
                     }
 
@@ -2184,7 +2284,14 @@ class PlanController extends Controller
                                         ]
                                     ]);
                                 } catch (\Exception $e) {
-                                    Log::error('Failed to send welcome email: ' . $e->getMessage());
+                                    \Log::channel('email-failures')->error('Failed to send welcome email', [
+                                        'exception' => $e->getMessage(),
+                                        'stack_trace' => $e->getTraceAsString(),
+                                        'user_id' => $user->id,
+                                        'user_email' => $email,
+                                        'timestamp' => now()->toDateTimeString(),
+                                        'context' => 'Customer\\PlanController::chargebeePaymentCallBack'
+                                    ]);
                                 }
                             } 
                             // Update existing user if they don't have chargebee_customer_id
@@ -2451,22 +2558,50 @@ class PlanController extends Controller
                                     // Send invoice notification email if payment succeeded
                                     if ($eventType === 'payment_succeeded') {
                                         try {
-                                            Mail::to($user->email)
-                                                ->queue(new InvoiceGeneratedMail(
-                                                    $invoice,
-                                                    $user,
-                                                    false
-                                                ));
+                                            try {
+                                                Mail::to($user->email)
+                                                    ->queue(new InvoiceGeneratedMail(
+                                                        $invoice,
+                                                        $user,
+                                                        false
+                                                    ));
+                                            } catch (\Exception $e) {
+                                                \Log::channel('email-failures')->error('Failed to send invoice email to user', [
+                                                    'exception' => $e->getMessage(),
+                                                    'stack_trace' => $e->getTraceAsString(),
+                                                    'invoice_id' => $invoice->id,
+                                                    'user_id' => $user->id,
+                                                    'user_email' => $user->email,
+                                                    'timestamp' => now()->toDateTimeString(),
+                                                    'context' => 'Customer\\PlanController::chargebeePaymentCallBack'
+                                                ]);
+                                            }
                                                 
                                             // Send to admin as well
-                                            Mail::to(config('mail.admin_address', 'admin@example.com'))
-                                                ->queue(new InvoiceGeneratedMail(
-                                                    $invoice,
-                                                    $user,
-                                                    true
-                                                ));
+                                            try {
+                                                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                                                    ->queue(new InvoiceGeneratedMail(
+                                                        $invoice,
+                                                        $user,
+                                                        true
+                                                    ));
+                                            } catch (\Exception $e) {
+                                                \Log::channel('email-failures')->error('Failed to send invoice email to admin', [
+                                                    'exception' => $e->getMessage(),
+                                                    'stack_trace' => $e->getTraceAsString(),
+                                                    'invoice_id' => $invoice->id,
+                                                    'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                                                    'timestamp' => now()->toDateTimeString(),
+                                                    'context' => 'Customer\\PlanController::chargebeePaymentCallBack'
+                                                ]);
+                                            }
                                         } catch (\Exception $e) {
-                                            Log::error('Failed to send invoice emails: ' . $e->getMessage());
+                                            \Log::channel('email-failures')->error('Failed to send invoice emails - general error', [
+                                                'exception' => $e->getMessage(),
+                                                'stack_trace' => $e->getTraceAsString(),
+                                                'invoice_id' => $invoice->id,
+                                                'timestamp' => now()->toDateTimeString()
+                                            ]);
                                         }
                                     }
                                 }
@@ -2690,10 +2825,14 @@ class PlanController extends Controller
 
                 $sentCount++;
             } catch (\Exception $e) {
-                Log::error('Failed to send failed payment email', [
+                \Log::channel('email-failures')->error('Failed to send failed payment email', [
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
                     'user_id' => $user->id,
+                    'user_email' => $user->email,
                     'failure_id' => $failure->id,
-                    'error' => $e->getMessage(),
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'Customer\\PlanController::sendMailsTo72HoursFailedPayments'
                 ]);
             }
         }
@@ -2707,3 +2846,5 @@ class PlanController extends Controller
 
 
 }
+
+

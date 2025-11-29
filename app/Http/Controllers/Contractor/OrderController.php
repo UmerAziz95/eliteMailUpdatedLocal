@@ -830,32 +830,67 @@ class OrderController extends Controller
                 // Get user details and send email
                 $user = $order->user;
                 try {
-                    Mail::to($user->email)
-                        ->queue(new OrderStatusChangeMail(
-                            $order,
-                            $user,
-                            $oldStatus,
-                            $newStatus,
-                            $reason,
-                            false
-                        ));
+                    try {
+                        Mail::to($user->email)
+                            ->queue(new OrderStatusChangeMail(
+                                $order,
+                                $user,
+                                $oldStatus,
+                                $newStatus,
+                                $reason,
+                                false
+                            ));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order status change email to user', [
+                            'recipient_email' => $user->email,
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'order_id' => $order->id,
+                            'user_id' => $user->id,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Contractor\\OrderController::changeStatus'
+                        ]);
+                    }
 
                     // Only send email to admin
-                    Mail::to(config('mail.admin_address', 'admin@example.com'))
-                        ->queue(new OrderStatusChangeMail(
-                            $order,
-                            $user,
-                            $oldStatus,
-                            $newStatus,
-                            $reason,
-                            true
-                        ));
+                    try {
+                        Mail::to(config('mail.admin_address', 'admin@example.com'))
+                            ->queue(new OrderStatusChangeMail(
+                                $order,
+                                $user,
+                                $oldStatus,
+                                $newStatus,
+                                $reason,
+                                true
+                            ));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order status change email to admin', [
+                            'recipient_email' => config('mail.admin_address', 'admin@example.com'),
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'order_id' => $order->id,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Contractor\\OrderController::changeStatus'
+                        ]);
+                    }
+                    
                     Log::info('Order status change email sent', [
                         'order_id' => $order->id,
                         'assigned_to' => $order->assigned_to
                     ]);
                 } catch (\Exception $e) {
-                    Log::error('Failed to send order status change emails: ' . $e->getMessage());
+                    \Log::channel('email-failures')->error('Failed to send order status change emails - general error', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'order_id' => $order->id,
+                        'timestamp' => now()->toDateTimeString()
+                    ]);
                 }
             }
             $orderCounts = $this->getOrderCounts();
@@ -1226,26 +1261,55 @@ class OrderController extends Controller
             // Send emails if needed
             try {
                 $user = $order->user;
-                Mail::to($user->email)
-                    ->queue(new OrderStatusChangeMail(
-                        $order,
-                        $user,
-                        $oldStatus,
-                        $newStatus,
-                        $reason,
-                        false
-                    ));
+                try {
+                    Mail::to($user->email)
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            false
+                        ));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send order panel status change email to user', [
+                        'recipient_email' => $user->email,
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'order_id' => $order->id,
+                        'order_panel_id' => $orderPanel->id,
+                        'user_id' => $user->id,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'Contractor\\OrderController::processPanelStatus'
+                    ]);
+                }
 
                 // Send email to admin
-                Mail::to(config('mail.admin_address', 'admin@example.com'))
-                    ->queue(new OrderStatusChangeMail(
-                        $order,
-                        $user,
-                        $oldStatus,
-                        $newStatus,
-                        $reason,
-                        true
-                    ));
+                try {
+                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            true
+                        ));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send order panel status change email to admin', [
+                        'recipient_email' => config('mail.admin_address', 'admin@example.com'),
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'order_id' => $order->id,
+                        'order_panel_id' => $orderPanel->id,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'Contractor\\OrderController::processPanelStatus'
+                    ]);
+                }
 
                 Log::info('Order panel status change email sent', [
                     'order_id' => $order->id,
@@ -1253,7 +1317,15 @@ class OrderController extends Controller
                     'assignment_id' => $assignment->id
                 ]);
             } catch (\Exception $e) {
-                Log::error('Failed to send order panel status change emails: ' . $e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send order panel status change emails - general error', [
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'order_id' => $order->id,
+                    'order_panel_id' => $orderPanel->id,
+                    'timestamp' => now()->toDateTimeString()
+                ]);
             }
 
             $orderCounts = $this->getOrderCounts();
@@ -1598,33 +1670,67 @@ class OrderController extends Controller
             // Send email notifications
             try {
                 $user = $order->user;
-                Mail::to($user->email)
-                    ->queue(new OrderStatusChangeMail(
-                        $order,
-                        $user,
-                        $oldStatus,
-                        $newStatus,
-                        $reason,
-                        false
-                    ));
+                try {
+                    Mail::to($user->email)
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            false
+                        ));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send order status change email to user', [
+                        'recipient_email' => $user->email,
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'order_id' => $order->id,
+                        'user_id' => $user->id,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'Contractor\\OrderController::updateStatus'
+                    ]);
+                }
 
                 // Send email to admin
-                Mail::to(config('mail.admin_address', 'admin@example.com'))
-                    ->queue(new OrderStatusChangeMail(
-                        $order,
-                        $user,
-                        $oldStatus,
-                        $newStatus,
-                        $reason,
-                        true
-                    ));
+                try {
+                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            true
+                        ));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send order status change email to admin', [
+                        'recipient_email' => config('mail.admin_address', 'admin@example.com'),
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'order_id' => $order->id,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'Contractor\\OrderController::updateStatus'
+                    ]);
+                }
 
                 Log::info('Order status change email sent', [
                     'order_id' => $order->id,
                     'assigned_to' => $order->assigned_to
                 ]);
             } catch (\Exception $e) {
-                Log::error('Failed to send order status change emails: ' . $e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send order status change emails - general error', [
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'order_id' => $order->id,
+                    'timestamp' => now()->toDateTimeString()
+                ]);
             }
             
             $orderCounts = $this->getOrderCounts();

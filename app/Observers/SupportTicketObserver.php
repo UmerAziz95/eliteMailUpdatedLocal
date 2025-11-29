@@ -38,7 +38,18 @@ class SupportTicketObserver
                         $contractor
                     ));
             } catch (\Exception $e) {
-                Log::error('Failed to send ticket email: ' . $e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send ticket email to contractor', [
+                    'recipient_email' => $contractor->email,
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'ticket_id' => $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'contractor_id' => $contractor->id,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'SupportTicketObserver::created'
+                ]);
             }
         }
         // not assigned to send all contractors and admins
@@ -86,8 +97,17 @@ class SupportTicketObserver
                         null
                     ));
             } catch (\Exception $e) {
-                // Skip SMTP authentication errors silently
-                Log::error('Failed to send ticket email to admin: ' . $e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send ticket email to admin', [
+                    'recipient_email' => config('mail.admin_address', 'admin@example.com'),
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'ticket_id' => $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'SupportTicketObserver::created - category not order'
+                ]);
             }
         }
 

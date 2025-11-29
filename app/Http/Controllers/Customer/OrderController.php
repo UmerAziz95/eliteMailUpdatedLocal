@@ -821,12 +821,36 @@ class OrderController extends Controller
                     $reorderInfo = $order->reorderInfo->first();
                     
                     // Send notification to the customer
-                    Mail::to($user->email)
-                        ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], false));
+                    try {
+                        Mail::to($user->email)
+                            ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], false));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order edited email to customer', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'order_id' => $order->id,
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Customer\\OrderController::editOrder'
+                        ]);
+                    }
+                    
                     // dd(config('mail.admin_address', 'admin@example.com'));
                     // Send notification to admin
-                    Mail::to(config('mail.admin_address', 'admin@example.com'))
-                        ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], true));
+                    try {
+                        Mail::to(config('mail.admin_address', 'admin@example.com'))
+                            ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], true));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order edited email to admin', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'order_id' => $order->id,
+                            'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Customer\\OrderController::editOrder'
+                        ]);
+                    }
                     
                     // Check if the order has an assigned contractor
                     if ($order->assigned_to ) {
@@ -835,15 +859,32 @@ class OrderController extends Controller
                         // dd($contractor);
                         // Send notification to the assigned contractor if found
                         if ($contractor) {
-                            Mail::to($contractor->email)
-                                ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], true));
+                            try {
+                                Mail::to($contractor->email)
+                                    ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], true));
+                            } catch (\Exception $e) {
+                                \Log::channel('email-failures')->error('Failed to send order edited email to contractor', [
+                                    'exception' => $e->getMessage(),
+                                    'stack_trace' => $e->getTraceAsString(),
+                                    'order_id' => $order->id,
+                                    'contractor_id' => $contractor->id,
+                                    'contractor_email' => $contractor->email,
+                                    'timestamp' => now()->toDateTimeString(),
+                                    'context' => 'Customer\\OrderController::editOrder'
+                                ]);
+                            }
                         }
                     } else {
                         // No assigned contractor, log this information
                         Log::info('No contractor assigned to order #' . $order->id . ' for edit notification');
                     }
                 } catch (\Exception $e) {
-                    Log::error('Failed to send order edit notification emails: ' . $e->getMessage());
+                    \Log::channel('email-failures')->error('Failed to send order edit notification emails - general error', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'order_id' => $order->id,
+                        'timestamp' => now()->toDateTimeString()
+                    ]);
                     // Continue execution - don't let email failure stop the process
                 }
             }
@@ -1820,3 +1861,4 @@ class OrderController extends Controller
         }
     }
 }
+

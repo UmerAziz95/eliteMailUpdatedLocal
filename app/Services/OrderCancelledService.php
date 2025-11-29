@@ -148,12 +148,51 @@ class OrderCancelledService
 
                 try {
                     $reasonString = $reason ?? '';
-                    Mail::to($user->email)
-                        ->queue(new SubscriptionCancellationMail($subscription, $user, $reasonString));
-                    Mail::to(config('mail.admin_address', 'admin@example.com'))
-                        ->queue(new SubscriptionCancellationMail($subscription, $user, $reasonString, true));
+                    try {
+                        Mail::to($user->email)
+                            ->queue(new SubscriptionCancellationMail($subscription, $user, $reasonString));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send subscription cancellation email to user', [
+                            'recipient_email' => $user->email,
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'user_id' => $user->id,
+                            'subscription_id' => $subscription->id,
+                            'chargebee_subscription_id' => $chargebee_subscription_id,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'OrderCancelledService::cancelSubscription'
+                        ]);
+                    }
+                    
+                    try {
+                        Mail::to(config('mail.admin_address', 'admin@example.com'))
+                            ->queue(new SubscriptionCancellationMail($subscription, $user, $reasonString, true));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send subscription cancellation email to admin', [
+                            'recipient_email' => config('mail.admin_address', 'admin@example.com'),
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'user_id' => $user->id,
+                            'subscription_id' => $subscription->id,
+                            'chargebee_subscription_id' => $chargebee_subscription_id,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'OrderCancelledService::cancelSubscription'
+                        ]);
+                    }
                 } catch (\Exception $e) {
-                    // Log or ignore email errors
+                    \Log::channel('email-failures')->error('Failed to process subscription cancellation emails', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'user_id' => $user->id,
+                        'subscription_id' => $subscription->id,
+                        'timestamp' => now()->toDateTimeString()
+                    ]);
                 }
                 Log::info("Subscription cancellation process completed for ChargeBee ID {$chargebee_subscription_id}, User ID {$user_id}");
                 return [

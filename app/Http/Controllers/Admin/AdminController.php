@@ -240,10 +240,19 @@ class AdminController extends Controller
             ],
             Auth::id() // Admin or creator performing this action
         );
-      try {
+        try {
             Mail::to($user->email)->queue(new UserWelcomeMail($user));
         } catch (\Exception $e) {
-            Log::error('Failed to send welcome email: ' . $e->getMessage());
+            \Log::channel('email-failures')->error('Failed to send welcome email', [
+                'recipient_email' => $user->email,
+                'exception' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => $user->id,
+                'timestamp' => now()->toDateTimeString(),
+                'context' => 'AdminController::store - user welcome email'
+            ]);
         }
         // Assign role and permissions if role_id is provided 
         if ($validated['role_id']) {
