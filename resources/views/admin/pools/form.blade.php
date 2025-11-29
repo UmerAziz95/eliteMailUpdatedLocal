@@ -425,7 +425,7 @@
             <div class="col-md-6 mb-3">
                 <label for="purchase_date">Purchase Date</label>
                 <input type="date" id="purchase_date" name="purchase_date" class="form-control" 
-                       value="{{ isset($pool) && $pool->purchase_date ? \Carbon\Carbon::parse($pool->purchase_date)->format('Y-m-d') : '' }}">
+                       value="{{ isset($pool) && $pool->purchase_date ? \Carbon\Carbon::parse($pool->purchase_date)->format('Y-m-d') : '' }}" required>
                 <div class="invalid-feedback" id="purchase_date-error"></div>
                 <small class="text-muted">Optional: Date when the pool was purchased</small>
             </div>
