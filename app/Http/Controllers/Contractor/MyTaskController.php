@@ -223,6 +223,7 @@ class MyTaskController extends Controller
                         'panel_id' => $panel->panel_id,
                         'panel_title' => $panel->panel->title ?? 'N/A',
                         'order_panel_id' => $panel->id,
+                        'panel_sr_no' => $panel->panel->panel_sr_no ?? null,
                         'status' => $split->status ?? 'unallocated',
                         'inboxes_per_domain' => $reorderInfo ? $reorderInfo->inboxes_per_domain : 1,
                         'domains_count' => count($domains),
@@ -413,6 +414,7 @@ class MyTaskController extends Controller
                     $splits[] = [
                         'id' => $split->id,
                         'panel_id' => $targetOrderPanel->panel_id,
+                        'panel_sr_no' => $targetOrderPanel->panel->panel_sr_no ?? null,
                         'panel_title' => $targetOrderPanel->panel->title ?? 'N/A',
                         'order_panel_id' => $targetOrderPanel->id,
                         'status' => $split->status ?? 'unallocated',

@@ -88,17 +88,19 @@
         <script>
             let currentReassignData = {};
 
-            function openReassignModal(orderId, currentPanelId, orderPanelId, panelTitle) {
+            function openReassignModal(orderId, currentPanelId, orderPanelId, panelTitle, panelSrNo = null) {
                 currentReassignData = {
                     orderId: orderId,
                     currentPanelId: currentPanelId,
                     orderPanelId: orderPanelId,
-                    panelTitle: panelTitle
+                    panelTitle: panelTitle,
+                    panelSrNo: panelSrNo
                 };
 
                 const modalTitle = document.getElementById('reassignModalLabel');
                 if (modalTitle) {
-                    modalTitle.innerHTML = `Reassign Panel: ${'PNL-' + currentPanelId + ' ' + panelTitle}`;
+                    const displayId = panelSrNo || currentPanelId;
+                    modalTitle.innerHTML = `Reassign Panel: ${'PNL-' + displayId + ' ' + panelTitle}`;
                 }
 
                 loadAvailablePanels(orderId, orderPanelId);
@@ -155,6 +157,7 @@
                 const panelsHtml = panels.map(panel => `
                     <div class="panel-option mb-2 border rounded-3 shadow-sm position-relative overflow-hidden panel-card"
                          data-panel-id="${panel.panel_id}"
+                         data-panel-sr-no="${panel.panel_sr_no || panel.panel_id}"
                          data-panel-title="${(panel.panel_title || '').toLowerCase()}"
                          data-space-needed="${panel.space_needed || 0}"
                          data-panel-limit="${panel.panel_limit}"
@@ -175,7 +178,7 @@
                                     </div>
                                     <div>
                                         <h6 class="mb-0 fw-bold">
-                                            <span class="badge bg-info bg-gradient me-2 px-2 py-1 small">PNL-${panel.panel_id}</span>
+                                            <span class="badge bg-info bg-gradient me-2 px-2 py-1 small">PNL-${panel.panel_sr_no || panel.panel_id}</span>
                                             <span class="panel-title-text">${panel.panel_title}</span>
                                         </h6>
                                     </div>
@@ -293,7 +296,10 @@
 
                 updatePanelSpaceValues(targetPanelId, spaceNeeded);
 
+                const targetPanelSrNo = selectedPanel ? selectedPanel.getAttribute('data-panel-sr-no') : null;
+
                 currentReassignData.targetPanelId = targetPanelId;
+                currentReassignData.targetPanelSrNo = targetPanelSrNo;
                 currentReassignData.targetPanelTitle = targetPanelTitle;
                 currentReassignData.spaceNeeded = spaceNeeded;
                 currentReassignData.remainingSpace = remainingSpace;
@@ -363,7 +369,7 @@
                                         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                                             <div class="card-body text-center text-white">
                                                 <i class="fas fa-exchange-alt fs-2 mb-2"></i>
-                                                <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.currentPanelId}</h4>
+                                                <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.panelSrNo || currentReassignData.currentPanelId}</h4>
                                                 <p class="mb-1 fw-semibold">${currentReassignData.panelTitle}</p>
                                                 <small class="text-white-50">From Panel</small>
                                             </div>
@@ -373,7 +379,7 @@
                                         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
                                             <div class="card-body text-center text-white">
                                                 <i class="fas fa-arrow-right fs-2 mb-2"></i>
-                                                <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.targetPanelId}</h4>
+                                                <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.targetPanelSrNo || currentReassignData.targetPanelId}</h4>
                                                 <p class="mb-1 fw-semibold">${currentReassignData.targetPanelTitle}</p>
                                                 <small class="text-white-50">To Panel</small>
                                             </div>

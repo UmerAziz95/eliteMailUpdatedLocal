@@ -528,14 +528,30 @@ class PoolAssignedPanel extends Command
                 ->where('remaining_limit', '>=', $minCapacityRequired)
                 ->count();
             $totalPanelsNeeded -= $availablePanelCount; // Adjust total panels needed based on available panels
-            Mail::to($admin->email)->send(
-                new AdminPanelNotificationMail(
-                    $totalPanelsNeeded,
-                    $totalSpaceNeeded,
-                    0, // Available space is 0 since orders couldn't be processed
-                    $this->insufficientSpaceOrders
-                )
-            );
+            try {
+                Mail::to($admin->email)->send(
+                    new AdminPanelNotificationMail(
+                        $totalPanelsNeeded,
+                        $totalSpaceNeeded,
+                        0, // Available space is 0 since orders couldn't be processed
+                        $this->insufficientSpaceOrders
+                    )
+                );
+            } catch (\Exception $mailException) {
+                \Log::channel('email-failures')->error('Failed to send insufficient space notification', [
+                    'recipient_email' => $admin->email,
+                    'exception' => $mailException->getMessage(),
+                    'stack_trace' => $mailException->getTraceAsString(),
+                    'file' => $mailException->getFile(),
+                    'line' => $mailException->getLine(),
+                    'admin_id' => $admin->id,
+                    'total_panels_needed' => $totalPanelsNeeded,
+                    'total_space_needed' => $totalSpaceNeeded,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'PoolAssignedPanel::sendInsufficientSpaceEmail'
+                ]);
+                throw $mailException; // Re-throw to be caught by outer try-catch
+            }
             
             $this->info("   ✓ Sent insufficient space notification to: {$admin->email}");
             return true;

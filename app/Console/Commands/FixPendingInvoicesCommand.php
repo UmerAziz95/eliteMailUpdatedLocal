@@ -243,25 +243,69 @@ class FixPendingInvoicesCommand extends Command
                     $user = User::find($invoice->user_id);
                     if ($user) {
                         // Send email to user
-                        Mail::to($user->email)
-                            ->queue(new InvoiceGeneratedMail(
-                                $invoice,
-                                $user,
-                                false
-                            ));
+                        try {
+                            Mail::to($user->email)
+                                ->queue(new InvoiceGeneratedMail(
+                                    $invoice,
+                                    $user,
+                                    false
+                                ));
+                        } catch (\Exception $e) {
+                            \Log::channel('email-failures')->error('Failed to send invoice email to user', [
+                                'recipient_email' => $user->email,
+                                'exception' => $e->getMessage(),
+                                'stack_trace' => $e->getTraceAsString(),
+                                'file' => $e->getFile(),
+                                'line' => $e->getLine(),
+                                'invoice_id' => $invoice->id,
+                                'user_id' => $user->id,
+                                'timestamp' => now()->toDateTimeString(),
+                                'context' => [
+                                    'command' => 'invoices:fix-pending',
+                                    'invoice_status' => $newStatus
+                                ]
+                            ]);
+                            $this->warn("  Failed to send email to user: " . $e->getMessage());
+                        }
 
                         // Send email to admin
-                        Mail::to(config('mail.admin_address', 'admin@example.com'))
-                            ->queue(new InvoiceGeneratedMail(
-                                $invoice,
-                                $user,
-                                true
-                            ));
+                        try {
+                            Mail::to(config('mail.admin_address', 'admin@example.com'))
+                                ->queue(new InvoiceGeneratedMail(
+                                    $invoice,
+                                    $user,
+                                    true
+                                ));
+                        } catch (\Exception $e) {
+                            \Log::channel('email-failures')->error('Failed to send invoice email to admin', [
+                                'recipient_email' => config('mail.admin_address', 'admin@example.com'),
+                                'exception' => $e->getMessage(),
+                                'stack_trace' => $e->getTraceAsString(),
+                                'file' => $e->getFile(),
+                                'line' => $e->getLine(),
+                                'invoice_id' => $invoice->id,
+                                'user_id' => $user->id,
+                                'timestamp' => now()->toDateTimeString(),
+                                'context' => [
+                                    'command' => 'invoices:fix-pending',
+                                    'invoice_status' => $newStatus
+                                ]
+                            ]);
+                            $this->warn("  Failed to send email to admin: " . $e->getMessage());
+                        }
 
                         $this->info("  Queued email notifications");
                     }
                 } catch (\Exception $e) {
                     $this->warn("  Failed to send email notifications: " . $e->getMessage());
+                    \Log::channel('email-failures')->error('Failed to process email notifications in FixPendingInvoicesCommand', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'invoice_id' => $invoice->id,
+                        'timestamp' => now()->toDateTimeString()
+                    ]);
                 }
             }
 

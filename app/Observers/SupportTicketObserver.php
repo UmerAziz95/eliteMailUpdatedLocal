@@ -30,12 +30,27 @@ class SupportTicketObserver
                 ]
             ]);
             // Send email to assigned contractor
-            Mail::to($contractor->email)
-                ->queue(new TicketCreatedMail(
-                    $ticket,
-                    $ticket->user,
-                    $contractor
-                ));
+            try {
+                Mail::to($contractor->email)
+                    ->queue(new TicketCreatedMail(
+                        $ticket,
+                        $ticket->user,
+                        $contractor
+                    ));
+            } catch (\Exception $e) {
+                \Log::channel('email-failures')->error('Failed to send ticket email to contractor', [
+                    'recipient_email' => $contractor->email,
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'ticket_id' => $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'contractor_id' => $contractor->id,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'SupportTicketObserver::created'
+                ]);
+            }
         }
         // not assigned to send all contractors and admins
         // else {
@@ -74,12 +89,26 @@ class SupportTicketObserver
             //         ));
             // }
             // Send email to env admin
-            Mail::to(config('mail.admin_address', 'admin@example.com'))
-                ->queue(new TicketCreatedMail(
-                    $ticket,
-                    $ticket->user,
-                    null
-                ));
+            try {
+                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                    ->queue(new TicketCreatedMail(
+                        $ticket,
+                        $ticket->user,
+                        null
+                    ));
+            } catch (\Exception $e) {
+                \Log::channel('email-failures')->error('Failed to send ticket email to admin', [
+                    'recipient_email' => config('mail.admin_address', 'admin@example.com'),
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'ticket_id' => $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'SupportTicketObserver::created - category not order'
+                ]);
+            }
         }
 
         // Send Slack notification for new ticket

@@ -245,7 +245,7 @@ class PoolOrderService
                 $html .= '
                         <li>
                             <a class="dropdown-item text-primary" href="' . $editRoute . '">
-                                <i class="fa-solid fa-edit me-1"></i>Edit Pool Order
+                                <i class="fa-solid fa-edit me-1"></i>Assiged Domains
                             </a>
                         </li>';
             }

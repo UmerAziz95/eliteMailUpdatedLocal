@@ -33,13 +33,13 @@ class ConfigurationSeeder extends Seeder
             ],
             [
                 'key' => 'ENABLE_GOOGLE_MAX_SPLIT_CAPACITY',
-                'value' => 'true',
+                'value' => 'false',
                 'type' => 'boolean',
                 'description' => 'Enable max split capacity logic for Google panels'
             ],
             [
                 'key' => 'ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY',
-                'value' => 'true',
+                'value' => 'false',
                 'type' => 'boolean',
                 'description' => 'Enable max split capacity logic for Microsoft 365 panels'
             ],
