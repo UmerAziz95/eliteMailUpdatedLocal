@@ -5507,17 +5507,19 @@
                 body: formData
             });
             
-            if (!response.ok) {
-                throw new Error('Failed to update status');
-            }
-            
             const result = await response.json();
+            
+            if (!response.ok) {
+                // Extract error message from server response
+                const errorMessage = result.message || result.error || 'Failed to update status';
+                throw new Error(errorMessage);
+            }
             
             if (result.success) {
                 // Close loading dialog and show success
                 await Swal.fire({
                     title: 'Success!',
-                    text: 'Status updated successfully!',
+                    text: result.message || 'Status updated successfully!',
                     icon: 'success',
                     confirmButtonColor: '#28a745',
                     timer: 3000,
@@ -5555,7 +5557,7 @@
             // Close loading dialog and show error
             await Swal.fire({
                 title: 'Error!',
-                text: 'Error updating status: ' + error.message,
+                text: error.message || 'An unexpected error occurred',
                 icon: 'error',
                 confirmButtonColor: '#dc3545'
             });
