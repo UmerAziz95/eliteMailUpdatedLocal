@@ -223,7 +223,8 @@
                             <span>{{ $pool->platform_login ?? 'N/A' }}</span>
                         </div>
 
-                        <div class="d-flex flex-column mb-3">
+                        {{-- hidden field --}}
+                        <div class="d-flex flex-column mb-3 d-none">
                             <span class="opacity-50">Forwarding URL</span>
                             <span>{{ $pool->forwarding_url ?? 'N/A' }}</span>
                         </div>

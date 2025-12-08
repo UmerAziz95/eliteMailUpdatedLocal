@@ -405,9 +405,23 @@ class PoolOrderService
                         //         }
                         //     }
                         // }
-                        
-                        // Use the password from pool, or generate if not available
-                        $password = $poolPassword;
+
+                        // 1) Try per-prefix password from prefix_variants_details
+                        // 2) Fallback to pool password
+                        // 3) Fallback to generated password (existing behaviour)
+                        $password = '';
+
+                        if (
+                            isset($prefixVariantsDetailsFromDomain[$key]) &&
+                            !empty($prefixVariantsDetailsFromDomain[$key]['password'])
+                        ) {
+                            $password = $prefixVariantsDetailsFromDomain[$key]['password'];
+                        }
+
+                        // If no per-prefix password, use pool password
+                        if (empty($password)) {
+                            $password = $poolPassword;
+                        }
                         
                         if (empty($password)) {
                             $password = $this->customEncrypt($poolOrder->id, $counter);

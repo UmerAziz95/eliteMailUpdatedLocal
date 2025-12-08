@@ -1870,7 +1870,7 @@
                         <span>${formatValue(poolInfo?.platform_password)}</span>
                     </div>
 
-                    <div class="d-flex flex-column mb-3">
+                    <div class="d-flex flex-column mb-3 d-none">
                         <span class="opacity-50">Domain Forwarding Destination URL</span>
                         <span>${formatLinkValue(poolInfo?.forwarding_url)}</span>
                     </div>

@@ -474,6 +474,7 @@ class PoolOrder extends Model
                             $domainData['prefix_variants'] = [];
                             $domainData['prefix_variants_details'] = [];
                             $domainData['formatted_prefixes'] = [];
+                            $domainData['passwords'] = [];
                             
                             if (is_array($poolPrefixVariants) && !empty($poolPrefixVariants)) {
                                 foreach ($poolPrefixVariants as $key => $prefix) {
@@ -484,13 +485,16 @@ class PoolOrder extends Model
                                         if (isset($poolPrefixDetails[$key])) {
                                             $domainData['prefix_variants_details'][$key] = $poolPrefixDetails[$key];
                                         }
-                                        
+                                        // Extract password from details if available
+                                        if (isset($poolPrefixDetails[$key]['password'])) {
+                                            $domainData['passwords'][$key] = $poolPrefixDetails[$key]['password'];
+                                        }
                                         // Format as email
                                         $domainData['formatted_prefixes'][$key] = $prefix . '@' . $domainData['domain_name'];
                                     }
                                 }
                             }
-                            
+
                             // Add pool-level information
                             $domainData['pool_info'] = [
                                 'first_name' => $pool->first_name ?? '',

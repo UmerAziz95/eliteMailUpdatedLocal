@@ -283,14 +283,14 @@
                 </button> -->
             </div>
 
-            <div class="domain-forwarding mb-3">
+            {{-- <div class="domain-forwarding mb-3">
                 <label for="forwarding">Domain forwarding destination URL *</label>
                 <input type="text" id="forwarding" name="forwarding_url" class="form-control"
                     value="{{ isset($pool) ? $pool->forwarding_url : '' }}"
                     required />
                 <div class="invalid-feedback" id="forwarding-error"></div>
                 <p class="note mb-0">(This is usually your VSL, lead capture form, or main website. It’s where prospects will land if they go to one of your domains that you provide us. Please enter a full URL (e.g. https://yourdomain.com).)</p>
-            </div>
+            </div> --}}
 
             <div class="domain-hosting mb-3">
                 <label for="hosting">Domain hosting platform *</label>
@@ -427,7 +427,7 @@
                 <input type="date" id="purchase_date" name="purchase_date" class="form-control" 
                        value="{{ isset($pool) && $pool->purchase_date ? \Carbon\Carbon::parse($pool->purchase_date)->format('Y-m-d') : '' }}" required>
                 <div class="invalid-feedback" id="purchase_date-error"></div>
-                <small class="text-muted">Optional: Date when the pool was purchased</small>
+                <small>Optional: Date when the pool was purchased</small>
             </div>
 
             <!-- Expiry Date (Auto-calculated) -->
@@ -436,7 +436,7 @@
                 <input type="text" id="expiry_date" class="form-control" readonly 
                        style="background-color: #2a2a2a; cursor: not-allowed;"
                        value="{{ isset($pool) && $pool->purchase_date ? \Carbon\Carbon::parse($pool->purchase_date)->addMonths(12)->format('F j, Y') : '' }}">
-                <small class="text-muted">Automatically calculated: Purchase Date + 12 months</small>
+                <small>Automatically calculated: Purchase Date + 12 months</small>
             </div>
 
                 <!-- Remaining Inboxes Progress Bar -->
@@ -3598,12 +3598,19 @@ $(document).ready(function() {
                             <p class="note">Profile picture URL for this persona</p>
                         </div>
 
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label>Email Prefix ${i} *</label>
                             <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
                                 value="${existingValue}" required>
                             <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
                             ${noteHtml}
+                        </div>
+                        <div class="col-md-6">
+                            <label>Prefix ${i} Password*</label>
+                            <input type="text" name="prefix_variants_details[prefix_variant_${i}][password]" 
+                                class="form-control" value="${existingDetails.password || ''}" required>
+                            <div class="invalid-feedback" id="prefix_variant_${i}_password-error"></div>
+                            <p class="note">Password for this email persona</p>
                         </div>
                     </div>
                 </div>
