@@ -40,6 +40,13 @@ class PoolDomainController extends Controller
                     return '<span class="badge bg-secondary">All Prefixes</span>';
                 })
                 ->addColumn('prefixes_formatted', function ($row) {
+                    if (!empty($row['prefix_value']) && !empty($row['domain_name'])) {
+                         // If it's a specific prefix row, show that prefix entity
+                         if (strpos($row['prefix_value'], '@') !== false) {
+                             return $row['prefix_value'];
+                         }
+                         return $row['prefix_value'] . '@' . $row['domain_name'];
+                    }
                     return $this->poolDomainService->formatPrefixes($row['prefixes'], $row['domain_name']);
                 })
                 ->addColumn('status_badge', function ($row) {
