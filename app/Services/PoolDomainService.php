@@ -145,7 +145,7 @@ class PoolDomainService
     }
 
     /**
-     * Process individual pool domains
+     * Process individual pool domains - expands each domain into multiple rows per prefix variant
      */
     private function processPoolDomains($pool, $poolOrdersByDomain, &$results)
     {
@@ -155,7 +155,7 @@ class PoolDomainService
             return;
         }
 
-        $prefixes = is_array($pool->prefix_variants) ? $pool->prefix_variants : [];
+        $poolPrefixes = is_array($pool->prefix_variants) ? $pool->prefix_variants : [];
 
         foreach ($poolDomains as $domain) {
             // Normalize domain keys for consistency  
@@ -163,8 +163,8 @@ class PoolDomainService
             if (!$domainId) continue;
 
             $domainName = $domain['name'] ?? $domain['domain_name'] ?? null;
-            $status = $domain['status'] ?? 'unknown';
-
+            $prefixStatuses = $domain['prefix_statuses'] ?? null;
+            
             // Use lookup map for O(1) access
             $lookupKey = $domainId . '_' . $pool->id;
             $poolOrderInfo = $poolOrdersByDomain[$lookupKey] ?? null;
@@ -184,21 +184,56 @@ class PoolDomainService
                 $poolOrderAdminStatus = 'no_order';
             }
 
-            $results[] = [
-                'customer_name' => $customer ? $customer->name : 'Unknown',
-                'customer_email' => $customer ? $customer->email : 'unknown@example.com',
-                'domain_id' => $domainId,
-                'pool_id' => (int) $pool->id,
-                'pool_order_id' => $poolOrderId,
-                'domain_name' => $domainName ?? 'Unknown Domain',
-                'status' => $status,
-                'prefixes' => $prefixes,
-                'per_inbox' => $perInbox,
-                'pool_order_status' => $poolOrderStatus,
-                'pool_order_admin_status' => $poolOrderAdminStatus,
-                'is_used' => (bool) ($domain['is_used'] ?? false),
-                'end_date' => $domain['end_date'] ?? null,
-            ];
+            // If domain has prefix_statuses, create a row for each prefix variant
+            if ($prefixStatuses && is_array($prefixStatuses) && count($prefixStatuses) > 0) {
+                foreach ($prefixStatuses as $prefixKey => $prefixData) {
+                    // Extract prefix number from key (e.g., "prefix_variant_1" -> 1)
+                    $prefixNumber = (int) preg_replace('/\D/', '', $prefixKey);
+                    $prefixValue = $poolPrefixes[$prefixKey] ?? $poolPrefixes["prefix_variant_{$prefixNumber}"] ?? "Prefix {$prefixNumber}";
+                    
+                    $results[] = [
+                        'customer_name' => $customer ? $customer->name : 'Unknown',
+                        'customer_email' => $customer ? $customer->email : 'unknown@example.com',
+                        'domain_id' => $domainId,
+                        'pool_id' => (int) $pool->id,
+                        'pool_order_id' => $poolOrderId,
+                        'domain_name' => $domainName ?? 'Unknown Domain',
+                        'prefix_key' => $prefixKey,
+                        'prefix_value' => $prefixValue,
+                        'prefix_number' => $prefixNumber,
+                        'status' => $prefixData['status'] ?? 'unknown',
+                        'start_date' => $prefixData['start_date'] ?? null,
+                        'end_date' => $prefixData['end_date'] ?? null,
+                        'prefixes' => $poolPrefixes,
+                        'per_inbox' => $perInbox,
+                        'pool_order_status' => $poolOrderStatus,
+                        'pool_order_admin_status' => $poolOrderAdminStatus,
+                        'is_used' => (bool) ($domain['is_used'] ?? false),
+                    ];
+                }
+            } else {
+                // Fallback for domains without prefix_statuses (old format)
+                // Show single row with domain-level status
+                $results[] = [
+                    'customer_name' => $customer ? $customer->name : 'Unknown',
+                    'customer_email' => $customer ? $customer->email : 'unknown@example.com',
+                    'domain_id' => $domainId,
+                    'pool_id' => (int) $pool->id,
+                    'pool_order_id' => $poolOrderId,
+                    'domain_name' => $domainName ?? 'Unknown Domain',
+                    'prefix_key' => null,
+                    'prefix_value' => null,
+                    'prefix_number' => null,
+                    'status' => $domain['status'] ?? 'unknown',
+                    'start_date' => $domain['start_date'] ?? null,
+                    'end_date' => $domain['end_date'] ?? null,
+                    'prefixes' => $poolPrefixes,
+                    'per_inbox' => $perInbox,
+                    'pool_order_status' => $poolOrderStatus,
+                    'pool_order_admin_status' => $poolOrderAdminStatus,
+                    'is_used' => (bool) ($domain['is_used'] ?? false),
+                ];
+            }
         }
     }
 
@@ -395,7 +430,7 @@ class PoolDomainService
     }
 
     /**
-     * Process pool domains with search filtering
+     * Process pool domains with search filtering - expands each domain into multiple rows per prefix variant
      */
     private function processPoolDomainsWithSearch($pool, $poolOrdersByDomain, &$results, $searchTerm, $poolId = null)
     {
@@ -404,7 +439,7 @@ class PoolDomainService
             return;
         }
 
-        $prefixes = is_array($pool->prefix_variants) ? $pool->prefix_variants : [];
+        $poolPrefixes = is_array($pool->prefix_variants) ? $pool->prefix_variants : [];
         $customer = $pool->user ?? $this->createDefaultUser();
 
         foreach ($poolDomains as $domain) {
@@ -413,24 +448,8 @@ class PoolDomainService
             if (!$domainId) continue;
 
             $domainName = $domain['name'] ?? $domain['domain_name'] ?? 'Unknown Domain';
-            $status = $domain['status'] ?? 'unknown';
-
-            // Check if any field matches the search term
-            $customerName = $customer ? $customer->name : 'Unknown';
-            $customerEmail = $customer ? $customer->email : 'unknown@example.com';
+            $prefixStatuses = $domain['prefix_statuses'] ?? null;
             
-            $matchesSearch = stripos($customerName, $searchTerm) !== false ||
-                           stripos($customerEmail, $searchTerm) !== false ||
-                           stripos($domainName, $searchTerm) !== false ||
-                           stripos($domainId, $searchTerm) !== false ||
-                           stripos($status, $searchTerm) !== false ||
-                           stripos((string)$pool->id, $searchTerm) !== false;
-
-            // Skip if doesn't match search
-            if (!$matchesSearch) {
-                continue;
-            }
-
             // Use lookup map for O(1) access to pool order info
             $lookupKey = $domainId . '_' . $pool->id;
             $poolOrderInfo = $poolOrdersByDomain[$lookupKey] ?? null;
@@ -448,22 +467,85 @@ class PoolDomainService
                 $poolOrderStatus = 'no_order';
                 $poolOrderAdminStatus = 'no_order';
             }
+            
+            $customerName = $customer ? $customer->name : 'Unknown';
+            $customerEmail = $customer ? $customer->email : 'unknown@example.com';
 
-            $results[] = [
-                'customer_name' => $customer ? $customer->name : 'Unknown',
-                'customer_email' => $customer ? $customer->email : 'unknown@example.com',
-                'domain_id' => $domainId,
-                'pool_id' => (int) $pool->id,
-                'pool_order_id' => $poolOrderId,
-                'domain_name' => $domainName,
-                'status' => $status,
-                'prefixes' => $prefixes,
-                'per_inbox' => $perInbox,
-                'pool_order_status' => $poolOrderStatus,
-                'pool_order_admin_status' => $poolOrderAdminStatus,
-                'is_used' => (bool) ($domain['is_used'] ?? false),
-                'end_date' => $domain['end_date'] ?? null,
-            ];
+            // If domain has prefix_statuses, create a row for each prefix variant
+            if ($prefixStatuses && is_array($prefixStatuses) && count($prefixStatuses) > 0) {
+                foreach ($prefixStatuses as $prefixKey => $prefixData) {
+                    $prefixNumber = (int) preg_replace('/\D/', '', $prefixKey);
+                    $prefixValue = $poolPrefixes[$prefixKey] ?? $poolPrefixes["prefix_variant_{$prefixNumber}"] ?? "Prefix {$prefixNumber}";
+                    $status = $prefixData['status'] ?? 'unknown';
+                    
+                    // Check if any field matches the search term
+                    $matchesSearch = stripos($customerName, $searchTerm) !== false ||
+                                   stripos($customerEmail, $searchTerm) !== false ||
+                                   stripos($domainName, $searchTerm) !== false ||
+                                   stripos($domainId, $searchTerm) !== false ||
+                                   stripos($status, $searchTerm) !== false ||
+                                   stripos($prefixValue, $searchTerm) !== false ||
+                                   stripos((string)$pool->id, $searchTerm) !== false;
+
+                    if (!$matchesSearch) {
+                        continue;
+                    }
+
+                    $results[] = [
+                        'customer_name' => $customerName,
+                        'customer_email' => $customerEmail,
+                        'domain_id' => $domainId,
+                        'pool_id' => (int) $pool->id,
+                        'pool_order_id' => $poolOrderId,
+                        'domain_name' => $domainName,
+                        'prefix_key' => $prefixKey,
+                        'prefix_value' => $prefixValue,
+                        'prefix_number' => $prefixNumber,
+                        'status' => $status,
+                        'start_date' => $prefixData['start_date'] ?? null,
+                        'end_date' => $prefixData['end_date'] ?? null,
+                        'prefixes' => $poolPrefixes,
+                        'per_inbox' => $perInbox,
+                        'pool_order_status' => $poolOrderStatus,
+                        'pool_order_admin_status' => $poolOrderAdminStatus,
+                        'is_used' => (bool) ($domain['is_used'] ?? false),
+                    ];
+                }
+            } else {
+                // Fallback for domains without prefix_statuses (old format)
+                $status = $domain['status'] ?? 'unknown';
+                
+                $matchesSearch = stripos($customerName, $searchTerm) !== false ||
+                               stripos($customerEmail, $searchTerm) !== false ||
+                               stripos($domainName, $searchTerm) !== false ||
+                               stripos($domainId, $searchTerm) !== false ||
+                               stripos($status, $searchTerm) !== false ||
+                               stripos((string)$pool->id, $searchTerm) !== false;
+
+                if (!$matchesSearch) {
+                    continue;
+                }
+
+                $results[] = [
+                    'customer_name' => $customerName,
+                    'customer_email' => $customerEmail,
+                    'domain_id' => $domainId,
+                    'pool_id' => (int) $pool->id,
+                    'pool_order_id' => $poolOrderId,
+                    'domain_name' => $domainName,
+                    'prefix_key' => null,
+                    'prefix_value' => null,
+                    'prefix_number' => null,
+                    'status' => $status,
+                    'start_date' => $domain['start_date'] ?? null,
+                    'end_date' => $domain['end_date'] ?? null,
+                    'prefixes' => $poolPrefixes,
+                    'per_inbox' => $perInbox,
+                    'pool_order_status' => $poolOrderStatus,
+                    'pool_order_admin_status' => $poolOrderAdminStatus,
+                    'is_used' => (bool) ($domain['is_used'] ?? false),
+                ];
+            }
         }
     }
 

@@ -179,6 +179,7 @@
                                 <th>Pool ID</th>
                                 <th>Trial Order ID</th>
                                 <th>Domain Name</th>
+                                <th>Prefix</th>
                                 <th>Status</th>
                                 <th>Usage</th>
                                 <th>Order Status</th>
@@ -232,6 +233,12 @@
                     <input type="hidden" id="edit_pool_id" name="pool_id">
                     <input type="hidden" id="edit_pool_order_id" name="pool_order_id">
                     <input type="hidden" id="edit_domain_id" name="domain_id">
+                    <input type="hidden" id="edit_prefix_key" name="prefix_key">
+                    
+                    <!-- Prefix indicator badge (shown when editing a specific prefix) -->
+                    <div id="edit_prefix_indicator" class="alert alert-info py-2 px-3 mb-3 d-none">
+                        <i class="fa fa-tag me-1"></i> Editing prefix: <strong id="edit_prefix_display"></strong>
+                    </div>
                     
                     <div class="mb-3">
                         <label for="edit_domain_name" class="form-label">Domain Name</label>
@@ -305,6 +312,7 @@ $(document).ready(function() {
             { data: 'pool_id', name: 'pool_id' },
             { data: 'pool_order_id', name: 'pool_order_id' },
             { data: 'domain_name', name: 'domain_name' },
+            { data: 'prefix_display', name: 'prefix_display', orderable: false },
             { data: 'status_badge', name: 'status', orderable: false },
             { data: 'usage_badge', name: 'is_used', orderable: false, visible: false },
             { data: 'pool_order_status_badge', name: 'pool_order_status', orderable: false, visible: false },
@@ -488,12 +496,25 @@ function lockOutOfInstantly(orderId) {
 }
 
 // Edit domain function
-function editDomain(poolId, poolOrderId, domainId, domainName, status) {
+function editDomain(poolId, poolOrderId, domainId, domainName, status, prefixKey) {
     $('#edit_pool_id').val(poolId);
     $('#edit_pool_order_id').val(poolOrderId);
     $('#edit_domain_id').val(domainId);
     $('#edit_domain_name').val(domainName);
     $('#edit_status').val(status);
+    $('#edit_prefix_key').val(prefixKey || '');
+    
+    // Show prefix indicator if editing a specific prefix
+    if (prefixKey) {
+        $('#edit_prefix_indicator').removeClass('d-none');
+        // Format prefix display (e.g., 'prefix_variant_1' -> 'Prefix 1')
+        const prefixNumber = prefixKey.replace('prefix_variant_', '');
+        $('#edit_prefix_display').text('Variant ' + prefixNumber);
+    } else {
+        $('#edit_prefix_indicator').addClass('d-none');
+        $('#edit_prefix_display').text('');
+    }
+    
     $('#editDomainModal').modal('show');
 }
 
@@ -507,6 +528,7 @@ $('#editDomainForm').on('submit', function(e) {
         domain_id: $('#edit_domain_id').val(),
         domain_name: $('#edit_domain_name').val(),
         status: $('#edit_status').val(),
+        prefix_key: $('#edit_prefix_key').val() || '',
         _token: '{{ csrf_token() }}'
     };
     

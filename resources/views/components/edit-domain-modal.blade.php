@@ -11,6 +11,12 @@
                     <input type="hidden" id="edit_pool_order_id" name="pool_order_id">
                     <input type="hidden" id="edit_domain_id" name="domain_id">
                     <input type="hidden" id="edit_end_date" name="end_date">
+                    <input type="hidden" id="edit_prefix_key" name="prefix_key">
+                    
+                    <!-- Prefix indicator badge (shown when editing a specific prefix) -->
+                    <div id="edit_prefix_indicator" class="alert alert-info py-2 px-3 mb-3 d-none">
+                        <i class="fa fa-tag me-1"></i> Editing prefix: <strong id="edit_prefix_display"></strong>
+                    </div>
                     
                     <div class="mb-3">
                         <label for="edit_domain_name" class="form-label">Domain Name</label>
@@ -136,7 +142,21 @@ function updateAffectedDatePreview() {
 }
 
 // Show modal and prefill fields for editing a domain
-function editDomain(poolId, poolOrderId, domainId, domainName, status, endDate) {
+function editDomain(poolId, poolOrderId, domainId, domainName, status, endDateOrPrefixKey, prefixKey) {
+    // Handle backward compatibility: if only 6 args and 6th looks like a prefix_key (not a date), treat it as prefix_key
+    let endDate = endDateOrPrefixKey;
+    let actualPrefixKey = prefixKey;
+    
+    // Check if endDateOrPrefixKey looks like a prefix_key (e.g., 'prefix_variant_1') rather than a date
+    if (endDateOrPrefixKey && endDateOrPrefixKey.indexOf('prefix_') === 0) {
+        actualPrefixKey = endDateOrPrefixKey;
+        endDate = ''; // No end date provided, will be populated from backend data
+    } else if (typeof prefixKey === 'undefined' && endDateOrPrefixKey) {
+        // Old behavior: 6th param is endDate, no prefixKey
+        endDate = endDateOrPrefixKey;
+        actualPrefixKey = '';
+    }
+    
     $('#edit_pool_id').val(poolId);
     $('#edit_pool_order_id').val(poolOrderId);
     $('#edit_domain_id').val(domainId);
@@ -144,6 +164,19 @@ function editDomain(poolId, poolOrderId, domainId, domainName, status, endDate) 
     $('#edit_status').val(status);
     $('#edit_end_date').val(endDate || '');
     $('#edit_current_end_date').text(endDate || 'N/A');
+    $('#edit_prefix_key').val(actualPrefixKey || '');
+    
+    // Show prefix indicator if editing a specific prefix
+    if (actualPrefixKey) {
+        $('#edit_prefix_indicator').removeClass('d-none');
+        // Format prefix display (e.g., 'prefix_variant_1' -> 'Prefix 1')
+        const prefixNumber = actualPrefixKey.replace('prefix_variant_', '');
+        $('#edit_prefix_display').text('Variant ' + prefixNumber);
+    } else {
+        $('#edit_prefix_indicator').addClass('d-none');
+        $('#edit_prefix_display').text('');
+    }
+    
     $('#edit_days').val('');
     setAdjustMode(true); // default to increase
     toggleEndDateSection(status);
@@ -205,6 +238,7 @@ $('#editDomainForm').on('submit', function(e) {
         end_date: $('#edit_end_date').val(),
         extend_days: extendDays,
         reduce_days: reduceDays,
+        prefix_key: $('#edit_prefix_key').val() || '',
         _token: '{{ csrf_token() }}'
     };
     

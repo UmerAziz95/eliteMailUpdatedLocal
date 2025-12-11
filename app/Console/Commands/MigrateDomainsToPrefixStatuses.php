@@ -19,7 +19,8 @@ class MigrateDomainsToPrefixStatuses extends Command
                             {--dry-run : Show what would be updated without making changes} 
                             {--force : Force update without confirmation}
                             {--pool-id= : Migrate a specific pool by ID}
-                            {--raw-sql : Use raw SQL for large pools (bypasses max_allowed_packet in some cases)}';
+                            {--raw-sql : Use raw SQL for large pools (bypasses max_allowed_packet in some cases)}
+                            {--batch : Process domains one at a time using JSON_SET (slow but handles any size)}';
 
     /**
      * The console command description.
@@ -229,6 +230,48 @@ class MigrateDomainsToPrefixStatuses extends Command
             }
         }
 
+        // Use batch mode if --batch option is set (processes each domain individually)
+        if ($this->option('batch')) {
+            $this->info('Using batch mode (processing domains one at a time)...');
+            $bar = $this->output->createProgressBar($domainCount);
+            $bar->start();
+            
+            try {
+                DB::beginTransaction();
+                
+                foreach ($pool->domains as $index => $domain) {
+                    if (!isset($domain['prefix_statuses'])) {
+                        $migratedDomain = $this->migrateDomain($domain, $inboxesPerDomain);
+                        $migratedJson = json_encode($migratedDomain, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        
+                        // Update single domain at specific index using JSON_SET
+                        // Use JSON_COMPACT for MariaDB compatibility (CAST AS JSON is MySQL-only)
+                        DB::statement(
+                            "UPDATE pools SET domains = JSON_SET(domains, ?, JSON_COMPACT(?)) WHERE id = ?",
+                            ["\$[{$index}]", $migratedJson, $poolId]
+                        );
+                    }
+                    $bar->advance();
+                }
+                
+                // Update the updated_at timestamp
+                DB::statement("UPDATE pools SET updated_at = NOW() WHERE id = ?", [$poolId]);
+                
+                DB::commit();
+                $bar->finish();
+                $this->newLine();
+                $this->info("✓ Pool ID {$poolId}: Successfully migrated {$domainCount} domains (batch mode)");
+                return 0;
+                
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $bar->finish();
+                $this->newLine();
+                $this->error("✗ Pool ID {$poolId}: Failed - " . $e->getMessage());
+                return 1;
+            }
+        }
+
         // Use raw SQL if --raw-sql option is set (for very large pools)
         if ($this->option('raw-sql')) {
             $this->info('Using raw SQL update with increased packet size...');
@@ -263,11 +306,7 @@ class MigrateDomainsToPrefixStatuses extends Command
                 
             } catch (\Exception $e) {
                 $this->error("✗ Pool ID {$poolId}: Failed - " . $e->getMessage());
-                $this->warn("\nThe domains JSON is too large for MySQL. You need to increase max_allowed_packet globally:");
-                $this->line("1. Edit my.cnf or my.ini");
-                $this->line("2. Add under [mysqld]: max_allowed_packet=256M");
-                $this->line("3. Restart MySQL server");
-                $this->line("4. Then run this command again");
+                $this->warn("\nTry batch mode instead: php artisan pools:migrate-prefix-statuses --pool-id={$poolId} --batch");
                 return 1;
             }
         }
@@ -282,7 +321,7 @@ class MigrateDomainsToPrefixStatuses extends Command
             
         } catch (\Exception $e) {
             $this->error("✗ Pool ID {$poolId}: Failed - " . $e->getMessage());
-            $this->warn("\nTry using --raw-sql option: php artisan pools:migrate-prefix-statuses --pool-id={$poolId} --raw-sql");
+            $this->warn("\nTry batch mode: php artisan pools:migrate-prefix-statuses --pool-id={$poolId} --batch");
             return 1;
         }
     }

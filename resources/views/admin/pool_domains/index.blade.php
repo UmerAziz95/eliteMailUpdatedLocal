@@ -179,6 +179,7 @@
                                 <th>Pool ID</th>
                                 <th>Trial Order ID</th>
                                 <th>Domain Name</th>
+                                <th>Prefix</th>
                                 <th>Status</th>
                                 <th>Usage</th>
                                 <th>Order Status</th>
@@ -274,6 +275,7 @@ $(document).ready(function() {
             { data: 'pool_id', name: 'pool_id' },
             { data: 'pool_order_id', name: 'pool_order_id' },
             { data: 'domain_name', name: 'domain_name' },
+            { data: 'prefix_display', name: 'prefix_display', orderable: false },
             { data: 'status_badge', name: 'status', orderable: false },
             { data: 'usage_badge', name: 'is_used', orderable: false, visible: false },
             { data: 'pool_order_status_badge', name: 'pool_order_status', orderable: false, visible: false },

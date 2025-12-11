@@ -30,6 +30,15 @@ class PoolDomainController extends Controller
             
             return DataTables::of($allData)
                 ->addIndexColumn()
+                ->addColumn('prefix_display', function ($row) {
+                    // Display which prefix variant this row represents
+                    $prefixValue = $row['prefix_value'] ?? null;
+                    $prefixNumber = $row['prefix_number'] ?? '';
+                    if ($prefixValue) {
+                        return '<span class="badge bg-info">' . htmlspecialchars($prefixValue) . '</span>';
+                    }
+                    return '<span class="badge bg-secondary">All Prefixes</span>';
+                })
                 ->addColumn('prefixes_formatted', function ($row) {
                     return $this->poolDomainService->formatPrefixes($row['prefixes'], $row['domain_name']);
                 })
@@ -65,6 +74,7 @@ class PoolDomainController extends Controller
                     $domainId = $row['domain_id'] ?? '';
                     $domainName = addslashes($row['domain_name'] ?? '');
                     $status = $row['status'] ?? 'available';
+                    $prefixKey = $row['prefix_key'] ?? ''; // Include prefix_key for individual edits
                     
                     return '
                         <div class="dropdown">
@@ -74,14 +84,14 @@ class PoolDomainController extends Controller
                             <ul class="dropdown-menu">
                                 <li>
                                     <a class="dropdown-item" href="javascript:void(0)" 
-                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\')">
+                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\', \'' . $prefixKey . '\')">
                                         <i class="fa-solid fa-edit me-1"></i>Edit Domain
                                     </a>
                                 </li>
                             </ul>
                         </div>';
                 })
-                ->rawColumns(['status_badge', 'pool_order_status_badge', 'usage_badge', 'actions'])
+                ->rawColumns(['prefix_display', 'status_badge', 'pool_order_status_badge', 'usage_badge', 'actions'])
                 ->make(true);
         }
 
@@ -171,32 +181,62 @@ class PoolDomainController extends Controller
             'pool_order_id' => 'nullable|integer',
             'domain_id' => 'required',
             'domain_name' => 'required|string',
-            'status' => 'required|in:' . $editableStatuses
+            'status' => 'required|in:' . $editableStatuses,
+            'prefix_key' => 'nullable|string' // Optional: for updating a specific prefix
         ]);
 
         try {
             $updated = false;
             $message = '';
+            
+            // Get prefix_key if provided (for individual prefix updates)
+            $prefixKeyToUpdate = $request->prefix_key ?: null;
 
             // Try to update in Pool first
             if ($request->pool_id) {
                 $pool = \App\Models\Pool::find($request->pool_id);
                 if ($pool && is_array($pool->domains)) {
                     $domains = $pool->domains;
-                    foreach ($domains as &$domain) {
+                    $domainIndex = null;
+                    $updatedDomain = null;
+                    
+                    foreach ($domains as $index => &$domain) {
                         if (isset($domain['id']) && $domain['id'] == $request->domain_id) {
                             $domain['name'] = $request->domain_name;
-                            $domain['status'] = $request->status;
+                            
+                            // Update prefix_statuses if they exist, otherwise update domain-level status
+                            if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                                // If prefix_key is provided, only update that specific prefix
+                                if ($prefixKeyToUpdate && isset($domain['prefix_statuses'][$prefixKeyToUpdate])) {
+                                    $domain['prefix_statuses'][$prefixKeyToUpdate]['status'] = $request->status;
+                                } else {
+                                    // No specific prefix, update all prefixes
+                                    foreach ($domain['prefix_statuses'] as $prefixKey => &$prefixStatus) {
+                                        $prefixStatus['status'] = $request->status;
+                                    }
+                                }
+                            } else {
+                                // Fallback: update domain-level status for backward compatibility
+                                $domain['status'] = $request->status;
+                            }
+                            
                             // is_used updated based on status
                             $domain['is_used'] = $request->status === 'available' ? false : true;
+                            $domainIndex = $index;
+                            $updatedDomain = $domain;
                             $updated = true;
-                            Log::info('Domain updated', ['domain' => $domain]);
+                            \Log::info('Domain updated', ['domain' => $domain, 'prefix_key' => $prefixKeyToUpdate]);
                             break;
                         }
                     }
-                    if ($updated) {
-                        $pool->domains = $domains;
-                        $pool->save();
+                    
+                    if ($updated && $domainIndex !== null) {
+                        // Use JSON_SET to update only this specific domain - avoids max_allowed_packet issues
+                        $domainJson = json_encode($updatedDomain, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        \DB::statement(
+                            "UPDATE pools SET domains = JSON_SET(domains, ?, JSON_COMPACT(?)), updated_at = NOW() WHERE id = ?",
+                            ["\$[{$domainIndex}]", $domainJson, $pool->id]
+                        );
                         $message = 'Pool domain updated successfully';
                     }
                 }
@@ -207,22 +247,50 @@ class PoolDomainController extends Controller
                 $poolOrder = \App\Models\PoolOrder::find($request->pool_order_id);
                 if ($poolOrder && is_array($poolOrder->domains)) {
                     $domains = $poolOrder->domains;
-                    foreach ($domains as &$domain) {
+                    $domainIndex = null;
+                    $updatedDomain = null;
+                    $orderUpdated = false;
+                    
+                    foreach ($domains as $index => &$domain) {
                         // Check both 'domain_id' and 'id' keys for compatibility
                         $domainIdKey = isset($domain['domain_id']) ? 'domain_id' : (isset($domain['id']) ? 'id' : null);
                         
                         if ($domainIdKey && $domain[$domainIdKey] == $request->domain_id) {
                             $domain['domain_name'] = $request->domain_name;
-                            $domain['status'] = $request->status;
+                            
+                            // Update prefix_statuses if they exist, otherwise update domain-level status
+                            if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                                // If prefix_key is provided, only update that specific prefix
+                                if ($prefixKeyToUpdate && isset($domain['prefix_statuses'][$prefixKeyToUpdate])) {
+                                    $domain['prefix_statuses'][$prefixKeyToUpdate]['status'] = $request->status;
+                                } else {
+                                    // No specific prefix, update all prefixes
+                                    foreach ($domain['prefix_statuses'] as $prefixKey => &$prefixStatus) {
+                                        $prefixStatus['status'] = $request->status;
+                                    }
+                                }
+                            } else {
+                                // Fallback: update domain-level status for backward compatibility
+                                $domain['status'] = $request->status;
+                            }
+                            
                             // is_used updated based on status
                             $domain['is_used'] = $request->status === 'available' ? false : true;
+                            $domainIndex = $index;
+                            $updatedDomain = $domain;
+                            $orderUpdated = true;
                             $updated = true;
                             break;
                         }
                     }
-                    if ($updated) {
-                        $poolOrder->domains = $domains;
-                        $poolOrder->save();
+                    
+                    if ($orderUpdated && $domainIndex !== null) {
+                        // Use JSON_SET to update only this specific domain - avoids max_allowed_packet issues
+                        $domainJson = json_encode($updatedDomain, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        \DB::statement(
+                            "UPDATE pool_orders SET domains = JSON_SET(domains, ?, JSON_COMPACT(?)), updated_at = NOW() WHERE id = ?",
+                            ["\$[{$domainIndex}]", $domainJson, $poolOrder->id]
+                        );
                         $message = $message ? 'Domain updated in both Pool and Pool Order' : 'Pool Order domain updated successfully';
                     }
                 }
@@ -274,7 +342,15 @@ class PoolDomainController extends Controller
                     $domains = $pool->domains;
                     foreach ($domains as &$domain) {
                         if (isset($domain['id']) && $domain['id'] == $domainId) {
-                            $domain['status'] = $newStatus;
+                            // Update prefix_statuses if they exist
+                            if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                                foreach ($domain['prefix_statuses'] as $prefixKey => &$prefixStatus) {
+                                    $prefixStatus['status'] = $newStatus;
+                                }
+                            } else {
+                                // Fallback: update domain-level status for backward compatibility
+                                $domain['status'] = $newStatus;
+                            }
                             // is_used updated based on status
                             $domain['is_used'] = $newStatus === 'available' ? false : true;
                             $updated = true;
@@ -295,7 +371,15 @@ class PoolDomainController extends Controller
                     foreach ($domains as &$domain) {
                         $domainIdKey = isset($domain['domain_id']) ? 'domain_id' : (isset($domain['id']) ? 'id' : null);
                         if ($domainIdKey && $domain[$domainIdKey] == $domainId) {
-                            $domain['status'] = $newStatus;
+                            // Update prefix_statuses if they exist
+                            if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                                foreach ($domain['prefix_statuses'] as $prefixKey => &$prefixStatus) {
+                                    $prefixStatus['status'] = $newStatus;
+                                }
+                            } else {
+                                // Fallback: update domain-level status for backward compatibility
+                                $domain['status'] = $newStatus;
+                            }
                             // is_used updated based on status
                             $domain['is_used'] = $newStatus === 'available' ? false : true;
                             $updated = true;
