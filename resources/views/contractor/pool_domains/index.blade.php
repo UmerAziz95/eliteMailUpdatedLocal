@@ -239,6 +239,11 @@
                     <div id="edit_prefix_indicator" class="alert alert-info py-2 px-3 mb-3 d-none">
                         <i class="fa fa-tag me-1"></i> Editing prefix: <strong id="edit_prefix_display"></strong>
                     </div>
+
+                    <!-- Prefix with Domain Info -->
+                    <div id="edit_prefix_domain_info" class="alert alert-secondary py-2 px-3 mb-3 d-none">
+                        <i class="fa fa-globe me-1"></i> Full Identity: <strong id="edit_prefix_domain_display"></strong>
+                    </div>
                     
                     <div class="mb-3">
                         <label for="edit_domain_name" class="form-label">Domain Name</label>
@@ -496,7 +501,7 @@ function lockOutOfInstantly(orderId) {
 }
 
 // Edit domain function
-function editDomain(poolId, poolOrderId, domainId, domainName, status, prefixKey) {
+function editDomain(poolId, poolOrderId, domainId, domainName, status, prefixKey, prefixValue) {
     $('#edit_pool_id').val(poolId);
     $('#edit_pool_order_id').val(poolOrderId);
     $('#edit_domain_id').val(domainId);
@@ -510,9 +515,23 @@ function editDomain(poolId, poolOrderId, domainId, domainName, status, prefixKey
         // Format prefix display (e.g., 'prefix_variant_1' -> 'Prefix 1')
         const prefixNumber = prefixKey.replace('prefix_variant_', '');
         $('#edit_prefix_display').text('Variant ' + prefixNumber);
+
+        // Show prefix with domain info if available
+        if (prefixValue) {
+            $('#edit_prefix_domain_info').removeClass('d-none');
+            // Try to construct full identity if not fully provided
+            let displayValue = prefixValue;
+            if (prefixValue.indexOf('@') === -1 && domainName) {
+                 displayValue = prefixValue + '@' + domainName;
+            }
+            $('#edit_prefix_domain_display').text(displayValue);
+        } else {
+            $('#edit_prefix_domain_info').addClass('d-none');
+        }
     } else {
         $('#edit_prefix_indicator').addClass('d-none');
         $('#edit_prefix_display').text('');
+        $('#edit_prefix_domain_info').addClass('d-none');
     }
     
     $('#editDomainModal').modal('show');

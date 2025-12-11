@@ -84,7 +84,7 @@ class PoolDomainController extends Controller
                             <ul class="dropdown-menu">
                                 <li>
                                     <a class="dropdown-item" href="javascript:void(0)" 
-                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\', \'' . $prefixKey . '\')">
+                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\', \'' . $prefixKey . '\', \'' . addslashes($row['prefix_value'] ?? '') . '\')">
                                         <i class="fa-solid fa-edit me-1"></i>Edit Domain
                                     </a>
                                 </li>
@@ -303,8 +303,19 @@ class PoolDomainController extends Controller
                 ], 404);
             }
 
+            // Determine which IDs to clear from cache
+            $cacheUserId = null;
+            $cachePoolId = null;
+
+            if (isset($pool) && $pool) {
+                $cachePoolId = $pool->id;
+                $cacheUserId = $pool->user_id;
+            } elseif (isset($poolOrder) && $poolOrder) {
+                $cacheUserId = $poolOrder->user_id;
+            }
+
             // Clear cache after update
-            $this->poolDomainService->clearCache();
+            $this->poolDomainService->clearCache($cacheUserId, $cachePoolId);
 
             return response()->json([
                 'success' => true,

@@ -88,7 +88,7 @@ class PoolDomainController extends Controller
                             <ul class="dropdown-menu">
                                 <li>
                                     <a class="dropdown-item" href="javascript:void(0)" 
-                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\', \'' . $endDate . '\', \'' . $prefixKey . '\')">
+                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\', \'' . $endDate . '\', \'' . $prefixKey . '\', \'' . addslashes($row['prefix_value'] ?? '') . '\')">
                                         <i class="fa-solid fa-edit me-1"></i>Edit Status
                                     </a>
                                 </li>
@@ -334,8 +334,20 @@ class PoolDomainController extends Controller
                 ], 404);
             }
 
-            // Clear cache after update
-            $this->poolDomainService->clearCache();
+            // Determine which IDs to clear from cache
+            $cacheUserId = null;
+            $cachePoolId = null;
+
+            if (isset($pool) && $pool) {
+                $cachePoolId = $pool->id;
+                $cacheUserId = $pool->user_id;
+            } elseif (isset($poolOrder) && $poolOrder) {
+                $cacheUserId = $poolOrder->user_id;
+                // pool_id might not be directly available on poolOrder depending on structure, but usually is
+            }
+
+            // Clear cache after update with specific IDs
+            $this->poolDomainService->clearCache($cacheUserId, $cachePoolId);
 
             return response()->json([
                 'success' => true,

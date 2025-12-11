@@ -275,12 +275,27 @@ class PoolDomainService
      */
     public function clearCache($userId = null, $poolId = null)
     {
-        if ($userId || $poolId) {
-            // Clear specific cache
+        // Always clear the global cache because it contains all data
+        Cache::forget('pool_domains');
+
+        // If specific user is involved, clear their cache
+        if ($userId) {
+            Cache::forget("pool_domains_user_{$userId}");
+        }
+
+        // If specific pool is involved, clear its cache
+        if ($poolId) {
+            Cache::forget("pool_domains_pool_{$poolId}");
+        }
+
+        // If both are involved, clear the combination cache
+        if ($userId && $poolId) {
             $cacheKey = $this->buildCacheKey($userId, $poolId);
             Cache::forget($cacheKey);
-        } else {
-            // Clear all pool domain caches using pattern matching
+        }
+        
+        // Also try to clear using the wildcard method for safety
+        if (!$userId && !$poolId) {
             $this->clearAllPoolDomainCaches();
         }
     }
