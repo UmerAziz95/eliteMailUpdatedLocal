@@ -133,22 +133,37 @@ class PoolController extends Controller
 
     /**
      * Apply domain-status-based filtering so pools can appear in multiple tabs.
+     * Checks both old domain-level status and new prefix_statuses format.
      */
     private function applyDomainStatusFilter($query, string $statusFilter): void
     {
         $statusFilter = strtolower($statusFilter);
         $poolTable = (new Pool())->getTable();
+        
+        // Old format: domains[*].status
         $jsonStatusesPath = "JSON_EXTRACT({$poolTable}.domains, '$[*].status')";
+        
+        // New format: search in domains[*].prefix_statuses.*.status (all prefix variants)
+        // We need to check if any prefix_statuses contains the target status
+        $prefixStatusesPath = "JSON_EXTRACT({$poolTable}.domains, '$[*].prefix_statuses')";
 
         if ($statusFilter === 'warming') {
-            $query->where(function ($q) use ($jsonStatusesPath, $poolTable) {
+            $query->where(function ($q) use ($jsonStatusesPath, $prefixStatusesPath, $poolTable) {
+                // Check old format: domain-level status
                 $q->whereRaw("JSON_SEARCH({$jsonStatusesPath}, 'one', ?) IS NOT NULL", ['warming'])
+                  // Check new format: any prefix_statuses have 'warming' status
+                  ->orWhereRaw("JSON_SEARCH({$prefixStatusesPath}, 'one', ?) IS NOT NULL", ['warming'])
+                  // Fallback: admin-set status
                   ->orWhereNull("{$poolTable}.status_manage_by_admin")
                   ->orWhere("{$poolTable}.status_manage_by_admin", 'warming');
             });
         } elseif ($statusFilter === 'available') {
-            $query->where(function ($q) use ($jsonStatusesPath, $poolTable) {
+            $query->where(function ($q) use ($jsonStatusesPath, $prefixStatusesPath, $poolTable) {
+                // Check old format: domain-level status
                 $q->whereRaw("JSON_SEARCH({$jsonStatusesPath}, 'one', ?) IS NOT NULL", ['available'])
+                  // Check new format: any prefix_statuses have 'available' status
+                  ->orWhereRaw("JSON_SEARCH({$prefixStatusesPath}, 'one', ?) IS NOT NULL", ['available'])
+                  // Fallback: admin-set status
                   ->orWhere("{$poolTable}.status_manage_by_admin", 'available');
             });
         }
