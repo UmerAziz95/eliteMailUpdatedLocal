@@ -53,7 +53,20 @@ class UpdatePoolStatus extends Command
             if ($pool->domains && is_array($pool->domains)) {
                 $hasExpiredDomains = false;
                 foreach ($pool->domains as $domain) {
-                    if (isset($domain['status']) && $domain['status'] === 'warming') {
+                    // Check for new prefix_statuses format
+                    if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                        foreach ($domain['prefix_statuses'] as $prefixKey => $prefixStatus) {
+                            if (isset($prefixStatus['status']) && $prefixStatus['status'] === 'warming') {
+                                // Check if prefix has end_date and it's expired
+                                if (isset($prefixStatus['end_date']) && $prefixStatus['end_date'] <= $today) {
+                                    $hasExpiredDomains = true;
+                                    break 2; // Break out of both loops
+                                }
+                            }
+                        }
+                    }
+                    // Fallback: Check for old domain-level status format
+                    elseif (isset($domain['status']) && $domain['status'] === 'warming') {
                         // Check if domain has end_date and it's expired
                         if (isset($domain['end_date']) && $domain['end_date'] <= $today) {
                             $hasExpiredDomains = true;
@@ -152,14 +165,30 @@ class UpdatePoolStatus extends Command
             if ($pool->domains && is_array($pool->domains)) {
                 $updatedDomains = [];
                 foreach ($pool->domains as $domain) {
-                    // Check if domain warming period has expired
-                    if (isset($domain['status']) && $domain['status'] === 'warming') {
+                    // Handle new prefix_statuses format
+                    if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                        $prefixUpdated = false;
+                        foreach ($domain['prefix_statuses'] as $prefixKey => &$prefixStatus) {
+                            if (isset($prefixStatus['status']) && $prefixStatus['status'] === 'warming') {
+                                if (isset($prefixStatus['end_date']) && $prefixStatus['end_date'] <= $today) {
+                                    $prefixStatus['status'] = 'available';
+                                    $prefixUpdated = true;
+                                }
+                            }
+                        }
+                        if ($prefixUpdated) {
+                            $domainsUpdatedInPool++;
+                            $poolUpdated = true;
+                        }
+                    }
+                    // Fallback: Handle old domain-level status format (for backward compatibility)
+                    elseif (isset($domain['status']) && $domain['status'] === 'warming') {
                         if (isset($domain['end_date']) && $domain['end_date'] <= $today) {
                             $domain['status'] = 'available';
                             $domainsUpdatedInPool++;
                             $poolUpdated = true;
                         }
-                    } elseif (!isset($domain['status'])) {
+                    } elseif (!isset($domain['status']) && !isset($domain['prefix_statuses'])) {
                         // Add status field if it doesn't exist (backward compatibility)
                         // Check end_date if available
                         if (isset($domain['end_date']) && $domain['end_date'] <= $today) {
@@ -179,7 +208,17 @@ class UpdatePoolStatus extends Command
             $allDomainsReady = true;
             if ($pool->domains && is_array($pool->domains)) {
                 foreach ($pool->domains as $domain) {
-                    if (isset($domain['status']) && $domain['status'] === 'warming') {
+                    // Check new prefix_statuses format
+                    if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                        foreach ($domain['prefix_statuses'] as $prefixStatus) {
+                            if (isset($prefixStatus['status']) && $prefixStatus['status'] === 'warming') {
+                                $allDomainsReady = false;
+                                break 2;
+                            }
+                        }
+                    }
+                    // Fallback: check old domain-level status
+                    elseif (isset($domain['status']) && $domain['status'] === 'warming') {
                         $allDomainsReady = false;
                         break;
                     }

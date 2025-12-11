@@ -36,6 +36,42 @@ class PoolController extends Controller
             'end_date' => $endDate->format('Y-m-d')
         ];
     }
+
+    /**
+     * Build prefix_statuses object for a domain based on inboxes_per_domain
+     * Each prefix variant gets its own status, start_date, and end_date
+     *
+     * @param int $inboxesPerDomain Number of prefix variants (1, 2, or 3)
+     * @param array|null $existingPrefixStatuses Existing prefix statuses to preserve
+     * @param array|null $warmingDates Default warming dates if not provided
+     * @return array
+     */
+    private function buildPrefixStatuses(int $inboxesPerDomain, ?array $existingPrefixStatuses = null, ?array $warmingDates = null): array
+    {
+        $warmingDates = $warmingDates ?? $this->getDomainWarmingDates();
+        $prefixStatuses = [];
+
+        for ($i = 1; $i <= $inboxesPerDomain; $i++) {
+            $prefixKey = "prefix_variant_{$i}";
+            
+            // Preserve existing status if available, otherwise use defaults
+            if ($existingPrefixStatuses && isset($existingPrefixStatuses[$prefixKey])) {
+                $prefixStatuses[$prefixKey] = [
+                    'status' => $existingPrefixStatuses[$prefixKey]['status'] ?? 'warming',
+                    'start_date' => $existingPrefixStatuses[$prefixKey]['start_date'] ?? $warmingDates['start_date'],
+                    'end_date' => $existingPrefixStatuses[$prefixKey]['end_date'] ?? $warmingDates['end_date']
+                ];
+            } else {
+                $prefixStatuses[$prefixKey] = [
+                    'status' => 'warming',
+                    'start_date' => $warmingDates['start_date'],
+                    'end_date' => $warmingDates['end_date']
+                ];
+            }
+        }
+
+        return $prefixStatuses;
+    }
     /**
      * Display a listing of the resource.
      */
@@ -302,12 +338,13 @@ class PoolController extends Controller
         try {
             $data = $request->all();
             
-            // Handle domains JSON conversion and ensure unique id, is_used, status
+            // Handle domains JSON conversion and ensure unique id, is_used, prefix_statuses
             if ($request->has('domains') && is_string($request->domains)) {
                 $domains = json_decode($request->domains, true);
                 $processedDomains = [];
                 $sequence = 1;
                 $warmingDates = $this->getDomainWarmingDates();
+                $inboxesPerDomain = (int) ($request->inboxes_per_domain ?? 1);
                 
                 foreach ($domains as $domain) {
                     // If domain is string, convert to object
@@ -316,26 +353,27 @@ class PoolController extends Controller
                             'id' => 'new_' . $sequence++,
                             'name' => $domain,
                             'is_used' => false,
-                            'status' => 'warming',
-                            'start_date' => $warmingDates['start_date'],
-                            'end_date' => $warmingDates['end_date']
+                            'prefix_statuses' => $this->buildPrefixStatuses($inboxesPerDomain, null, $warmingDates)
                         ];
                     } elseif (is_array($domain)) {
                         $isUsed = $domain['is_used'] ?? false;
-                        $status = $domain['status'] ?? 'warming';
                         
-                        // If domain is used, set status to in-progress
-                        if ($isUsed && $status !== 'in-progress') {
-                            $status = 'in-progress';
+                        // Build prefix_statuses - use existing if available, otherwise create new
+                        $existingPrefixStatuses = $domain['prefix_statuses'] ?? null;
+                        $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
+                        
+                        // If domain is used, set all prefix statuses to in-progress
+                        if ($isUsed) {
+                            foreach ($prefixStatuses as $key => &$prefixStatus) {
+                                $prefixStatus['status'] = 'in-progress';
+                            }
                         }
                         
                         $processedDomains[] = [
                             'id' => $domain['id'] ?? ('new_' . $sequence++),
                             'name' => $domain['name'] ?? '',
                             'is_used' => $isUsed,
-                            'status' => $status,
-                            'start_date' => $domain['start_date'] ?? $warmingDates['start_date'],
-                            'end_date' => $domain['end_date'] ?? $warmingDates['end_date']
+                            'prefix_statuses' => $prefixStatuses
                         ];
                     }
                 }
@@ -470,10 +508,11 @@ class PoolController extends Controller
 
         try {
             $data = $request->all();
-            // Handle domains JSON conversion and ABSOLUTELY preserve existing domain IDs
+            // Handle domains JSON conversion and ABSOLUTELY preserve existing domain IDs with prefix_statuses
             if ($request->has('domains') && is_string($request->domains)) {
                 $domains = json_decode($request->domains, true);
                 $existingDomains = is_array($pool->domains) ? $pool->domains : [];
+                $inboxesPerDomain = (int) ($request->inboxes_per_domain ?? $pool->inboxes_per_domain ?? 1);
                 
                 // CRITICAL: Create protected list of all existing domain IDs that MUST NOT change
                 $protectedDomainIds = [];
@@ -491,12 +530,12 @@ class PoolController extends Controller
                 }
                 
                 // Log for debugging
-                \Log::info('Domain Update - ABSOLUTE ID PROTECTION', [
+                \Log::info('Domain Update - ABSOLUTE ID PROTECTION with prefix_statuses', [
                     'pool_id' => $pool->id,
                     'protected_ids' => $protectedDomainIds,
                     'existing_domains_count' => count($existingDomains),
                     'submitted_domains_count' => count($domains),
-                    'submitted_domains' => $domains
+                    'inboxes_per_domain' => $inboxesPerDomain
                 ]);
                 
                 $processedDomains = [];
@@ -504,7 +543,7 @@ class PoolController extends Controller
                 $newDomainSequence = 1;
                 $usedProtectedIds = []; // Track which protected IDs have been used
                 
-                // ABSOLUTE DOMAIN ID PRESERVATION ALGORITHM
+                // ABSOLUTE DOMAIN ID PRESERVATION ALGORITHM with prefix_statuses
                 // Process each submitted domain with GUARANTEED ID preservation
                 $warmingDates = $this->getDomainWarmingDates();
                 
@@ -516,61 +555,66 @@ class PoolController extends Controller
                         
                         // Priority 1: Exact name match (no change)
                         if (isset($existingDomainMapByName[$domainName])) {
-                            $domainData = $existingDomainMapByName[$domainName];
-                            // Ensure status key exists with default value
-                            if (!isset($domainData['status'])) {
-                                $domainData['status'] = 'warming';
+                            $existingDomain = $existingDomainMapByName[$domainName];
+                            $isUsed = $existingDomain['is_used'] ?? false;
+                            
+                            // Preserve or build prefix_statuses
+                            $existingPrefixStatuses = $existingDomain['prefix_statuses'] ?? null;
+                            $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
+                            
+                            // If domain is used, set all prefix statuses to in-progress
+                            if ($isUsed) {
+                                foreach ($prefixStatuses as $key => &$prefixStatus) {
+                                    $prefixStatus['status'] = 'in-progress';
+                                }
                             }
-                            // If domain is used, set status to in-progress
-                            if (isset($domainData['is_used']) && $domainData['is_used']) {
-                                $domainData['status'] = 'in-progress';
-                            }
-                            // Preserve existing dates if they exist
-                            if (!isset($domainData['start_date'])) {
-                                $domainData['start_date'] = $warmingDates['start_date'];
-                            }
-                            if (!isset($domainData['end_date'])) {
-                                $domainData['end_date'] = $warmingDates['end_date'];
-                            }
-                            $usedProtectedIds[] = $domainData['id'];
+                            
+                            $domainData = [
+                                'id' => $existingDomain['id'],
+                                'name' => $domainName,
+                                'is_used' => $isUsed,
+                                'prefix_statuses' => $prefixStatuses
+                            ];
+                            $usedProtectedIds[] = $existingDomain['id'];
                         }
                         // Priority 2: Position-based matching (renamed domain)
                         elseif (isset($existingDomainsByIndex[$domainIndex]) && !in_array($existingDomainsByIndex[$domainIndex]['id'], $usedProtectedIds)) {
                             $existingAtPosition = $existingDomainsByIndex[$domainIndex];
                             $isUsed = $existingAtPosition['is_used'] ?? false;
-                            $status = $existingAtPosition['status'] ?? 'warming';
                             
-                            // If domain is used, set status to in-progress
+                            // Preserve or build prefix_statuses
+                            $existingPrefixStatuses = $existingAtPosition['prefix_statuses'] ?? null;
+                            $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
+                            
+                            // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
-                                $status = 'in-progress';
+                                foreach ($prefixStatuses as $key => &$prefixStatus) {
+                                    $prefixStatus['status'] = 'in-progress';
+                                }
                             }
                             
                             $domainData = [
                                 'id' => $existingAtPosition['id'], // FORCE preserve existing ID
                                 'name' => $domainName,
                                 'is_used' => $isUsed,
-                                'status' => $status,
-                                'start_date' => $existingAtPosition['start_date'] ?? $warmingDates['start_date'],
-                                'end_date' => $existingAtPosition['end_date'] ?? $warmingDates['end_date']
+                                'prefix_statuses' => $prefixStatuses
                             ];
                             $usedProtectedIds[] = $existingAtPosition['id'];
                             
-                            \Log::info('ABSOLUTE PROTECTION: Domain renamed', [
+                            \Log::info('ABSOLUTE PROTECTION: Domain renamed with prefix_statuses', [
                                 'position' => $domainIndex,
                                 'old_name' => $existingAtPosition['name'], 
                                 'new_name' => $domainName,
                                 'PROTECTED_ID' => $existingAtPosition['id']
                             ]);
                         }
-                        // Priority 3: New domain
+                        // Priority 3: This should not happen in edit mode (no new domains)
                         else {
                             $domainData = [
                                 'id' => $pool->id . '_new_' . $newDomainSequence++,
                                 'name' => $domainName,
                                 'is_used' => false,
-                                'status' => 'warming',
-                                'start_date' => $warmingDates['start_date'],
-                                'end_date' => $warmingDates['end_date']
+                                'prefix_statuses' => $this->buildPrefixStatuses($inboxesPerDomain, null, $warmingDates)
                             ];
                         }
                     }
@@ -582,24 +626,34 @@ class PoolController extends Controller
                             // This is a protected ID - ABSOLUTELY preserve it
                             $existingDomain = $existingDomainMapById[$domain['id']];
                             $isUsed = $domain['is_used'] ?? $existingDomain['is_used'] ?? false;
-                            $status = $domain['status'] ?? $existingDomain['status'] ?? 'warming';
                             
-                            // If domain is used, set status to in-progress
+                            // Handle prefix_statuses - preserve existing or use submitted
+                            $existingPrefixStatuses = $existingDomain['prefix_statuses'] ?? null;
+                            $submittedPrefixStatuses = $domain['prefix_statuses'] ?? null;
+                            
+                            // If submitted prefix_statuses exist, use them; otherwise build from existing
+                            if ($submittedPrefixStatuses) {
+                                $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $submittedPrefixStatuses, $warmingDates);
+                            } else {
+                                $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
+                            }
+                            
+                            // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
-                                $status = 'in-progress';
+                                foreach ($prefixStatuses as $key => &$prefixStatus) {
+                                    $prefixStatus['status'] = 'in-progress';
+                                }
                             }
                             
                             $domainData = [
                                 'id' => $domain['id'], // PROTECTED - NEVER change
                                 'name' => $domainName,
                                 'is_used' => $isUsed,
-                                'status' => $status,
-                                'start_date' => $domain['start_date'] ?? $existingDomain['start_date'] ?? $warmingDates['start_date'],
-                                'end_date' => $domain['end_date'] ?? $existingDomain['end_date'] ?? $warmingDates['end_date']
+                                'prefix_statuses' => $prefixStatuses
                             ];
                             $usedProtectedIds[] = $domain['id'];
                             
-                            \Log::info('ABSOLUTE PROTECTION: Protected ID preserved', [
+                            \Log::info('ABSOLUTE PROTECTION: Protected ID preserved with prefix_statuses', [
                                 'PROTECTED_ID' => $domain['id'],
                                 'old_name' => $existingDomain['name'],
                                 'new_name' => $domainName
@@ -609,85 +663,109 @@ class PoolController extends Controller
                         elseif (isset($domain['original_id']) && in_array($domain['original_id'], $protectedDomainIds)) {
                             $existingDomain = $existingDomainMapById[$domain['original_id']];
                             $isUsed = $domain['is_used'] ?? $existingDomain['is_used'] ?? false;
-                            $status = $domain['status'] ?? $existingDomain['status'] ?? 'warming';
                             
-                            // If domain is used, set status to in-progress
+                            // Handle prefix_statuses
+                            $existingPrefixStatuses = $existingDomain['prefix_statuses'] ?? null;
+                            $submittedPrefixStatuses = $domain['prefix_statuses'] ?? null;
+                            
+                            if ($submittedPrefixStatuses) {
+                                $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $submittedPrefixStatuses, $warmingDates);
+                            } else {
+                                $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
+                            }
+                            
+                            // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
-                                $status = 'in-progress';
+                                foreach ($prefixStatuses as $key => &$prefixStatus) {
+                                    $prefixStatus['status'] = 'in-progress';
+                                }
                             }
                             
                             $domainData = [
                                 'id' => $domain['original_id'], // PROTECTED - use original ID
                                 'name' => $domainName,
                                 'is_used' => $isUsed,
-                                'status' => $status,
-                                'start_date' => $domain['start_date'] ?? $existingDomain['start_date'] ?? $warmingDates['start_date'],
-                                'end_date' => $domain['end_date'] ?? $existingDomain['end_date'] ?? $warmingDates['end_date']
+                                'prefix_statuses' => $prefixStatuses
                             ];
                             $usedProtectedIds[] = $domain['original_id'];
                         }
                         // Exact name match
                         elseif (isset($existingDomainMapByName[$domainName])) {
-                            $domainData = $existingDomainMapByName[$domainName];
-                            // Ensure status key exists with default value
-                            if (!isset($domainData['status'])) {
-                                $domainData['status'] = 'warming';
+                            $existingDomain = $existingDomainMapByName[$domainName];
+                            $isUsed = $domain['is_used'] ?? $existingDomain['is_used'] ?? false;
+                            
+                            // Handle prefix_statuses
+                            $existingPrefixStatuses = $existingDomain['prefix_statuses'] ?? null;
+                            $submittedPrefixStatuses = $domain['prefix_statuses'] ?? null;
+                            
+                            if ($submittedPrefixStatuses) {
+                                $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $submittedPrefixStatuses, $warmingDates);
+                            } else {
+                                $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
                             }
-                            // Update is_used if provided in domain array
-                            if (isset($domain['is_used'])) {
-                                $domainData['is_used'] = $domain['is_used'];
+                            
+                            // If domain is used, set all prefix statuses to in-progress
+                            if ($isUsed) {
+                                foreach ($prefixStatuses as $key => &$prefixStatus) {
+                                    $prefixStatus['status'] = 'in-progress';
+                                }
                             }
-                            // If domain is used, set status to in-progress
-                            if (isset($domainData['is_used']) && $domainData['is_used']) {
-                                $domainData['status'] = 'in-progress';
-                            }
-                            // Preserve or set dates
-                            if (!isset($domainData['start_date'])) {
-                                $domainData['start_date'] = $domain['start_date'] ?? $warmingDates['start_date'];
-                            }
-                            if (!isset($domainData['end_date'])) {
-                                $domainData['end_date'] = $domain['end_date'] ?? $warmingDates['end_date'];
-                            }
-                            $usedProtectedIds[] = $domainData['id'];
+                            
+                            $domainData = [
+                                'id' => $existingDomain['id'],
+                                'name' => $domainName,
+                                'is_used' => $isUsed,
+                                'prefix_statuses' => $prefixStatuses
+                            ];
+                            $usedProtectedIds[] = $existingDomain['id'];
                         }
                         // Position-based matching
                         elseif (isset($existingDomainsByIndex[$domainIndex]) && !in_array($existingDomainsByIndex[$domainIndex]['id'], $usedProtectedIds)) {
                             $existingAtPosition = $existingDomainsByIndex[$domainIndex];
                             $isUsed = $domain['is_used'] ?? $existingAtPosition['is_used'] ?? false;
-                            $status = $domain['status'] ?? $existingAtPosition['status'] ?? 'warming';
                             
-                            // If domain is used, set status to in-progress
+                            // Handle prefix_statuses
+                            $existingPrefixStatuses = $existingAtPosition['prefix_statuses'] ?? null;
+                            $submittedPrefixStatuses = $domain['prefix_statuses'] ?? null;
+                            
+                            if ($submittedPrefixStatuses) {
+                                $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $submittedPrefixStatuses, $warmingDates);
+                            } else {
+                                $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
+                            }
+                            
+                            // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
-                                $status = 'in-progress';
+                                foreach ($prefixStatuses as $key => &$prefixStatus) {
+                                    $prefixStatus['status'] = 'in-progress';
+                                }
                             }
                             
                             $domainData = [
                                 'id' => $existingAtPosition['id'], // FORCE preserve existing ID
                                 'name' => $domainName,
                                 'is_used' => $isUsed,
-                                'status' => $status,
-                                'start_date' => $domain['start_date'] ?? $existingAtPosition['start_date'] ?? $warmingDates['start_date'],
-                                'end_date' => $domain['end_date'] ?? $existingAtPosition['end_date'] ?? $warmingDates['end_date']
+                                'prefix_statuses' => $prefixStatuses
                             ];
                             $usedProtectedIds[] = $existingAtPosition['id'];
                         }
-                        // New domain
+                        // New domain (should not happen in edit mode)
                         else {
                             $isUsed = $domain['is_used'] ?? false;
-                            $status = $domain['status'] ?? 'warming';
+                            $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $domain['prefix_statuses'] ?? null, $warmingDates);
                             
-                            // If domain is used, set status to in-progress
+                            // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
-                                $status = 'in-progress';
+                                foreach ($prefixStatuses as $key => &$prefixStatus) {
+                                    $prefixStatus['status'] = 'in-progress';
+                                }
                             }
                             
                             $domainData = [
                                 'id' => isset($domain['id']) ? $domain['id'] : ($pool->id . '_new_' . $newDomainSequence++),
                                 'name' => $domainName,
                                 'is_used' => $isUsed,
-                                'status' => $status,
-                                'start_date' => $domain['start_date'] ?? $warmingDates['start_date'],
-                                'end_date' => $domain['end_date'] ?? $warmingDates['end_date']
+                                'prefix_statuses' => $prefixStatuses
                             ];
                         }
                     }
@@ -704,12 +782,13 @@ class PoolController extends Controller
                     if (isset($existingDomain['is_used']) && $existingDomain['is_used'] === true) {
                         // If this used domain wasn't included in the submitted form, preserve it
                         if (!in_array($existingDomain['id'], $submittedDomainIds)) {
-                            // Ensure status is in-progress for used domains
-                            if (!isset($existingDomain['status'])) {
-                                $existingDomain['status'] = 'in-progress';
-                            } elseif ($existingDomain['status'] !== 'in-progress') {
-                                $existingDomain['status'] = 'in-progress';
+                            // Ensure prefix_statuses exist and are set to in-progress for used domains
+                            $prefixStatuses = $existingDomain['prefix_statuses'] ?? $this->buildPrefixStatuses($inboxesPerDomain, null, $warmingDates);
+                            foreach ($prefixStatuses as $key => &$prefixStatus) {
+                                $prefixStatus['status'] = 'in-progress';
                             }
+                            
+                            $existingDomain['prefix_statuses'] = $prefixStatuses;
                             $processedDomains[] = $existingDomain;
                         }
                     }
@@ -720,7 +799,7 @@ class PoolController extends Controller
                 $changedIds = array_diff($protectedDomainIds, $finalDomainIds);
                 $newIds = array_diff($finalDomainIds, $protectedDomainIds);
                 
-                \Log::info('ABSOLUTE PROTECTION - FINAL VERIFICATION', [
+                \Log::info('ABSOLUTE PROTECTION - FINAL VERIFICATION with prefix_statuses', [
                     'pool_id' => $pool->id,
                     'original_protected_ids' => $protectedDomainIds,
                     'final_domain_ids' => $finalDomainIds,
