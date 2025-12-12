@@ -4,7 +4,7 @@
     </h5>
 
     {{-- Assignment Mode Toggle --}}
-    <div class="mb-4">
+    <div class="mb-4 panel-assignment-toggle">
         <label class="form-label fw-bold">Assignment Mode</label>
         <div class="btn-group w-100" role="group">
             <input type="radio" class="btn-check" name="assignment_mode" id="mode_automatic" value="automatic" checked>
@@ -25,33 +25,38 @@
 
     {{-- Manual Assignment Builder --}}
     <div id="manual-assignment-builder" style="display: none;">
+        <div class="d-flex align-items-center justify-content-end flex-wrap gap-2 mb-3">
+            <button type="button" class="btn btn-success btn-sm" id="add-batch-btn">
+                <i class="fas fa-plus me-1"></i>Add Batch
+            </button>
+        </div>
+
         {{-- Assignment Summary --}}
-        <div class="alert alert-info mb-3">
-            <div class="row">
-                <div class="col-md-3">
-                    <strong>Total Domains:</strong> <span id="total-domains-count">0</span>
-                </div>
-                <div class="col-md-3">
-                    <strong>Assigned:</strong> <span id="assigned-domains-count">0</span>
-                </div>
-                <div class="col-md-3">
-                    <strong>Remaining:</strong> <span id="remaining-domains-count" class="text-danger">0</span>
-                </div>
-                <div class="col-md-3">
-                    <strong>Total Space:</strong> <span id="total-space-needed">0</span> inboxes
-                </div>
+        <div class="assignment-summary mb-3">
+            <div class="summary-tile">
+                <div class="label">Total Domains</div>
+                <div class="value" id="total-domains-count">0</div>
+            </div>
+            <div class="summary-tile">
+                <div class="label">Assigned</div>
+                <div class="value" id="assigned-domains-count">0</div>
+            </div>
+            <div class="summary-tile">
+                <div class="label">Remaining</div>
+                <div class="value text-warning" id="remaining-domains-count">0</div>
+            </div>
+            <div class="summary-tile">
+                <div class="label">Total Space</div>
+                <div class="value"><span id="total-space-needed">0</span> inboxes</div>
             </div>
         </div>
 
         {{-- Batch List --}}
         <div id="batches-container" class="mb-3">
-            {{-- Batches will be added here dynamically --}}
+            <div class="placeholder-card text-muted">
+                <i class="fas fa-layer-group me-2"></i>No batches yet. Click "Add Batch" to start.
+            </div>
         </div>
-
-        {{-- Add Batch Button --}}
-        <button type="button" class="btn btn-success mb-3" id="add-batch-btn">
-            <i class="fas fa-plus me-1"></i>Add Batch
-        </button>
 
         {{-- Validation Messages --}}
         <div id="assignment-validation-messages"></div>
@@ -63,7 +68,7 @@
     <div class="card mb-3 batch-item" data-batch-index="">
         <div class="card-header d-flex justify-content-between align-items-center bg-light">
             <h6 class="mb-0">Batch <span class="batch-number"></span></h6>
-            <button type="button" class="btn btn-sm btn-danger remove-batch-btn">
+            <button type="button" class="btn btn-sm btn-danger remove-batch-btn" title="Remove batch">
                 <i class="fas fa-trash"></i>
             </button>
         </div>
@@ -98,6 +103,33 @@
                 </div>
             </div>
 
+            {{-- Panel Detail Snapshot --}}
+            <div class="panel-detail-box mt-2" style="display: none;">
+                <div class="detail-row">
+                    <div class="detail-chip">
+                        <span class="label"><i class="fas fa-server"></i> Panel</span>
+                        <span class="value panel-name">-</span>
+                    </div>
+                    <div class="detail-chip">
+                        <span class="label"><i class="fas fa-battery-three-quarters"></i> Remaining</span>
+                        <span class="value remaining-count">-</span>
+                    </div>
+                    <div class="detail-chip">
+                        <span class="label"><i class="fas fa-database"></i> Capacity</span>
+                        <span class="value capacity-count">-</span>
+                    </div>
+                    <div class="detail-chip">
+                        <span class="label"><i class="fas fa-forward"></i> After This Batch</span>
+                        <span class="value after-count">-</span>
+                    </div>
+                </div>
+            <div class="progress meta-progress mt-2">
+                <div class="progress-bar meta-progress-current" role="progressbar" style="width: 0%"></div>
+                <div class="progress-bar meta-progress-future" role="progressbar" style="width: 0%"></div>
+            </div>
+            <small class="text-muted mt-1 d-block meta-footnote"></small>
+        </div>
+
             {{-- Domain List Preview --}}
             <div class="mt-2">
                 <small class="text-muted">
@@ -113,6 +145,153 @@
 </template>
 
 @once
+@push('styles')
+<style>
+    #manual-assignment-section .assignment-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+    #manual-assignment-section .summary-tile {
+        background: linear-gradient(135deg, #111827, #0b1020);
+        border: 1px solid #1f2937;
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    }
+    #manual-assignment-section .summary-tile .label {
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        color: #9ca3af;
+        letter-spacing: 0.04em;
+    }
+    #manual-assignment-section .summary-tile .value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #f3f4f6;
+    }
+    #manual-assignment-section .placeholder-card {
+        padding: 14px;
+        border-radius: 8px;
+        border: 1px dashed #4b5563;
+        text-align: center;
+        background: rgba(255,255,255,0.02);
+    }
+    #manual-assignment-section .batch-item {
+        border: 1px solid #1f2937;
+        background: #0f172a;
+        color: #e5e7eb;
+    }
+    #manual-assignment-section .batch-item .card-header {
+        background: linear-gradient(135deg, #1f2937, #111827);
+        color: #f8fafc;
+        border-bottom: 1px solid #111827;
+    }
+    #manual-assignment-section .alert {
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        padding: 14px 16px;
+        box-shadow: 0 10px 22px rgba(0,0,0,0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    #manual-assignment-section .alert:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 4px;
+        height: 100%;
+        opacity: 0.9;
+    }
+    #manual-assignment-section .alert-danger {
+        background: rgba(127, 29, 29, 0.35);
+        color: #fecdd3;
+    }
+    #manual-assignment-section .alert-danger:before {
+        background: #f87171;
+    }
+    #manual-assignment-section .alert-warning {
+        background: rgba(120, 53, 15, 0.35);
+        color: #fde68a;
+    }
+    #manual-assignment-section .alert-warning:before {
+        background: #f59e0b;
+    }
+    #manual-assignment-section .alert-success {
+        background: rgba(6, 95, 70, 0.35);
+        color: #a7f3d0;
+    }
+    #manual-assignment-section .alert-success:before {
+        background: #10b981;
+    }
+    #manual-assignment-section .alert i {
+        color: inherit;
+    }
+    #manual-assignment-section .panel-capacity-info {
+        color: #94a3b8;
+        font-size: 0.85rem;
+    }
+    #manual-assignment-section .panel-detail-box {
+        border: 1px solid #1f2937;
+        border-radius: 10px;
+        padding: 12px;
+        background: rgba(30, 41, 59, 0.55);
+        margin-top: 10px;
+    }
+    #manual-assignment-section .panel-detail-box .detail-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+    #manual-assignment-section .panel-detail-box .detail-chip {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 8px;
+        padding: 10px 12px;
+        min-width: 140px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    #manual-assignment-section .panel-detail-box .label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #9ca3af;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    #manual-assignment-section .panel-detail-box .value {
+        font-weight: 700;
+        color: #e5e7eb;
+        font-size: 0.95rem;
+    }
+    #manual-assignment-section .panel-detail-box .label i {
+        color: #60a5fa;
+        font-size: 0.9rem;
+    }
+    #manual-assignment-section .panel-detail-box .progress.meta-progress {
+        height: 12px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 999px;
+        position: relative;
+    }
+    #manual-assignment-section .panel-detail-box .progress-bar.meta-progress-current {
+        background: linear-gradient(90deg, #2563eb, #4f46e5);
+        z-index: 1;
+    }
+    #manual-assignment-section .panel-detail-box .progress-bar.meta-progress-future {
+        background: linear-gradient(90deg, #22c55e, #16a34a);
+        z-index: 2;
+    }
+    #manual-assignment-section .panel-detail-box .progress.meta-progress .progress-bar {
+        height: 12px;
+    }
+</style>
+@endpush
 @push('scripts')
 <script>
     window.manualPanelAssignment = (function($) {
@@ -144,7 +323,6 @@
             });
 
             $('#add-batch-btn').on('click', addBatch);
-
             $('#batches-container').on('click', '.remove-batch-btn', function() {
                 $(this).closest('.batch-item').remove();
                 updateBatchNumbers();
@@ -160,6 +338,7 @@
                     loadPanelCapacity(panelId, batchCard);
                 }
                 
+                updatePanelMeta(batchCard);
                 updatePanelDropdowns();
             });
 
@@ -295,12 +474,14 @@
                 success: function(response) {
                     if (response.success) {
                         const panel = response.panel;
+                        batchCard.data('panel-capacity', panel);
                         const capacityHtml = `
                             <i class=\"fas fa-info-circle me-1\"></i>
                             Available: ${panel.remaining_limit} / ${panel.limit} inboxes
                         `;
                         batchCard.find('.panel-capacity-info').html(capacityHtml);
                         validateBatch(batchCard);
+                        updatePanelMeta(batchCard);
                     }
                 },
                 error: function(xhr) {
@@ -332,6 +513,7 @@
             
             $('#batches-container').append($batchItem);
             
+            $('#batches-container .placeholder-card').remove();
             updatePanelDropdowns();
             updateAssignmentSummary();
         }
@@ -387,6 +569,7 @@
             }
             
             updateAssignmentSummary();
+            updatePanelMeta(batchCard);
         }
 
         function updateAllBatchCalculations() {
@@ -550,6 +733,48 @@
             });
 
             return cleanedFormData;
+        }
+
+        function updatePanelMeta(batchCard) {
+            const panelId = batchCard.find('.panel-select').val();
+            const metaBox = batchCard.find('.panel-detail-box');
+
+            if (!panelId) {
+                metaBox.hide();
+                return;
+            }
+
+            let panel = batchCard.data('panel-capacity');
+            if (!panel) {
+                panel = availablePanels.find(p => String(p.id) === String(panelId));
+            }
+            if (!panel) {
+                metaBox.hide();
+                return;
+            }
+
+            const spaceNeeded = parseInt(batchCard.find('.batch-space-value').val()) || 0;
+            const remainingAfter = Math.max(panel.remaining_limit - spaceNeeded, 0);
+            const used = Math.max(panel.limit - panel.remaining_limit, 0);
+            const percentUsed = panel.limit ? Math.min((used / panel.limit) * 100, 100) : 0;
+            const percentAfter = panel.limit ? Math.min(((used + spaceNeeded) / panel.limit) * 100, 100) : 0;
+            const futureSegment = Math.max(percentAfter - percentUsed, 0);
+
+            metaBox.find('.panel-name').text(panel.auto_generated_id || panel.title || `Panel ${panel.id}`);
+            metaBox.find('.remaining-count').text(`${panel.remaining_limit} free`);
+            metaBox.find('.capacity-count').text(`${panel.limit} total`);
+            metaBox.find('.after-count').text(`${remainingAfter} free after`);
+            metaBox.find('.meta-footnote').text(`Using ${used} of ${panel.limit} now • This batch needs ${spaceNeeded}`);
+
+            const currentBar = metaBox.find('.meta-progress-current');
+            const futureBar = metaBox.find('.meta-progress-future');
+            currentBar.css('width', `${percentUsed}%`);
+            futureBar.css({
+                width: `${futureSegment}%`,
+                marginLeft: `${percentUsed}%`
+            });
+
+            metaBox.show();
         }
 
         return {
