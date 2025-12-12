@@ -222,6 +222,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::resource('plans', PlanController::class);
         Route::get('plans-with-features', [PlanController::class, 'getPlansWithFeatures'])->name('plans.with.features');
         
+        // Manual Panel Assignment Routes (must be before resource route)
+        Route::get('pools/available-panels', [PoolController::class, 'getAvailablePanels'])->name('pools.getAvailablePanels');
+        Route::post('pools/validate-assignments', [PoolController::class, 'validateManualAssignments'])->name('pools.validateManualAssignments');
+        Route::get('pools/panels/{panel}/capacity', [PoolController::class, 'getPanelCapacity'])->name('pools.getPanelCapacity');
+        
         // Pools routes
         Route::resource('pools', PoolController::class);
         Route::post('pools/{pool}/assign', [PoolController::class, 'assign'])->name('pools.assign');
@@ -229,6 +234,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('pools/import/data', [PoolController::class, 'importData'])->name('pools.import.data');
         Route::get('pools/import-data/{id}', [PoolController::class, 'importDataById'])->name('pools.import-data');
         Route::post('pools/capacity-check', [PoolController::class, 'capacityCheck'])->name('pools.capacity-check');
+        
         // Pool Panels routes
         Route::get('/pool-panels/next-id', [App\Http\Controllers\PoolPanelController::class, 'getNextId'])->name('pool-panels.next-id');
         Route::get('pool-panels/data', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanelsData'])->name('pool-panels.data');

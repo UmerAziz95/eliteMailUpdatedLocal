@@ -565,6 +565,120 @@
                     </div>
                 </div>
 
+                {{-- Manual Panel Assignment Section --}}
+                <div id="manual-assignment-section" class="mb-4">
+                    <h5 class="mb-3 mt-4">
+                        <i class="fas fa-server me-2"></i>Panel Assignment
+                    </h5>
+
+                    {{-- Assignment Mode Toggle --}}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Assignment Mode</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="assignment_mode" id="mode_automatic" value="automatic" checked>
+                            <label class="btn btn-outline-primary" for="mode_automatic">
+                                <i class="fas fa-magic me-1"></i>Automatic Assignment
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="assignment_mode" id="mode_manual" value="manual">
+                            <label class="btn btn-outline-primary" for="mode_manual">
+                                <i class="fas fa-hand-pointer me-1"></i>Manual Assignment
+                            </label>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            <strong>Automatic:</strong> System assigns pools to panels automatically based on capacity.<br>
+                            <strong>Manual:</strong> You specify which domains go to which panels in batches.
+                        </small>
+                    </div>
+
+                    {{-- Manual Assignment Builder --}}
+                    <div id="manual-assignment-builder" style="display: none;">
+                        {{-- Assignment Summary --}}
+                        <div class="alert alert-info mb-3">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <strong>Total Domains:</strong> <span id="total-domains-count">0</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Assigned:</strong> <span id="assigned-domains-count">0</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Remaining:</strong> <span id="remaining-domains-count" class="text-danger">0</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Total Space:</strong> <span id="total-space-needed">0</span> inboxes
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Batch List --}}
+                        <div id="batches-container" class="mb-3">
+                            {{-- Batches will be added here dynamically --}}
+                        </div>
+
+                        {{-- Add Batch Button --}}
+                        <button type="button" class="btn btn-success mb-3" id="add-batch-btn">
+                            <i class="fas fa-plus me-1"></i>Add Batch
+                        </button>
+
+                        {{-- Validation Messages --}}
+                        <div id="assignment-validation-messages"></div>
+                    </div>
+                </div>
+
+                {{-- Batch Template (Hidden) --}}
+                <template id="batch-template">
+                    <div class="card mb-3 batch-item" data-batch-index="">
+                        <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                            <h6 class="mb-0">Batch <span class="batch-number"></span></h6>
+                            <button type="button" class="btn btn-sm btn-danger remove-batch-btn">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {{-- Panel Selection --}}
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Panel</label>
+                                    <select class="form-select panel-select" name="manual_assignments[][panel_id]">
+                                        <option value="">Select Panel...</option>
+                                    </select>
+                                    <small class="text-muted panel-capacity-info"></small>
+                                </div>
+
+                                {{-- Domain Range Selection --}}
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Start Domain</label>
+                                    <input type="number" class="form-control domain-start" name="manual_assignments[][domain_start]" min="1" placeholder="1">
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">End Domain</label>
+                                    <input type="number" class="form-control domain-end" name="manual_assignments[][domain_end]" min="1" placeholder="100">
+                                </div>
+
+                                {{-- Batch Summary --}}
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Space Needed</label>
+                                    <input type="text" class="form-control batch-space-display" readonly placeholder="0">
+                                    <input type="hidden" class="batch-space-value" name="manual_assignments[][space_needed]">
+                                </div>
+                            </div>
+
+                            {{-- Domain List Preview --}}
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <strong>Domains:</strong> <span class="domain-count-display">0</span> domains
+                                    (<span class="domain-range-display">-</span>)
+                                </small>
+                            </div>
+
+                            {{-- Validation Status --}}
+                            <div class="batch-validation-status mt-2"></div>
+                        </div>
+                    </div>
+                </template>
+
                 <div class="col-md-6" style="display: none;">
                     <label>Coupon Code</label>
                     <input type="text" name="coupon_code" class="form-control"
@@ -3772,6 +3886,351 @@ $(document).ready(function() {
     
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
+
+    // ========================================
+    // Manual Panel Assignment Functionality
+    // ========================================
+
+    let batchIndex = 0;
+    let totalDomains = 0;
+    let inboxesPerDomain = 1;
+    let providerType = 'Google';
+    let availablePanels = [];
+
+    // Initialize Manual Assignment
+    function initializeManualAssignment() {
+        // Toggle between automatic and manual mode
+        $('input[name="assignment_mode"]').on('change', function() {
+            if ($(this).val() === 'manual') {
+                $('#manual-assignment-builder').slideDown();
+                loadAvailablePanels();
+            } else {
+                $('#manual-assignment-builder').slideUp();
+            }
+        });
+
+        // Add Batch Button
+        $('#add-batch-btn').on('click', function() {
+            addBatch();
+        });
+
+        // Remove Batch Button (delegated)
+        $('#batches-container').on('click', '.remove-batch-btn', function() {
+            $(this).closest('.batch-item').remove();
+            updateBatchNumbers();
+            updateAssignmentSummary();
+        });
+
+        // Panel Selection Change
+        $('#batches-container').on('change', '.panel-select', function() {
+            const panelId = $(this).val();
+            const batchCard = $(this).closest('.batch-item');
+            
+            if (panelId) {
+                loadPanelCapacity(panelId, batchCard);
+            }
+            
+            // Refresh all panel dropdowns to disable already selected panels
+            updatePanelDropdowns();
+        });
+
+        // Domain Range Change
+        $('#batches-container').on('input', '.domain-start, .domain-end', function() {
+            const batchCard = $(this).closest('.batch-item');
+            updateBatchCalculations(batchCard);
+        });
+
+        // Update when inboxes per domain changes
+        $('#inboxes_per_domain').on('change', function() {
+            inboxesPerDomain = parseInt($(this).val()) || 1;
+            updateAllBatchCalculations();
+        });
+
+        // Update when domains are added/removed
+        $('#domains').on('input', debounce(function() {
+            updateDomainCount();
+        }, 500));
+
+        // Update when provider type changes
+        $('select[name="hosting_platform"]').on('change', function() {
+            const selectedPlatform = $('option:selected', this).data('provider');
+            if (selectedPlatform) {
+                providerType = selectedPlatform;
+                if ($('input[name="assignment_mode"]:checked').val() === 'manual') {
+                    loadAvailablePanels();
+                }
+            }
+        });
+    }
+
+    // Load Available Panels
+    // Provider type is fetched from Configuration table on server-side (not from request)
+    function loadAvailablePanels() {
+        $.ajax({
+            url: '{{ route("admin.pools.getAvailablePanels") }}',
+            method: 'GET',
+            data: {}, // No need to send provider_type - it's read from Configuration table
+            success: function(response) {
+                if (response.success) {
+                    availablePanels = response.panels;
+                    // Store provider type returned from server
+                    if (response.provider_type) {
+                        providerType = response.provider_type;
+                    }
+                    updatePanelDropdowns();
+                }
+            },
+            error: function(xhr) {
+                console.error('Failed to load available panels:', xhr);
+                alert('Failed to load available panels. Please try again.');
+            }
+        });
+    }
+
+    // Update Panel Dropdowns
+    function updatePanelDropdowns() {
+        const $selects = $('.panel-select');
+        
+        // Get list of already selected panel IDs from ALL batches
+        const selectedPanelIds = [];
+        $selects.each(function() {
+            const panelId = $(this).val();
+            if (panelId && panelId !== '') {
+                selectedPanelIds.push(String(panelId));
+            }
+        });
+        
+        // Update each dropdown
+        $selects.each(function() {
+            const $currentSelect = $(this);
+            const currentValue = String($currentSelect.val() || '');
+            
+            // Clear and rebuild the dropdown
+            $currentSelect.empty().append('<option value="">Select Panel...</option>');
+            
+            availablePanels.forEach(panel => {
+                const panelIdStr = String(panel.id);
+                
+                // Check if this panel is already selected in a DIFFERENT batch
+                const isUsedInOtherBatch = selectedPanelIds.includes(panelIdStr) && panelIdStr !== currentValue;
+                
+                // Only show panels that are NOT used in other batches
+                if (!isUsedInOtherBatch) {
+                    const optionText = `${panel.auto_generated_id} - ${panel.title} (${panel.remaining_limit}/${panel.limit} available)`;
+                    $currentSelect.append(`<option value="${panel.id}">${optionText}</option>`);
+                }
+            });
+            
+            // Restore current value if it exists
+            if (currentValue && currentValue !== '') {
+                $currentSelect.val(currentValue);
+            }
+        });
+    }
+
+    // Load Panel Capacity Info
+    function loadPanelCapacity(panelId, batchCard) {
+        $.ajax({
+            url: `/admin/pools/panels/${panelId}/capacity`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const panel = response.panel;
+                    const capacityHtml = `
+                        <i class="fas fa-info-circle me-1"></i>
+                        Available: ${panel.remaining_limit} / ${panel.limit} inboxes
+                    `;
+                    batchCard.find('.panel-capacity-info').html(capacityHtml);
+                    validateBatch(batchCard);
+                }
+            },
+            error: function(xhr) {
+                console.error('Failed to load panel capacity:', xhr);
+            }
+        });
+    }
+
+    // Add New Batch
+    function addBatch() {
+        const template = document.getElementById('batch-template');
+        const clone = template.content.cloneNode(true);
+        
+        batchIndex++;
+        const $batchItem = $(clone).find('.batch-item');
+        $batchItem.attr('data-batch-index', batchIndex);
+        $batchItem.find('.batch-number').text(batchIndex);
+        
+        // Add to container first
+        $('#batches-container').append($batchItem);
+        
+        // Update all panel dropdowns to filter out already selected panels
+        updatePanelDropdowns();
+        
+        updateAssignmentSummary();
+    }
+
+    // Update Batch Numbers
+    function updateBatchNumbers() {
+        $('.batch-item').each(function(index) {
+            $(this).find('.batch-number').text(index + 1);
+        });
+    }
+
+    // Update Batch Calculations
+    function updateBatchCalculations(batchCard) {
+        const start = parseInt(batchCard.find('.domain-start').val()) || 0;
+        const end = parseInt(batchCard.find('.domain-end').val()) || 0;
+        
+        if (start > 0 && end > 0 && end >= start) {
+            const domainCount = end - start + 1;
+            const spaceNeeded = domainCount * inboxesPerDomain;
+            
+            batchCard.find('.domain-count-display').text(domainCount);
+            batchCard.find('.domain-range-display').text(`${start} - ${end}`);
+            batchCard.find('.batch-space-display').val(spaceNeeded);
+            batchCard.find('.batch-space-value').val(spaceNeeded);
+            
+            validateBatch(batchCard);
+        }
+        
+        updateAssignmentSummary();
+    }
+
+    // Update All Batch Calculations
+    function updateAllBatchCalculations() {
+        $('.batch-item').each(function() {
+            updateBatchCalculations($(this));
+        });
+    }
+
+    // Validate Single Batch
+    function validateBatch(batchCard) {
+        const start = parseInt(batchCard.find('.domain-start').val()) || 0;
+        const end = parseInt(batchCard.find('.domain-end').val()) || 0;
+        const spaceNeeded = parseInt(batchCard.find('.batch-space-value').val()) || 0;
+        const panelId = batchCard.find('.panel-select').val();
+        
+        let errors = [];
+        
+        // Validate domain range
+        if (start < 1 || end < 1) {
+            errors.push('Domain range must start from 1');
+        }
+        if (end < start) {
+            errors.push('End domain must be >= start domain');
+        }
+        if (end > totalDomains) {
+            errors.push(`End domain cannot exceed total domains (${totalDomains})`);
+        }
+        
+        // Validate panel capacity
+        if (panelId && spaceNeeded > 0) {
+            const panel = availablePanels.find(p => p.id == panelId);
+            if (panel && spaceNeeded > panel.remaining_limit) {
+                errors.push(`Space needed (${spaceNeeded}) exceeds panel capacity (${panel.remaining_limit})`);
+            }
+        }
+        
+        // Display validation status
+        const $statusDiv = batchCard.find('.batch-validation-status');
+        if (errors.length > 0) {
+            $statusDiv.html(`
+                <div class="alert alert-danger alert-sm mb-0">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    ${errors.join('<br>')}
+                </div>
+            `);
+        } else if (panelId && start > 0 && end > 0) {
+            $statusDiv.html(`
+                <div class="alert alert-success alert-sm mb-0">
+                    <i class="fas fa-check-circle me-1"></i>
+                    Valid assignment
+                </div>
+            `);
+        } else {
+            $statusDiv.empty();
+        }
+    }
+
+    // Update Assignment Summary
+    function updateAssignmentSummary() {
+        let assignedDomains = 0;
+        const assignedRanges = [];
+        
+        $('.batch-item').each(function() {
+            const start = parseInt($(this).find('.domain-start').val()) || 0;
+            const end = parseInt($(this).find('.domain-end').val()) || 0;
+            
+            if (start > 0 && end >= start) {
+                assignedDomains += (end - start + 1);
+                assignedRanges.push([start, end]);
+            }
+        });
+        
+        const remaining = totalDomains - assignedDomains;
+        const totalSpace = totalDomains * inboxesPerDomain;
+        
+        $('#assigned-domains-count').text(assignedDomains);
+        $('#remaining-domains-count').text(remaining).toggleClass('text-danger', remaining !== 0);
+        $('#total-space-needed').text(totalSpace);
+        
+        // Validate complete assignment
+        if (remaining !== 0 && totalDomains > 0) {
+            $('#assignment-validation-messages').html(`
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    You have ${remaining} unassigned domains. All domains must be assigned.
+                </div>
+            `);
+        } else if (totalDomains > 0 && remaining === 0) {
+            $('#assignment-validation-messages').html(`
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-1"></i>
+                    All domains are assigned!
+                </div>
+            `);
+        } else {
+            $('#assignment-validation-messages').empty();
+        }
+    }
+
+    // Update Domain Count
+    function updateDomainCount() {
+        const domainsText = $('#domains').val().trim();
+        if (!domainsText) {
+            totalDomains = 0;
+        } else {
+            const domains = domainsText.split(/[\n,]+/).map(d => d.trim()).filter(d => d);
+            totalDomains = domains.length;
+        }
+        
+        $('#total-domains-count').text(totalDomains);
+        updateAssignmentSummary();
+    }
+
+    // Debounce Helper
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Initialize manual assignment on page load
+    initializeManualAssignment();
+    
+    // Initial setup
+    inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+    updateDomainCount();
+
+    // ========================================
+    // End Manual Panel Assignment
+    // ========================================
 });
 </script>
 

@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\PoolSplitResetService;
 use Illuminate\Support\Facades\Validator;
 use App\Services\PoolSplitCapacityService;
+use App\Services\ManualPanelAssignmentService;
+use App\Models\PoolPanel;
 
 class PoolController extends Controller
 {
@@ -418,12 +420,28 @@ class PoolController extends Controller
 
             $pool = Pool::create($data);
 
-            // Automatically assign panel to the newly created pool
-            try {
-                \Artisan::call('pool:assigned-panel');
-            } catch (\Exception $e) {
-                \Log::error('Failed to auto-assign panel for pool ' . $pool->id . ': ' . $e->getMessage());
+            // Check if manual assignment data is provided
+            if ($request->has('manual_assignments') && !empty($request->manual_assignments)) {
+                // Use manual assignment service
+                try {
+                    $assignmentService = new ManualPanelAssignmentService();
+                    $assignmentService->processManualAssignments($pool, $request->manual_assignments);
+                    \Log::info('Manual panel assignment completed for pool ' . $pool->id);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to manually assign panels for pool ' . $pool->id . ': ' . $e->getMessage());
+                    // Delete the pool if manual assignment fails
+                    $pool->delete();
+                    throw $e;
+                }
+            } else {
+                // Use existing automatic assignment
+                try {
+                    \Artisan::call('pool:assigned-panel');
+                } catch (\Exception $e) {
+                    \Log::error('Failed to auto-assign panel for pool ' . $pool->id . ': ' . $e->getMessage());
+                }
             }
+
 
             if ($request->expectsJson()) {
                 return response()->json([
@@ -854,6 +872,34 @@ class PoolController extends Controller
 
             $pool->update($data);
 
+            // Handle manual panel assignment if provided
+            if ($request->has('manual_assignments') && !empty($request->manual_assignments)) {
+                try {
+                    $assignmentService = new ManualPanelAssignmentService();
+                    
+                    // Rollback existing assignments
+                    $assignmentService->rollbackManualAssignments($pool);
+                    
+                    // Apply new manual assignments
+                    $assignmentService->processManualAssignments($pool, $request->manual_assignments);
+                    
+                    \Log::info('Manual assignments updated for pool ' . $pool->id);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to update manual assignments for pool ' . $pool->id . ': ' . $e->getMessage());
+                    // Don't fail the entire update, just log the error
+                }
+            } elseif ($request->has('reassign_automatically') && $request->reassign_automatically) {
+                // Re-run automatic assignment if requested
+                try {
+                    \Artisan::call('pool:assigned-panel', [
+                        '--provider' => $pool->provider_type
+                    ]);
+                    \Log::info('Automatic panel reassignment completed for pool ' . $pool->id);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to auto-reassign panels for pool ' . $pool->id . ': ' . $e->getMessage());
+                }
+            }
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
@@ -896,6 +942,87 @@ class PoolController extends Controller
                 'message' => 'Failed to delete pool',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Get available panels for provider type (for manual assignment)
+     * Provider type is fetched from Configuration table, not from request
+     */
+    public function getAvailablePanels(Request $request)
+    {
+        try {
+            // Get provider type from Configuration table (same as auto-assignment command)
+            $providerType = Configuration::get('PROVIDER_TYPE', 'Google');
+            
+            $assignmentService = new ManualPanelAssignmentService();
+            $panels = $assignmentService->getAvailablePanels($providerType);
+            
+            return response()->json([
+                'success' => true,
+                'panels' => $panels,
+                'provider_type' => $providerType // Return provider type for reference
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to get available panels: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load available panels',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Validate manual assignments before submission
+     */
+    public function validateManualAssignments(Request $request)
+    {
+        try {
+            $poolData = $request->input('pool_data', []);
+            $assignments = $request->input('manual_assignments', []);
+            
+            $assignmentService = new ManualPanelAssignmentService();
+            $validation = $assignmentService->validateManualAssignments($poolData, $assignments);
+            
+            return response()->json($validation);
+        } catch (\Exception $e) {
+            \Log::error('Failed to validate manual assignments: ' . $e->getMessage());
+            return response()->json([
+                'valid' => false,
+                'errors' => ['Failed to validate assignments: ' . $e->getMessage()],
+                'warnings' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * Get panel capacity info
+     */
+    public function getPanelCapacity($panelId)
+    {
+        try {
+            $panel = PoolPanel::findOrFail($panelId);
+            
+            return response()->json([
+                'success' => true,
+                'panel' => [
+                    'id' => $panel->id,
+                    'title' => $panel->title,
+                    'auto_generated_id' => $panel->auto_generated_id,
+                    'limit' => $panel->limit,
+                    'used_limit' => $panel->used_limit,
+                    'remaining_limit' => $panel->remaining_limit,
+                    'provider_type' => $panel->provider_type
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to get panel capacity: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get panel capacity',
+                'error' => $e->getMessage()
+            ], 404);
         }
     }
 
