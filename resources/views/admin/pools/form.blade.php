@@ -649,7 +649,8 @@
                                 {{-- Domain Range Selection --}}
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label">Start Domain</label>
-                                    <input type="number" class="form-control domain-start" name="manual_assignments[][domain_start]" min="1" placeholder="1">
+                                    <input type="number" class="form-control domain-start" name="manual_assignments[][domain_start]" min="1" placeholder="1" readonly>
+                                    <small class="text-muted">Auto-calculated</small>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -3530,6 +3531,50 @@ $(document).ready(function() {
             value: JSON.stringify(domainsArray)
         });
         
+        // Add provider_type from server (matches what manual assignment uses)
+        // This will be set from the stored providerType variable or fetched from Configuration
+        if (providerType) {
+            formData.push({
+                name: 'provider_type',
+                value: providerType
+            });
+        }
+        
+        // Clean up manual_assignments - remove incomplete batches
+        if ($('input[name="assignment_mode"]:checked').val() === 'manual') {
+            // Remove all existing manual_assignments from formData
+            formData = formData.filter(item => !item.name.startsWith('manual_assignments'));
+            
+            // Collect valid batches only
+            const validBatches = [];
+            $('.batch-item').each(function() {
+                const panelId = $(this).find('.panel-select').val();
+                const domainStart = $(this).find('.domain-start').val();
+                const domainEnd = $(this).find('.domain-end').val();
+                const spaceNeeded = $(this).find('.batch-space-value').val();
+                
+                // Only include batches with all required fields
+                if (panelId && domainStart && domainEnd && spaceNeeded) {
+                    validBatches.push({
+                        panel_id: panelId,
+                        domain_start: domainStart,
+                        domain_end: domainEnd,
+                        space_needed: spaceNeeded
+                    });
+                }
+            });
+            
+            console.log('Valid batches to submit:', validBatches);
+            
+            // Add valid batches to formData
+            validBatches.forEach((batch, index) => {
+                formData.push({ name: `manual_assignments[${index}][panel_id]`, value: batch.panel_id });
+                formData.push({ name: `manual_assignments[${index}][domain_start]`, value: batch.domain_start });
+                formData.push({ name: `manual_assignments[${index}][domain_end]`, value: batch.domain_end });
+                formData.push({ name: `manual_assignments[${index}][space_needed]`, value: batch.space_needed });
+            });
+        }
+        
         $.ajax({
             url: form.attr('action'),
             method: form.attr('method') || 'POST',
@@ -3935,7 +3980,63 @@ $(document).ready(function() {
         });
 
         // Domain Range Change
-        $('#batches-container').on('input', '.domain-start, .domain-end', function() {
+        $('#batches-container').on('change', '.domain-end', function() {
+            const batchCard = $(this).closest('.batch-item');
+            const $endInput = $(this);
+            const start = parseInt(batchCard.find('.domain-start').val()) || 0;
+            let end = parseInt($endInput.val()) || 0;
+            
+            // Enforce validation rules
+            if (end > 0) {
+                // Rule 1: End must be >= Start
+                if (end < start) {
+                    $endInput.val(start);
+                    end = start;
+                }
+                
+                // Rule 2: End cannot exceed total domains
+                if (end > totalDomains) {
+                    $endInput.val(totalDomains);
+                    end = totalDomains;
+                }
+                
+                // Rule 3: Check if this causes negative remaining domains
+                // Calculate total assigned after this change
+                let totalAssigned = 0;
+                $('.batch-item').each(function() {
+                    const $batch = $(this);
+                    const bStart = parseInt($batch.find('.domain-start').val()) || 0;
+                    let bEnd = parseInt($batch.find('.domain-end').val()) || 0;
+                    
+                    // Use the current end value for the batch being edited
+                    if ($batch.is(batchCard)) {
+                        bEnd = end;
+                    }
+                    
+                    if (bStart > 0 && bEnd > 0 && bEnd >= bStart) {
+                        totalAssigned += (bEnd - bStart + 1);
+                    }
+                });
+                
+                // If total assigned exceeds total domains, adjust end value
+                if (totalAssigned > totalDomains) {
+                    const excessDomains = totalAssigned - totalDomains;
+                    const adjustedEnd = end - excessDomains;
+                    if (adjustedEnd >= start) {
+                        $endInput.val(adjustedEnd);
+                        end = adjustedEnd;
+                    }
+                }
+            }
+            
+            updateBatchCalculations(batchCard);
+            
+            // Update subsequent batches when end domain changes
+            updateSubsequentBatches(batchCard);
+        });
+
+        // Live calculation update (without validation) on input
+        $('#batches-container').on('input', '.domain-end', function() {
             const batchCard = $(this).closest('.batch-item');
             updateBatchCalculations(batchCard);
         });
@@ -4060,6 +4161,21 @@ $(document).ready(function() {
         $batchItem.attr('data-batch-index', batchIndex);
         $batchItem.find('.batch-number').text(batchIndex);
         
+        // Calculate next domain start based on last batch's end + 1
+        let nextDomainStart = 1;
+        const $batches = $('.batch-item');
+        if ($batches.length > 0) {
+            // Get the last batch's end value
+            const $lastBatch = $batches.last();
+            const lastEnd = parseInt($lastBatch.find('.domain-end').val()) || 0;
+            if (lastEnd > 0) {
+                nextDomainStart = lastEnd + 1;
+            }
+        }
+        
+        // Set the start value for the new batch
+        $batchItem.find('.domain-start').val(nextDomainStart);
+        
         // Add to container first
         $('#batches-container').append($batchItem);
         
@@ -4074,6 +4190,39 @@ $(document).ready(function() {
         $('.batch-item').each(function(index) {
             $(this).find('.batch-number').text(index + 1);
         });
+    }
+
+    // Update Subsequent Batches (when end domain changes)
+    function updateSubsequentBatches(changedBatchCard) {
+        const changedEnd = parseInt(changedBatchCard.find('.domain-end').val()) || 0;
+        
+        if (changedEnd > 0) {
+            let nextStart = changedEnd + 1;
+            let foundChanged = false;
+            
+            // Iterate through all batches
+            $('.batch-item').each(function() {
+                const $currentBatch = $(this);
+                
+                // Skip until we find the changed batch
+                if (!foundChanged) {
+                    if ($currentBatch.is(changedBatchCard)) {
+                        foundChanged = true;
+                    }
+                    return; // continue to next iteration
+                }
+                
+                // Update subsequent batches
+                $currentBatch.find('.domain-start').val(nextStart);
+                
+                const currentEnd = parseInt($currentBatch.find('.domain-end').val()) || 0;
+                if (currentEnd > 0) {
+                    // Recalculate this batch
+                    updateBatchCalculations($currentBatch);
+                    nextStart = currentEnd + 1;
+                }
+            });
+        }
     }
 
     // Update Batch Calculations
@@ -4173,6 +4322,14 @@ $(document).ready(function() {
         $('#assigned-domains-count').text(assignedDomains);
         $('#remaining-domains-count').text(remaining).toggleClass('text-danger', remaining !== 0);
         $('#total-space-needed').text(totalSpace);
+        
+        // Disable Add Batch button if all domains are assigned
+        const $addBatchBtn = $('#add-batch-btn');
+        if (totalDomains > 0 && remaining === 0) {
+            $addBatchBtn.prop('disabled', true).addClass('disabled');
+        } else {
+            $addBatchBtn.prop('disabled', false).removeClass('disabled');
+        }
         
         // Validate complete assignment
         if (remaining !== 0 && totalDomains > 0) {

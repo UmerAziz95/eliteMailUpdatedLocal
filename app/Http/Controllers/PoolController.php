@@ -413,6 +413,11 @@ class PoolController extends Controller
             // Handle boolean conversion for master_inbox_confirmation
             $data['master_inbox_confirmation'] = $request->boolean('master_inbox_confirmation');
 
+            // Set provider_type from Configuration table (same as manual assignment uses)
+            if (!isset($data['provider_type']) || empty($data['provider_type'])) {
+                $data['provider_type'] = Configuration::get('PROVIDER_TYPE', 'Google');
+            }
+
             // Set status to pending if not specified
             if (!isset($data['status'])) {
                 $data['status'] = 'pending';

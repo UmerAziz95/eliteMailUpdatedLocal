@@ -73,6 +73,7 @@ class Pool extends Model
         'coupon_code',
         'purchase_date',
         'is_splitting',
+        'provider_type', // Provider type for panel assignment (Google, Microsoft 365, etc.)
     ];
 
     protected $casts = [
