@@ -17,7 +17,7 @@
                 <i class="fas fa-hand-pointer me-1"></i>Manual Assignment
             </label>
         </div>
-        <small class="text-muted d-block mt-2">
+        <small class=" d-block mt-2">
             <strong>Automatic:</strong> System assigns pools to panels automatically based on capacity.<br>
             <strong>Manual:</strong> You specify which domains go to which panels in batches.
         </small>
@@ -53,7 +53,7 @@
 
         {{-- Batch List --}}
         <div id="batches-container" class="mb-3">
-            <div class="placeholder-card text-muted">
+            <div class="placeholder-card ">
                 <i class="fas fa-layer-group me-2"></i>No batches yet. Click "Add Batch" to start.
             </div>
         </div>
@@ -80,14 +80,14 @@
                     <select class="form-select panel-select" name="manual_assignments[][panel_id]">
                         <option value="">Select Panel...</option>
                     </select>
-                    <small class="text-muted panel-capacity-info"></small>
+                    <small class=" panel-capacity-info"></small>
                 </div>
 
                 {{-- Domain Range Selection --}}
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Start Domain</label>
                     <input type="number" class="form-control domain-start" name="manual_assignments[][domain_start]" min="1" placeholder="1" readonly>
-                    <small class="text-muted">Auto-calculated</small>
+                    <small class="">Auto-calculated</small>
                 </div>
 
                 <div class="col-md-3 mb-3">
@@ -127,12 +127,12 @@
                 <div class="progress-bar meta-progress-current" role="progressbar" style="width: 0%"></div>
                 <div class="progress-bar meta-progress-future" role="progressbar" style="width: 0%"></div>
             </div>
-            <small class="text-muted mt-1 d-block meta-footnote"></small>
+            <small class=" mt-1 d-block meta-footnote"></small>
         </div>
 
             {{-- Domain List Preview --}}
             <div class="mt-2">
-                <small class="text-muted">
+                <small class="">
                     <strong>Domains:</strong> <span class="domain-count-display">0</span> domains
                     (<span class="domain-range-display">-</span>)
                 </small>
