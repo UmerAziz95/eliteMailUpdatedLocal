@@ -3381,6 +3381,42 @@ $(document).ready(function() {
             });
             return false;
         }
+
+        // Check manual panel assignment validation if enabled
+        if (window.manualPanelAssignment && typeof window.manualPanelAssignment.validateManualAssignments === 'function') {
+            const validationResult = window.manualPanelAssignment.validateManualAssignments();
+            
+            if (!validationResult.valid) {
+                console.error('Manual panel assignment validation failed');
+                console.log('Errors:', validationResult.errors);
+                
+                // Reset form state
+                isFormSubmitting = false;
+                formValidationInProgress = false;
+                
+                // Re-enable submit button
+                const submitButton = $('#editOrderForm').find('button[type="submit"]');
+                submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
+                
+                // Build error message HTML
+                let errorHtml = '<div style="text-align: left;">';
+                errorHtml += '<ul style="margin: 10px 0; padding-left: 20px;">';
+                validationResult.errors.forEach(error => {
+                    errorHtml += '<li>' + error + '</li>';
+                });
+                errorHtml += '</ul></div>';
+                
+                Swal.fire({
+                    title: 'Manual Assignment Errors!',
+                    html: errorHtml,
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545',
+                    width: '600px'
+                });
+                return false;
+            }
+        }
         
         // Set form submitting flag
         isFormSubmitting = true;

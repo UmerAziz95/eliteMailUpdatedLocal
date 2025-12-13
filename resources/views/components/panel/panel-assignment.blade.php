@@ -1252,7 +1252,6 @@
                             .append('Available: ' + panel.remaining_limit + ' / ' + panel.limit + ' inboxes');
                         batchCard.find('.panel-capacity-info').html($capacityInfo);
                         validateBatch(batchCard);
-                        updatePanelMeta(batchCard);
                     }
                 },
                 error: function(xhr) {
@@ -1758,12 +1757,68 @@
             });
         }
 
+        function validateManualAssignments() {
+            if (!isManualMode()) {
+                return { valid: true };
+            }
+
+            const $batches = $('.batch-item');
+            const errors = [];
+
+            // Check if there are any batches
+            if ($batches.length === 0) {
+                errors.push('Please add at least one batch assignment.');
+                return { valid: false, errors: errors };
+            }
+
+            // Check each batch for validation errors
+            $batches.each(function(index) {
+                const $batch = $(this);
+                const batchNum = index + 1;
+                const panelId = $batch.find('.panel-select').val();
+                const startDomain = parseInt($batch.find('.domain-start').val()) || 0;
+                const endDomain = parseInt($batch.find('.domain-end').val()) || 0;
+                const hasErrorAlert = $batch.find('.batch-validation-status .alert-danger').length > 0;
+
+                if (!panelId) {
+                    errors.push('Batch ' + batchNum + ': Please select a panel.');
+                }
+
+                if (endDomain === 0) {
+                    errors.push('Batch ' + batchNum + ': Please specify the end domain.');
+                }
+
+                if (hasErrorAlert) {
+                    const errorText = $batch.find('.batch-validation-status .alert-danger').text().trim();
+                    errors.push('Batch ' + batchNum + ': ' + errorText.replace(/\s+/g, ' '));
+                }
+            });
+
+            // Check if all domains are assigned
+            const assignedDomains = getAssignedDomainsCount();
+            const remaining = totalDomains - assignedDomains;
+            
+            if (remaining > 0) {
+                errors.push('You have ' + remaining + ' unassigned domains. All domains must be assigned.');
+            }
+
+            if (remaining < 0) {
+                errors.push('You have assigned more domains than available. Please check your batch ranges.');
+            }
+
+            return {
+                valid: errors.length === 0,
+                errors: errors
+            };
+        }
+
         return {
             init,
             getProviderType: () => providerType,
             appendAssignments,
             collectValidBatches,
-            isManualMode
+            isManualMode,
+            validateManualAssignments
         };
     })(jQuery);
 
