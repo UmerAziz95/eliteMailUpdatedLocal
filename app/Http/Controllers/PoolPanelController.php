@@ -774,6 +774,21 @@ class PoolPanelController extends Controller
     public function getCapacityAlert(Request $request)
     {
         try {
+            // Provider-aware capacities
+            $providerType = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+            $poolPanelCapacity = strtolower($providerType) === 'microsoft 365'
+                ? Configuration::get('MICROSOFT_365_CAPACITY', env('MICROSOFT_365_CAPACITY', env('PANEL_CAPACITY', 1790)))
+                : Configuration::get('GOOGLE_PANEL_CAPACITY', env('GOOGLE_PANEL_CAPACITY', env('PANEL_CAPACITY', 1790)));
+            $maxSplitCapacity = strtolower($providerType) === 'microsoft 365'
+                ? Configuration::get('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)))
+                : Configuration::get('GOOGLE_MAX_SPLIT_CAPACITY', env('GOOGLE_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
+            $enableMaxSplit = strtolower($providerType) === 'microsoft 365'
+                ? Configuration::get('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', env('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', true))
+                : Configuration::get('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', env('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', true));
+            if (! $enableMaxSplit || $maxSplitCapacity <= 0) {
+                $maxSplitCapacity = $poolPanelCapacity;
+            }
+
             // Get pending pools that require pool panel capacity
             $pendingPools = \App\Models\Pool::where('status', 'pending')
                 ->where('is_splitting', 0) // Only get pools that are not currently being split
@@ -785,8 +800,6 @@ class PoolPanelController extends Controller
             $insufficientSpacePools = [];
             $totalPoolPanelsNeeded = 0;
             $totalInboxes = 0;
-            $poolPanelCapacity = env('PANEL_CAPACITY', 1790);
-            $maxSplitCapacity = 1790;
             
             Log::info("Pool panel capacity alert calculation started", [
                 'pending_pools_count' => $pendingPools->count(),
@@ -796,7 +809,16 @@ class PoolPanelController extends Controller
             
             foreach ($pendingPools as $pool) {
                 // Calculate available space for this pool
-                $availableSpace = $this->getAvailablePoolPanelSpace($pool->total_inboxes, $poolPanelCapacity, $maxSplitCapacity);
+                $inboxesPerDomain = $pool->inboxes_per_domain ?? 1;
+                $totalInboxes += $pool->total_inboxes ?? 0;
+
+                $availableSpace = $this->getAvailablePoolPanelSpace(
+                    $pool->total_inboxes,
+                    $inboxesPerDomain,
+                    $poolPanelCapacity,
+                    $maxSplitCapacity,
+                    $providerType
+                );
                 
                 if ($pool->total_inboxes > $availableSpace) {
                     // Calculate pool panels needed for this pool
@@ -828,10 +850,24 @@ class PoolPanelController extends Controller
             
             // Adjust total pool panels needed based on available pool panels
             $availablePoolPanelCount = PoolPanel::where('is_active', true)
+                ->where('limit', $poolPanelCapacity)
+                ->where('provider_type', $providerType)
                 ->where('remaining_limit', '>=', $maxSplitCapacity)
                 ->count();
-            
-            $adjustedPoolPanelsNeeded = max(0, $totalPoolPanelsNeeded - $availablePoolPanelCount);
+
+            $availablePanels = PoolPanel::where('is_active', true)
+                ->where('limit', $poolPanelCapacity)
+                ->where('provider_type', $providerType)
+                ->where('remaining_limit', '>', 0)
+                ->get();
+
+            $totalSpaceAvailable = 0;
+            foreach ($availablePanels as $panel) {
+                $totalSpaceAvailable += min($panel->remaining_limit, $maxSplitCapacity);
+            }
+
+            $remainingAfterAvailable = max(0, $totalInboxes - $totalSpaceAvailable);
+            $adjustedPoolPanelsNeeded = (int) max(0, ceil($remainingAfterAvailable / $maxSplitCapacity));
             
             Log::info("Pool panel capacity alert calculation completed", [
                 'total_pool_panels_needed_raw' => $totalPoolPanelsNeeded,
@@ -849,8 +885,11 @@ class PoolPanelController extends Controller
                 'insufficient_pools_count' => count($insufficientSpacePools),
                 'insufficient_pools' => $insufficientSpacePools,
                 'total_inboxes' => $totalInboxes,
+                'total_space_available' => $totalSpaceAvailable,
+                'remaining_after_available' => $remainingAfterAvailable,
                 'pool_panel_capacity' => $poolPanelCapacity,
                 'max_split_capacity' => $maxSplitCapacity,
+                'provider_type' => $providerType,
                 'last_updated' => now()->toDateTimeString()
             ]);
             
@@ -870,12 +909,41 @@ class PoolPanelController extends Controller
     /**
      * Get available pool panel space for specific pool size
      */
-    private function getAvailablePoolPanelSpace(int $poolSize, int $poolPanelCapacity, int $maxSplitCapacity): int
-    {
-        // Get active pool panels with remaining capacity
+    private function getAvailablePoolPanelSpace(
+        int $poolSize,
+        int $inboxesPerDomain,
+        int $poolPanelCapacity,
+        int $maxSplitCapacity,
+        string $providerType
+    ): int {
+        // For larger pools, prefer full-capacity panels
+        if ($poolSize >= $poolPanelCapacity) {
+            $fullCapacityPanels = PoolPanel::where('is_active', 1)
+                ->where('limit', $poolPanelCapacity)
+                ->where('provider_type', $providerType)
+                ->where('remaining_limit', '>=', $inboxesPerDomain)
+                ->get();
+
+            $fullCapacitySpace = 0;
+            foreach ($fullCapacityPanels as $panel) {
+                $fullCapacitySpace += min($panel->remaining_limit, $maxSplitCapacity);
+            }
+
+            Log::info("Available pool panel space (large pool)", [
+                'pool_size' => $poolSize,
+                'available_pool_panels_count' => $fullCapacityPanels->count(),
+                'total_available_space' => $fullCapacitySpace
+            ]);
+
+            return $fullCapacitySpace;
+        }
+
+        // Smaller pools: any active panel with room for at least one domain
         $availablePoolPanels = PoolPanel::where('is_active', 1)
-                                    ->where('remaining_limit', '>', 0)
-                                    ->get();
+            ->where('limit', $poolPanelCapacity)
+            ->where('provider_type', $providerType)
+            ->where('remaining_limit', '>=', $inboxesPerDomain)
+            ->get();
         
         $totalSpace = 0;
         foreach ($availablePoolPanels as $poolPanel) {
