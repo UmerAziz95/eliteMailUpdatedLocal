@@ -198,11 +198,17 @@
 <style>
     /* ===== Assignment Section ===== */
     #manual-assignment-section {
-        background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+        --accent: var(--second-primary, #5a49cd);
+        --accent-2: var(--primary-color, #4f46e5);
+        --bg-1: #0f172a;
+        --bg-2: #0d1324;
+        background: radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 35%),
+            radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),
+            linear-gradient(145deg, var(--bg-1) 0%, var(--bg-2) 100%);
         border-radius: 16px;
         padding: 24px;
         border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
     }
 
     /* ===== Two Column Layout ===== */
@@ -510,44 +516,84 @@
 
     /* ===== Assignment Mode Toggle ===== */
     .panel-assignment-toggle {
-        /* background: rgba(15, 23, 42, 0.6);
-        padding: 20px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.06); */
+        --accent: var(--second-primary, #5a49cd);
+        --accent-2: var(--primary-color, #4f46e5);
+        position: relative;
+        padding: 14px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), color-mix(in srgb, var(--accent-2) 12%, transparent));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .panel-assignment-toggle::after {
+        content: '';
+        position: absolute;
+        inset: 6px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+        pointer-events: none;
     }
 
     .panel-assignment-toggle .form-label {
-        color: #cbd5e1;
+        color: #f8fafc;
         font-size: 0.95rem;
         margin-bottom: 12px;
+        letter-spacing: 0.01em;
     }
 
     .panel-assignment-toggle .btn-group {
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 12px;
+        padding: 4px;
+        gap: 6px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
     .panel-assignment-toggle .btn-outline-primary {
-        background: linear-gradient(135deg, #1e293b, #334155);
-        border: 1px solid rgba(99, 102, 241, 0.3);
-        color: #cbd5e1;
-        font-weight: 600;
-        padding: 12px 20px;
-        transition: all 0.3s ease;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.04));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--light-color, #e2e8f0);
+        font-weight: 700;
+        padding: 12px 18px;
+        border-radius: 10px !important;
+        transition: all 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+    }
+
+    .panel-assignment-toggle .btn-outline-primary::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 50%),
+            radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 40%);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: -1;
+    }
+
+    .panel-assignment-toggle .btn-outline-primary:hover::before {
+        opacity: 1;
     }
 
     .panel-assignment-toggle .btn-outline-primary:hover {
-        background: linear-gradient(135deg, #3b82f6, #6366f1);
-        border-color: #6366f1;
-        color: #fff;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        border-color: color-mix(in srgb, var(--accent-2) 60%, transparent);
+        color: var(--light-color, #e2e8f0);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35), 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
     }
 
     .panel-assignment-toggle .btn-check:checked + .btn-outline-primary {
-        background: linear-gradient(135deg, #3b82f6, #6366f1);
-        border-color: #6366f1;
+        background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent-2) 70%, #06b6d4 30%));
+        border-color: color-mix(in srgb, var(--accent-2) 65%, transparent);
         color: #fff;
-        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+        box-shadow: 0 12px 30px color-mix(in srgb, var(--accent-2) 55%, transparent), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+    }
+
+    .panel-assignment-toggle .btn-check:checked + .btn-outline-primary::before {
+        opacity: 1;
     }
 
     /* ===== Summary Cards ===== */
