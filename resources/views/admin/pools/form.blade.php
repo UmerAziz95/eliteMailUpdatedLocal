@@ -2982,8 +2982,9 @@ $(document).ready(function() {
             if (!value) {
                 isValid = false;
                 field.addClass('is-invalid');
-                field.siblings('.invalid-feedback').text('This field is required');
-                validationErrors.push(`${fieldName}: This field is required`);
+                const friendlyMessage = formatValidationError(fieldName, 'This field is required');
+                field.siblings('.invalid-feedback').text(friendlyMessage);
+                validationErrors.push(friendlyMessage);
                 
                 if (!firstErrorField) {
                     firstErrorField = field;
@@ -3002,8 +3003,9 @@ $(document).ready(function() {
                 if (!emailRegex.test(value)) {
                     isValid = false;
                     field.addClass('is-invalid');
-                    field.siblings('.invalid-feedback').text('Please enter a valid email address');
-                    validationErrors.push(`${fieldName}: Please enter a valid email address`);
+                    const friendlyMessage = formatValidationError(fieldName, 'Please enter a valid email address');
+                    field.siblings('.invalid-feedback').text(friendlyMessage);
+                    validationErrors.push(friendlyMessage);
                     
                     if (!firstErrorField) {
                         firstErrorField = field;
@@ -3024,8 +3026,9 @@ $(document).ready(function() {
                 } catch (_) {
                     isValid = false;
                     field.addClass('is-invalid');
+                    const friendlyMessage = formatValidationError(fieldName, 'Please enter a valid URL');
                     field.siblings('.invalid-feedback').text('Please enter a valid URL (include http:// or https://)');
-                    validationErrors.push(`${fieldName}: Please enter a valid URL`);
+                    validationErrors.push(friendlyMessage);
                     
                     if (!firstErrorField) {
                         firstErrorField = field;
@@ -3537,8 +3540,27 @@ $(document).ready(function() {
                 if (xhr.status === 422 && xhr.responseJSON.errors) {
                     // Handle validation errors from server
                     let firstErrorField = null;
+                    const errorMessages = [];
+                    
+                    console.log('Raw validation errors:', xhr.responseJSON.errors);
+                    
                     Object.keys(xhr.responseJSON.errors).forEach(key => {
-                        const field = $(`[name="${key}"]`);
+                        const originalMessage = xhr.responseJSON.errors[key][0];
+                        const friendlyMessage = formatValidationError(key, originalMessage);
+                        
+                        console.log(`Field: ${key}, Original: ${originalMessage}, Friendly: ${friendlyMessage}`);
+                        
+                        errorMessages.push(friendlyMessage);
+                        
+                        // Try to find the field with exact name match
+                        let field = $(`[name="${key}"]`);
+                        
+                        // If not found, try to find by field name with dots converted to brackets
+                        if (!field.length && key.includes('.')) {
+                            const bracketNotation = key.replace(/\.(\d+)\./g, '[$1].').replace(/\.(\w+)/g, '[$1]');
+                            field = $(`[name="${bracketNotation}"]`);
+                        }
+                        
                         if (field.length) {
                             field.addClass('is-invalid');
                             if (!firstErrorField) {
@@ -3551,9 +3573,9 @@ $(document).ready(function() {
                                 feedbackEl = field.closest('.form-group, .mb-3').find('.invalid-feedback');
                             }
                             if (!feedbackEl.length) {
-                                field.after(`<div class="invalid-feedback">${xhr.responseJSON.errors[key][0]}</div>`);
+                                field.after(`<div class="invalid-feedback">${friendlyMessage}</div>`);
                             } else {
-                                feedbackEl.text(xhr.responseJSON.errors[key][0]);
+                                feedbackEl.text(friendlyMessage);
                             }
                         }
                     });
@@ -3566,11 +3588,22 @@ $(document).ready(function() {
                         }, 1500);
                     }
                     
+                    // Build error list HTML
+                    let errorListHtml = '<div style="text-align: left; max-height: 400px; overflow-y: auto;">';
+                    errorListHtml += '<p style="margin-bottom: 10px;">Please fix the following errors:</p>';
+                    errorListHtml += '<ul style="margin: 0; padding-left: 20px;">';
+                    errorMessages.forEach(msg => {
+                        errorListHtml += '<li style="margin-bottom: 5px;">' + msg + '</li>';
+                    });
+                    errorListHtml += '</ul></div>';
+                    
                     Swal.fire({
                         title: 'Validation Error!',
-                        text: 'Please check the form for errors and try again.',
+                        html: errorListHtml,
                         icon: 'error',
-                        confirmButtonText: 'OK'
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#dc3545',
+                        width: '600px'
                     });
                 } else {
                     Swal.fire({
@@ -3582,6 +3615,108 @@ $(document).ready(function() {
                 }
             }
         });
+    }
+
+    // Function to format validation error messages to be user-friendly
+    function formatValidationError(fieldName, errorMessage) {
+        // Map of field names to friendly labels
+        const fieldLabels = {
+            'backup_codes': 'Backup Codes',
+            'platform_login': 'Platform Login',
+            'platform_password': 'Platform Password',
+            'bison_url': 'Bison URL',
+            'bison_workspace': 'Bison Workspace',
+            'sequencer_login': 'Sequencer Login',
+            'sequencer_password': 'Sequencer Password',
+            'domains': 'Domains',
+            'purchase_date': 'Purchase Date',
+            'hosting_platform': 'Hosting Platform',
+            'forwarding_email': 'Forwarding Email',
+            'status_manage_by_admin': 'Status Manage by Admin',
+            'first_name': 'First Name',
+            'last_name': 'Last Name',
+            'profile_picture_link': 'Profile Picture Link',
+            'email_persona_password': 'Email Persona Password',
+            'email_persona_picture_link': 'Email Persona Picture Link',
+            'email': 'Email',
+            'password': 'Password',
+            'name': 'Name',
+            'phone': 'Phone',
+            'address': 'Address',
+            'city': 'City',
+            'state': 'State',
+            'zip': 'ZIP Code',
+            'country': 'Country'
+        };
+        
+        let friendlyName = fieldName;
+        
+        // Handle prefix variant details fields (e.g., prefix_variants_details[prefix_variant_1][first_name])
+        if (fieldName.includes('prefix_variants_details')) {
+            const matches = fieldName.match(/prefix_variants_details\[prefix_variant_(\d+)\]\[(\w+)\]/);
+            if (matches) {
+                const variantNum = matches[1];
+                const fieldType = matches[2];
+                const fieldTypeLabel = fieldLabels[fieldType] || fieldType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                friendlyName = `Prefix Variant ${variantNum} - ${fieldTypeLabel}`;
+            }
+        } 
+        // Handle simple prefix variants fields (e.g., prefix_variants[prefix_variant_1])
+        else if (fieldName.includes('prefix_variants[prefix_variant_')) {
+            const matches = fieldName.match(/prefix_variants\[prefix_variant_(\d+)\]/);
+            if (matches) {
+                friendlyName = `Prefix Variant ${matches[1]}`;
+            }
+        } 
+        // Handle already friendly names
+        else if (fieldName.startsWith('Prefix Variant') || fieldName.startsWith('Batch ')) {
+            friendlyName = fieldName;
+        } 
+        // Handle array notation fields (e.g., field_name[0], field_name[key])
+        else if (fieldName.includes('[') && fieldName.includes(']')) {
+            // Extract base field and index/key
+            const baseMatch = fieldName.match(/^([^\[]+)/);
+            const indexMatch = fieldName.match(/\[([^\]]+)\]/g);
+            
+            if (baseMatch) {
+                let baseName = baseMatch[1];
+                baseName = fieldLabels[baseName] || baseName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                
+                if (indexMatch && indexMatch.length > 0) {
+                    // Extract all indices/keys
+                    const indices = indexMatch.map(m => m.replace(/[\[\]]/g, ''));
+                    const indexStr = indices.map(idx => {
+                        // Check if it's a number
+                        if (!isNaN(idx)) {
+                            return parseInt(idx) + 1; // Make 1-indexed for display
+                        }
+                        // Otherwise clean up the key name
+                        return idx.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    }).join(' - ');
+                    
+                    friendlyName = `${baseName} (${indexStr})`;
+                } else {
+                    friendlyName = baseName;
+                }
+            }
+        } 
+        // Use predefined label or convert snake_case to Title Case
+        else {
+            friendlyName = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+        
+        // Format the error message
+        if (errorMessage.toLowerCase().includes('required')) {
+            return `${friendlyName} is required`;
+        } else if (errorMessage.toLowerCase().includes('at least one domain')) {
+            return 'Please enter at least one domain';
+        } else if (errorMessage.toLowerCase().includes('invalid')) {
+            return `${friendlyName} is invalid`;
+        } else if (errorMessage.toLowerCase().includes('must be')) {
+            return `${friendlyName} ${errorMessage.toLowerCase().replace(/^the .+ field /, '')}`;
+        } else {
+            return `${friendlyName}: ${errorMessage}`;
+        }
     }
 
     // Dynamic prefix variant functionality
