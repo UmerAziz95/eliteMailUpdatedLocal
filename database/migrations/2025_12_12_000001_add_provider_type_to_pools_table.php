@@ -12,13 +12,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('pools', function (Blueprint $table) {
-            $table->string('provider_type')->nullable()->after('sending_platform');
-        });
-        
-        // Set default provider_type for existing pools from Configuration
-        $defaultProviderType = Configuration::get('PROVIDER_TYPE', 'Google');
-        DB::table('pools')->whereNull('provider_type')->update(['provider_type' => $defaultProviderType]);
+        if (!Schema::hasColumn('pools', 'provider_type')) {
+            Schema::table('pools', function (Blueprint $table) {
+                $table->string('provider_type')->nullable()->after('sending_platform');
+            });
+            
+            // Set default provider_type for existing pools from Configuration
+            $defaultProviderType = Configuration::get('PROVIDER_TYPE', 'Google');
+            DB::table('pools')->whereNull('provider_type')->update(['provider_type' => $defaultProviderType]);
+        }
     }
 
     /**
