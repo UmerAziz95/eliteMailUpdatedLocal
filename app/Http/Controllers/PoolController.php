@@ -877,22 +877,11 @@ class PoolController extends Controller
 
             $pool->update($data);
 
-            // Handle manual panel assignment if provided
+            // Manual panel assignment is only supported during creation; ignore on edit to avoid unexpected reassignment
             if ($request->has('manual_assignments') && !empty($request->manual_assignments)) {
-                try {
-                    $assignmentService = new ManualPanelAssignmentService();
-                    
-                    // Rollback existing assignments
-                    $assignmentService->rollbackManualAssignments($pool);
-                    
-                    // Apply new manual assignments
-                    $assignmentService->processManualAssignments($pool, $request->manual_assignments);
-                    
-                    \Log::info('Manual assignments updated for pool ' . $pool->id);
-                } catch (\Exception $e) {
-                    \Log::error('Failed to update manual assignments for pool ' . $pool->id . ': ' . $e->getMessage());
-                    // Don't fail the entire update, just log the error
-                }
+                \Log::info('Manual panel assignments were provided on edit but are ignored to preserve existing assignments', [
+                    'pool_id' => $pool->id,
+                ]);
             } elseif ($request->has('reassign_automatically') && $request->reassign_automatically) {
                 // Re-run automatic assignment if requested
                 try {

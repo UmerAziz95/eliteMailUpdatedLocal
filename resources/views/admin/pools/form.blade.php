@@ -565,8 +565,10 @@
                     </div>
                 </div>
 
-                {{-- Manual Panel Assignment Section --}}
-                <x-panel.panel-assignment />
+                {{-- Manual Panel Assignment Section (create only) --}}
+                @if(!isset($pool) || !$pool?->id)
+                    <x-panel.panel-assignment />
+                @endif
 
                 <div class="col-md-6" style="display: none;">
                     <label>Coupon Code</label>
