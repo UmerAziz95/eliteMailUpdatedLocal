@@ -159,13 +159,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="progress-container">
-                    <div class="progress meta-progress">
-                        <div class="progress-bar meta-progress-current" role="progressbar" style="width: 0%"></div>
-                        <div class="progress-bar meta-progress-future" role="progressbar" style="width: 0%"></div>
-                    </div>
-                    <small class="meta-footnote"></small>
-                </div>
             </div>
 
             {{-- Domain List Preview --}}
@@ -202,10 +195,10 @@
 
     /* ===== Assignment Mode Toggle ===== */
     .panel-assignment-toggle {
-        background: rgba(15, 23, 42, 0.6);
+        /* background: rgba(15, 23, 42, 0.6);
         padding: 20px;
         border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.06); */
     }
 
     .panel-assignment-toggle .form-label {
@@ -542,37 +535,6 @@
         font-size: 0.95rem;
     }
 
-    /* ===== Progress Bar ===== */
-    #manual-assignment-section .progress-container {
-        margin-top: 12px;
-    }
-
-    #manual-assignment-section .progress.meta-progress {
-        height: 14px;
-        background: rgba(15, 23, 42, 0.8);
-        border-radius: 999px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    #manual-assignment-section .progress-bar.meta-progress-current {
-        background: linear-gradient(90deg, #2563eb, #4f46e5);
-        box-shadow: 0 0 15px rgba(37, 99, 235, 0.5);
-    }
-
-    #manual-assignment-section .progress-bar.meta-progress-future {
-        background: linear-gradient(90deg, #10b981, #059669);
-        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
-    }
-
-    #manual-assignment-section .meta-footnote {
-        color: #94a3b8;
-        font-size: 0.8rem;
-        display: block;
-        margin-top: 8px;
-    }
-
     /* ===== Domain Preview ===== */
     #manual-assignment-section .domain-preview {
         background: rgba(30, 41, 59, 0.4);
@@ -881,6 +843,8 @@
                 if (currentValue && currentValue !== '') {
                     $currentSelect.val(currentValue);
                 }
+
+                updatePanelMeta($currentSelect.closest('.batch-item'));
             });
         }
 
@@ -930,6 +894,7 @@
             $('#batches-container').append($batchItem);
             
             $('#batches-container .placeholder-card').remove();
+            updateAllBatchCalculations();
             updatePanelDropdowns();
             updateAssignmentSummary();
         }
@@ -1172,15 +1137,6 @@
             metaBox.find('.remaining-count').text(panel.remaining_limit + ' free');
             metaBox.find('.capacity-count').text(panel.limit + ' total');
             metaBox.find('.after-count').text(remainingAfter + ' free after');
-            metaBox.find('.meta-footnote').text('Using ' + used + ' of ' + panel.limit + ' now • This batch needs ' + spaceNeeded);
-
-            const currentBar = metaBox.find('.meta-progress-current');
-            const futureBar = metaBox.find('.meta-progress-future');
-            currentBar.css('width', percentUsed + '%');
-            futureBar.css({
-                width: futureSegment + '%',
-                marginLeft: percentUsed + '%'
-            });
 
             metaBox.show();
         }
@@ -1202,4 +1158,3 @@
 </script>
 @endpush
 @endonce
-<!-- this panel assigment section is attractive also panel v -->
