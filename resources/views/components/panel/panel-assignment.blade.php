@@ -579,15 +579,15 @@
     }
 
     .panel-assignment-toggle .btn-outline-primary:hover {
-        border-color: color-mix(in srgb, var(--accent-2) 60%, transparent);
+        border-color: color-mix(in srgb, var(--accent-2) 70%, transparent);
         color: var(--light-color, #e2e8f0);
         transform: translateY(-1px);
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35), 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
     }
 
     .panel-assignment-toggle .btn-check:checked + .btn-outline-primary {
-        background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent-2) 70%, #06b6d4 30%));
-        border-color: color-mix(in srgb, var(--accent-2) 65%, transparent);
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        border-color: color-mix(in srgb, var(--accent-2) 70%, transparent);
         color: #fff;
         box-shadow: 0 12px 30px color-mix(in srgb, var(--accent-2) 55%, transparent), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
     }
