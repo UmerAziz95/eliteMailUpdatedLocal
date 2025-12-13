@@ -65,81 +65,118 @@
 
 {{-- Batch Template (Hidden) --}}
 <template id="batch-template">
-    <div class="card mb-3 batch-item" data-batch-index="">
-        <div class="card-header d-flex justify-content-between align-items-center bg-light">
-            <h6 class="mb-0">Batch <span class="batch-number"></span></h6>
-            <button type="button" class="btn btn-sm btn-danger remove-batch-btn" title="Remove batch">
-                <i class="fas fa-trash"></i>
+    <div class="batch-item" data-batch-index="">
+        <div class="batch-header">
+            <div class="batch-title">
+                <span class="batch-icon">
+                    <i class="fas fa-layer-group"></i>
+                </span>
+                <span class="batch-label">Batch <span class="batch-number"></span></span>
+            </div>
+            <button type="button" class="btn-remove-batch remove-batch-btn" title="Remove batch">
+                <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="card-body">
-            <div class="row">
+        <div class="batch-body">
+            <div class="row g-3">
                 {{-- Panel Selection --}}
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Panel</label>
+                <div class="col-lg-5 col-md-6">
+                    <label class="batch-label-text">
+                        <i class="fas fa-server me-1"></i>Panel
+                    </label>
                     <select class="form-select panel-select" name="manual_assignments[][panel_id]">
                         <option value="">Select Panel...</option>
                     </select>
-                    <small class=" panel-capacity-info"></small>
+                    <small class="panel-capacity-info"></small>
                 </div>
 
                 {{-- Domain Range Selection --}}
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Start Domain</label>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="batch-label-text">
+                        <i class="fas fa-play me-1"></i>Start Domain
+                    </label>
                     <input type="number" class="form-control domain-start" name="manual_assignments[][domain_start]" min="1" placeholder="1" readonly>
-                    <small class="">Auto-calculated</small>
+                    <small class="text-muted">Auto-calculated</small>
                 </div>
 
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">End Domain</label>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <label class="batch-label-text">
+                        <i class="fas fa-stop me-1"></i>End Domain
+                    </label>
                     <input type="number" class="form-control domain-end" name="manual_assignments[][domain_end]" min="1" placeholder="100">
                 </div>
 
                 {{-- Batch Summary --}}
-                <div class="col-md-2 mb-3">
-                    <label class="form-label">Space Needed</label>
-                    <input type="text" class="form-control batch-space-display" readonly placeholder="0">
+                <div class="col-lg-3 col-md-12">
+                    <label class="batch-label-text">
+                        <i class="fas fa-chart-pie me-1"></i>Space Needed
+                    </label>
+                    <div class="space-needed-badge">
+                        <span class="batch-space-display">0</span>
+                        <span class="space-unit">inboxes</span>
+                    </div>
                     <input type="hidden" class="batch-space-value" name="manual_assignments[][space_needed]">
                 </div>
             </div>
 
             {{-- Panel Detail Snapshot --}}
-            <div class="panel-detail-box mt-2" style="display: none;">
-                <div class="detail-row">
+            <div class="panel-detail-box" style="display: none;">
+                <div class="detail-grid">
                     <div class="detail-chip">
-                        <span class="label"><i class="fas fa-server"></i> Panel</span>
-                        <span class="value panel-name">-</span>
+                        <div class="chip-icon">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="chip-content">
+                            <span class="chip-label">Panel</span>
+                            <span class="chip-value panel-name">-</span>
+                        </div>
                     </div>
                     <div class="detail-chip">
-                        <span class="label"><i class="fas fa-battery-three-quarters"></i> Remaining</span>
-                        <span class="value remaining-count">-</span>
+                        <div class="chip-icon">
+                            <i class="fas fa-battery-three-quarters"></i>
+                        </div>
+                        <div class="chip-content">
+                            <span class="chip-label">Available</span>
+                            <span class="chip-value remaining-count">-</span>
+                        </div>
                     </div>
                     <div class="detail-chip">
-                        <span class="label"><i class="fas fa-database"></i> Capacity</span>
-                        <span class="value capacity-count">-</span>
+                        <div class="chip-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="chip-content">
+                            <span class="chip-label">Total Capacity</span>
+                            <span class="chip-value capacity-count">-</span>
+                        </div>
                     </div>
-                    <div class="detail-chip">
-                        <span class="label"><i class="fas fa-forward"></i> After This Batch</span>
-                        <span class="value after-count">-</span>
+                    <div class="detail-chip highlight">
+                        <div class="chip-icon">
+                            <i class="fas fa-forward"></i>
+                        </div>
+                        <div class="chip-content">
+                            <span class="chip-label">After Assignment</span>
+                            <span class="chip-value after-count">-</span>
+                        </div>
                     </div>
                 </div>
-            <div class="progress meta-progress mt-2">
-                <div class="progress-bar meta-progress-current" role="progressbar" style="width: 0%"></div>
-                <div class="progress-bar meta-progress-future" role="progressbar" style="width: 0%"></div>
+                <div class="progress-container">
+                    <div class="progress meta-progress">
+                        <div class="progress-bar meta-progress-current" role="progressbar" style="width: 0%"></div>
+                        <div class="progress-bar meta-progress-future" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="meta-footnote"></small>
+                </div>
             </div>
-            <small class=" mt-1 d-block meta-footnote"></small>
-        </div>
 
             {{-- Domain List Preview --}}
-            <div class="mt-2">
-                <small class="">
-                    <strong>Domains:</strong> <span class="domain-count-display">0</span> domains
-                    (<span class="domain-range-display">-</span>)
-                </small>
+            <div class="domain-preview">
+                <i class="fas fa-globe me-1"></i>
+                <strong class="domain-count-display">0</strong> domains
+                <span class="domain-range-display">-</span>
             </div>
 
             {{-- Validation Status --}}
-            <div class="batch-validation-status mt-2"></div>
+            <div class="batch-validation-status"></div>
         </div>
     </div>
 </template>
@@ -147,153 +184,527 @@
 @once
 @push('styles')
 <style>
+    /* ===== Assignment Section ===== */
+    #manual-assignment-section {
+        background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    #manual-assignment-section h5 {
+        color: #f8fafc;
+        font-weight: 700;
+        font-size: 1.35rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* ===== Assignment Mode Toggle ===== */
+    .panel-assignment-toggle {
+        background: rgba(15, 23, 42, 0.6);
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .panel-assignment-toggle .form-label {
+        color: #cbd5e1;
+        font-size: 0.95rem;
+        margin-bottom: 12px;
+    }
+
+    .panel-assignment-toggle .btn-group {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    }
+
+    .panel-assignment-toggle .btn-outline-primary {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: #cbd5e1;
+        font-weight: 600;
+        padding: 12px 20px;
+        transition: all 0.3s ease;
+    }
+
+    .panel-assignment-toggle .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        border-color: #6366f1;
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .panel-assignment-toggle .btn-check:checked + .btn-outline-primary {
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        border-color: #6366f1;
+        color: #fff;
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+    }
+
+    /* ===== Summary Cards ===== */
     #manual-assignment-section .assignment-summary {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
     }
+
     #manual-assignment-section .summary-tile {
-        background: linear-gradient(135deg, #111827, #0b1020);
-        border: 1px solid #1f2937;
-        border-radius: 10px;
-        padding: 12px;
-        box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
     }
+
+    #manual-assignment-section .summary-tile:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #3b82f6, #6366f1);
+        opacity: 0.8;
+    }
+
+    #manual-assignment-section .summary-tile:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 40px rgba(59, 130, 246, 0.3);
+        border-color: rgba(99, 102, 241, 0.4);
+    }
+
     #manual-assignment-section .summary-tile .label {
         text-transform: uppercase;
         font-size: 0.75rem;
-        color: #9ca3af;
-        letter-spacing: 0.04em;
+        color: #94a3b8;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        margin-bottom: 8px;
     }
+
     #manual-assignment-section .summary-tile .value {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #f3f4f6;
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #f1f5f9;
+        background: linear-gradient(135deg, #60a5fa, #a78bfa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
+
+    /* ===== Placeholder ===== */
     #manual-assignment-section .placeholder-card {
-        padding: 14px;
-        border-radius: 8px;
-        border: 1px dashed #4b5563;
+        padding: 40px 20px;
+        border-radius: 12px;
+        border: 2px dashed rgba(99, 102, 241, 0.3);
         text-align: center;
-        background: rgba(255,255,255,0.02);
+        background: rgba(30, 41, 59, 0.3);
+        color: #94a3b8;
+        font-size: 1rem;
+        transition: all 0.3s ease;
     }
+
+    #manual-assignment-section .placeholder-card:hover {
+        border-color: rgba(99, 102, 241, 0.5);
+        background: rgba(30, 41, 59, 0.5);
+    }
+
+    /* ===== Batch Items ===== */
     #manual-assignment-section .batch-item {
-        border: 1px solid #1f2937;
-        background: #0f172a;
-        color: #e5e7eb;
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+        transition: all 0.3s ease;
     }
-    #manual-assignment-section .batch-item .card-header {
-        background: linear-gradient(135deg, #1f2937, #111827);
-        color: #f8fafc;
-        border-bottom: 1px solid #111827;
+
+    #manual-assignment-section .batch-item:hover {
+        border-color: rgba(99, 102, 241, 0.45);
+        box-shadow: 0 15px 45px rgba(59, 130, 246, 0.25);
+        transform: translateY(-2px);
     }
-    #manual-assignment-section .alert {
-        border: 1px solid rgba(255,255,255,0.08);
+
+    /* ===== Batch Header ===== */
+    #manual-assignment-section .batch-header {
+        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        padding: 18px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    #manual-assignment-section .batch-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    #manual-assignment-section .batch-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
         border-radius: 10px;
-        padding: 14px 16px;
-        box-shadow: 0 10px 22px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    }
+
+    #manual-assignment-section .batch-label {
+        color: #f1f5f9;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    #manual-assignment-section .btn-remove-batch {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+        border-radius: 8px;
+        padding: 8px 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+
+    #manual-assignment-section .btn-remove-batch:hover {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border-color: #ef4444;
+        color: #fff;
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    /* ===== Batch Body ===== */
+    #manual-assignment-section .batch-body {
+        padding: 24px;
+    }
+
+    #manual-assignment-section .batch-label-text {
+        color: #cbd5e1;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    #manual-assignment-section .form-select,
+    #manual-assignment-section .form-control {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        color: #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        transition: all 0.3s ease;
+    }
+
+    #manual-assignment-section .form-select:focus,
+    #manual-assignment-section .form-control:focus {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        color: #f1f5f9;
+    }
+
+    #manual-assignment-section .form-select option {
+        background: #1e293b;
+        color: #e2e8f0;
+    }
+
+    #manual-assignment-section .panel-select {
+        appearance: none;
+        background-color: rgba(15, 23, 42, 0.7);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4.646 6.646a.5.5 0 0 1 .708 0L8 9.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z' fill='%2394a3b8'/%3E%3C/svg%3E");
+        background-repeat: no-repeat !important;
+        background-position: right 0.85rem center;
+        background-size: 0.95rem;
+        padding-right: 2.4rem;
+    }
+
+    #manual-assignment-section .panel-select:focus {
+        background-color: rgba(15, 23, 42, 0.9);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4.646 6.646a.5.5 0 0 1 .708 0L8 9.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z' fill='%2394a3b8'/%3E%3C/svg%3E");
+        background-repeat: no-repeat !important;
+        background-position: right 0.85rem center;
+        background-size: 0.95rem;
+    }
+
+    #manual-assignment-section .panel-capacity-info {
+        color: #94a3b8;
+        font-size: 0.8rem;
+        display: block;
+        margin-top: 4px;
+    }
+
+    /* ===== Space Needed Badge ===== */
+    #manual-assignment-section .space-needed-badge {
+        background: linear-gradient(135deg, #059669, #10b981);
+        border-radius: 10px;
+        padding: 10px 16px;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+        margin-top: 8px;
+    }
+
+    #manual-assignment-section .space-needed-badge .batch-space-display {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #fff;
+    }
+
+    #manual-assignment-section .space-needed-badge .space-unit {
+        font-size: 0.85rem;
+        color: #d1fae5;
+        font-weight: 600;
+    }
+
+    /* ===== Panel Detail Box ===== */
+    #manual-assignment-section .panel-detail-box {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 14px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    #manual-assignment-section .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    #manual-assignment-section .detail-chip {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 10px;
+        padding: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.3s ease;
+    }
+
+    #manual-assignment-section .detail-chip:hover {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: rgba(99, 102, 241, 0.3);
+        transform: translateY(-2px);
+    }
+
+    #manual-assignment-section .detail-chip.highlight {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.15));
+        border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    #manual-assignment-section .chip-icon {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+
+    #manual-assignment-section .chip-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+    }
+
+    #manual-assignment-section .chip-label {
+        color: #94a3b8;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+
+    #manual-assignment-section .chip-value {
+        color: #f1f5f9;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    /* ===== Progress Bar ===== */
+    #manual-assignment-section .progress-container {
+        margin-top: 12px;
+    }
+
+    #manual-assignment-section .progress.meta-progress {
+        height: 14px;
+        background: rgba(15, 23, 42, 0.8);
+        border-radius: 999px;
         position: relative;
         overflow: hidden;
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
     }
+
+    #manual-assignment-section .progress-bar.meta-progress-current {
+        background: linear-gradient(90deg, #2563eb, #4f46e5);
+        box-shadow: 0 0 15px rgba(37, 99, 235, 0.5);
+    }
+
+    #manual-assignment-section .progress-bar.meta-progress-future {
+        background: linear-gradient(90deg, #10b981, #059669);
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    }
+
+    #manual-assignment-section .meta-footnote {
+        color: #94a3b8;
+        font-size: 0.8rem;
+        display: block;
+        margin-top: 8px;
+    }
+
+    /* ===== Domain Preview ===== */
+    #manual-assignment-section .domain-preview {
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 16px;
+        color: #cbd5e1;
+        font-size: 0.9rem;
+    }
+
+    #manual-assignment-section .domain-preview strong {
+        color: #60a5fa;
+        font-weight: 700;
+    }
+
+    #manual-assignment-section .domain-range-display {
+        color: #94a3b8;
+        margin-left: 4px;
+    }
+
+    /* ===== Alerts ===== */
+    #manual-assignment-section .alert {
+        border: none;
+        border-radius: 12px;
+        padding: 16px 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+        position: relative;
+        overflow: hidden;
+        margin-top: 12px;
+    }
+
     #manual-assignment-section .alert:before {
         content: '';
         position: absolute;
         left: 0;
         top: 0;
-        width: 4px;
+        width: 5px;
         height: 100%;
-        opacity: 0.9;
     }
+
     #manual-assignment-section .alert-danger {
-        background: rgba(127, 29, 29, 0.35);
-        color: #fecdd3;
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.15));
+        color: #fecaca;
+        border: 1px solid rgba(239, 68, 68, 0.3);
     }
+
     #manual-assignment-section .alert-danger:before {
-        background: #f87171;
+        background: linear-gradient(180deg, #ef4444, #dc2626);
     }
+
     #manual-assignment-section .alert-warning {
-        background: rgba(120, 53, 15, 0.35);
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.15));
         color: #fde68a;
+        border: 1px solid rgba(245, 158, 11, 0.3);
     }
+
     #manual-assignment-section .alert-warning:before {
-        background: #f59e0b;
+        background: linear-gradient(180deg, #f59e0b, #d97706);
     }
+
     #manual-assignment-section .alert-success {
-        background: rgba(6, 95, 70, 0.35);
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.15));
         color: #a7f3d0;
+        border: 1px solid rgba(16, 185, 129, 0.3);
     }
+
     #manual-assignment-section .alert-success:before {
-        background: #10b981;
+        background: linear-gradient(180deg, #10b981, #059669);
     }
+
     #manual-assignment-section .alert i {
         color: inherit;
+        margin-right: 8px;
     }
-    #manual-assignment-section .panel-capacity-info {
-        color: #94a3b8;
-        font-size: 0.85rem;
-    }
-    #manual-assignment-section .panel-detail-box {
-        border: 1px solid #1f2937;
+
+    /* ===== Add Batch Button ===== */
+    #add-batch-btn {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: #fff;
+        padding: 10px 24px;
         border-radius: 10px;
-        padding: 12px;
-        background: rgba(30, 41, 59, 0.55);
-        margin-top: 10px;
+        font-weight: 600;
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+        transition: all 0.3s ease;
     }
-    #manual-assignment-section .panel-detail-box .detail-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-bottom: 8px;
+
+    #add-batch-btn:hover:not(:disabled) {
+        background: linear-gradient(135deg, #059669, #047857);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
     }
-    #manual-assignment-section .panel-detail-box .detail-chip {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 8px;
-        padding: 10px 12px;
-        min-width: 140px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
+
+    #add-batch-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
-    #manual-assignment-section .panel-detail-box .label {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        color: #9ca3af;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+        #manual-assignment-section .assignment-summary {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        #manual-assignment-section .detail-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        #manual-assignment-section .batch-header {
+            padding: 14px 18px;
+        }
+
+        #manual-assignment-section .batch-body {
+            padding: 18px;
+        }
     }
-    #manual-assignment-section .panel-detail-box .value {
-        font-weight: 700;
-        color: #e5e7eb;
-        font-size: 0.95rem;
-    }
-    #manual-assignment-section .panel-detail-box .label i {
-        color: #60a5fa;
-        font-size: 0.9rem;
-    }
-    #manual-assignment-section .panel-detail-box .progress.meta-progress {
-        height: 12px;
-        background: rgba(255,255,255,0.06);
-        border-radius: 999px;
-        position: relative;
-    }
-    #manual-assignment-section .panel-detail-box .progress-bar.meta-progress-current {
-        background: linear-gradient(90deg, #2563eb, #4f46e5);
-        z-index: 1;
-    }
-    #manual-assignment-section .panel-detail-box .progress-bar.meta-progress-future {
-        background: linear-gradient(90deg, #22c55e, #16a34a);
-        z-index: 2;
-    }
-    #manual-assignment-section .panel-detail-box .progress.meta-progress .progress-bar {
-        height: 12px;
+
+    @media (max-width: 576px) {
+        #manual-assignment-section .assignment-summary {
+            grid-template-columns: 1fr;
+        }
+
+        #manual-assignment-section .detail-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 @endpush
 @push('scripts')
 <script>
+    /* Panel Assignment v2.0 - UTF-8 Fix Applied */
     window.manualPanelAssignment = (function($) {
         let batchIndex = 0;
         let totalDomains = 0;
@@ -449,15 +860,21 @@
                 const $currentSelect = $(this);
                 const currentValue = String($currentSelect.val() || '');
                 
-                $currentSelect.empty().append('<option value=\"\">Select Panel...</option>');
+                // Clear and add placeholder
+                $currentSelect.empty();
+                const $placeholder = $('<option></option>').attr('value', '').text('Select Panel...');
+                $currentSelect.append($placeholder);
                 
                 availablePanels.forEach(panel => {
                     const panelIdStr = String(panel.id);
                     const isUsedInOtherBatch = selectedPanelIds.includes(panelIdStr) && panelIdStr !== currentValue;
                     
                     if (!isUsedInOtherBatch) {
-                        const optionText = `${panel.auto_generated_id} - ${panel.title} (${panel.remaining_limit}/${panel.limit} available)`;
-                        $currentSelect.append(`<option value=\"${panel.id}\">${optionText}</option>`);
+                        const optionText = panel.auto_generated_id + ' - ' + panel.title + ' (' + panel.remaining_limit + '/' + panel.limit + ' available)';
+                        const $option = $('<option></option>')
+                            .attr('value', panel.id)
+                            .text(optionText);
+                        $currentSelect.append($option);
                     }
                 });
                 
@@ -469,17 +886,16 @@
 
         function loadPanelCapacity(panelId, batchCard) {
             $.ajax({
-                url: `/admin/pools/panels/${panelId}/capacity`,
+                url: '/admin/pools/panels/' + panelId + '/capacity',
                 method: 'GET',
                 success: function(response) {
                     if (response.success) {
                         const panel = response.panel;
                         batchCard.data('panel-capacity', panel);
-                        const capacityHtml = `
-                            <i class=\"fas fa-info-circle me-1\"></i>
-                            Available: ${panel.remaining_limit} / ${panel.limit} inboxes
-                        `;
-                        batchCard.find('.panel-capacity-info').html(capacityHtml);
+                        const $capacityInfo = $('<span></span>')
+                            .append($('<i class="fas fa-info-circle me-1"></i>'))
+                            .append('Available: ' + panel.remaining_limit + ' / ' + panel.limit + ' inboxes');
+                        batchCard.find('.panel-capacity-info').html($capacityInfo);
                         validateBatch(batchCard);
                         updatePanelMeta(batchCard);
                     }
@@ -561,8 +977,8 @@
                 const spaceNeeded = domainCount * inboxesPerDomain;
                 
                 batchCard.find('.domain-count-display').text(domainCount);
-                batchCard.find('.domain-range-display').text(`${start} - ${end}`);
-                batchCard.find('.batch-space-display').val(spaceNeeded);
+                batchCard.find('.domain-range-display').text(start + ' - ' + end);
+                batchCard.find('.batch-space-display').text(spaceNeeded);
                 batchCard.find('.batch-space-value').val(spaceNeeded);
                 
                 validateBatch(batchCard);
@@ -593,31 +1009,27 @@
                 errors.push('End domain must be >= start domain');
             }
             if (end > totalDomains) {
-                errors.push(`End domain cannot exceed total domains (${totalDomains})`);
+                errors.push('End domain cannot exceed total domains (' + totalDomains + ')');
             }
             
             if (panelId && spaceNeeded > 0) {
                 const panel = availablePanels.find(p => p.id == panelId);
                 if (panel && spaceNeeded > panel.remaining_limit) {
-                    errors.push(`Space needed (${spaceNeeded}) exceeds panel capacity (${panel.remaining_limit})`);
+                    errors.push('Space needed (' + spaceNeeded + ') exceeds panel capacity (' + panel.remaining_limit + ')');
                 }
             }
             
             const $statusDiv = batchCard.find('.batch-validation-status');
             if (errors.length > 0) {
-                $statusDiv.html(`
-                    <div class=\"alert alert-danger alert-sm mb-0\">
-                        <i class=\"fas fa-exclamation-triangle me-1\"></i>
-                        ${errors.join('<br>')}
-                    </div>
-                `);
+                const $alert = $('<div class="alert alert-danger alert-sm mb-0"></div>')
+                    .append($('<i class="fas fa-exclamation-triangle me-1"></i>'))
+                    .append(errors.join('<br>'));
+                $statusDiv.html($alert);
             } else if (panelId && start > 0 && end > 0) {
-                $statusDiv.html(`
-                    <div class=\"alert alert-success alert-sm mb-0\">
-                        <i class=\"fas fa-check-circle me-1\"></i>
-                        Valid assignment
-                    </div>
-                `);
+                const $alert = $('<div class="alert alert-success alert-sm mb-0"></div>')
+                    .append($('<i class="fas fa-check-circle me-1"></i>'))
+                    .append('Valid assignment');
+                $statusDiv.html($alert);
             } else {
                 $statusDiv.empty();
             }
@@ -650,19 +1062,15 @@
             }
             
             if (remaining !== 0 && totalDomains > 0) {
-                $('#assignment-validation-messages').html(`
-                    <div class=\"alert alert-warning\">
-                        <i class=\"fas fa-exclamation-triangle me-1\"></i>
-                        You have ${remaining} unassigned domains. All domains must be assigned.
-                    </div>
-                `);
+                const $alert = $('<div class="alert alert-warning"></div>')
+                    .append($('<i class="fas fa-exclamation-triangle me-1"></i>'))
+                    .append('You have ' + remaining + ' unassigned domains. All domains must be assigned.');
+                $('#assignment-validation-messages').html($alert);
             } else if (totalDomains > 0 && remaining === 0) {
-                $('#assignment-validation-messages').html(`
-                    <div class=\"alert alert-success\">
-                        <i class=\"fas fa-check-circle me-1\"></i>
-                        All domains are assigned!
-                    </div>
-                `);
+                const $alert = $('<div class="alert alert-success"></div>')
+                    .append($('<i class="fas fa-check-circle me-1"></i>'))
+                    .append('All domains are assigned!');
+                $('#assignment-validation-messages').html($alert);
             } else {
                 $('#assignment-validation-messages').empty();
             }
@@ -726,10 +1134,10 @@
 
             const validBatches = collectValidBatches();
             validBatches.forEach((batch, index) => {
-                cleanedFormData.push({ name: `manual_assignments[${index}][panel_id]`, value: batch.panel_id });
-                cleanedFormData.push({ name: `manual_assignments[${index}][domain_start]`, value: batch.domain_start });
-                cleanedFormData.push({ name: `manual_assignments[${index}][domain_end]`, value: batch.domain_end });
-                cleanedFormData.push({ name: `manual_assignments[${index}][space_needed]`, value: batch.space_needed });
+                cleanedFormData.push({ name: 'manual_assignments[' + index + '][panel_id]', value: batch.panel_id });
+                cleanedFormData.push({ name: 'manual_assignments[' + index + '][domain_start]', value: batch.domain_start });
+                cleanedFormData.push({ name: 'manual_assignments[' + index + '][domain_end]', value: batch.domain_end });
+                cleanedFormData.push({ name: 'manual_assignments[' + index + '][space_needed]', value: batch.space_needed });
             });
 
             return cleanedFormData;
@@ -760,18 +1168,18 @@
             const percentAfter = panel.limit ? Math.min(((used + spaceNeeded) / panel.limit) * 100, 100) : 0;
             const futureSegment = Math.max(percentAfter - percentUsed, 0);
 
-            metaBox.find('.panel-name').text(panel.auto_generated_id || panel.title || `Panel ${panel.id}`);
-            metaBox.find('.remaining-count').text(`${panel.remaining_limit} free`);
-            metaBox.find('.capacity-count').text(`${panel.limit} total`);
-            metaBox.find('.after-count').text(`${remainingAfter} free after`);
-            metaBox.find('.meta-footnote').text(`Using ${used} of ${panel.limit} now • This batch needs ${spaceNeeded}`);
+            metaBox.find('.panel-name').text(panel.auto_generated_id || panel.title || ('Panel ' + panel.id));
+            metaBox.find('.remaining-count').text(panel.remaining_limit + ' free');
+            metaBox.find('.capacity-count').text(panel.limit + ' total');
+            metaBox.find('.after-count').text(remainingAfter + ' free after');
+            metaBox.find('.meta-footnote').text('Using ' + used + ' of ' + panel.limit + ' now • This batch needs ' + spaceNeeded);
 
             const currentBar = metaBox.find('.meta-progress-current');
             const futureBar = metaBox.find('.meta-progress-future');
-            currentBar.css('width', `${percentUsed}%`);
+            currentBar.css('width', percentUsed + '%');
             futureBar.css({
-                width: `${futureSegment}%`,
-                marginLeft: `${percentUsed}%`
+                width: futureSegment + '%',
+                marginLeft: percentUsed + '%'
             });
 
             metaBox.show();
@@ -794,3 +1202,4 @@
 </script>
 @endpush
 @endonce
+<!-- this panel assigment section is attractive also panel v -->
