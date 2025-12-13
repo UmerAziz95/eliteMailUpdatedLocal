@@ -367,117 +367,7 @@
         </div>
 
         <!-- Pool Panel Capacity Alert -->
-        @php
-            // Provider-aware capacities (mirror panel capacity logic)
-            $providerType = \App\Models\Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
-            $poolPanelCapacity = strtolower($providerType) === 'microsoft 365'
-                ? \App\Models\Configuration::get('MICROSOFT_365_CAPACITY', env('MICROSOFT_365_CAPACITY', env('PANEL_CAPACITY', 1790)))
-                : \App\Models\Configuration::get('GOOGLE_PANEL_CAPACITY', env('GOOGLE_PANEL_CAPACITY', env('PANEL_CAPACITY', 1790)));
-            $maxSplitCapacity = strtolower($providerType) === 'microsoft 365'
-                ? \App\Models\Configuration::get('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)))
-                : \App\Models\Configuration::get('GOOGLE_MAX_SPLIT_CAPACITY', env('GOOGLE_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
-
-            // Allow disabling max split capacity per provider
-            $enableMaxSplit = strtolower($providerType) === 'microsoft 365'
-                ? \App\Models\Configuration::get('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', env('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', true))
-                : \App\Models\Configuration::get('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', env('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', true));
-            if (! $enableMaxSplit || $maxSplitCapacity <= 0) {
-                $maxSplitCapacity = $poolPanelCapacity;
-            }
-
-            // Pending pools awaiting allocation
-            $pendingPools = \App\Models\Pool::where('status', 'pending')
-                ->where('is_splitting', 0)
-                ->whereNotNull('total_inboxes')
-                ->where('total_inboxes', '>', 0)
-                ->orderBy('created_at', 'asc')
-                ->get();
-
-            $insufficientSpacePools = [];
-            $totalPoolPanelsNeeded = 0;
-            $totalPoolInboxes = 0;
-
-            // Helper to compute available space for a pool with per-domain constraint
-            $getAvailablePoolPanelSpace = function (int $poolSize, int $inboxesPerDomain) use ($poolPanelCapacity, $maxSplitCapacity, $providerType) {
-                // For large pools, prefer full-capacity panels first
-                if ($poolSize >= $poolPanelCapacity) {
-                    $fullCapacityPanels = \App\Models\PoolPanel::where('is_active', 1)
-                        ->where('limit', $poolPanelCapacity)
-                        ->where('provider_type', $providerType)
-                        ->where('remaining_limit', '>=', $inboxesPerDomain)
-                        ->get();
-
-                    $fullCapacitySpace = 0;
-                    foreach ($fullCapacityPanels as $panel) {
-                        $fullCapacitySpace += min($panel->remaining_limit, $maxSplitCapacity);
-                    }
-
-                    return $fullCapacitySpace;
-                }
-
-                // Smaller pools: use any active panel that can fit at least one domain
-                $availablePanels = \App\Models\PoolPanel::where('is_active', 1)
-                    ->where('limit', $poolPanelCapacity)
-                    ->where('provider_type', $providerType)
-                    ->where('remaining_limit', '>=', $inboxesPerDomain)
-                    ->get();
-
-                $totalSpace = 0;
-                foreach ($availablePanels as $panel) {
-                    $totalSpace += min($panel->remaining_limit, $maxSplitCapacity);
-                }
-
-                return $totalSpace;
-            };
-
-            foreach ($pendingPools as $pool) {
-                $inboxesPerDomain = $pool->inboxes_per_domain ?? 1;
-                $totalPoolInboxes += $pool->total_inboxes ?? 0;
-
-                $availableSpace = $getAvailablePoolPanelSpace($pool->total_inboxes, $inboxesPerDomain);
-
-                if ($pool->total_inboxes > $availableSpace) {
-                    $poolPanelsNeeded = (int) ceil($pool->total_inboxes / $maxSplitCapacity);
-                    $insufficientSpacePools[] = $pool;
-                    $totalPoolPanelsNeeded += $poolPanelsNeeded;
-                }
-            }
-
-            // Available panels and total space already free
-            $availablePoolPanelCount = \App\Models\PoolPanel::where('is_active', true)
-                ->where('limit', $poolPanelCapacity)
-                ->where('provider_type', $providerType)
-                ->where('remaining_limit', '>=', $maxSplitCapacity)
-                ->count();
-
-            $availablePanels = \App\Models\PoolPanel::where('is_active', true)
-                ->where('limit', $poolPanelCapacity)
-                ->where('provider_type', $providerType)
-                ->where('remaining_limit', '>', 0)
-                ->get();
-
-            $totalSpaceAvailable = 0;
-            foreach ($availablePanels as $panel) {
-                $totalSpaceAvailable += min($panel->remaining_limit, $maxSplitCapacity);
-            }
-
-            // Adjust for current free space to avoid over-counting new panels
-            $remainingAfterAvailable = max(0, $totalPoolInboxes - $totalSpaceAvailable);
-            $adjustedPoolPanelsNeeded = (int) max(0, ceil($remainingAfterAvailable / $maxSplitCapacity));
-        @endphp
-
-        @if ($adjustedPoolPanelsNeeded > 0)
-            <div id="poolPanelCapacityAlert" class="alert alert-warning alert-dismissible fade show py-2 rounded-1" role="alert"
-                style="background-color: rgba(255, 193, 7, 0.2); color: #fff; border: 2px solid #ffc107;">
-                <i class="ti ti-layer-group me-2 alert-icon"></i>
-                <strong>Pool Panel Capacity Alert:</strong>
-                {{ $adjustedPoolPanelsNeeded }} new pool panel{{ $adjustedPoolPanelsNeeded != 1 ? 's' : '' }} required for
-                {{ count($insufficientSpacePools) }} pending pool{{ count($insufficientSpacePools) != 1 ? 's' : '' }}
-                ({{ $providerType }}).
-                <a href="javascript:void(0)" onclick="showPoolAllocationDetails()" class="text-light alert-link">View Details</a> to see pending pools.
-                <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
+        <div id="poolPanelCapacityAlertContainer"></div>
 
         <div class="counters mb-3">
             <div class="card p-3 counter_1">
@@ -559,9 +449,7 @@
                 title="View pools awaiting panel allocation">
                 <i class="fa-solid fa-water me-2"></i>
                 View Pending Pools
-                @if ($adjustedPoolPanelsNeeded > 0)
-                    <span class="badge bg-danger ms-2">{{ count($insufficientSpacePools) }}</span>
-                @endif
+                <span class="badge bg-danger ms-2 d-none" id="pendingPoolsBadge">0</span>
             </button>
         </div>
 
@@ -2786,31 +2674,41 @@
                     'Accept': 'application/json'
                 },
                 success: function(response) {
-                    if (response.success) {
+                        if (response.success) {
+                        const container = $('#poolPanelCapacityAlertContainer');
                         if (response.show_alert) {
+                            // Update pending pools badge
+                            $('#pendingPoolsBadge')
+                                .removeClass('d-none')
+                                .text(response.insufficient_pools_count || 0);
+
                             // Show/update the alert
                             const alertHtml = `
                         <div id="poolPanelCapacityAlert" class="alert alert-warning alert-dismissible fade show py-2 rounded-1" role="alert"
                             style="background-color: rgba(255, 193, 7, 0.2); color: #fff; border: 2px solid #ffc107;">
                             <i class="ti ti-layer-group me-2 alert-icon"></i>
                             <strong>Pool Panel Capacity Alert:</strong>
-                            ${response.total_pool_panels_needed} new pool panel${response.total_pool_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_pools_count} pending pool${response.insufficient_pools_count != 1 ? 's' : ''}.
+                            ${response.total_pool_panels_needed} new pool panel${response.total_pool_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_pools_count} pending pool${response.insufficient_pools_count != 1 ? 's' : ''} (${response.provider_type || ''}).
                             <a href="javascript:void(0)" onclick="showPoolAllocationDetails()" class="text-light alert-link">View Details</a> to see pending pools.
                             <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
                                 aria-label="Close"></button>
                         </div>
                     `;
 
-                            if ($('#poolPanelCapacityAlert').length) {
-                                // Update existing alert
+                            if (container.length) {
+                                container.html(alertHtml);
+                            } else if ($('#poolPanelCapacityAlert').length) {
                                 $('#poolPanelCapacityAlert').replaceWith(alertHtml);
                             } else {
-                                // Insert new alert before counters
                                 $('.counters').first().before(alertHtml);
                             }
                         } else {
                             // Hide the alert if no longer needed
+                            if (container.length) {
+                                container.empty();
+                            }
                             $('#poolPanelCapacityAlert').remove();
+                            $('#pendingPoolsBadge').addClass('d-none').text('0');
                         }
 
                         console.log('Pool panel capacity alert refreshed at:', new Date().toLocaleTimeString());
