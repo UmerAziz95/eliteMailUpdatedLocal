@@ -1022,9 +1022,17 @@
             $('#add-batch-btn').on('click', addBatch);
             $('#batches-container').on('click', '.remove-batch-btn', function() {
                 $(this).closest('.batch-item').remove();
+                
+                // If no batches left, show placeholder
+                if ($('.batch-item').length === 0) {
+                    $('#batches-container').html('<div class="placeholder-card"><i class="fas fa-layer-group me-2"></i>No batches yet. Click "Add Batch" to start.</div>');
+                }
+                
                 updateBatchNumbers();
                 updateAssignmentSummary();
                 updatePanelDropdowns();
+                updatePreviewList();
+                updatePanelSummary();
             });
 
             $('#batches-container').on('change', '.panel-select', function() {
