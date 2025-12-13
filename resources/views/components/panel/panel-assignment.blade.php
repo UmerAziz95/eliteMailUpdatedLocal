@@ -1262,6 +1262,22 @@
         }
 
         function addBatch() {
+            // Validate before adding new batch
+            if (!canAddNewBatch()) {
+                const $batches = $('.batch-item');
+                if ($batches.length === 0) {
+                    alert('Please add domains first before creating batches.');
+                } else {
+                    const hasValidationErrors = $batches.find('.alert-danger').length > 0;
+                    if (hasValidationErrors) {
+                        alert('Please fix all validation errors in existing batches before adding a new one.');
+                    } else {
+                        alert('Please fill in the end domain and select a panel for the last batch before adding a new one.');
+                    }
+                }
+                return;
+            }
+            
             const template = document.getElementById('batch-template');
             const clone = template.content.cloneNode(true);
             
@@ -1297,6 +1313,80 @@
                 $(this).find('.batch-number-badge').text(index + 1);
             });
             updatePreviewList();
+        }
+
+        function canAddNewBatch() {
+            const $batches = $('.batch-item');
+            
+            // If no batches exist, can add
+            if ($batches.length === 0) {
+                return true;
+            }
+            
+            // Check if any batch has validation errors
+            let hasErrors = false;
+            $batches.each(function() {
+                const $batch = $(this);
+                const $validationStatus = $batch.find('.batch-validation-status');
+                const hasErrorAlert = $validationStatus.find('.alert-danger').length > 0;
+                
+                if (hasErrorAlert) {
+                    hasErrors = true;
+                    return false; // break the loop
+                }
+                
+                // Also check if required fields are missing
+                const panelId = $batch.find('.panel-select').val();
+                const endDomain = parseInt($batch.find('.domain-end').val()) || 0;
+                
+                if (!panelId || endDomain === 0) {
+                    hasErrors = true;
+                    return false; // break the loop
+                }
+            });
+            
+            if (hasErrors) {
+                return false;
+            }
+            
+            // Check if last batch has valid end domain
+            const $lastBatch = $batches.last();
+            const lastEnd = parseInt($lastBatch.find('.domain-end').val()) || 0;
+            
+            // Must have a valid end domain value
+            return lastEnd > 0;
+        }
+
+        function updateAddBatchButton() {
+            const $addBtn = $('#add-batch-btn');
+            const remaining = totalDomains - getAssignedDomainsCount();
+            
+            if (totalDomains === 0) {
+                // No domains to assign
+                $addBtn.prop('disabled', true).addClass('disabled');
+            } else if (remaining === 0) {
+                // All domains assigned
+                $addBtn.prop('disabled', true).addClass('disabled');
+            } else if (!canAddNewBatch()) {
+                // Last batch doesn't have valid end domain
+                $addBtn.prop('disabled', true).addClass('disabled');
+            } else {
+                // Can add new batch
+                $addBtn.prop('disabled', false).removeClass('disabled');
+            }
+        }
+
+        function getAssignedDomainsCount() {
+            let assignedDomains = 0;
+            $('.batch-item').each(function() {
+                const start = parseInt($(this).find('.domain-start').val()) || 0;
+                const end = parseInt($(this).find('.domain-end').val()) || 0;
+                
+                if (start > 0 && end >= start) {
+                    assignedDomains += (end - start + 1);
+                }
+            });
+            return assignedDomains;
         }
 
         function recalculateBatchRanges() {
@@ -1483,20 +1573,13 @@
             } else {
                 $statusDiv.empty();
             }
+            
+            // Update add batch button state after validation
+            updateAddBatchButton();
         }
 
         function updateAssignmentSummary() {
-            let assignedDomains = 0;
-            
-            $('.batch-item').each(function() {
-                const start = parseInt($(this).find('.domain-start').val()) || 0;
-                const end = parseInt($(this).find('.domain-end').val()) || 0;
-                
-                if (start > 0 && end >= start) {
-                    assignedDomains += (end - start + 1);
-                }
-            });
-            
+            const assignedDomains = getAssignedDomainsCount();
             const remaining = totalDomains - assignedDomains;
             const totalSpace = totalDomains * inboxesPerDomain;
             
@@ -1504,12 +1587,7 @@
             $('#remaining-domains-count').text(remaining).toggleClass('text-danger', remaining !== 0);
             $('#total-space-needed').text(totalSpace);
             
-            const $addBatchBtn = $('#add-batch-btn');
-            if (totalDomains > 0 && remaining === 0) {
-                $addBatchBtn.prop('disabled', true).addClass('disabled');
-            } else {
-                $addBatchBtn.prop('disabled', false).removeClass('disabled');
-            }
+            updateAddBatchButton();
             
             if (remaining !== 0 && totalDomains > 0) {
                 const $alert = $('<div class="alert alert-warning"></div>')
