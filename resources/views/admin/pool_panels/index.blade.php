@@ -313,11 +313,19 @@
                     <label for="pool_panel_title">Title: <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="pool_panel_title" name="title" value="" required maxlength="255">
 
+                    @php
+                        $providerOptions = $providerTypes ?? ['Google', 'Microsoft 365'];
+                        $configuredProvider = \App\Models\Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', $providerOptions[0] ?? 'Google'));
+                        $selectedProviderType = $defaultProviderType ?? $configuredProvider;
+                    @endphp
                     <label for="provider_type" class="mt-3">Provider Type: <span class="text-danger">*</span></label>
                     <select class="form-control mb-3" id="provider_type" name="provider_type" required>
-                        <option value="" disabled>Select provider</option>
-                        <option value="Google" selected>Google</option>
-                        <option value="Microsoft 365">Microsoft 365</option>
+                        <option value="" disabled {{ $selectedProviderType ? '' : 'selected' }}>Select provider</option>
+                        @foreach($providerOptions as $provider)
+                            <option value="{{ $provider }}" {{ $selectedProviderType === $provider ? 'selected' : '' }}>
+                                {{ $provider }}
+                            </option>
+                        @endforeach
                     </select>
 
 
@@ -326,7 +334,14 @@
 
 
                     <label for="panel_limit">Limit: <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{ env('PANEL_CAPACITY', 1790) }}"
+                    @php
+                        // Use provider-specific capacity as default limit
+                        $capacityMap = $providerCapacities ?? [];
+                        $selectedCapacity = $selectedProviderType && isset($capacityMap[$selectedProviderType])
+                            ? $capacityMap[$selectedProviderType]
+                            : env('PANEL_CAPACITY', 1790);
+                    @endphp
+                    <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{ $selectedCapacity }}"
                         required min="1" readonly>
 
 
