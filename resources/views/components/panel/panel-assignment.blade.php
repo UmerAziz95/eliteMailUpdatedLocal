@@ -426,6 +426,12 @@
         margin-bottom: 10px;
     }
 
+    .preview-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
     .preview-batch-name {
         color: #f1f5f9;
         font-weight: 700;
@@ -469,6 +475,30 @@
 
     .preview-panel-info i {
         margin-right: 6px;
+    }
+
+    .btn-remove-preview {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+        border-radius: 6px;
+        padding: 4px 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+    }
+
+    .btn-remove-preview:hover {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border-color: #ef4444;
+        color: #fff;
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
     }
 
     #manual-assignment-section h5 {
@@ -1020,6 +1050,8 @@
             });
 
             $('#add-batch-btn').on('click', addBatch);
+            
+            // Remove batch from left side form
             $('#batches-container').on('click', '.remove-batch-btn', function() {
                 $(this).closest('.batch-item').remove();
                 
@@ -1029,10 +1061,35 @@
                 }
                 
                 updateBatchNumbers();
+                recalculateBatchRanges();
                 updateAssignmentSummary();
                 updatePanelDropdowns();
                 updatePreviewList();
                 updatePanelSummary();
+            });
+
+            // Remove batch from right side preview
+            $('#batches-preview-list').on('click', '.btn-remove-preview', function() {
+                const $previewItem = $(this).closest('.preview-item');
+                const batchIndex = $previewItem.attr('data-batch-index');
+                
+                // Find and remove the corresponding batch from the form
+                const $batchToRemove = $('.batch-item[data-batch-index="' + batchIndex + '"]');
+                if ($batchToRemove.length) {
+                    $batchToRemove.remove();
+                    
+                    // If no batches left, show placeholder
+                    if ($('.batch-item').length === 0) {
+                        $('#batches-container').html('<div class="placeholder-card"><i class="fas fa-layer-group me-2"></i>No batches yet. Click "Add Batch" to start.</div>');
+                    }
+                    
+                    updateBatchNumbers();
+                    recalculateBatchRanges();
+                    updateAssignmentSummary();
+                    updatePanelDropdowns();
+                    updatePreviewList();
+                    updatePanelSummary();
+                }
             });
 
             $('#batches-container').on('change', '.panel-select', function() {
@@ -1242,6 +1299,34 @@
             updatePreviewList();
         }
 
+        function recalculateBatchRanges() {
+            let nextStart = 1;
+            
+            $('.batch-item').each(function() {
+                const $batch = $(this);
+                const currentStart = parseInt($batch.find('.domain-start').val()) || 0;
+                const currentEnd = parseInt($batch.find('.domain-end').val()) || 0;
+                
+                // Update start to the next available position
+                $batch.find('.domain-start').val(nextStart);
+                
+                if (currentEnd > 0 && currentStart > 0) {
+                    // Calculate the range size from the old batch
+                    const rangeSize = currentEnd - currentStart;
+                    // Set new end based on the new start
+                    const newEnd = nextStart + rangeSize;
+                    $batch.find('.domain-end').val(newEnd);
+                    nextStart = newEnd + 1;
+                } else if (currentEnd > 0) {
+                    // If only end was set, keep it relative to new start
+                    nextStart = currentEnd + 1;
+                }
+                
+                // Update calculations for this batch
+                updateBatchCalculations($batch);
+            });
+        }
+
         function updatePreviewList() {
             const $previewList = $('#batches-preview-list');
             const $batches = $('.batch-item');
@@ -1269,12 +1354,17 @@
                 const spaceNeeded = parseInt($batch.find('.batch-space-value').val()) || 0;
                 
                 const previewHtml = `
-                    <div class="preview-item">
+                    <div class="preview-item" data-batch-index="${$batch.attr('data-batch-index')}">
                         <div class="preview-item-header">
                             <span class="preview-batch-name">
                                 <i class="fas fa-layer-group me-1"></i>Batch ${batchNum}
                             </span>
-                            <span class="preview-batch-badge">${domainCount} domains</span>
+                            <div class="preview-header-actions">
+                                <span class="preview-batch-badge">${domainCount} domains</span>
+                                <button type="button" class="btn-remove-preview" title="Remove batch">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="preview-item-details">
                             <div class="preview-detail">
