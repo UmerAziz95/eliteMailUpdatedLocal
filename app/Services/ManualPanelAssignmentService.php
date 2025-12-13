@@ -66,11 +66,11 @@ class ManualPanelAssignmentService
 
             // Verify all domains were assigned
             if (count($assignedDomainIds) !== count($poolDomains)) {
-                throw new Exception('Not all domains were assigned. Expected: ' . count($poolDomains) . ', Got: ' . count($assignedDomainIds));
+                throw new Exception('Not all domains were assigned. Expected: ' . count($poolDomains) . ', Got: ' . count($assignedDomains));
             }
 
-            // Release splitting lock
-            $pool->update(['is_splitting' => 0]);
+            // Keep is_splitting = 1 when all splits are done successfully
+            $pool->update(['is_splitting' => 1]);
 
             DB::commit();
 

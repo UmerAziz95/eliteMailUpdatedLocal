@@ -88,6 +88,11 @@ class PoolAssignedPanel extends Command
     private $insufficientSpaceOrders = [];
 
     /**
+     * Summary rows for console table output
+     */
+    private $poolProcessingSummary = [];
+
+    /**
      * Execute the console command.
     */
     public function handle()
@@ -286,6 +291,9 @@ class PoolAssignedPanel extends Command
      */
     private function updateOrderStatusForAvailableSpace(): void
     {
+        // Reset summary tracker each run
+        $this->poolProcessingSummary = [];
+
         // Get pools that can be accommodated with available space and are not currently being split
         $pendingPools = Pool::where('status', 'pending')
             ->where('is_splitting', 0) // Only get pools that are not currently being split
@@ -310,6 +318,9 @@ class PoolAssignedPanel extends Command
             
             // Get pool-specific available space
             $poolSpecificSpace = $this->getAvailablePanelSpaceForOrder($pool->total_inboxes, $pool->inboxes_per_domain);
+            $capacityPerPanel = $this->ENABLE_MAX_SPLIT_CAPACITY ? $this->MAX_SPLIT_CAPACITY : $this->PANEL_CAPACITY;
+            $panelsNeeded = $capacityPerPanel > 0 ? (int)ceil($pool->total_inboxes / $capacityPerPanel) : 0;
+            $domainCount = $this->countDomains($pool->domains);
             // dd($poolSpecificSpace, $pool->total_inboxes, $pool->inboxes_per_domain, $this->PANEL_CAPACITY, $this->MAX_SPLIT_CAPACITY);
             if ($pool->total_inboxes <= $poolSpecificSpace) {
                 try {
@@ -353,22 +364,16 @@ class PoolAssignedPanel extends Command
                     $updatedCount++;
                     
                     // Calculate domain count for display
-                    $domainsRaw = $pool->domains;
-                    $domainCount = 0;
-                    if (is_array($domainsRaw)) {
-                        foreach ($domainsRaw as $domain) {
-                            if (is_array($domain) && isset($domain['name'])) {
-                                $domainCount++;
-                            } elseif (is_string($domain)) {
-                                $domainCount++;
-                            }
-                        }
-                    } elseif (is_string($domainsRaw)) {
-                        $domainCount = count(array_filter(preg_split('/[\r\n,]+/', $domainsRaw)));
-                    }
-                    
                     $this->info("   ✓ Pool ID {$pool->id}: {$pool->total_inboxes} inboxes - Status updated to 'completed'");
                     $this->info("     Domains processed: {$domainCount} domains");
+                    $this->poolProcessingSummary[] = [
+                        'pool_id' => $pool->id,
+                        'inboxes' => $pool->total_inboxes,
+                        'domains' => $domainCount,
+                        'panel_space' => $poolSpecificSpace,
+                        'panels_needed' => $panelsNeeded,
+                        'status' => 'completed'
+                    ];
                     
                 } catch (\Exception $e) {
                     $this->error("   ✗ Failed to update Pool ID {$pool->id}: " . $e->getMessage());
@@ -385,13 +390,8 @@ class PoolAssignedPanel extends Command
                     $remainingTotalInboxes += $pool->total_inboxes;
                 }
             } else {
-                $poolSpecificSpace = $this->getAvailablePanelSpaceForOrder($pool->total_inboxes, $pool->inboxes_per_domain);
                 $this->warn("   ⚠ Pool ID {$pool->id}: {$pool->total_inboxes} inboxes - Insufficient space");
                 $this->warn("     Pool-specific available space: {$poolSpecificSpace}");
-                
-                // Calculate panels needed for this pool
-                $capacityPerPanel = $this->ENABLE_MAX_SPLIT_CAPACITY ? $this->MAX_SPLIT_CAPACITY : $this->PANEL_CAPACITY;
-                $panelsNeeded = ceil($pool->total_inboxes / $capacityPerPanel);
                 
                 // Add to insufficient space pools for email notification
                 $this->insufficientSpaceOrders[] = [
@@ -400,6 +400,14 @@ class PoolAssignedPanel extends Command
                     'available_space' => $poolSpecificSpace,
                     'panels_needed' => $panelsNeeded,
                     'status' => 'pending'
+                ];
+                $this->poolProcessingSummary[] = [
+                    'pool_id' => $pool->id,
+                    'inboxes' => $pool->total_inboxes,
+                    'domains' => $domainCount,
+                    'panel_space' => $poolSpecificSpace,
+                    'panels_needed' => $panelsNeeded,
+                    'status' => 'insufficient'
                 ];
                 
                 // Add to remaining total for unprocessed pools
@@ -417,10 +425,36 @@ class PoolAssignedPanel extends Command
             $this->logPoolStatusUpdates($updatedCount, $totalSpaceUsed);
         }
         
+        $this->renderProcessingSummaryTables();
+
         // Send email notification if there are pools with insufficient space
         if (!empty($this->insufficientSpaceOrders)) {
             $this->sendInsufficientSpaceNotification();
         }
+    }
+
+    /**
+     * Count domain entries regardless of storage format
+     */
+    private function countDomains($domainsRaw): int
+    {
+        if (is_array($domainsRaw)) {
+            $count = 0;
+            foreach ($domainsRaw as $domain) {
+                if (is_array($domain) && isset($domain['name'])) {
+                    $count++;
+                } elseif (is_string($domain) && trim($domain) !== '') {
+                    $count++;
+                }
+            }
+            return $count;
+        }
+
+        if (is_string($domainsRaw)) {
+            return count(array_filter(preg_split('/[\r\n,]+/', $domainsRaw)));
+        }
+
+        return 0;
     }
     
     /**
@@ -451,6 +485,45 @@ class PoolAssignedPanel extends Command
             'pools_updated' => $updatedCount,
             'space_allocated' => $spaceUsed
         ]);
+    }
+
+    /**
+     * Render summary tables in the console output
+     */
+    private function renderProcessingSummaryTables(): void
+    {
+        if (!empty($this->poolProcessingSummary)) {
+            $this->info('📋 Pool processing summary (table view):');
+            $this->table(
+                ['Pool ID', 'Inboxes', 'Domains', 'Panel Space', 'Panels Needed', 'Status'],
+                array_map(function ($row) {
+                    return [
+                        $row['pool_id'],
+                        $row['inboxes'],
+                        $row['domains'],
+                        $row['panel_space'],
+                        $row['panels_needed'],
+                        ucfirst($row['status'])
+                    ];
+                }, $this->poolProcessingSummary)
+            );
+        }
+
+        if (!empty($this->insufficientSpaceOrders)) {
+            $this->info('📋 Insufficient space overview:');
+            $this->table(
+                ['Pool ID', 'Required', 'Available', 'Panels Needed', 'Status'],
+                array_map(function ($row) {
+                    return [
+                        $row['pool_id'],
+                        $row['required_space'],
+                        $row['available_space'],
+                        $row['panels_needed'],
+                        ucfirst($row['status'])
+                    ];
+                }, $this->insufficientSpaceOrders)
+            );
+        }
     }
     
     /**
