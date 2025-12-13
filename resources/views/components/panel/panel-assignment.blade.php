@@ -25,41 +25,104 @@
 
     {{-- Manual Assignment Builder --}}
     <div id="manual-assignment-builder" style="display: none;">
-        <div class="d-flex align-items-center justify-content-end flex-wrap gap-2 mb-3">
-            <button type="button" class="btn btn-success btn-sm" id="add-batch-btn">
-                <i class="fas fa-plus me-1"></i>Add Batch
-            </button>
-        </div>
+        <div class="assignment-layout">
+            {{-- Left Column: Batch Form --}}
+            <div class="assignment-form-column">
+                <div class="form-section-header">
+                    <h6 class="section-title">
+                        <i class="fas fa-edit me-2"></i>Batch Configuration
+                    </h6>
+                    <button type="button" class="btn btn-success btn-sm" id="add-batch-btn">
+                        <i class="fas fa-plus me-1"></i>Add Batch
+                    </button>
+                </div>
 
-        {{-- Assignment Summary --}}
-        <div class="assignment-summary mb-3">
-            <div class="summary-tile">
-                <div class="label">Total Domains</div>
-                <div class="value" id="total-domains-count">0</div>
+                {{-- Batch List --}}
+                <div id="batches-container" class="batches-form-list">
+                    <div class="placeholder-card">
+                        <i class="fas fa-layer-group me-2"></i>No batches yet. Click "Add Batch" to start.
+                    </div>
+                </div>
             </div>
-            <div class="summary-tile">
-                <div class="label">Assigned</div>
-                <div class="value" id="assigned-domains-count">0</div>
-            </div>
-            <div class="summary-tile">
-                <div class="label">Remaining</div>
-                <div class="value text-warning" id="remaining-domains-count">0</div>
-            </div>
-            <div class="summary-tile">
-                <div class="label">Total Space</div>
-                <div class="value"><span id="total-space-needed">0</span> inboxes</div>
+
+            {{-- Right Column: Assignment Summary --}}
+            <div class="assignment-summary-column">
+                <div class="summary-section-header">
+                    <h6 class="section-title">
+                        <i class="fas fa-chart-bar me-2"></i>Assignment Overview
+                    </h6>
+                </div>
+
+                {{-- Summary Stats --}}
+                <div class="summary-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon total">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Total Domains</div>
+                            <div class="stat-value" id="total-domains-count">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon assigned">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Assigned</div>
+                            <div class="stat-value" id="assigned-domains-count">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon remaining">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Remaining</div>
+                            <div class="stat-value text-warning" id="remaining-domains-count">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon space">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Total Space</div>
+                            <div class="stat-value"><span id="total-space-needed">0</span> <small>inboxes</small></div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Validation Messages --}}
+                <div id="assignment-validation-messages" class="mt-3"></div>
+
+                {{-- Panel Summary Section --}}
+                <div class="panel-summary-section">
+                    <h6 class="preview-title">
+                        <i class="fas fa-server me-2"></i>Panel Usage
+                    </h6>
+                    <div id="panels-summary-list">
+                        <div class="preview-placeholder">
+                            <i class="fas fa-server"></i>
+                            <p>No panels assigned yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Assignment List Preview --}}
+                <div class="assignment-preview-section">
+                    <h6 class="preview-title">
+                        <i class="fas fa-list-ul me-2"></i>Batch Assignments
+                    </h6>
+                    <div id="batches-preview-list">
+                        <div class="preview-placeholder">
+                            <i class="fas fa-inbox"></i>
+                            <p>No assignments yet</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
-        {{-- Batch List --}}
-        <div id="batches-container" class="mb-3">
-            <div class="placeholder-card ">
-                <i class="fas fa-layer-group me-2"></i>No batches yet. Click "Add Batch" to start.
-            </div>
-        </div>
-
-        {{-- Validation Messages --}}
-        <div id="assignment-validation-messages"></div>
     </div>
 </div>
 
@@ -68,9 +131,7 @@
     <div class="batch-item" data-batch-index="">
         <div class="batch-header">
             <div class="batch-title">
-                <span class="batch-icon">
-                    <i class="fas fa-layer-group"></i>
-                </span>
+                <span class="batch-number-badge"></span>
                 <span class="batch-label">Batch <span class="batch-number"></span></span>
             </div>
             <button type="button" class="btn-remove-batch remove-batch-btn" title="Remove batch">
@@ -119,48 +180,6 @@
                 </div>
             </div>
 
-            {{-- Panel Detail Snapshot --}}
-            <div class="panel-detail-box" style="display: none;">
-                <div class="detail-grid">
-                    <div class="detail-chip">
-                        <div class="chip-icon">
-                            <i class="fas fa-server"></i>
-                        </div>
-                        <div class="chip-content">
-                            <span class="chip-label">Panel</span>
-                            <span class="chip-value panel-name">-</span>
-                        </div>
-                    </div>
-                    <div class="detail-chip">
-                        <div class="chip-icon">
-                            <i class="fas fa-battery-three-quarters"></i>
-                        </div>
-                        <div class="chip-content">
-                            <span class="chip-label">Available</span>
-                            <span class="chip-value remaining-count">-</span>
-                        </div>
-                    </div>
-                    <div class="detail-chip">
-                        <div class="chip-icon">
-                            <i class="fas fa-database"></i>
-                        </div>
-                        <div class="chip-content">
-                            <span class="chip-label">Total Capacity</span>
-                            <span class="chip-value capacity-count">-</span>
-                        </div>
-                    </div>
-                    <div class="detail-chip highlight">
-                        <div class="chip-icon">
-                            <i class="fas fa-forward"></i>
-                        </div>
-                        <div class="chip-content">
-                            <span class="chip-label">After Assignment</span>
-                            <span class="chip-value after-count">-</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {{-- Domain List Preview --}}
             <div class="domain-preview">
                 <i class="fas fa-globe me-1"></i>
@@ -184,6 +203,272 @@
         padding: 24px;
         border: 1px solid rgba(255, 255, 255, 0.08);
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ===== Two Column Layout ===== */
+    .assignment-layout {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 24px;
+        margin-top: 20px;
+    }
+
+    @media (max-width: 1200px) {
+        .assignment-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ===== Form Column ===== */
+    .assignment-form-column {
+        min-height: 400px;
+    }
+
+    .form-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .form-section-header .section-title {
+        color: #f1f5f9;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .batches-form-list {
+        max-height: 70vh;
+        overflow-y: auto;
+        padding-right: 8px;
+    }
+
+    .batches-form-list::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .batches-form-list::-webkit-scrollbar-track {
+        background: rgba(30, 41, 59, 0.4);
+        border-radius: 4px;
+    }
+
+    .batches-form-list::-webkit-scrollbar-thumb {
+        background: rgba(99, 102, 241, 0.4);
+        border-radius: 4px;
+    }
+
+    .batches-form-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(99, 102, 241, 0.6);
+    }
+
+    /* ===== Summary Column ===== */
+    .assignment-summary-column {
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: 16px;
+        padding: 20px;
+        position: sticky;
+        top: 20px;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+    }
+
+    .summary-section-header {
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .summary-section-header .section-title {
+        color: #f1f5f9;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    /* ===== Summary Stats Cards ===== */
+    .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        border-color: rgba(99, 102, 241, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .stat-icon.total {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: #fff;
+    }
+
+    .stat-icon.assigned {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+    }
+
+    .stat-icon.remaining {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #fff;
+    }
+
+    .stat-icon.space {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: #fff;
+    }
+
+    .stat-info {
+        flex: 1;
+    }
+
+    .stat-label {
+        color: #94a3b8;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .stat-value {
+        color: #f1f5f9;
+        font-size: 1.4rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .stat-value small {
+        font-size: 0.6rem;
+        color: #94a3b8;
+        font-weight: 600;
+    }
+
+    /* ===== Assignment Preview List ===== */
+    .assignment-preview-section {
+        margin-top: 24px;
+    }
+
+    .preview-title {
+        color: #cbd5e1;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    #batches-preview-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .preview-placeholder {
+        text-align: center;
+        padding: 40px 20px;
+        color: #64748b;
+    }
+
+    .preview-placeholder i {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+        opacity: 0.5;
+    }
+
+    .preview-placeholder p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .preview-item {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(99, 102, 241, 0.15);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .preview-item:hover {
+        border-color: rgba(99, 102, 241, 0.3);
+        background: rgba(15, 23, 42, 0.6);
+    }
+
+    .preview-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .preview-batch-name {
+        color: #f1f5f9;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .preview-batch-badge {
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .preview-item-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        font-size: 0.75rem;
+    }
+
+    .preview-detail {
+        color: #94a3b8;
+    }
+
+    .preview-detail strong {
+        color: #cbd5e1;
+        font-weight: 600;
+    }
+
+    .preview-panel-info {
+        background: rgba(59, 130, 246, 0.1);
+        border-left: 3px solid #3b82f6;
+        padding: 8px 10px;
+        margin-top: 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        color: #93c5fd;
+    }
+
+    .preview-panel-info i {
+        margin-right: 6px;
     }
 
     #manual-assignment-section h5 {
@@ -311,23 +596,22 @@
     #manual-assignment-section .batch-item {
         background: linear-gradient(145deg, #1e293b, #0f172a);
         border: 1px solid rgba(99, 102, 241, 0.25);
-        border-radius: 16px;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+        border-radius: 12px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         overflow: hidden;
         transition: all 0.3s ease;
     }
 
     #manual-assignment-section .batch-item:hover {
         border-color: rgba(99, 102, 241, 0.45);
-        box-shadow: 0 15px 45px rgba(59, 130, 246, 0.25);
-        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.25);
     }
 
     /* ===== Batch Header ===== */
     #manual-assignment-section .batch-header {
         background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-        padding: 18px 24px;
+        padding: 12px 16px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -337,26 +621,27 @@
     #manual-assignment-section .batch-title {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
     }
 
-    #manual-assignment-section .batch-icon {
-        width: 40px;
-        height: 40px;
+    #manual-assignment-section .batch-number-badge {
+        width: 32px;
+        height: 32px;
         background: linear-gradient(135deg, #3b82f6, #6366f1);
-        border-radius: 10px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fff;
-        font-size: 1.1rem;
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        font-size: 0.9rem;
+        font-weight: 800;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
     }
 
     #manual-assignment-section .batch-label {
         color: #f1f5f9;
         font-weight: 700;
-        font-size: 1.1rem;
+        font-size: 0.95rem;
     }
 
     #manual-assignment-section .btn-remove-batch {
@@ -380,7 +665,7 @@
 
     /* ===== Batch Body ===== */
     #manual-assignment-section .batch-body {
-        padding: 24px;
+        padding: 16px;
     }
 
     #manual-assignment-section .batch-label-text {
@@ -463,45 +748,43 @@
         font-weight: 600;
     }
 
-    /* ===== Panel Detail Box ===== */
-    #manual-assignment-section .panel-detail-box {
-        background: rgba(30, 41, 59, 0.6);
-        border: 1px solid rgba(99, 102, 241, 0.2);
-        border-radius: 14px;
-        padding: 20px;
-        margin-top: 20px;
+    /* ===== Panel Summary Section ===== */
+    .panel-summary-section {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(99, 102, 241, 0.15);
     }
 
-    #manual-assignment-section .detail-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-        margin-bottom: 16px;
+    #panels-summary-list {
+        max-height: 300px;
+        overflow-y: auto;
     }
 
-    #manual-assignment-section .detail-chip {
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(148, 163, 184, 0.15);
-        border-radius: 10px;
-        padding: 14px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
+    .panel-summary-card {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(30, 41, 59, 0.4));
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
         transition: all 0.3s ease;
     }
 
-    #manual-assignment-section .detail-chip:hover {
-        background: rgba(15, 23, 42, 0.9);
-        border-color: rgba(99, 102, 241, 0.3);
-        transform: translateY(-2px);
-    }
-
-    #manual-assignment-section .detail-chip.highlight {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.15));
+    .panel-summary-card:hover {
         border-color: rgba(99, 102, 241, 0.4);
+        transform: translateX(4px);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
     }
 
-    #manual-assignment-section .chip-icon {
+    .panel-summary-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+    }
+
+    .panel-summary-icon {
         width: 36px;
         height: 36px;
         background: linear-gradient(135deg, #3b82f6, #6366f1);
@@ -511,28 +794,69 @@
         justify-content: center;
         color: #fff;
         font-size: 0.95rem;
-        flex-shrink: 0;
     }
 
-    #manual-assignment-section .chip-content {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
+    .panel-summary-title {
         flex: 1;
     }
 
-    #manual-assignment-section .chip-label {
-        color: #94a3b8;
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-weight: 600;
+    .panel-summary-name {
+        color: #f1f5f9;
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: block;
+        margin-bottom: 2px;
     }
 
-    #manual-assignment-section .chip-value {
+    .panel-summary-id {
+        color: #94a3b8;
+        font-size: 0.7rem;
+    }
+
+    .panel-summary-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .panel-stat-item {
+        background: rgba(15, 23, 42, 0.5);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+    }
+
+    .panel-stat-item.highlight {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.15));
+        border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .panel-stat-label {
+        color: #94a3b8;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .panel-stat-value {
         color: #f1f5f9;
         font-weight: 700;
         font-size: 0.95rem;
+    }
+
+    .panel-stat-value.success {
+        color: #10b981;
+    }
+
+    .panel-stat-value.warning {
+        color: #f59e0b;
+    }
+
+    .panel-stat-value.danger {
+        color: #ef4444;
     }
 
     /* ===== Domain Preview ===== */
@@ -711,8 +1035,8 @@
                     loadPanelCapacity(panelId, batchCard);
                 }
                 
-                updatePanelMeta(batchCard);
                 updatePanelDropdowns();
+                updatePanelSummary();
             });
 
             $('#batches-container').on('change', '.domain-end', function() {
@@ -759,11 +1083,13 @@
                 
                 updateBatchCalculations(batchCard);
                 updateSubsequentBatches(batchCard);
+                updatePanelSummary();
             });
 
             $('#batches-container').on('input', '.domain-end', function() {
                 const batchCard = $(this).closest('.batch-item');
                 updateBatchCalculations(batchCard);
+                updatePanelSummary();
             });
 
             $('#inboxes_per_domain').on('change', function() {
@@ -843,9 +1169,9 @@
                 if (currentValue && currentValue !== '') {
                     $currentSelect.val(currentValue);
                 }
-
-                updatePanelMeta($currentSelect.closest('.batch-item'));
             });
+            
+            updatePanelSummary();
         }
 
         function loadPanelCapacity(panelId, batchCard) {
@@ -897,11 +1223,71 @@
             updateAllBatchCalculations();
             updatePanelDropdowns();
             updateAssignmentSummary();
+            updatePreviewList();
         }
 
         function updateBatchNumbers() {
             $('.batch-item').each(function(index) {
                 $(this).find('.batch-number').text(index + 1);
+                $(this).find('.batch-number-badge').text(index + 1);
+            });
+            updatePreviewList();
+        }
+
+        function updatePreviewList() {
+            const $previewList = $('#batches-preview-list');
+            const $batches = $('.batch-item');
+            
+            if ($batches.length === 0) {
+                $previewList.html(`
+                    <div class="preview-placeholder">
+                        <i class="fas fa-inbox"></i>
+                        <p>No assignments yet</p>
+                    </div>
+                `);
+                return;
+            }
+            
+            $previewList.empty();
+            
+            $batches.each(function(index) {
+                const $batch = $(this);
+                const batchNum = index + 1;
+                const panelId = $batch.find('.panel-select').val();
+                const panelText = $batch.find('.panel-select option:selected').text() || 'Not selected';
+                const domainStart = parseInt($batch.find('.domain-start').val()) || 0;
+                const domainEnd = parseInt($batch.find('.domain-end').val()) || 0;
+                const domainCount = (domainEnd >= domainStart && domainStart > 0) ? (domainEnd - domainStart + 1) : 0;
+                const spaceNeeded = parseInt($batch.find('.batch-space-value').val()) || 0;
+                
+                const previewHtml = `
+                    <div class="preview-item">
+                        <div class="preview-item-header">
+                            <span class="preview-batch-name">
+                                <i class="fas fa-layer-group me-1"></i>Batch ${batchNum}
+                            </span>
+                            <span class="preview-batch-badge">${domainCount} domains</span>
+                        </div>
+                        <div class="preview-item-details">
+                            <div class="preview-detail">
+                                <i class="fas fa-play me-1"></i><strong>${domainStart}</strong>
+                            </div>
+                            <div class="preview-detail">
+                                <i class="fas fa-stop me-1"></i><strong>${domainEnd}</strong>
+                            </div>
+                            <div class="preview-detail" style="grid-column: 1 / -1;">
+                                <i class="fas fa-database me-1"></i>Space: <strong>${spaceNeeded} inboxes</strong>
+                            </div>
+                        </div>
+                        ${panelId ? `
+                            <div class="preview-panel-info">
+                                <i class="fas fa-server"></i>${panelText.substring(0, 40)}${panelText.length > 40 ? '...' : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                $previewList.append(previewHtml);
             });
         }
 
@@ -950,7 +1336,8 @@
             }
             
             updateAssignmentSummary();
-            updatePanelMeta(batchCard);
+            updatePreviewList();
+            updatePanelSummary();
         }
 
         function updateAllBatchCalculations() {
@@ -1108,37 +1495,91 @@
             return cleanedFormData;
         }
 
-        function updatePanelMeta(batchCard) {
-            const panelId = batchCard.find('.panel-select').val();
-            const metaBox = batchCard.find('.panel-detail-box');
-
-            if (!panelId) {
-                metaBox.hide();
+        function updatePanelSummary() {
+            const $panelsList = $('#panels-summary-list');
+            const panelUsage = {};
+            
+            // Collect usage data for each panel
+            $('.batch-item').each(function() {
+                const $batch = $(this);
+                const panelId = $batch.find('.panel-select').val();
+                const spaceNeeded = parseInt($batch.find('.batch-space-value').val()) || 0;
+                
+                if (panelId && spaceNeeded > 0) {
+                    if (!panelUsage[panelId]) {
+                        panelUsage[panelId] = {
+                            totalAssigned: 0,
+                            batches: 0
+                        };
+                    }
+                    panelUsage[panelId].totalAssigned += spaceNeeded;
+                    panelUsage[panelId].batches++;
+                }
+            });
+            
+            const panelIds = Object.keys(panelUsage);
+            
+            if (panelIds.length === 0) {
+                $panelsList.html(`
+                    <div class="preview-placeholder">
+                        <i class="fas fa-server"></i>
+                        <p>No panels assigned yet</p>
+                    </div>
+                `);
                 return;
             }
-
-            let panel = batchCard.data('panel-capacity');
-            if (!panel) {
-                panel = availablePanels.find(p => String(p.id) === String(panelId));
-            }
-            if (!panel) {
-                metaBox.hide();
-                return;
-            }
-
-            const spaceNeeded = parseInt(batchCard.find('.batch-space-value').val()) || 0;
-            const remainingAfter = Math.max(panel.remaining_limit - spaceNeeded, 0);
-            const used = Math.max(panel.limit - panel.remaining_limit, 0);
-            const percentUsed = panel.limit ? Math.min((used / panel.limit) * 100, 100) : 0;
-            const percentAfter = panel.limit ? Math.min(((used + spaceNeeded) / panel.limit) * 100, 100) : 0;
-            const futureSegment = Math.max(percentAfter - percentUsed, 0);
-
-            metaBox.find('.panel-name').text(panel.auto_generated_id || panel.title || ('Panel ' + panel.id));
-            metaBox.find('.remaining-count').text(panel.remaining_limit + ' free');
-            metaBox.find('.capacity-count').text(panel.limit + ' total');
-            metaBox.find('.after-count').text(remainingAfter + ' free after');
-
-            metaBox.show();
+            
+            $panelsList.empty();
+            
+            panelIds.forEach(panelId => {
+                const panel = availablePanels.find(p => String(p.id) === String(panelId));
+                if (!panel) return;
+                
+                const usage = panelUsage[panelId];
+                const available = panel.remaining_limit;
+                const total = panel.limit;
+                const afterAssignment = Math.max(available - usage.totalAssigned, 0);
+                const percentUsed = total > 0 ? Math.round(((total - available) / total) * 100) : 0;
+                const percentAfter = total > 0 ? Math.round(((total - afterAssignment) / total) * 100) : 0;
+                
+                let afterClass = 'success';
+                if (percentAfter >= 90) afterClass = 'danger';
+                else if (percentAfter >= 70) afterClass = 'warning';
+                
+                const cardHtml = `
+                    <div class="panel-summary-card">
+                        <div class="panel-summary-header">
+                            <div class="panel-summary-icon">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div class="panel-summary-title">
+                                <span class="panel-summary-name">${panel.title || 'Panel'}</span>
+                                <span class="panel-summary-id">${panel.auto_generated_id || 'ID: ' + panel.id}</span>
+                            </div>
+                        </div>
+                        <div class="panel-summary-stats">
+                            <div class="panel-stat-item">
+                                <span class="panel-stat-label">Available</span>
+                                <div class="panel-stat-value">${available}</div>
+                            </div>
+                            <div class="panel-stat-item">
+                                <span class="panel-stat-label">Total</span>
+                                <div class="panel-stat-value">${total}</div>
+                            </div>
+                            <div class="panel-stat-item highlight">
+                                <span class="panel-stat-label">After Assignment</span>
+                                <div class="panel-stat-value ${afterClass}">${afterAssignment}</div>
+                            </div>
+                            <div class="panel-stat-item">
+                                <span class="panel-stat-label">Usage After</span>
+                                <div class="panel-stat-value ${afterClass}">${percentAfter}%</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                $panelsList.append(cardHtml);
+            });
         }
 
         return {
