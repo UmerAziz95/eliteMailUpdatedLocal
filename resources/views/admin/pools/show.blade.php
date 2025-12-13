@@ -7,6 +7,19 @@
     $defaultImage = 'https://cdn-icons-png.flaticon.com/128/300/300221.png';
     $defaultProfilePic =
     'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
+    
+    // Check if domains are expired based on purchase date (1 year expiration)
+    $isExpired = false;
+    $daysUntilExpiration = null;
+    $expirationDate = null;
+    
+    if ($pool->purchase_date) {
+        $purchaseDate = \Carbon\Carbon::parse($pool->purchase_date);
+        $expirationDate = $purchaseDate->copy()->addYear();
+        $now = \Carbon\Carbon::now();
+        $isExpired = $now->greaterThan($expirationDate);
+        $daysUntilExpiration = $now->diffInDays($expirationDate, false);
+    }
     @endphp
 
 
@@ -34,6 +47,17 @@
                 <i class="fa {{ ($pool->status_manage_by_admin ?? 'warming') === 'warming' ? 'fa-fire' : 'fa-check-circle' }} me-1"></i>
                 {{ ucfirst($pool->status_manage_by_admin ?? 'warming') }}
             </div>
+            @if($isExpired)
+            <div class="badge bg-danger text-white px-2 py-1">
+                <i class="fa fa-exclamation-triangle me-1"></i>
+                Domains Expired
+            </div>
+            @elseif($daysUntilExpiration !== null && $daysUntilExpiration <= 30 && $daysUntilExpiration > 0)
+            <div class="badge bg-warning text-dark px-2 py-1">
+                <i class="fa fa-clock me-1"></i>
+                Expires in {{ $daysUntilExpiration }} days
+            </div>
+            @endif
             @if($pool->assigned_to)
             <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignHelperModal">
                 <i class="fa fa-user-edit"></i> Reassign Helper
@@ -41,6 +65,24 @@
             @endif
         </div>
     </div>
+
+    @if($isExpired)
+    <div class="alert alert-danger d-flex align-items-center mt-3" role="alert" style="background-color: #f8d7da; border-color: #f5c2c7; color: #842029;">
+        <i class="fa fa-exclamation-circle fa-2x me-3" style="color: #842029;"></i>
+        <div>
+            <h6 class="mb-1" style="color: #842029;"><strong>Domains Expired</strong></h6>
+            <p class="mb-0" style="color: #842029;">The domains in this pool have expired. Purchase date was {{ $pool->purchase_date ? \Carbon\Carbon::parse($pool->purchase_date)->format('M d, Y') : 'N/A' }} and expired on {{ $expirationDate ? $expirationDate->format('M d, Y') : 'N/A' }}.</p>
+        </div>
+    </div>
+    @elseif($daysUntilExpiration !== null && $daysUntilExpiration <= 30 && $daysUntilExpiration > 0)
+    <div class="alert alert-warning d-flex align-items-center mt-3" role="alert" style="background-color: #fff3cd; border-color: #ffecb5; color: #664d03;">
+        <i class="fa fa-exclamation-triangle fa-2x me-3" style="color: #664d03;"></i>
+        <div>
+            <h6 class="mb-1" style="color: #664d03;"><strong>Domains Expiring Soon</strong></h6>
+            <p class="mb-0" style="color: #664d03;">The domains in this pool will expire in {{ $daysUntilExpiration }} days on {{ $expirationDate ? $expirationDate->format('M d, Y') : 'N/A' }}.</p>
+        </div>
+    </div>
+    @endif
 
     
     <!-- Reassign Helper Modal -->
@@ -98,10 +140,12 @@
                 data-bs-target="#pool-details-tab-pane" type="button" role="tab" aria-controls="pool-details-tab-pane"
                 aria-selected="true">Pool Details</button>
         </li>
+        @if(!$isExpired)
         <li class="nav-item" role="presentation">
             <button class="nav-link fs-6 px-5" id="domains-tab" data-bs-toggle="tab" data-bs-target="#domains-tab-pane"
                 type="button" role="tab" aria-controls="domains-tab-pane" aria-selected="false">Domains</button>
         </li>
+        @endif
         <li class="nav-item" role="presentation">
             <button class="nav-link fs-6 px-5" id="details-tab" data-bs-toggle="tab" data-bs-target="#details-tab-pane"
                 type="button" role="tab" aria-controls="details-tab-pane" aria-selected="false">Additional Details</button>
@@ -142,6 +186,23 @@
                             <span class="opacity-50">Pool ID</span>
                             <span>{{ $pool->id ?? 'N/A' }}</span>
                         </div>
+                        @if($pool->purchase_date)
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50">Purchase Date</span>
+                            <span>{{ \Carbon\Carbon::parse($pool->purchase_date)->format('M d, Y') }}</span>
+                        </div>
+                        <div class="d-flex flex-column mt-3">
+                            <span class="opacity-50">Expiration Date</span>
+                            <span class="{{ $isExpired ? 'text-danger' : ($daysUntilExpiration !== null && $daysUntilExpiration <= 30 ? 'text-warning' : '') }}">
+                                {{ $expirationDate ? $expirationDate->format('M d, Y') : 'N/A' }}
+                                @if($isExpired)
+                                    <span class="badge bg-danger ms-2">Expired</span>
+                                @elseif($daysUntilExpiration !== null && $daysUntilExpiration <= 30 && $daysUntilExpiration > 0)
+                                    <span class="badge bg-warning text-dark ms-2">{{ $daysUntilExpiration }} days left</span>
+                                @endif
+                            </span>
+                        </div>
+                        @endif
                         @if($pool->assigned_to)
                         <div class="d-flex flex-column mt-3">
                             <span class="opacity-50">Assigned To</span>
@@ -315,8 +376,27 @@
         </div>
 
         <!-- Domains Tab -->
+        @if(!$isExpired)
         <div class="tab-pane fade" id="domains-tab-pane" role="tabpanel" aria-labelledby="domains-tab" tabindex="0">
             <div class="col-12">
+                @if($isExpired)
+                <div class="alert alert-danger d-flex align-items-center mb-3" role="alert" style="background-color: #f8d7da; border-color: #f5c2c7; color: #842029;">
+                    <i class="fa fa-exclamation-circle fa-2x me-3" style="color: #842029;"></i>
+                    <div>
+                        <h6 class="mb-1" style="color: #842029;"><strong>All Domains in This Pool Are Expired</strong></h6>
+                        <p class="mb-0" style="color: #842029;">These domains expired on {{ $expirationDate ? $expirationDate->format('M d, Y') : 'N/A' }}. Please renew to continue using them.</p>
+                    </div>
+                </div>
+                @elseif($daysUntilExpiration !== null && $daysUntilExpiration <= 30 && $daysUntilExpiration > 0)
+                <div class="alert alert-warning d-flex align-items-center mb-3" role="alert" style="background-color: #fff3cd; border-color: #ffecb5; color: #664d03;">
+                    <i class="fa fa-exclamation-triangle fa-2x me-3" style="color: #664d03;"></i>
+                    <div>
+                        <h6 class="mb-1" style="color: #664d03;"><strong>Domains Expiring in {{ $daysUntilExpiration }} Days</strong></h6>
+                        <p class="mb-0" style="color: #664d03;">These domains will expire on {{ $expirationDate ? $expirationDate->format('M d, Y') : 'N/A' }}. Please renew before expiration.</p>
+                    </div>
+                </div>
+                @endif
+                
                 <div class="card p-3">
                     <h6 class="d-flex align-items-center gap-2">
                         <div class="d-flex align-items-center justify-content-center"
@@ -351,6 +431,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- Additional Details Tab -->
         <div class="tab-pane fade" id="details-tab-pane" role="tabpanel" aria-labelledby="details-tab" tabindex="0">
