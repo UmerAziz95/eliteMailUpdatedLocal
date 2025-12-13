@@ -367,7 +367,7 @@
         </div>
 
         <!-- Pool Panel Capacity Alert -->
-        <div id="poolPanelCapacityAlertContainer"></div>
+        <x-pool.pool-panel-capacity-alert badge-id="pendingPoolsBadge" />
 
         <div class="counters mb-3">
             <div class="card p-3 counter_1">
@@ -2662,62 +2662,6 @@
                     confirmButtonText: 'OK'
                 });
             }
-        }
-
-        // Refresh pool panel capacity alert
-        function refreshPoolPanelCapacityAlert() {
-            $.ajax({
-                url: '{{ route('admin.pool-panels.capacity-alert') }}',
-                method: 'GET',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'Accept': 'application/json'
-                },
-                success: function(response) {
-                        if (response.success) {
-                        const container = $('#poolPanelCapacityAlertContainer');
-                        if (response.show_alert) {
-                            // Update pending pools badge
-                            $('#pendingPoolsBadge')
-                                .removeClass('d-none')
-                                .text(response.insufficient_pools_count || 0);
-
-                            // Show/update the alert
-                            const alertHtml = `
-                        <div id="poolPanelCapacityAlert" class="alert alert-warning alert-dismissible fade show py-2 rounded-1" role="alert"
-                            style="background-color: rgba(255, 193, 7, 0.2); color: #fff; border: 2px solid #ffc107;">
-                            <i class="ti ti-layer-group me-2 alert-icon"></i>
-                            <strong>Pool Panel Capacity Alert:</strong>
-                            ${response.total_pool_panels_needed} new pool panel${response.total_pool_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_pools_count} pending pool${response.insufficient_pools_count != 1 ? 's' : ''} (${response.provider_type || ''}).
-                            <a href="javascript:void(0)" onclick="showPoolAllocationDetails()" class="text-light alert-link">View Details</a> to see pending pools.
-                            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
-                                aria-label="Close"></button>
-                        </div>
-                    `;
-
-                            if (container.length) {
-                                container.html(alertHtml);
-                            } else if ($('#poolPanelCapacityAlert').length) {
-                                $('#poolPanelCapacityAlert').replaceWith(alertHtml);
-                            } else {
-                                $('.counters').first().before(alertHtml);
-                            }
-                        } else {
-                            // Hide the alert if no longer needed
-                            if (container.length) {
-                                container.empty();
-                            }
-                            $('#poolPanelCapacityAlert').remove();
-                            $('#pendingPoolsBadge').addClass('d-none').text('0');
-                        }
-
-                        console.log('Pool panel capacity alert refreshed at:', new Date().toLocaleTimeString());
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error refreshing pool panel capacity alert:', error);
-                }
-            });
         }
 
         function resetForm() {
