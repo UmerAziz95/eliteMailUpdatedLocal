@@ -64,3 +64,17 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Maintenance: Fix legacy pool domain JSON
+
+If you see malformed `domains` data after upgrading, run the artisan helper to normalize old domain JSON into the new prefix_statuses format:
+
+```bash
+php artisan pools:migrate-prefix-statuses
+```
+
+This command will:
+- Add missing `provider_type` values to pools (using your configured `PROVIDER_TYPE` default).
+- Normalize legacy domain entries into the new schema expected by the app.
+
+Run it once after deploying the migration; it is safe to rerun if needed.
