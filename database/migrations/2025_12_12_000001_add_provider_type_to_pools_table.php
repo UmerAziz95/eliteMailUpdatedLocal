@@ -28,8 +28,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('pools', function (Blueprint $table) {
-            $table->dropColumn('provider_type');
-        });
+        if (Schema::hasColumn('pools', 'provider_type')) {
+            Schema::table('pools', function (Blueprint $table) {
+                $table->dropColumn('provider_type');
+            });
+        }
     }
 };
