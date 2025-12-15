@@ -35,17 +35,40 @@ class PoolMigrationTaskService
         $validStatuses = ['in-progress', 'used'];
         
         foreach ($domains as $domain) {
-            // Get status, default to 'warming' if not set
-            $domainStatus = $domain['status'] ?? 'warming';
-            
-            // Only flag if status is not 'in-progress' or 'used'
-            if (!in_array($domainStatus, $validStatuses)) {
-                $domainName = $this->resolveDomainName($domain);
+            // Check if domain has prefix_statuses (new format)
+            if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                $allPrefixesValid = true;
+                $nonValidPrefixes = [];
+
+                foreach ($domain['prefix_statuses'] as $variantKey => $statusData) {
+                    $status = $statusData['status'] ?? 'warming';
+                    
+                    if (!in_array($status, $validStatuses)) {
+                        $allPrefixesValid = false;
+                        $nonValidPrefixes[] = $variantKey . ': ' . $status;
+                    }
+                }
+
+                if (!$allPrefixesValid) {
+                    $domainName = $this->resolveDomainName($domain);
+                    $nonValidDomains[] = [
+                        'name' => $domainName,
+                        'status' => 'Policies not ready: ' . implode(', ', $nonValidPrefixes)
+                    ];
+                }
+            } else {
+                // Fallback to old format
+                $domainStatus = $domain['status'] ?? 'warming';
                 
-                $nonValidDomains[] = [
-                    'name' => $domainName,
-                    'status' => $domainStatus
-                ];
+                // Only flag if status is not 'in-progress' or 'used'
+                if (!in_array($domainStatus, $validStatuses)) {
+                    $domainName = $this->resolveDomainName($domain);
+                    
+                    $nonValidDomains[] = [
+                        'name' => $domainName,
+                        'status' => $domainStatus
+                    ];
+                }
             }
         }
         
@@ -402,7 +425,26 @@ class PoolMigrationTaskService
             
             // Update domains in pool_orders table
             foreach ($domains as &$domain) {
-                if (isset($domain['status']) && $domain['status'] === 'in-progress') {
+                // Handle new prefix_statuses format
+                if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                    $domainUpdated = false;
+                    foreach ($domain['prefix_statuses'] as &$statusData) {
+                        if (isset($statusData['status']) && $statusData['status'] === 'in-progress') {
+                            $statusData['status'] = 'used';
+                            $domainUpdated = true;
+                        }
+                    }
+                    
+                    if ($domainUpdated) {
+                        $domain['is_used'] = true;
+                        $domainsUpdated = true;
+                        $updateCount++;
+                        Log::info("Pool migration task {$task->id}: Updated prefixes for domain " . 
+                            ($domain['domain_name'] ?? $domain['name'] ?? 'Unknown'));
+                    }
+                } 
+                // Handle legacy format
+                elseif (isset($domain['status']) && $domain['status'] === 'in-progress') {
                     $domain['status'] = 'used';
                     $domain['is_used'] = true;
                     $domainsUpdated = true;
@@ -497,7 +539,26 @@ class PoolMigrationTaskService
                 
                 foreach ($poolDomains as &$poolDomain) {
                     if (isset($poolDomain['id']) && in_array($poolDomain['id'], $domainIds)) {
-                        if (isset($poolDomain['status']) && $poolDomain['status'] === 'in-progress') {
+                        // Handle new prefix_statuses format
+                        if (isset($poolDomain['prefix_statuses']) && is_array($poolDomain['prefix_statuses'])) {
+                            $poolDomainUpdated = false;
+                            foreach ($poolDomain['prefix_statuses'] as &$statusData) {
+                                if (isset($statusData['status']) && $statusData['status'] === 'in-progress') {
+                                    $statusData['status'] = 'used';
+                                    $poolDomainUpdated = true;
+                                }
+                            }
+                            
+                            if ($poolDomainUpdated) {
+                                $poolDomain['is_used'] = true;
+                                $poolDomainsUpdated = true;
+                                $poolUpdateCount++;
+                                Log::info("Updated prefixes for domain " . ($poolDomain['name'] ?? 'Unknown') . 
+                                    " in pool {$poolId}");
+                            }
+                        }
+                        // Handle legacy format
+                        elseif (isset($poolDomain['status']) && $poolDomain['status'] === 'in-progress') {
                             $poolDomain['status'] = 'used';
                             $poolDomain['is_used'] = true;
                             $poolDomainsUpdated = true;
