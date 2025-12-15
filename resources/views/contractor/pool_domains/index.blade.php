@@ -236,13 +236,23 @@
                     <input type="hidden" id="edit_prefix_key" name="prefix_key">
                     
                     <!-- Prefix indicator badge (shown when editing a specific prefix) -->
-                    <div id="edit_prefix_indicator" class="alert alert-info py-2 px-3 mb-3 d-none">
-                        <i class="fa fa-tag me-1"></i> Editing prefix: <strong id="edit_prefix_display"></strong>
+                    <div id="edit_prefix_indicator" class="prefix-banner prefix-banner-primary d-none mb-3">
+                        <span class="prefix-banner__icon">
+                            <i class="fa fa-tag"></i>
+                        </span>
+                        <div class="prefix-banner__title">
+                            Editing prefix: <strong id="edit_prefix_display"></strong>
+                        </div>
                     </div>
 
                     <!-- Prefix with Domain Info -->
-                    <div id="edit_prefix_domain_info" class="alert alert-secondary py-2 px-3 mb-3 d-none">
-                        <i class="fa fa-globe me-1"></i> Full Identity: <strong id="edit_prefix_domain_display"></strong>
+                    <div id="edit_prefix_domain_info" class="prefix-banner prefix-banner-muted d-none mb-3">
+                        <span class="prefix-banner__icon">
+                            <i class="fa fa-globe"></i>
+                        </span>
+                        <div class="prefix-banner__title">
+                            Full Identity: <strong id="edit_prefix_domain_display"></strong>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
