@@ -340,114 +340,126 @@ class PoolOrderService
             $file = fopen('php://output', 'w');
             
             // Add CSV headers matching Google Workspace format
-            fputcsv($file, ['First Name', 'Last Name', 'Email address', 'Password', 'Org Unit Path [Required]']);
-            
-            // Get pool data for password fallback
-            $pool = $poolOrder->pool;
-            $poolPassword = '';
-            
-            if ($pool) {
-                $poolPassword = $pool->email_persona_password ?? $pool->persona_password ?? '';
-            }
-            
-            // Get prefix_variants_details from pool table as fallback
-            $prefixVariantsDetails = [];
-            if ($pool && $pool->prefix_variants_details) {
-                $prefixVariantsDetails = is_string($pool->prefix_variants_details) 
-                    ? json_decode($pool->prefix_variants_details, true) 
-                    : $pool->prefix_variants_details;
-            }
-            
-            // Add domain data
-            foreach ($poolOrder->ready_domains_prefix as $domain) {
-                $domainName = $domain['domain_name'] ?? 'Unknown';
-                
-                // Get first name and last name from pool_info in ready_domains_prefix
-                $poolFirstName = $domain['pool_info']['first_name'] ?? '';
-                $poolLastName = $domain['pool_info']['last_name'] ?? '';
-                
-                // Get prefix variants from domain
-                $prefixVariants = $domain['prefix_variants'] ?? [];
-                $prefixVariantsDetailsFromDomain = $domain['prefix_variants_details'] ?? [];
-                
-                if (!empty($prefixVariants)) {
-                    $counter = 0;
-                    foreach ($prefixVariants as $key => $prefix) {
-                        // Build email from prefix and domain name
-                        $email = $prefix . '@' . $domainName;
-                        
-                        // Try to get first/last name from domain's prefix_variants_details first
-                        $variantFirstName = '';
-                        $variantLastName = '';
-                        
-                        if (isset($prefixVariantsDetailsFromDomain[$key])) {
-                            $variantFirstName = $prefixVariantsDetailsFromDomain[$key]['first_name'] ?? '';
-                            $variantLastName = $prefixVariantsDetailsFromDomain[$key]['last_name'] ?? '';
-                        }
-                        
-                        // Fallback to pool_info if variant details are empty
-                        if (empty($variantFirstName)) {
-                            $variantFirstName = $poolFirstName;
-                        }
-                        if (empty($variantLastName)) {
-                            $variantLastName = $poolLastName;
-                        }
-                        
-                        // Final fallback to prefix_variants_details from pool table
-                        // if ((empty($variantFirstName) || empty($variantLastName)) && !empty($prefixVariantsDetails)) {
-                        //     $prefixKey = 'prefix_variant_' . ($counter + 1);
-                        //     if (isset($prefixVariantsDetails[$prefixKey])) {
-                        //         if (empty($variantFirstName)) {
-                        //             $variantFirstName = $prefixVariantsDetails[$prefixKey]['first_name'] ?? '';
-                        //         }
-                        //         if (empty($variantLastName)) {
-                        //             $variantLastName = $prefixVariantsDetails[$prefixKey]['last_name'] ?? '';
-                        //         }
-                        //     }
-                        // }
+            fputcsv($file, ['First Name', 'Last Name', 'Email Address', 'Password', 'Org Unit Path [Required]']);
 
-                        // 1) Try per-prefix password from prefix_variants_details
-                        // 2) Fallback to pool password
-                        // 3) Fallback to generated password (existing behaviour)
-                        $password = '';
 
-                        if (
-                            isset($prefixVariantsDetailsFromDomain[$key]) &&
-                            !empty($prefixVariantsDetailsFromDomain[$key]['password'])
-                        ) {
-                            $password = $prefixVariantsDetailsFromDomain[$key]['password'];
-                        }
+            $domains = $poolOrder->domains;
+            
+            // Collect all unique pool IDs to eager load if possible (though we do it in loop for now)
+            // Or just rely on caching if getPoolAttribute supports it.
+            
+            foreach ($domains as $domainEntry) {
+                // Determine Pool ID and Domain Name
+                $poolId = $domainEntry['pool_id'] ?? null;
+                $domainName = $domainEntry['domain_name'] ?? 'Unknown';
 
-                        // If no per-prefix password, use pool password
-                        if (empty($password)) {
-                            $password = $poolPassword;
-                        }
-                        
-                        if (empty($password)) {
-                            $password = $this->customEncrypt($poolOrder->id, $counter);
-                        }
-                        
-                        fputcsv($file, [
-                            $variantFirstName,
-                            $variantLastName,
-                            $email,
-                            $password,
-                            '/'
-                        ]);
-                        
-                        $counter++;
-                    }
-                } else {
-                    // If no prefixes, still add a row with pool_info data
-                    $password = $poolPassword ?: $this->customEncrypt($poolOrder->id, 0);
+                // Try to load Pool
+                $pool = null;
+                if ($poolId) {
+                    $pool = \App\Models\Pool::find($poolId);
+                }
+                
+                // Get Pool Defaults
+                $poolFirstName = $pool->first_name ?? '';
+                $poolLastName = $pool->last_name ?? '';
+                $poolPassword = '';
+                if ($pool) {
+                    $poolPassword = $pool->email_persona_password ?? $pool->persona_password ?? '';
+                }
+                
+                // Get Pool Prefix Variants Details (for passwords/names lookup)
+                $poolPrefixDetails = [];
+                if ($pool && $pool->prefix_variants_details) {
+                    $poolPrefixDetails = is_string($pool->prefix_variants_details) 
+                        ? json_decode($pool->prefix_variants_details, true) 
+                        : $pool->prefix_variants_details;
+                }
+
+                // Determine Prefixes to export
+                // Priority: selected_prefixes (Rich) -> prefixes (List) -> Pool Prefixes (Legacy/Fallback)
+                
+                $prefixesToExport = [];
+                
+                if (!empty($domainEntry['selected_prefixes'])) {
+                     // Rich structure from migration
+                     $selected = $domainEntry['selected_prefixes'];
+                     if (is_string($selected)) $selected = json_decode($selected, true);
+                     
+                     foreach ($selected as $key => $data) {
+                         $prefixesToExport[$key] = [
+                             'email' => $data['email'] ?? ($key . '@' . $domainName),
+                             'key' => $key
+                         ];
+                     }
+                } elseif (!empty($domainEntry['prefixes'])) {
+                    // Semirich structure (just keys)
+                    $prefixes = $domainEntry['prefixes'];
+                    if (is_string($prefixes)) $prefixes = json_decode($prefixes, true);
                     
-                    fputcsv($file, [
+                    // prefixes might be array of strings (keys) or key=>val. Migration made it array of strings if I recall? 
+                    // Migration: $prefixes[] = $key; (Indexed array of keys)
+                    // But legacy might be key=>val.
+                    
+                    foreach ($prefixes as $k => $v) {
+                        // If indexed array, v is key. If assoc, k is key.
+                        $key = is_int($k) ? $v : $k;
+                        $prefixesToExport[$key] = [
+                            'email' => $key . '@' . $domainName, // Construct on fly
+                            'key' => $key
+                        ];
+                    }
+                } elseif ($pool && $pool->prefix_variants) {
+                    // Legacy Fallback: Use all pool variants
+                    $variants = $pool->prefix_variants;
+                    if (is_string($variants)) $variants = json_decode($variants, true);
+                     if (is_array($variants)) {
+                        foreach ($variants as $key => $v) {
+                            $prefixesToExport[$key] = [
+                                'email' => $key . '@' . $domainName,
+                                'key' => $key
+                            ];
+                        }
+                    }
+                }
+                
+                // If still empty (no prefixes), maybe just domain root?
+                if (empty($prefixesToExport)) {
+                     // Single row for domain?
+                     $password = $poolPassword ?: $this->customEncrypt($poolOrder->id, 0);
+                     fputcsv($file, [
                         $poolFirstName,
                         $poolLastName,
-                        '',
+                        '', // No email? Or clean domain?
                         $password,
                         '/'
                     ]);
+                    continue;
+                }
+                
+                // iterate and write rows
+                $counter = 0;
+                foreach ($prefixesToExport as $variantKey => $info) {
+                    $email = $info['email'];
+                    
+                    // Lookup Details (First/Last/Password)
+                    // 1. From Pool Prefix Details
+                    $variantFirstName = $poolPrefixDetails[$variantKey]['first_name'] ?? $poolFirstName;
+                    $variantLastName = $poolPrefixDetails[$variantKey]['last_name'] ?? $poolLastName;
+                    $password = $poolPrefixDetails[$variantKey]['password'] ?? $poolPassword;
+                    
+                    // 2. Custom Encrypt Fallback
+                    if (empty($password)) {
+                        $password = $this->customEncrypt($poolOrder->id, $counter);
+                    }
+                    
+                    fputcsv($file, [
+                        $variantFirstName,
+                        $variantLastName,
+                        $email,
+                        $password,
+                        '/'
+                    ]);
+                    $counter++;
                 }
             }
             
