@@ -18,7 +18,7 @@ class SlackNotificationService
     public static function send(string $type, $message): bool
     {
         try {
-            Log::channel('slack_notifications')->info("test 1 notification service============================");
+
 
             // Get the webhook settings for this type
             $setting = SlackSettings::where('type', $type)
@@ -33,17 +33,14 @@ class SlackNotificationService
 
             // Prepare payload based on message type
             $payload = [];
-             Log::channel('slack_notifications')->info("test 2 notification service============================");
 
             if (is_array($message)) {
-            Log::channel('slack_notifications')->info("test 3 notification service============================");
 
                 // If message is an array (structured message), use it directly
                 $payload = $message;
                 $payload['username'] = config('app.name', 'ProjectInbox');
                 $payload['icon_emoji'] = self::getEmojiForType($type);
             } else {
-            Log::channel('slack_notifications')->info("test 4 notification service============================");
 
                 // If message is a string, use simple format
                 $payload = [
@@ -57,7 +54,6 @@ class SlackNotificationService
             $response = Http::post($setting->url, $payload);
             
             if ($response->successful()) {
-                            Log::channel('slack_notifications')->info("test 5 notification service============================");
 
                 Log::channel('slack_notifications')->info("Slack notification sent successfully for type: {$type}", [
                     'type' => $type,
@@ -66,7 +62,6 @@ class SlackNotificationService
                 ]);
                 return true;
             } else {
-                            Log::channel('slack_notifications')->info("test 6 notification service============================");
 
                 Log::channel('slack_notifications')->error("Failed to send Slack notification. Response: " . $response->body(), [
                     'type' => $type,
@@ -77,7 +72,6 @@ class SlackNotificationService
             }
             
         } catch (\Exception $e) {
-                        Log::channel('slack_notifications')->info("test 7 notification service============================");
 
             Log::channel('slack_notifications')->error("Error sending Slack notification: " . $e->getMessage(), [
                 'type' => $type,
@@ -287,7 +281,6 @@ class SlackNotificationService
      */
     public static function sendOrderAssignmentNotification($order)
     {
-    Log::channel('slack_notifications')->info("test 1 slack notification sendOrderAssignmentNotification service============================");
 
         // Calculate inbox count and split count
         $inboxCount = 0;
@@ -326,7 +319,6 @@ class SlackNotificationService
 
         // Prepare the message based on type
         $message = self::formatMessage('order-assignment', $data);
-        Log::channel('slack_notifications')->info("test 1 slack notification sendOrderAssignmentNotification service============================");
 
         return self::send('inbox-setup', $message);
     }
@@ -735,7 +727,7 @@ class SlackNotificationService
         ];
 
         $message = self::formatMessage('assignment-failed', $data);
-        return self::send('inbox-alert', $message); // Assuming 'inbox-alert' channel exists or general one
+        return self::send('inbox-trial-setup', $message);
     }
 
     /**
