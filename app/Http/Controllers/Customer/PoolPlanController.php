@@ -605,7 +605,7 @@ class PoolPlanController extends Controller
             'isCustomer'
         ));
     }
-
+    
     /**
      * Update pool order with selected domains
      */
@@ -814,6 +814,26 @@ class PoolPlanController extends Controller
                     'platform' => $poolOrder->sending_platform,
                     'data' => $sendingPlatformData
                 ]);
+
+                // Auto-Assign Domains if enabled and domains not yet assigned
+                // Assuming isCustomer check is already ensuring this is a customer action
+                if ($isCustomer && (!$poolOrder->domains || count($poolOrder->domains) == 0)) {
+                    try {
+                        $assignmentService = new \App\Services\PoolOrderAssignmentService();
+                        $result = $assignmentService->autoAssignDomains($poolOrder);
+                        
+                        if (!$result['success']) {
+                             Log::warning('Auto-assignment failed during updatePoolOrder: ' . $result['message']);
+                             // Optionally flash message to session?
+                             // session()->flash('warning', 'Could not auto-assign domains. Admin has been notified.');
+                        } else {
+                            // Update pool order object to reflect changes
+                            $poolOrder = $poolOrder->fresh();
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Exception during auto-assignment trigger: ' . $e->getMessage());
+                    }
+                }
             }
             
             Log::info('Before saving pool order - domains:', ['domains' => $poolOrder->domains]);

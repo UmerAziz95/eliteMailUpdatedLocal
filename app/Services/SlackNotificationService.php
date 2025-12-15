@@ -718,6 +718,27 @@ class SlackNotificationService
     }
     
     /**
+     * Send assignment failed notification to Slack
+     *
+     * @param \App\Models\PoolOrder $poolOrder
+     * @param string $reason
+     * @return bool
+     */
+    public static function sendAssignmentFailedNotification($poolOrder, $reason)
+    {
+        $data = [
+            'order_id' => $poolOrder->id,
+            'customer_name' => $poolOrder->user ? $poolOrder->user->name : 'Unknown',
+            'quantity' => $poolOrder->quantity,
+            'reason' => $reason,
+            'created_at' => now()->format('Y-m-d H:i:s T')
+        ];
+
+        $message = self::formatMessage('assignment-failed', $data);
+        return self::send('inbox-alert', $message); // Assuming 'inbox-alert' channel exists or general one
+    }
+
+    /**
      * Format message based on type and data
      *
      * @param string $type
@@ -729,6 +750,39 @@ class SlackNotificationService
         $appName = config('app.name', 'ProjectInbox');
         
         switch ($type) {
+            case 'assignment-failed':
+                return [
+                    'text' => "⚠️ *Auto-Assignment Failed*",
+                    'attachments' => [
+                        [
+                            'color' => '#dc3545',
+                            'fields' => [
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Required Quantity',
+                                    'value' => $data['quantity'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Reason',
+                                    'value' => $data['reason'] ?? 'N/A',
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - System Alert',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
             case 'invoice-generated-new':
                 Log::channel('slack_notifications')->info("Formatting message for type: {$type}", [
                     'data' => $data,
