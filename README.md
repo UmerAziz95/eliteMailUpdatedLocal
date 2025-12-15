@@ -78,3 +78,17 @@ This command will:
 - Normalize legacy domain entries into the new schema expected by the app.
 
 Run it once after deploying the migration; it is safe to rerun if needed.
+
+## Maintenance: Migrate Pool Orders Domains
+
+If you are upgrading to the new system logic that requires rich domain data (including prefixes) on pool orders, run the following command to migrate old orders:
+
+```bash
+php artisan pool-orders:fix-domains
+```
+
+This command will:
+- Iterate through existing Pool Orders.
+- Enrich the `domains` column with full details (prefixes, inbox counts) fetched from the associated Pool.
+- Ensure compatibility with the new frontend and backend logic.
+
