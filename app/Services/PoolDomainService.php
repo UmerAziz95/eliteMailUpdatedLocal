@@ -140,12 +140,15 @@ class PoolDomainService
                     'admin_status' => $poolOrder->status_manage_by_admin ?? 'unknown',
                 ];
 
+                $hasGranular = false;
+
                 // If domain has selected_prefixes, map each selected prefix to this order
                 if (isset($orderDomain['selected_prefixes']) && is_array($orderDomain['selected_prefixes'])) {
                     foreach (array_keys($orderDomain['selected_prefixes']) as $prefixKey) {
                         $granularKey = $domainId . '_' . $poolIdFromDomain . '_' . $prefixKey;
                         $poolOrdersByDomain[$granularKey] = $orderInfo;
                     }
+                    $hasGranular = true;
                 } elseif (isset($orderDomain['prefix_statuses']) && is_array($orderDomain['prefix_statuses'])) {
                     // Fallback: if selected_prefixes missing but prefix_statuses exists (legacy/migration edge case)
                     // We map all status keys as a best guess, but this is what caused the bug if multiple orders share domain.
@@ -159,11 +162,15 @@ class PoolDomainService
                             $poolOrdersByDomain[$granularKey] = $orderInfo;
                          }
                     }
+                    $hasGranular = true;
                 }
 
-                // Also keep generic key for fallback or legacy handling
-                $lookupKey = $domainId . '_' . $poolIdFromDomain;
-                $poolOrdersByDomain[$lookupKey] = $orderInfo;
+                // Only set generic key for fallback or legacy handling IF no granular keys were set
+                // This prevents ambiguous matches where multiple orders share a domain but have distinct prefixes.
+                if (!$hasGranular) {
+                    $lookupKey = $domainId . '_' . $poolIdFromDomain;
+                    $poolOrdersByDomain[$lookupKey] = $orderInfo;
+                }
             }
         }
     }
