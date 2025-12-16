@@ -383,8 +383,7 @@
                 </label>
                 <div id="domains-container">
                     <!-- Editable domains textarea -->
-                    <textarea id="domains" name="domains" class="form-control" rows="6"
-                        required>{{ isset($pool) && $pool->domains ? (is_array($pool->domains) ? implode("\n", array_filter(array_map(function($d) { return is_array($d) && !($d['is_used'] ?? false) ? $d['name'] : (is_string($d) ? $d : null); }, $pool->domains))) : $pool->domains) : '' }}</textarea>
+                    <textarea id="domains" name="domains" class="form-control" rows="6">{{ isset($pool) && $pool->domains ? (is_array($pool->domains) ? implode("\n", array_filter(array_map(function($d) { return is_array($d) && !($d['is_used'] ?? false) ? $d['name'] : (is_string($d) ? $d : null); }, $pool->domains))) : $pool->domains) : '' }}</textarea>
                     
                     <!-- Read-only domains display -->
                     <div id="readonly-domains" class="mt-2" style="display: none;">
@@ -3090,7 +3089,10 @@ $(document).ready(function() {
         const domainsField = $('#domains');
         const domains = domainsField.val().trim().split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
         
-        if (domains.length === 0) {
+        // Check if we have used domains
+        const hasUsedDomains = (typeof usedDomains !== 'undefined' && usedDomains.length > 0);
+
+        if (domains.length === 0 && !hasUsedDomains) {
             isValid = false;
             domainsField.addClass('is-invalid');
             $('#domains-error').text('Please enter at least one domain').addClass('show-error');
@@ -3099,7 +3101,7 @@ $(document).ready(function() {
             if (!firstErrorField) {
                 firstErrorField = domainsField;
             }
-        } else {
+        } else if (domains.length > 0) {
             // Check for duplicates
             const seen = new Set();
             const duplicates = domains.filter(domain => {
