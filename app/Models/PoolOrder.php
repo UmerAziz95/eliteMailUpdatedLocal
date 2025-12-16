@@ -471,6 +471,9 @@ class PoolOrder extends Model
                             $poolPrefixVariants = $pool->prefix_variants ?? [];
                             $poolPrefixDetails = $pool->prefix_variants_details ?? [];
                             
+                            // Get selected prefixes from the order domain data
+                            $selectedPrefixes = $orderDomain['selected_prefixes'] ?? null;
+                            
                             $domainData['prefix_variants'] = [];
                             $domainData['prefix_variants_details'] = [];
                             $domainData['formatted_prefixes'] = [];
@@ -478,6 +481,11 @@ class PoolOrder extends Model
                             
                             if (is_array($poolPrefixVariants) && !empty($poolPrefixVariants)) {
                                 foreach ($poolPrefixVariants as $key => $prefix) {
+                                    // If selected_prefixes is set, only include those that are selected
+                                    if ($selectedPrefixes && is_array($selectedPrefixes) && !array_key_exists($key, $selectedPrefixes)) {
+                                        continue;
+                                    }
+
                                     if (!empty($prefix)) {
                                         $domainData['prefix_variants'][$key] = $prefix;
                                         
