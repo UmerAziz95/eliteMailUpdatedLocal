@@ -156,6 +156,7 @@ class UpdatePoolStatus extends Command
         // Perform the update
         $updatedCount = 0;
         $totalDomainsUpdated = 0;
+        $totalPrefixesUpdated = 0;
         
         foreach ($poolsToUpdate as $pool) {
             $poolUpdated = false;
@@ -173,6 +174,7 @@ class UpdatePoolStatus extends Command
                                 if (isset($prefixStatus['end_date']) && $prefixStatus['end_date'] <= $today) {
                                     $prefixStatus['status'] = 'available';
                                     $prefixUpdated = true;
+                                    $totalPrefixesUpdated++;
                                 }
                             }
                         }
@@ -187,6 +189,9 @@ class UpdatePoolStatus extends Command
                             $domain['status'] = 'available';
                             $domainsUpdatedInPool++;
                             $poolUpdated = true;
+                            // Count as updated prefix/inbox equivalent (using inboxes_per_domain or 1)
+                            $inboxesCount = $pool->inboxes_per_domain ?? 1;
+                            $totalPrefixesUpdated += $inboxesCount;
                         }
                     } elseif (!isset($domain['status']) && !isset($domain['prefix_statuses'])) {
                         // Add status field if it doesn't exist (backward compatibility)
@@ -195,6 +200,8 @@ class UpdatePoolStatus extends Command
                             $domain['status'] = 'available';
                             $domainsUpdatedInPool++;
                             $poolUpdated = true;
+                            $inboxesCount = $pool->inboxes_per_domain ?? 1;
+                            $totalPrefixesUpdated += $inboxesCount;
                         } else {
                             $domain['status'] = 'warming';
                         }
@@ -241,12 +248,14 @@ class UpdatePoolStatus extends Command
 
         $this->info("Successfully updated {$updatedCount} pool(s).");
         $this->info("Total domains updated from 'warming' to 'available': {$totalDomainsUpdated}");
+        $this->info("Total inboxes/prefixes updated: {$totalPrefixesUpdated}");
         
         // Log the action
         \Log::info("Pool status update completed based on domain end_date.", [
             'command' => 'pools:update-status',
             'updated_pools' => $updatedCount,
             'updated_domains' => $totalDomainsUpdated,
+            'updated_prefixes' => $totalPrefixesUpdated,
             'check_date' => $today,
             'method' => 'Domain end_date based expiration'
         ]);
