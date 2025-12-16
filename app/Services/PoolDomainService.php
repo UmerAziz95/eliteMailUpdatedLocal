@@ -132,14 +132,38 @@ class PoolDomainService
             }
             
             if ($domainId && $poolIdFromDomain) {
-                $lookupKey = $domainId . '_' . $poolIdFromDomain;
-                $poolOrdersByDomain[$lookupKey] = [
+                $orderInfo = [
                     'id' => (int) $poolOrder->id,
                     'user' => $poolOrder->user ?? $this->createDefaultUser(),
                     'per_inbox' => (int) ($orderDomain['per_inbox'] ?? 1),
                     'status' => $poolOrder->status ?? 'unknown',
                     'admin_status' => $poolOrder->status_manage_by_admin ?? 'unknown',
                 ];
+
+                // If domain has selected_prefixes, map each selected prefix to this order
+                if (isset($orderDomain['selected_prefixes']) && is_array($orderDomain['selected_prefixes'])) {
+                    foreach (array_keys($orderDomain['selected_prefixes']) as $prefixKey) {
+                        $granularKey = $domainId . '_' . $poolIdFromDomain . '_' . $prefixKey;
+                        $poolOrdersByDomain[$granularKey] = $orderInfo;
+                    }
+                } elseif (isset($orderDomain['prefix_statuses']) && is_array($orderDomain['prefix_statuses'])) {
+                    // Fallback: if selected_prefixes missing but prefix_statuses exists (legacy/migration edge case)
+                    // We map all status keys as a best guess, but this is what caused the bug if multiple orders share domain.
+                    // Ideally we prefer selected_prefixes.
+                    foreach (array_keys($orderDomain['prefix_statuses']) as $prefixKey) {
+                        $granularKey = $domainId . '_' . $poolIdFromDomain . '_' . $prefixKey;
+                        // Only set if not already set (priority to first processed? Or maybe last? 
+                        // With selected_prefixes it's explicit. Without it, it's ambiguous.
+                        // Let's rely on this only if invalid structure.)
+                         if (!isset($poolOrdersByDomain[$granularKey])) {
+                            $poolOrdersByDomain[$granularKey] = $orderInfo;
+                         }
+                    }
+                }
+
+                // Also keep generic key for fallback or legacy handling
+                $lookupKey = $domainId . '_' . $poolIdFromDomain;
+                $poolOrdersByDomain[$lookupKey] = $orderInfo;
             }
         }
     }
@@ -165,43 +189,54 @@ class PoolDomainService
             $domainName = $domain['name'] ?? $domain['domain_name'] ?? null;
             $prefixStatuses = $domain['prefix_statuses'] ?? null;
             
-            // Use lookup map for O(1) access
-            $lookupKey = $domainId . '_' . $pool->id;
-            $poolOrderInfo = $poolOrdersByDomain[$lookupKey] ?? null;
-            
-            // Set customer and order info with proper type casting
-            if ($poolOrderInfo) {
-                $customer = $poolOrderInfo['user'];
-                $poolOrderId = $poolOrderInfo['id'];
-                $perInbox = $poolOrderInfo['per_inbox'];
-                $poolOrderStatus = $poolOrderInfo['status'];
-                $poolOrderAdminStatus = $poolOrderInfo['admin_status'];
-            } else {
-                $customer = $pool->user ?? $this->createDefaultUser();
-                $poolOrderId = null;
-                $perInbox = (int) ($domain['available_inboxes'] ?? 0);
-                $poolOrderStatus = 'no_order';
-                $poolOrderAdminStatus = 'no_order';
-            }
+            // Base lookup key (generic)
+            $baseLookupKey = $domainId . '_' . $pool->id;
 
             // If domain has prefix_statuses, create a row for each prefix variant
             if ($prefixStatuses && is_array($prefixStatuses) && count($prefixStatuses) > 0) {
                 foreach ($prefixStatuses as $prefixKey => $prefixData) {
+                    // Try granular lookup first, then fallback to base
+                    $granularKey = $baseLookupKey . '_' . $prefixKey;
+                    $poolOrderInfo = $poolOrdersByDomain[$granularKey] ?? $poolOrdersByDomain[$baseLookupKey] ?? null;
+
+                    // Set customer and order info
+                    if ($poolOrderInfo) {
+                        $customer = $poolOrderInfo['user'];
+                        $poolOrderId = $poolOrderInfo['id'];
+                        $perInbox = $poolOrderInfo['per_inbox'];
+                        $poolOrderStatus = $poolOrderInfo['status'];
+                        $poolOrderAdminStatus = $poolOrderInfo['admin_status'];
+                    } else {
+                        $customer = $pool->user ?? $this->createDefaultUser();
+                        $poolOrderId = null;
+                        $perInbox = (int) ($domain['available_inboxes'] ?? 0);
+                        $poolOrderStatus = 'no_order';
+                        $poolOrderAdminStatus = 'no_order';
+                    }
+
                     // Extract prefix number from key (e.g., "prefix_variant_1" -> 1)
                     $prefixNumber = (int) preg_replace('/\D/', '', $prefixKey);
                     $prefixValue = $poolPrefixes[$prefixKey] ?? $poolPrefixes["prefix_variant_{$prefixNumber}"] ?? "Prefix {$prefixNumber}";
                     
+                    $status = $prefixData['status'] ?? 'unknown';
+
+                    // Fix: If assigned to an order (Pool Order Exists) and status is 'available', it should be 'in-progress'
+                    if ($poolOrderInfo && $status === 'available') {
+                        $status = 'in-progress';
+                    }
+
                     $results[] = [
                         'customer_name' => $customer ? $customer->name : 'Unknown',
                         'customer_email' => $customer ? $customer->email : 'unknown@example.com',
                         'domain_id' => $domainId,
                         'pool_id' => (int) $pool->id,
-                        'pool_order_id' => $poolOrderId,
+                        // 'pool_order_id' => $poolOrderId,
+                        'pool_order_id' => $status !== 'available' ? $poolOrderId : null,
                         'domain_name' => $domainName ?? 'Unknown Domain',
                         'prefix_key' => $prefixKey,
                         'prefix_value' => $prefixValue,
                         'prefix_number' => $prefixNumber,
-                        'status' => $prefixData['status'] ?? 'unknown',
+                        'status' => $status,
                         'start_date' => $prefixData['start_date'] ?? null,
                         'end_date' => $prefixData['end_date'] ?? null,
                         'prefixes' => $poolPrefixes,
@@ -213,6 +248,22 @@ class PoolDomainService
                 }
             } else {
                 // Fallback for domains without prefix_statuses (old format)
+                $poolOrderInfo = $poolOrdersByDomain[$baseLookupKey] ?? null;
+                
+                if ($poolOrderInfo) {
+                    $customer = $poolOrderInfo['user'];
+                    $poolOrderId = $poolOrderInfo['id'];
+                    $perInbox = $poolOrderInfo['per_inbox'];
+                    $poolOrderStatus = $poolOrderInfo['status'];
+                    $poolOrderAdminStatus = $poolOrderInfo['admin_status'];
+                } else {
+                    $customer = $pool->user ?? $this->createDefaultUser();
+                    $poolOrderId = null;
+                    $perInbox = (int) ($domain['available_inboxes'] ?? 0);
+                    $poolOrderStatus = 'no_order';
+                    $poolOrderAdminStatus = 'no_order';
+                }
+
                 // Show single row with domain-level status
                 $results[] = [
                     'customer_name' => $customer ? $customer->name : 'Unknown',
@@ -465,26 +516,8 @@ class PoolDomainService
             $domainName = $domain['name'] ?? $domain['domain_name'] ?? 'Unknown Domain';
             $prefixStatuses = $domain['prefix_statuses'] ?? null;
             
-            // Use lookup map for O(1) access to pool order info
-            $lookupKey = $domainId . '_' . $pool->id;
-            $poolOrderInfo = $poolOrdersByDomain[$lookupKey] ?? null;
-            
-            // Set customer and order info with proper type casting
-            if ($poolOrderInfo) {
-                $customer = $poolOrderInfo['user'];
-                $poolOrderId = $poolOrderInfo['id'];
-                $perInbox = $poolOrderInfo['per_inbox'];
-                $poolOrderStatus = $poolOrderInfo['status'];
-                $poolOrderAdminStatus = $poolOrderInfo['admin_status'];
-            } else {
-                $poolOrderId = null;
-                $perInbox = (int) ($domain['available_inboxes'] ?? 0);
-                $poolOrderStatus = 'no_order';
-                $poolOrderAdminStatus = 'no_order';
-            }
-            
-            $customerName = $customer ? $customer->name : 'Unknown';
-            $customerEmail = $customer ? $customer->email : 'unknown@example.com';
+            // Base lookup key
+            $baseLookupKey = $domainId . '_' . $pool->id;
 
             // If domain has prefix_statuses, create a row for each prefix variant
             if ($prefixStatuses && is_array($prefixStatuses) && count($prefixStatuses) > 0) {
@@ -492,6 +525,33 @@ class PoolDomainService
                     $prefixNumber = (int) preg_replace('/\D/', '', $prefixKey);
                     $prefixValue = $poolPrefixes[$prefixKey] ?? $poolPrefixes["prefix_variant_{$prefixNumber}"] ?? "Prefix {$prefixNumber}";
                     $status = $prefixData['status'] ?? 'unknown';
+                    
+                    // Try granular lookup first, then fallback to base
+                    $granularKey = $baseLookupKey . '_' . $prefixKey;
+                    $poolOrderInfo = $poolOrdersByDomain[$granularKey] ?? $poolOrdersByDomain[$baseLookupKey] ?? null;
+
+                    // Set customer and order info
+                    if ($poolOrderInfo) {
+                        $customer = $poolOrderInfo['user'];
+                        $poolOrderId = $poolOrderInfo['id'];
+                        $perInbox = $poolOrderInfo['per_inbox'];
+                        $poolOrderStatus = $poolOrderInfo['status'];
+                        $poolOrderAdminStatus = $poolOrderInfo['admin_status'];
+                    } else {
+                        $customer = $pool->user ?? $this->createDefaultUser();
+                        $poolOrderId = null;
+                        $perInbox = (int) ($domain['available_inboxes'] ?? 0);
+                        $poolOrderStatus = 'no_order';
+                        $poolOrderAdminStatus = 'no_order';
+                    }
+
+                    // Fix: If assigned to an order (Pool Order Exists) and status is 'available', it should be 'in-progress'
+                    if ($poolOrderInfo && $status === 'available') {
+                        $status = 'in-progress';
+                    }
+                    
+                    $customerName = $customer ? $customer->name : 'Unknown';
+                    $customerEmail = $customer ? $customer->email : 'unknown@example.com';
                     
                     // Check if any field matches the search term
                     $matchesSearch = stripos($customerName, $searchTerm) !== false ||
@@ -511,7 +571,7 @@ class PoolDomainService
                         'customer_email' => $customerEmail,
                         'domain_id' => $domainId,
                         'pool_id' => (int) $pool->id,
-                        'pool_order_id' => $poolOrderId,
+                        'pool_order_id' => $status !== 'available' ? $poolOrderId : null,
                         'domain_name' => $domainName,
                         'prefix_key' => $prefixKey,
                         'prefix_value' => $prefixValue,
@@ -528,6 +588,25 @@ class PoolDomainService
                 }
             } else {
                 // Fallback for domains without prefix_statuses (old format)
+                $poolOrderInfo = $poolOrdersByDomain[$baseLookupKey] ?? null;
+
+                if ($poolOrderInfo) {
+                    $customer = $poolOrderInfo['user'];
+                    $poolOrderId = $poolOrderInfo['id'];
+                    $perInbox = $poolOrderInfo['per_inbox'];
+                    $poolOrderStatus = $poolOrderInfo['status'];
+                    $poolOrderAdminStatus = $poolOrderInfo['admin_status'];
+                } else {
+                    $customer = $pool->user ?? $this->createDefaultUser();
+                    $poolOrderId = null;
+                    $perInbox = (int) ($domain['available_inboxes'] ?? 0);
+                    $poolOrderStatus = 'no_order';
+                    $poolOrderAdminStatus = 'no_order';
+                }
+                
+                $customerName = $customer ? $customer->name : 'Unknown';
+                $customerEmail = $customer ? $customer->email : 'unknown@example.com';
+                
                 $status = $domain['status'] ?? 'unknown';
                 
                 $matchesSearch = stripos($customerName, $searchTerm) !== false ||
