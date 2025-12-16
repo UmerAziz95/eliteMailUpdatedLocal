@@ -496,6 +496,66 @@ class PoolController extends Controller
         $plans = Plan::all(); // Get all plans for edit form
         $hostingPlatforms = HostingPlatform::where('is_active', true)->orderBy('sort_order')->get();
         $sendingPlatforms = SendingPlatform::orderBy('name')->get();
+        
+        // Self-Healing Logic: Fix "stuck" locked domains that are actually available
+        try {
+            $currentDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+            
+            if (is_array($currentDomains)) {
+                $hasFixes = false;
+                $fixedDomains = [];
+                
+                foreach ($currentDomains as $d) {
+                    if (!is_array($d)) {
+                        $fixedDomains[] = $d;
+                        continue;
+                    }
+                    
+                    $isUsed = $d['is_used'] ?? false;
+                    $status = $d['status'] ?? 'warming'; // Legacy status
+                    
+                    // Check for granular prefix statuses (new format)
+                    $hasActivePrefixes = false;
+                    if (isset($d['prefix_statuses']) && is_array($d['prefix_statuses'])) {
+                        foreach ($d['prefix_statuses'] as $variant) {
+                            $vStatus = $variant['status'] ?? 'warming';
+                            if ($vStatus === 'in-progress' || $vStatus === 'used') {
+                                $hasActivePrefixes = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        // Fallback to legacy status check if no prefix_statuses
+                        if ($status === 'in-progress' || $status === 'used') {
+                            $hasActivePrefixes = true;
+                        }
+                    }
+                    
+                    // Logic: If marked is_used=true, but NO active prefixes/status found -> Unlock it
+                    if ($isUsed && !$hasActivePrefixes) {
+                        $d['is_used'] = false;
+                        $hasFixes = true;
+                    }
+                    
+                    $fixedDomains[] = $d;
+                }
+                
+                if ($hasFixes) {
+                    // Update DB directly to preserve the fix
+                    DB::table('pools')->where('id', $pool->id)->update([
+                        'domains' => json_encode($fixedDomains)
+                    ]);
+                    
+                    // Update the model instance for the view
+                    $pool->domains = $fixedDomains;
+                    
+                    \Log::info("PoolController@edit: Self-healed locked domains for Pool ID {$pool->id}");
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error("PoolController@edit: Self-healing failed: " . $e->getMessage());
+        }
+
         // dd($pool);
         return view('admin.pools.edit', compact('pool', 'users', 'plans', 'hostingPlatforms', 'sendingPlatforms'));
     }
