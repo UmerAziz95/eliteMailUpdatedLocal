@@ -974,7 +974,7 @@ class PoolPanelController extends Controller
      */
     private function getOtherPoolPanelSplits(int $poolId, int $currentPoolPanelId)
     {
-        $otherSplits = PoolPanelSplit::with(['panel'])
+        $otherSplits = PoolPanelSplit::with(['panel', 'pool'])
             ->where('pool_id', $poolId)
             ->where('pool_panel_id', '!=', $currentPoolPanelId)
             ->get();

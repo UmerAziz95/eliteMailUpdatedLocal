@@ -142,6 +142,7 @@ class PoolPanelSplit extends Model
                     $record = [
                         'name' => \is_string($name) ? trim($name) : ($name ?? ''),
                         'status' => $status ?? 'unknown',
+                        'prefix_statuses' => $poolDomain['prefix_statuses'] ?? null,
                     ];
 
                     if ($identifier !== null) {
@@ -157,6 +158,7 @@ class PoolPanelSplit extends Model
                         $poolDomainLookup[$trimmed] = [
                             'name' => $trimmed,
                             'status' => 'unknown',
+                            'prefix_statuses' => null,
                         ];
                     }
                 }
@@ -168,6 +170,7 @@ class PoolPanelSplit extends Model
         foreach ($this->domains as $domainRef) {
             $name = '';
             $status = 'unknown';
+            $prefixKey = null;
 
             if (is_array($domainRef)) {
                 $name = $domainRef['domain']
@@ -183,14 +186,21 @@ class PoolPanelSplit extends Model
                     ?? $domainRef['status_manage_by_admin']
                     ?? $status;
 
+                // Check if this domain reference has a prefix_key (for split assignments)
+                $prefixKey = $domainRef['prefix_key'] ?? $domainRef['prefix'] ?? null;
+
                 $lookupKey = $domainRef['id'] ?? $domainRef['domain_id'] ?? null;
                 if ($lookupKey !== null && isset($poolDomainLookup[(string) $lookupKey])) {
                     $lookup = $poolDomainLookup[(string) $lookupKey];
                     $name = $name ?: ($lookup['name'] ?? '');
-                    $status = $lookup['status'] ?? $status;
+                    
+                    // Get status from prefix_statuses - check all variants and use the most relevant
+                    $status = $this->getDomainStatusFromPrefixStatuses($lookup, $prefixKey);
                 } elseif ($name && isset($poolDomainLookup[$name])) {
                     $lookup = $poolDomainLookup[$name];
-                    $status = $lookup['status'] ?? $status;
+                    
+                    // Get status from prefix_statuses - check all variants and use the most relevant
+                    $status = $this->getDomainStatusFromPrefixStatuses($lookup, $prefixKey);
                 }
             } else {
                 $key = trim((string) $domainRef);
@@ -201,7 +211,9 @@ class PoolPanelSplit extends Model
                 if (isset($poolDomainLookup[$key])) {
                     $lookup = $poolDomainLookup[$key];
                     $name = $lookup['name'] ?? $key;
-                    $status = $lookup['status'] ?? $status;
+                    
+                    // Get status from prefix_statuses - check all variants and use the most relevant
+                    $status = $this->getDomainStatusFromPrefixStatuses($lookup, null);
                 } else {
                     $name = $key;
                 }
@@ -224,5 +236,42 @@ class PoolPanelSplit extends Model
         }
 
         return $details;
+    }
+
+    /**
+     * Get domain status from prefix_statuses, intelligently choosing the most relevant status
+     * 
+     * @param array $lookup Domain lookup data containing prefix_statuses
+     * @param string|null $prefixKey Specific prefix key if assigned
+     * @return string The determined status
+     */
+    private function getDomainStatusFromPrefixStatuses(array $lookup, ?string $prefixKey = null): string
+    {
+        // If specific prefix key is provided and exists, use it
+        if ($prefixKey && isset($lookup['prefix_statuses'][$prefixKey]['status'])) {
+            return $lookup['prefix_statuses'][$prefixKey]['status'];
+        }
+
+        // If prefix_statuses exist, use intelligent status selection
+        if (isset($lookup['prefix_statuses']) && is_array($lookup['prefix_statuses']) && !empty($lookup['prefix_statuses'])) {
+            $statuses = array_column($lookup['prefix_statuses'], 'status');
+            
+            // Priority order: in-progress > warming > available > unknown
+            if (in_array('in-progress', $statuses, true)) {
+                return 'in-progress';
+            }
+            if (in_array('warming', $statuses, true)) {
+                return 'warming';
+            }
+            if (in_array('available', $statuses, true)) {
+                return 'available';
+            }
+            
+            // Return first status if no priority match
+            return reset($statuses) ?: 'unknown';
+        }
+
+        // Fall back to domain-level status
+        return $lookup['status'] ?? 'unknown';
     }
 }
