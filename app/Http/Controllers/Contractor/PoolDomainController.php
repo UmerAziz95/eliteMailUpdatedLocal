@@ -645,9 +645,15 @@ class PoolDomainController extends Controller
             // Assign to current user
             $poolOrder->assigned_to = auth()->id();
             $poolOrder->assigned_at = now();
+            
+            // Set status to 'in-progress' when contractor is assigned (only if currently pending)
+            if ($poolOrder->status_manage_by_admin === 'pending') {
+                $poolOrder->status_manage_by_admin = 'in-progress';
+            }
+            
             $poolOrder->save();
 
-            \Log::info('Pool order #' . $poolOrder->id . ' assigned to contractor user #' . auth()->id());
+            \Log::info('Pool order #' . $poolOrder->id . ' assigned to contractor user #' . auth()->id() . ', status: ' . $poolOrder->status_manage_by_admin);
 
             return response()->json([
                 'success' => true,

@@ -839,15 +839,16 @@ class PoolPlanController extends Controller
             Log::info('Before saving pool order - domains:', ['domains' => $poolOrder->domains]);
             
             // Update status based on who is updating and what is being updated
-            // Status flow: draft (initial) -> pending (customer updates) -> in-progress (admin/contractor sets domains) -> completed (by admin)
+            // Status flow: draft (initial) -> pending (customer saves cold email) -> in-progress (contractor assigned) -> completed (by admin)
             // Observer will handle Slack notification automatically
+            // Note: Only customer saving cold email changes status to 'pending'. Domain assignment does NOT change status.
+            // The status is set to 'in-progress' only when a contractor is assigned to the order.
             if ($isCustomer && $poolOrder->status_manage_by_admin === 'draft') {
                 // Customer updating platform credentials - set to pending
                 $poolOrder->status_manage_by_admin = 'pending';
-            } elseif (!$isCustomer && ($poolOrder->status_manage_by_admin === 'pending' || $poolOrder->status_manage_by_admin === 'draft')) {
-                // Admin/Contractor setting domains - set to in-progress
-                $poolOrder->status_manage_by_admin = 'in-progress';
             }
+            // Domain assignment by admin/contractor does NOT change status anymore
+            // Status will be set to 'in-progress' when contractor is assigned (in assignToMe method)
             
             $poolOrder->save();
             
