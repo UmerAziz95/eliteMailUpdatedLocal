@@ -161,8 +161,9 @@ class PoolOrderObserver
                 }
             }
 
+            $assignedToName = $poolOrder->assignedTo ? $poolOrder->assignedTo->name : 'Unassigned';
             $message = [
-                'text' => '🎯 *Pool Order Status Updated: Pending → In-Progress*',
+                'text' => "🎯 *Pool Order Status Updated: Pending → In-Progress | Assigned to: {$assignedToName}*",
                 'attachments' => [
                     [
                         'color' => '#007bff',
@@ -182,6 +183,11 @@ class PoolOrderObserver
                             //     'value' => $user->email,
                             //     'short' => true
                             // ],
+                            [
+                                'title' => 'Assigned To',
+                                'value' => $assignedToName,
+                                'short' => true
+                            ],
                             [
                                 'title' => 'Plan',
                                 'value' => $poolOrder->poolPlan->name,
@@ -207,11 +213,11 @@ class PoolOrderObserver
                                 'value' => $poolOrder->total_inboxes,
                                 'short' => true
                             ],
-                            [
-                                'title' => 'Migration Task',
-                                'value' => '📋 Configuration task created and pending assignment',
-                                'short' => false
-                            ],
+                            // [
+                            //     'title' => 'Migration Task',
+                            //     'value' => '📋 Configuration task created and pending assignment',
+                            //     'short' => false
+                            // ],
                             [
                                 'title' => 'Domains',
                                 'value' => $domainsList,
