@@ -221,7 +221,7 @@ class PoolOrderService
                 </button>
                 <ul class="dropdown-menu">';
 
-        if ($showView) {
+        if ($showView && $poolOrder->assigned_to) {
             $html .= '
                     <li>
                         <a class="dropdown-item" href="' . $viewRoute . '">
@@ -242,12 +242,12 @@ class PoolOrderService
 
             if (in_array($currentStatus, $editableStatuses) && $poolOrder->assigned_to != null) {
                 $editRoute = route($routePrefix . '.pool-orders.edit', $poolOrder->id);
-                $html .= '
-                        <li>
-                            <a class="dropdown-item text-primary" href="' . $editRoute . '">
-                                <i class="fa-solid fa-edit me-1"></i>Assiged Domains
-                            </a>
-                        </li>';
+                // $html .= '
+                //         <li>
+                //             <a class="dropdown-item text-primary" href="' . $editRoute . '">
+                //                 <i class="fa-solid fa-edit me-1"></i>Assiged Domains
+                //             </a>
+                //         </li>';
             }
         }
 
