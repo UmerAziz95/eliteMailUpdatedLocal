@@ -185,7 +185,7 @@ class PoolOrderAssignmentService
             $poolOrder->domains = array_values($groupedByDomain);
             // Update status?
             if ($poolOrder->status_manage_by_admin === 'draft' || $poolOrder->status_manage_by_admin === 'pending') {
-                $poolOrder->status_manage_by_admin = 'in-progress';
+                // $poolOrder->status_manage_by_admin = 'in-progress';
             }
             
             $poolOrder->save();
