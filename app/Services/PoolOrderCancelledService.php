@@ -29,10 +29,10 @@ class PoolOrderCancelledService
         if (!is_array($data)) {
             return $default;
         }
-        
+
         return $data[$key] ?? $default;
     }
-    
+
     /**
      * Safely check if data is a valid array with content
      * 
@@ -43,7 +43,7 @@ class PoolOrderCancelledService
     {
         return is_array($data) && !empty($data);
     }
-    
+
     /**
      * Cancel a pool order subscription
      * 
@@ -59,7 +59,7 @@ class PoolOrderCancelledService
             'user_id' => $userId,
             'reason' => $reason
         ]);
-        
+
         // Step 1: Validate pool order
         try {
             $poolOrder = PoolOrder::where('id', $poolOrderId)
@@ -122,11 +122,11 @@ class PoolOrderCancelledService
             Log::info("Retrieving subscription from ChargeBee", [
                 'subscription_id' => $poolOrder->chargebee_subscription_id
             ]);
-            
+
             $chargebeeSubscription = Subscription::retrieve($poolOrder->chargebee_subscription_id);
             $currentStatus = $chargebeeSubscription->subscription()->status;
             $isAlreadyCancelled = $currentStatus === 'cancelled';
-            
+
             // Log detailed subscription information
             $subscriptionData = [
                 'subscription_id' => $poolOrder->chargebee_subscription_id,
@@ -138,12 +138,12 @@ class PoolOrderCancelledService
                 'billing_period' => $chargebeeSubscription->subscription()->billingPeriod ?? 'N/A',
                 'billing_period_unit' => $chargebeeSubscription->subscription()->billingPeriodUnit ?? 'N/A'
             ];
-            
+
             if (!empty($chargebeeSubscription->subscription()->subscriptionItems)) {
                 $subscriptionData['subscription_items_count'] = count($chargebeeSubscription->subscription()->subscriptionItems);
                 $subscriptionData['first_item_id'] = $chargebeeSubscription->subscription()->subscriptionItems[0]->itemPriceId ?? 'N/A';
             }
-            
+
             Log::info("ChargeBee subscription retrieved successfully", $subscriptionData);
 
             // Only call cancel API if not already cancelled
@@ -155,12 +155,12 @@ class PoolOrderCancelledService
                     "end_of_term" => false,
                     "unbilled_charges_option" => "delete"
                 ];
-                
+
                 // Only add credit option if subscription has a current term
                 if (!empty($chargebeeSubscription->subscription()->currentTermEnd)) {
                     $cancelParams["credit_option_for_current_term_charges"] = "none";
                 }
-                
+
                 Log::info("Cancellation parameters prepared", [
                     'params' => $cancelParams,
                     'subscription_has_current_term' => !empty($chargebeeSubscription->subscription()->currentTermEnd)
@@ -168,19 +168,19 @@ class PoolOrderCancelledService
 
                 try {
                     Log::info("Calling ChargeBee cancelForItems API");
-                    
+
                     $result = Subscription::cancelForItems(
-                        $poolOrder->chargebee_subscription_id, 
+                        $poolOrder->chargebee_subscription_id,
                         $cancelParams
                     );
-                    
+
                     Log::info('ChargeBee subscription cancelled successfully', [
                         'subscription_id' => $poolOrder->chargebee_subscription_id,
                         'new_status' => $result->subscription()->status,
                         'cancelled_at' => $result->subscription()->cancelledAt ?? 'not set',
                         'current_term_end' => $result->subscription()->currentTermEnd ?? 'N/A'
                     ]);
-                    
+
                 } catch (\ChargeBee\ChargeBee\Exceptions\APIError $apiError) {
                     // Detailed API error logging
                     Log::error('ChargeBee API Error during cancel call', [
@@ -190,22 +190,22 @@ class PoolOrderCancelledService
                         'subscription_id' => $poolOrder->chargebee_subscription_id,
                         'params_sent' => $cancelParams
                     ]);
-                    
+
                     // If internal error, try simpler parameters
                     if ($apiError->getApiErrorCode() === 'internal_error') {
                         Log::warning("Internal error detected, trying simplified cancellation");
-                        
+
                         $simplifiedParams = [
                             "end_of_term" => false
                         ];
-                        
+
                         Log::info("Retrying with simplified parameters", ['params' => $simplifiedParams]);
-                        
+
                         $result = Subscription::cancelForItems(
                             $poolOrder->chargebee_subscription_id,
                             $simplifiedParams
                         );
-                        
+
                         Log::info('Subscription cancelled with simplified parameters', [
                             'new_status' => $result->subscription()->status
                         ]);
@@ -275,13 +275,13 @@ class PoolOrderCancelledService
             Log::info("Updating local pool order status");
 
             $user = User::find($userId);
-            
+
             // Update pool order status in database
             $poolOrder->status = 'cancelled';
             $poolOrder->status_manage_by_admin = 'cancelled';
             $poolOrder->cancelled_at = now();
             $poolOrder->reason = $reason ?? 'Customer requested cancellation';
-            
+
             // Update meta data
             $meta = is_array($poolOrder->meta) ? $poolOrder->meta : [];
             $meta['cancellation'] = [
@@ -292,7 +292,7 @@ class PoolOrderCancelledService
                 'chargebee_status' => $subscription->status ?? 'cancelled'
             ];
             $poolOrder->meta = $meta;
-            
+
             $poolOrder->save();
 
             Log::info('Pool order status updated in database', [
@@ -376,7 +376,7 @@ class PoolOrderCancelledService
             ]);
             return $stats;
         }
-        
+
         $stats['total'] = count($domains);
         Log::info("freeDomains: Processing {$stats['total']} domain(s)");
 
@@ -394,7 +394,7 @@ class PoolOrderCancelledService
             'start_date' => $warmingStartDate->format('Y-m-d'),
             'end_date' => $warmingStartDate->copy()->addDays($cancellationWarmingDays)->format('Y-m-d')
         ];
-        
+
         foreach ($domains as $index => $domain) {
             try {
                 // Validate domain entry
@@ -406,7 +406,7 @@ class PoolOrderCancelledService
                     ]);
                     continue;
                 }
-                
+
                 // Extract required fields safely
                 $poolId = $this->safeGet($domain, 'pool_id');
                 $domainId = $this->safeGet($domain, 'domain_id');
@@ -436,7 +436,7 @@ class PoolOrderCancelledService
                     Log::warning('freeDomains: Pool not found', ['pool_id' => $poolId]);
                     continue;
                 }
-                
+
                 // Check if pool has domains
                 if (!$pool->domains) {
                     $stats['skipped']++;
@@ -453,7 +453,7 @@ class PoolOrderCancelledService
 
                 // Process pool domains
                 $result = $this->updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, $warmingDates);
-                
+
                 if ($result['changed']) {
                     // Save updated domains
                     if ($this->savePoolDomains($pool, $result['domains'])) {
@@ -484,7 +484,7 @@ class PoolOrderCancelledService
                 ]);
             }
         }
-        
+
         Log::info("freeDomains: Process completed", $stats);
         return $stats;
     }
@@ -538,11 +538,11 @@ class PoolOrderCancelledService
         if (is_array($domains)) {
             return $domains;
         }
-        
+
         if (is_string($domains)) {
             try {
                 $decoded = json_decode($domains, true);
-                
+
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     Log::error('freeDomains: JSON decode error', [
                         'pool_id' => $poolId,
@@ -550,7 +550,7 @@ class PoolOrderCancelledService
                     ]);
                     return null;
                 }
-                
+
                 return $decoded;
             } catch (\Exception $e) {
                 Log::error('freeDomains: Exception decoding JSON', [
@@ -560,7 +560,7 @@ class PoolOrderCancelledService
                 return null;
             }
         }
-        
+
         Log::error('freeDomains: Invalid domains type', [
             'pool_id' => $poolId,
             'type' => gettype($domains)
@@ -582,15 +582,15 @@ class PoolOrderCancelledService
                 $updatedDomains[] = $poolDomain;
                 continue;
             }
-            
+
             // Get pool domain ID safely
             $poolDomainId = $this->safeGet($poolDomain, 'id') ?? $this->safeGet($poolDomain, 'domain_id');
-            
+
             // Check if this is the domain we're looking for
             if ($poolDomainId && $poolDomainId == $domainId) {
                 $previousStatus = $this->safeGet($poolDomain, 'status', 'unknown');
                 $previousIsUsed = $this->safeGet($poolDomain, 'is_used', false);
-                
+
                 // Update domain status
                 // $poolDomain['is_used'] = false;
                 $poolDomain['status'] = 'warming';
@@ -599,9 +599,26 @@ class PoolOrderCancelledService
                     $poolDomain['start_date'] = $warmingDates['start_date'];
                     $poolDomain['end_date'] = $warmingDates['end_date'];
                 }
-                
+
+                // Handle prefix_statuses if present
+                if (isset($poolDomain['prefix_statuses']) && is_array($poolDomain['prefix_statuses'])) {
+                    foreach ($poolDomain['prefix_statuses'] as $key => $statusData) {
+                        if (is_array($statusData)) {
+                            $poolDomain['prefix_statuses'][$key]['status'] = 'warming';
+                            if ($warmingDates) {
+                                $poolDomain['prefix_statuses'][$key]['start_date'] = $warmingDates['start_date'];
+                                $poolDomain['prefix_statuses'][$key]['end_date'] = $warmingDates['end_date'];
+                            }
+                        }
+                    }
+                    Log::info('freeDomains: Updated prefix_statuses for domain', [
+                        'domain_id' => $domainId,
+                        'count' => count($poolDomain['prefix_statuses'])
+                    ]);
+                }
+
                 $hasChanges = true;
-                
+
                 Log::info('freeDomains: Domain status updated', [
                     'domain_id' => $domainId,
                     'pool_id' => $poolId,
@@ -612,7 +629,7 @@ class PoolOrderCancelledService
                     // 'new_is_used' => false
                 ]);
             }
-            
+
             $updatedDomains[] = $poolDomain;
         }
 
@@ -634,12 +651,12 @@ class PoolOrderCancelledService
                     'domains' => json_encode($domains),
                     'updated_at' => now()
                 ]);
-            
+
             Log::debug('freeDomains: Pool updated in database', [
                 'pool_id' => $pool->id,
                 'domains_count' => count($domains)
             ]);
-            
+
             return true;
         } catch (\Exception $e) {
             Log::error('freeDomains: Database update failed', [
