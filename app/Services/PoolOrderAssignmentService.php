@@ -111,7 +111,7 @@ class PoolOrderAssignmentService
             }
 
             // 2. Perform Assignment
-            // We need to update pools (mark prefixes in-progress) and update pool order (save assignments)
+            // We need to update pools (mark prefixes used) and update pool order (save assignments)
             
             // Group by pool to minimize DB writes
             $inboxesByPool = [];
@@ -128,16 +128,16 @@ class PoolOrderAssignmentService
                     $pKey = $inbox['prefix_key'];
                     
                     if (isset($domains[$idx]['prefix_statuses'][$pKey])) {
-                        $domains[$idx]['prefix_statuses'][$pKey]['status'] = 'in-progress';
+                        $domains[$idx]['prefix_statuses'][$pKey]['status'] = 'used';
                         // Keep start/end dates if they exist, or set them? 
-                        // Usually we set them when "warming" starts, but for "in-progress" assignment we might just mark status.
+                        // Usually we set them when "warming" starts, but for direct assignment we might just mark status.
                         // For now, just update status.
                         
                         // Also mark domain as used? The domain might be partially used.
                         // The 'is_used' flag on domain level might be legacy or for full domain usage.
                         // We will set is_used = true if at least one prefix is used, just to be safe with legacy logic if any.
                         $domains[$idx]['is_used'] = true; 
-                        $domains[$idx]['status'] = 'in-progress'; // Legacy status
+                        $domains[$idx]['status'] = 'used'; // Legacy status
                     }
                 }
 
@@ -154,7 +154,7 @@ class PoolOrderAssignmentService
                     'domain_id' => $inbox['domain_id'],
                     'pool_id' => $inbox['pool_id'],
                     'domain_name' => $inbox['domain_name'],
-                    'status' => 'in-progress',
+                    'status' => 'used',
                     'prefixes' => [$inbox['prefix_key']], // Store which prefix was assigned
                     'selected_prefixes' => [$inbox['prefix_key'] => ['email' => $inbox['email']]] // More detailed info
                 ];
