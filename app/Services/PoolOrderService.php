@@ -64,7 +64,7 @@ class PoolOrderService
     {
         try {
             $poolOrder = PoolOrder::findOrFail($orderId);
-            
+
             // Only allow cancellation of pending or in_progress orders
             if (!in_array($poolOrder->status_manage_by_admin, ['pending', 'in-progress'])) {
                 return [
@@ -103,7 +103,7 @@ class PoolOrderService
     {
         try {
             $poolOrder = PoolOrder::findOrFail($orderId);
-            
+
             $poolOrder->assigned_to = $userId;
             $poolOrder->assigned_at = now();
             $poolOrder->save();
@@ -132,7 +132,7 @@ class PoolOrderService
     {
         try {
             $poolOrder = PoolOrder::findOrFail($orderId);
-            
+
             $poolOrder->assigned_to = null;
             $poolOrder->assigned_at = null;
             $poolOrder->save();
@@ -165,7 +165,7 @@ class PoolOrderService
             'pending' => 'info',
             'cancelled' => 'danger',
         ];
-        
+
         $color = $colorMap[$status] ?? 'secondary';
         return '<span class="badge bg-' . $color . '">' . ucfirst(str_replace('_', ' ', $status)) . '</span>';
     }
@@ -210,17 +210,17 @@ class PoolOrderService
         $showAssignToMe = $options['showAssignToMe'] ?? false;
         $showChangeStatus = $options['showChangeStatus'] ?? false;
         $routePrefix = $options['routePrefix'] ?? 'admin'; // Default to admin for backward compatibility
-        
+
         $orderId = $poolOrder->id;
         $viewRoute = route($routePrefix . '.pool-orders.view', $poolOrder->id);
-        
+
         $html = '
             <div class="dropdown">
                 <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fa-solid fa-ellipsis-vertical"></i>
                 </button>
                 <ul class="dropdown-menu">';
-        
+
         if ($showView) {
             $html .= '
                     <li>
@@ -229,17 +229,17 @@ class PoolOrderService
                         </a>
                     </li>';
         }
-        
+
         // Add Edit option for editable status orders
         $user = auth()->user();
         // Check if user role is allowed to edit
         $editableRoles = config('pool_orders.editable_roles', [1, 2, 4]);
-        
+
         if (in_array($user->role_id, $editableRoles)) {
             // Get editable statuses from config
             $editableStatuses = config('pool_orders.editable_statuses', ['pending']);
             $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
-            
+
             if (in_array($currentStatus, $editableStatuses) && $poolOrder->assigned_to != null) {
                 $editRoute = route($routePrefix . '.pool-orders.edit', $poolOrder->id);
                 $html .= '
@@ -251,7 +251,9 @@ class PoolOrderService
             }
         }
 
-        if ($showAssignToMe && !$poolOrder->assigned_to) {
+        $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
+
+        if ($showAssignToMe && !$poolOrder->assigned_to && $currentStatus !== 'draft') {
             $html .= '
                     <li>
                         <a class="dropdown-item text-success" href="javascript:void(0)" 
@@ -260,7 +262,7 @@ class PoolOrderService
                         </a>
                     </li>';
         }
-        
+
         if ($showChangeStatus) {
             // Only allow status change if order is not cancelled
             if ($poolOrder->status_manage_by_admin !== 'cancelled') {
@@ -275,7 +277,7 @@ class PoolOrderService
                     </li>';
             }
         }
-        
+
         if ($showViewDomains) {
             $html .= '
                     <li>
@@ -285,7 +287,7 @@ class PoolOrderService
                         </a>
                     </li>';
         }
-        
+
         if ($showCancel && in_array($poolOrder->status, ['pending', 'in_progress'])) {
             $html .= '
                     <li>
@@ -295,7 +297,7 @@ class PoolOrderService
                         </a>
                     </li>';
         }
-        
+
         // Add "Locked Out of Instantly" option for non-cancelled orders
         if (!$poolOrder->locked_out_of_instantly && $poolOrder->status !== 'cancelled' && $poolOrder->assigned_to != null) {
             $html .= '
@@ -306,11 +308,11 @@ class PoolOrderService
                         </a>
                     </li>';
         }
-        
+
         $html .= '
                 </ul>
             </div>';
-        
+
         return $html;
     }
 
@@ -320,34 +322,34 @@ class PoolOrderService
      * @param int $poolOrderId
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
-    
+
     public function downloadDomainsCsv($poolOrderId)
     {
         $poolOrder = PoolOrder::findOrFail($poolOrderId);
-        
+
         if (!$poolOrder->hasDomains()) {
             throw new \Exception('No domains available for this pool order.');
         }
 
         $filename = 'pool_order_' . $poolOrder->id . '_domains_' . date('Y-m-d_His') . '.csv';
-        
+
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function() use ($poolOrder) {
+        $callback = function () use ($poolOrder) {
             $file = fopen('php://output', 'w');
-            
+
             // Add CSV headers matching Google Workspace format
             fputcsv($file, ['First Name', 'Last Name', 'Email Address', 'Password', 'Org Unit Path [Required]']);
 
 
             $domains = $poolOrder->domains;
-            
+
             // Collect all unique pool IDs to eager load if possible (though we do it in loop for now)
             // Or just rely on caching if getPoolAttribute supports it.
-            
+
             foreach ($domains as $domainEntry) {
                 // Determine Pool ID and Domain Name
                 $poolId = $domainEntry['pool_id'] ?? null;
@@ -358,7 +360,7 @@ class PoolOrderService
                 if ($poolId) {
                     $pool = \App\Models\Pool::find($poolId);
                 }
-                
+
                 // Get Pool Defaults
                 $poolFirstName = $pool->first_name ?? '';
                 $poolLastName = $pool->last_name ?? '';
@@ -366,40 +368,42 @@ class PoolOrderService
                 if ($pool) {
                     $poolPassword = $pool->email_persona_password ?? $pool->persona_password ?? '';
                 }
-                
+
                 // Get Pool Prefix Variants Details (for passwords/names lookup)
                 $poolPrefixDetails = [];
                 if ($pool && $pool->prefix_variants_details) {
-                    $poolPrefixDetails = is_string($pool->prefix_variants_details) 
-                        ? json_decode($pool->prefix_variants_details, true) 
+                    $poolPrefixDetails = is_string($pool->prefix_variants_details)
+                        ? json_decode($pool->prefix_variants_details, true)
                         : $pool->prefix_variants_details;
                 }
 
                 // Determine Prefixes to export
                 // Priority: selected_prefixes (Rich) -> prefixes (List) -> Pool Prefixes (Legacy/Fallback)
-                
+
                 $prefixesToExport = [];
-                
+
                 if (!empty($domainEntry['selected_prefixes'])) {
-                     // Rich structure from migration
-                     $selected = $domainEntry['selected_prefixes'];
-                     if (is_string($selected)) $selected = json_decode($selected, true);
-                     
-                     foreach ($selected as $key => $data) {
-                         $prefixesToExport[$key] = [
-                             'email' => $data['email'] ?? ($key . '@' . $domainName),
-                             'key' => $key
-                         ];
-                     }
+                    // Rich structure from migration
+                    $selected = $domainEntry['selected_prefixes'];
+                    if (is_string($selected))
+                        $selected = json_decode($selected, true);
+
+                    foreach ($selected as $key => $data) {
+                        $prefixesToExport[$key] = [
+                            'email' => $data['email'] ?? ($key . '@' . $domainName),
+                            'key' => $key
+                        ];
+                    }
                 } elseif (!empty($domainEntry['prefixes'])) {
                     // Semirich structure (just keys)
                     $prefixes = $domainEntry['prefixes'];
-                    if (is_string($prefixes)) $prefixes = json_decode($prefixes, true);
-                    
+                    if (is_string($prefixes))
+                        $prefixes = json_decode($prefixes, true);
+
                     // prefixes might be array of strings (keys) or key=>val. Migration made it array of strings if I recall? 
                     // Migration: $prefixes[] = $key; (Indexed array of keys)
                     // But legacy might be key=>val.
-                    
+
                     foreach ($prefixes as $k => $v) {
                         // If indexed array, v is key. If assoc, k is key.
                         $key = is_int($k) ? $v : $k;
@@ -411,8 +415,9 @@ class PoolOrderService
                 } elseif ($pool && $pool->prefix_variants) {
                     // Legacy Fallback: Use all pool variants
                     $variants = $pool->prefix_variants;
-                    if (is_string($variants)) $variants = json_decode($variants, true);
-                     if (is_array($variants)) {
+                    if (is_string($variants))
+                        $variants = json_decode($variants, true);
+                    if (is_array($variants)) {
                         foreach ($variants as $key => $v) {
                             $prefixesToExport[$key] = [
                                 'email' => $key . '@' . $domainName,
@@ -421,12 +426,12 @@ class PoolOrderService
                         }
                     }
                 }
-                
+
                 // If still empty (no prefixes), maybe just domain root?
                 if (empty($prefixesToExport)) {
-                     // Single row for domain?
-                     $password = $poolPassword ?: $this->customEncrypt($poolOrder->id, 0);
-                     fputcsv($file, [
+                    // Single row for domain?
+                    $password = $poolPassword ?: $this->customEncrypt($poolOrder->id, 0);
+                    fputcsv($file, [
                         $poolFirstName,
                         $poolLastName,
                         '', // No email? Or clean domain?
@@ -435,23 +440,23 @@ class PoolOrderService
                     ]);
                     continue;
                 }
-                
+
                 // iterate and write rows
                 $counter = 0;
                 foreach ($prefixesToExport as $variantKey => $info) {
                     $email = $info['email'];
-                    
+
                     // Lookup Details (First/Last/Password)
                     // 1. From Pool Prefix Details
                     $variantFirstName = $poolPrefixDetails[$variantKey]['first_name'] ?? $poolFirstName;
                     $variantLastName = $poolPrefixDetails[$variantKey]['last_name'] ?? $poolLastName;
                     $password = $poolPrefixDetails[$variantKey]['password'] ?? $poolPassword;
-                    
+
                     // 2. Custom Encrypt Fallback
                     if (empty($password)) {
                         $password = $this->customEncrypt($poolOrder->id, $counter);
                     }
-                    
+
                     fputcsv($file, [
                         $variantFirstName,
                         $variantLastName,
@@ -462,7 +467,7 @@ class PoolOrderService
                     $counter++;
                 }
             }
-            
+
             fclose($file);
         };
 
@@ -480,13 +485,13 @@ class PoolOrderService
     {
         // Create a hash from order ID and index
         $hash = md5($orderId . '-' . $index . '-' . config('app.key'));
-        
+
         // Take first 8 characters and add a special character prefix
         $password = '#' . substr($hash, 0, 7);
-        
+
         // Make it mixed case
         $password = ucfirst($password);
-        
+
         return $password;
     }
 
@@ -497,12 +502,12 @@ class PoolOrderService
      * @param int $orderId
      * @return array
      */
-    
+
     public function lockOutOfInstantly($orderId)
     {
         try {
             $poolOrder = PoolOrder::findOrFail($orderId);
-            
+
             // Check if already locked out
             if ($poolOrder->locked_out_of_instantly) {
                 return [
@@ -525,8 +530,8 @@ class PoolOrderService
             // Use PoolOrderCancelledService to handle the cancellation
             $cancelService = new PoolOrderCancelledService();
             $result = $cancelService->cancelSubscription(
-                $poolOrder->id, 
-                $poolOrder->user_id, 
+                $poolOrder->id,
+                $poolOrder->user_id,
                 'Locked out of Instantly'
             );
 
@@ -541,7 +546,7 @@ class PoolOrderService
                     'pool_order_id' => $poolOrder->id,
                     'error' => $result['message']
                 ]);
-                
+
                 return [
                     'success' => true,
                     'message' => 'Pool order marked as locked out of Instantly. Note: ' . $result['message']
