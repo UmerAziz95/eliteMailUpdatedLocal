@@ -23,60 +23,66 @@ class PoolOrderObserver
     public function created(PoolOrder $poolOrder): void
     {
         $this->clearRelatedCaches($poolOrder);
-        
+
         // Send Slack notification for new pool order
         Log::info('New PoolOrder created, sending Slack notification', [
             'pool_order_id' => $poolOrder->id,
             'user_id' => $poolOrder->user_id,
             'status' => $poolOrder->status
         ]);
-        
+
         $this->sendCreationNotification($poolOrder);
     }
 
     /**
      * Handle the PoolOrder "updated" event.
      */
-    
+
     public function updated(PoolOrder $poolOrder): void
     {
         // Clear caches
         $this->clearRelatedCaches($poolOrder);
-        
+
         // Check if status changed from 'draft' to 'pending'
-        if ($poolOrder->isDirty('status_manage_by_admin') && 
-            $poolOrder->getOriginal('status_manage_by_admin') === 'draft' && 
-            $poolOrder->status_manage_by_admin === 'pending') {
+        if (
+            $poolOrder->isDirty('status_manage_by_admin') &&
+            $poolOrder->getOriginal('status_manage_by_admin') === 'draft' &&
+            $poolOrder->status_manage_by_admin === 'pending'
+        ) {
 
             Log::info('PoolOrder status changed from draft to pending, sending Slack notification', [
                 'pool_order_id' => $poolOrder->id,
                 'previous_status' => $poolOrder->getOriginal('status'),
                 'new_status' => $poolOrder->status
             ]);
-            
+
             $this->sendDraftToPendingNotification($poolOrder);
         }
-        
+
         // Check if status_manage_by_admin changed to 'in-progress'
-        if ($poolOrder->isDirty('status_manage_by_admin') && 
-            $poolOrder->status_manage_by_admin === 'in-progress') {
-            
+        if (
+            $poolOrder->isDirty('status_manage_by_admin') &&
+            $poolOrder->status_manage_by_admin === 'in-progress'
+        ) {
+
             Log::info('PoolOrder status changed to in-progress, sending Slack notification', [
                 'pool_order_id' => $poolOrder->id,
                 'previous_status' => $poolOrder->getOriginal('status_manage_by_admin'),
                 'new_status' => $poolOrder->status_manage_by_admin
             ]);
-            
+
             $this->sendConfigurationNotification($poolOrder);
-            
+
             // Create migration task for configuration
-            $this->createMigrationTask($poolOrder, 'configuration', $poolOrder->getOriginal('status_manage_by_admin'));
+            // $this->createMigrationTask($poolOrder, 'configuration', $poolOrder->getOriginal('status_manage_by_admin'));
         }
-        
+
         // Check if status or status_manage_by_admin changed to 'cancelled'
-        if (($poolOrder->isDirty('status') && $poolOrder->status === 'cancelled') ||
-            ($poolOrder->isDirty('status_manage_by_admin') && $poolOrder->status_manage_by_admin === 'cancelled')) {
-            
+        if (
+            ($poolOrder->isDirty('status') && $poolOrder->status === 'cancelled') ||
+            ($poolOrder->isDirty('status_manage_by_admin') && $poolOrder->status_manage_by_admin === 'cancelled')
+        ) {
+
             Log::info('PoolOrder cancelled, sending Slack notification', [
                 'pool_order_id' => $poolOrder->id,
                 'previous_status' => $poolOrder->getOriginal('status'),
@@ -84,12 +90,12 @@ class PoolOrderObserver
                 'previous_status_admin' => $poolOrder->getOriginal('status_manage_by_admin'),
                 'new_status_admin' => $poolOrder->status_manage_by_admin
             ]);
-            
+
             $this->sendCancellationNotification($poolOrder);
-            
+
             // Create migration task for cancellation
-            $previousStatus = $poolOrder->isDirty('status') 
-                ? $poolOrder->getOriginal('status') 
+            $previousStatus = $poolOrder->isDirty('status')
+                ? $poolOrder->getOriginal('status')
                 : $poolOrder->getOriginal('status_manage_by_admin');
             $this->createMigrationTask($poolOrder, 'cancellation', $previousStatus);
         }
@@ -110,7 +116,7 @@ class PoolOrderObserver
     {
         // Clear cache for the user and any pools that might be affected
         $this->poolDomainService->clearRelatedCache(null, $poolOrder->user_id);
-        
+
         // If the pool order has domains, we might need to clear pool-specific caches too
         if (is_array($poolOrder->domains)) {
             foreach ($poolOrder->domains as $domain) {
@@ -132,7 +138,7 @@ class PoolOrderObserver
     {
         try {
             $user = $poolOrder->user;
-            
+
             if (!$user) {
                 Log::warning('User not found for pool order', [
                     'pool_order_id' => $poolOrder->id
@@ -143,12 +149,12 @@ class PoolOrderObserver
             // Prepare domain list for notification
             $domainsList = 'N/A';
             if ($poolOrder->domains && is_array($poolOrder->domains)) {
-                $domainNames = array_map(function($domain) {
+                $domainNames = array_map(function ($domain) {
                     return $domain['domain_name'] ?? 'Unknown';
                 }, array_slice($poolOrder->domains, 0, 5)); // Show first 5 domains
-                
+
                 $domainsList = implode(', ', $domainNames);
-                
+
                 if (count($poolOrder->domains) > 5) {
                     $remaining = count($poolOrder->domains) - 5;
                     $domainsList .= " (and {$remaining} more)";
@@ -220,7 +226,7 @@ class PoolOrderObserver
 
             // Send to Slack
             $result = SlackNotificationService::send('inbox-trial-setup', $message);
-            
+
             if ($result) {
                 Log::info('Slack notification sent successfully for pool order', [
                     'pool_order_id' => $poolOrder->id,
@@ -255,7 +261,7 @@ class PoolOrderObserver
     {
         try {
             $user = $poolOrder->user;
-            
+
             if (!$user) {
                 Log::warning('User not found for cancelled pool order', [
                     'pool_order_id' => $poolOrder->id
@@ -267,7 +273,7 @@ class PoolOrderObserver
             $cancelledBy = 'Unknown';
             $cancelledAt = now()->format('Y-m-d H:i:s T');
             $reason = 'No reason provided';
-            
+
             if ($poolOrder->meta && is_array($poolOrder->meta) && isset($poolOrder->meta['cancellation'])) {
                 $cancellation = $poolOrder->meta['cancellation'];
                 $cancelledBy = $cancellation['cancelled_by_name'] ?? 'Unknown';
@@ -276,7 +282,7 @@ class PoolOrderObserver
             } elseif ($poolOrder->reason) {
                 $reason = $poolOrder->reason;
             }
-            
+
             // Fallback: If cancelled_by is still Unknown, try to get from auth user or pool order user
             if ($cancelledBy === 'Unknown') {
                 if (auth()->check()) {
@@ -289,12 +295,12 @@ class PoolOrderObserver
             // Prepare domain list
             $domainsList = 'N/A';
             if ($poolOrder->domains && is_array($poolOrder->domains) && count($poolOrder->domains) > 0) {
-                $domainNames = array_map(function($domain) {
+                $domainNames = array_map(function ($domain) {
                     return $domain['domain_name'] ?? 'Unknown';
                 }, array_slice($poolOrder->domains, 0, 3)); // Show first 3 domains
-                
+
                 $domainsList = implode(', ', $domainNames);
-                
+
                 if (count($poolOrder->domains) > 3) {
                     $remaining = count($poolOrder->domains) - 3;
                     $domainsList .= " (and {$remaining} more)";
@@ -391,7 +397,7 @@ class PoolOrderObserver
 
             // Send to Slack - use 'inbox-trial-cancellations' channel for cancellations
             $result = SlackNotificationService::send('inbox-trial-cancellations', $message);
-            
+
             if ($result) {
                 Log::info('Slack cancellation notification sent successfully', [
                     'pool_order_id' => $poolOrder->id,
@@ -425,7 +431,7 @@ class PoolOrderObserver
     {
         try {
             $user = $poolOrder->user;
-            
+
             if (!$user) {
                 Log::warning('User not found for new pool order', [
                     'pool_order_id' => $poolOrder->id
@@ -436,12 +442,12 @@ class PoolOrderObserver
             // Prepare domain list for notification
             $domainsList = 'N/A';
             if ($poolOrder->domains && is_array($poolOrder->domains) && count($poolOrder->domains) > 0) {
-                $domainNames = array_map(function($domain) {
+                $domainNames = array_map(function ($domain) {
                     return $domain['domain_name'] ?? 'Unknown';
                 }, array_slice($poolOrder->domains, 0, 5)); // Show first 5 domains
-                
+
                 $domainsList = implode(', ', $domainNames);
-                
+
                 if (count($poolOrder->domains) > 5) {
                     $remaining = count($poolOrder->domains) - 5;
                     $domainsList .= " (and {$remaining} more)";
@@ -503,7 +509,7 @@ class PoolOrderObserver
 
             // Send to Slack
             $result = SlackNotificationService::send('inbox-trial-setup', $message);
-            
+
             if ($result) {
                 Log::info('Slack notification sent successfully for new pool order', [
                     'pool_order_id' => $poolOrder->id,
@@ -538,7 +544,7 @@ class PoolOrderObserver
     {
         try {
             $user = $poolOrder->user;
-            
+
             if (!$user) {
                 Log::warning('User not found for draft to pending pool order', [
                     'pool_order_id' => $poolOrder->id
@@ -549,12 +555,12 @@ class PoolOrderObserver
             // Prepare domain list for notification
             $domainsList = 'N/A';
             if ($poolOrder->domains && is_array($poolOrder->domains) && count($poolOrder->domains) > 0) {
-                $domainNames = array_map(function($domain) {
+                $domainNames = array_map(function ($domain) {
                     return $domain['domain_name'] ?? 'Unknown';
                 }, array_slice($poolOrder->domains, 0, 5)); // Show first 5 domains
-                
+
                 $domainsList = implode(', ', $domainNames);
-                
+
                 if (count($poolOrder->domains) > 5) {
                     $remaining = count($poolOrder->domains) - 5;
                     $domainsList .= " (and {$remaining} more)";
@@ -631,7 +637,7 @@ class PoolOrderObserver
 
             // Send to Slack
             $result = SlackNotificationService::send('inbox-trial-setup', $message);
-            
+
             if ($result) {
                 Log::info('Slack notification sent successfully for draft to pending status change', [
                     'pool_order_id' => $poolOrder->id,
@@ -682,7 +688,7 @@ class PoolOrderObserver
             if ($taskType === 'cancellation') {
                 $metadata['cancellation_reason'] = $poolOrder->reason ?? 'No reason provided';
                 $metadata['chargebee_subscription_id'] = $poolOrder->chargebee_subscription_id;
-                
+
                 if ($poolOrder->meta && is_array($poolOrder->meta) && isset($poolOrder->meta['cancellation'])) {
                     $metadata['cancelled_by'] = $poolOrder->meta['cancellation']['cancelled_by_name'] ?? 'Unknown';
                     $metadata['cancelled_at'] = $poolOrder->meta['cancellation']['cancelled_at'] ?? now()->toDateTimeString();
