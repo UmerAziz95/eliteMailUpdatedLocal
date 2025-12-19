@@ -211,6 +211,12 @@ class PoolOrderService
         $showChangeStatus = $options['showChangeStatus'] ?? false;
         $routePrefix = $options['routePrefix'] ?? 'admin'; // Default to admin for backward compatibility
 
+        // Show N/A for draft orders
+        $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
+        if ($currentStatus === 'draft' && empty($poolOrder->domains)) {
+            return '<span class="">N/A</span>';
+        }
+
         $orderId = $poolOrder->id;
         $viewRoute = route($routePrefix . '.pool-orders.view', $poolOrder->id);
 
