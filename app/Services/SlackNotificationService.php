@@ -727,7 +727,7 @@ class SlackNotificationService
         ];
 
         $message = self::formatMessage('assignment-failed', $data);
-        return self::send('inbox-trial-setup', $message);
+        return self::send('trial-orders', $message);
     }
 
     /**
