@@ -411,6 +411,7 @@ class PoolOrderCancelledService
                 $poolId = $this->safeGet($domain, 'pool_id');
                 $domainId = $this->safeGet($domain, 'domain_id');
                 $domainName = $this->safeGet($domain, 'domain_name', 'unknown');
+                $selectedPrefixes = $this->safeGet($domain, 'selected_prefixes', []);
 
                 if (!$poolId || !$domainId) {
                     $stats['skipped']++;
@@ -451,8 +452,8 @@ class PoolOrderCancelledService
                     continue; // Error already logged in decodePoolDomains
                 }
 
-                // Process pool domains
-                $result = $this->updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, $warmingDates);
+                // Process pool domains - only update prefixes that were selected in the order
+                $result = $this->updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, $warmingDates, $selectedPrefixes);
 
                 if ($result['changed']) {
                     // Save updated domains
@@ -570,11 +571,22 @@ class PoolOrderCancelledService
 
     /**
      * Update domain status in pool domains array
+     * Only updates prefix_statuses that match the selected_prefixes from the pool order
+     * 
+     * @param array $poolDomains All domains from the pool
+     * @param mixed $domainId The domain ID to update
+     * @param mixed $poolId The pool ID
+     * @param string $domainName The domain name for logging
+     * @param array|null $warmingDates Warming period dates
+     * @param array $selectedPrefixes The prefixes that were selected in the pool order (keys are prefix variant names)
      */
-    private function updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, array $warmingDates = null)
+    private function updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, array $warmingDates = null, array $selectedPrefixes = [])
     {
         $updatedDomains = [];
         $hasChanges = false;
+
+        // Get the prefix keys that were actually selected in the order
+        $selectedPrefixKeys = is_array($selectedPrefixes) ? array_keys($selectedPrefixes) : [];
 
         foreach ($poolDomains as $poolDomain) {
             // Preserve non-array entries as-is
@@ -590,44 +602,58 @@ class PoolOrderCancelledService
             if ($poolDomainId && $poolDomainId == $domainId) {
                 $previousStatus = $this->safeGet($poolDomain, 'status', 'unknown');
                 $previousIsUsed = $this->safeGet($poolDomain, 'is_used', false);
+                $updatedPrefixCount = 0;
 
-                // Update domain status
-                // $poolDomain['is_used'] = false;
-                $poolDomain['status'] = 'warming';
-
-                if ($warmingDates) {
-                    $poolDomain['start_date'] = $warmingDates['start_date'];
-                    $poolDomain['end_date'] = $warmingDates['end_date'];
-                }
-
-                // Handle prefix_statuses if present
+                // Handle prefix_statuses if present - only update selected prefixes
                 if (isset($poolDomain['prefix_statuses']) && is_array($poolDomain['prefix_statuses'])) {
                     foreach ($poolDomain['prefix_statuses'] as $key => $statusData) {
                         if (is_array($statusData)) {
-                            $poolDomain['prefix_statuses'][$key]['status'] = 'warming';
-                            if ($warmingDates) {
-                                $poolDomain['prefix_statuses'][$key]['start_date'] = $warmingDates['start_date'];
-                                $poolDomain['prefix_statuses'][$key]['end_date'] = $warmingDates['end_date'];
+                            // Only update if this prefix was selected in the order
+                            // If selectedPrefixKeys is empty, update all (legacy behavior fallback)
+                            if (empty($selectedPrefixKeys) || in_array($key, $selectedPrefixKeys)) {
+                                $poolDomain['prefix_statuses'][$key]['status'] = 'warming';
+                                if ($warmingDates) {
+                                    $poolDomain['prefix_statuses'][$key]['start_date'] = $warmingDates['start_date'];
+                                    $poolDomain['prefix_statuses'][$key]['end_date'] = $warmingDates['end_date'];
+                                }
+                                $updatedPrefixCount++;
                             }
                         }
                     }
+
                     Log::info('freeDomains: Updated prefix_statuses for domain', [
                         'domain_id' => $domainId,
-                        'count' => count($poolDomain['prefix_statuses'])
+                        'total_prefixes' => count($poolDomain['prefix_statuses']),
+                        'selected_prefixes' => $selectedPrefixKeys,
+                        'updated_count' => $updatedPrefixCount
                     ]);
                 }
 
-                $hasChanges = true;
+                // Only update domain-level status if we actually updated some prefixes
+                // or if there are no prefix_statuses (legacy format)
+                if ($updatedPrefixCount > 0 || !isset($poolDomain['prefix_statuses'])) {
+                    // For legacy format without prefix_statuses
+                    if (!isset($poolDomain['prefix_statuses'])) {
+                        $poolDomain['status'] = 'warming';
+                        if ($warmingDates) {
+                            $poolDomain['start_date'] = $warmingDates['start_date'];
+                            $poolDomain['end_date'] = $warmingDates['end_date'];
+                        }
+                    }
 
-                Log::info('freeDomains: Domain status updated', [
-                    'domain_id' => $domainId,
-                    'pool_id' => $poolId,
-                    'domain_name' => $this->safeGet($poolDomain, 'name', $domainName),
-                    'previous_status' => $previousStatus,
-                    'new_status' => 'warming',
-                    'previous_is_used' => $previousIsUsed,
-                    // 'new_is_used' => false
-                ]);
+                    $hasChanges = true;
+
+                    Log::info('freeDomains: Domain status updated', [
+                        'domain_id' => $domainId,
+                        'pool_id' => $poolId,
+                        'domain_name' => $this->safeGet($poolDomain, 'name', $domainName),
+                        'previous_status' => $previousStatus,
+                        'new_status' => 'warming',
+                        'previous_is_used' => $previousIsUsed,
+                        'selected_prefixes' => $selectedPrefixKeys,
+                        'updated_prefix_count' => $updatedPrefixCount
+                    ]);
+                }
             }
 
             $updatedDomains[] = $poolDomain;
