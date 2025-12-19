@@ -14,23 +14,24 @@ class SlackSettings extends Model
         'url',
         'status'
     ];
-    
+
     protected $casts = [
         'status' => 'boolean'
     ];
-    
+
     // Define available types
     const TYPES = [
         'inbox-setup' => 'Inbox Setup',
-        'inbox-cancellation'=> 'Inbox Cancellation',
+        'inbox-cancellation' => 'Inbox Cancellation',
         'inbox-admins' => 'Inbox Admins',
         'inbox-subscriptions' => 'Inbox Subscriptions',
         'inbox-tickets' => 'Inbox Tickets',
         'inbox-trial-setup' => 'Inbox Trial Setup',
         'inbox-trial-cancellations' => 'Inbox Trial Cancellations',
-        'inbox-trial-replacements' => 'Inbox Trial Replacements'
+        'inbox-trial-replacements' => 'Inbox Trial Replacements',
+        'trial-orders' => 'Trial Orders'
     ];
-    
+
     public static function getTypes()
     {
         return self::TYPES;

@@ -231,7 +231,7 @@ class PoolOrderObserver
             ];
 
             // Send to Slack
-            $result = SlackNotificationService::send('inbox-trial-setup', $message);
+            $result = SlackNotificationService::send('trial-orders', $message);
 
             if ($result) {
                 Log::info('Slack notification sent successfully for pool order', [
@@ -514,7 +514,7 @@ class PoolOrderObserver
             ];
 
             // Send to Slack
-            $result = SlackNotificationService::send('inbox-trial-setup', $message);
+            $result = SlackNotificationService::send('trial-orders', $message);
 
             if ($result) {
                 Log::info('Slack notification sent successfully for new pool order', [
@@ -642,7 +642,7 @@ class PoolOrderObserver
             ];
 
             // Send to Slack
-            $result = SlackNotificationService::send('inbox-trial-setup', $message);
+            $result = SlackNotificationService::send('trial-orders', $message);
 
             if ($result) {
                 Log::info('Slack notification sent successfully for draft to pending status change', [
