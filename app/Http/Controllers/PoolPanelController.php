@@ -836,7 +836,7 @@ class PoolPanelController extends Controller
                     ];
                     
                     $totalPoolPanelsNeeded += $poolPanelsNeeded;
-                    $totalInboxes += $pool->total_inboxes;
+                    // $totalInboxes is already added at the start of the loop
                     
                     Log::warning("Pool requires additional pool panels", [
                         'pool_id' => $pool->id,
