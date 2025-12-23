@@ -36,22 +36,22 @@
         }
 
         /* .table-responsive {
-                        border-radius: 12px;
-                        overflow: hidden;
-                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    } */
+                                            border-radius: 12px;
+                                            overflow: hidden;
+                                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                                        } */
 
 
         /* .action-buttons {
-                        display: flex;
-                        gap: 0.25rem;
-                        justify-content: center;
-                    }
+                                            display: flex;
+                                            gap: 0.25rem;
+                                            justify-content: center;
+                                        }
 
-                    .action-buttons .btn {
-                        padding: 0.375rem 0.5rem;
-                        font-size: 0.75rem;
-                    } */
+                                        .action-buttons .btn {
+                                            padding: 0.375rem 0.5rem;
+                                            font-size: 0.75rem;
+                                        } */
 
         .badge-type {
             font-size: 0.625rem;
@@ -129,6 +129,25 @@
             </a>
         </div>
 
+        <!-- Bulk Action Bar (hidden until items selected) -->
+        <div id="bulkActionBar" class="alert alert-info d-none align-items-center justify-content-between mb-3">
+            <div>
+                <i class="fa fa-check-circle me-2"></i>
+                <span id="selectedCount">0</span> email account(s) selected
+            </div>
+            <div>
+                <button type="button" class="btn btn-success btn-sm me-2" onclick="openBulkUpdateModal('extend')">
+                    <i class="fa fa-plus me-1"></i>Extend Days
+                </button>
+                <button type="button" class="btn btn-warning btn-sm me-2" onclick="openBulkUpdateModal('reduce')">
+                    <i class="fa fa-minus me-1"></i>Reduce Days
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllSelections()">
+                    <i class="fa fa-times me-1"></i>Clear Selection
+                </button>
+            </div>
+        </div>
+
         <!-- Tab Navigation -->
         <ul class="nav nav-pills mb-3 border-0" id="poolsTab" role="tablist">
             <li class="nav-item" role="presentation">
@@ -182,6 +201,7 @@
                                 <table id="googleWarmingTable" class="table table-hover w-100">
                                     <thead>
                                         <tr>
+                                            <th><input type="checkbox" class="select-all-visible" /></th>
                                             <th>Pool ID</th>
                                             <th>Created By</th>
                                             <th>Status</th>
@@ -201,6 +221,7 @@
                                 <table id="googleAvailableTable" class="table table-hover w-100">
                                     <thead>
                                         <tr>
+                                            <th><input type="checkbox" class="select-all-visible" /></th>
                                             <th>Pool ID</th>
                                             <th>Created By</th>
                                             <th>Status</th>
@@ -220,6 +241,7 @@
                                 <table id="googleUsedTable" class="table table-hover w-100">
                                     <thead>
                                         <tr>
+                                            <th><input type="checkbox" class="select-all-visible" /></th>
                                             <th>Pool ID</th>
                                             <th>Created By</th>
                                             <th>Status</th>
@@ -269,6 +291,7 @@
                                 <table id="ms365WarmingTable" class="table table-hover w-100">
                                     <thead>
                                         <tr>
+                                            <th><input type="checkbox" class="select-all-visible" /></th>
                                             <th>Pool ID</th>
                                             <th>Created By</th>
                                             <th>Status</th>
@@ -288,6 +311,7 @@
                                 <table id="ms365AvailableTable" class="table table-hover w-100">
                                     <thead>
                                         <tr>
+                                            <th><input type="checkbox" class="select-all-visible" /></th>
                                             <th>Pool ID</th>
                                             <th>Created By</th>
                                             <th>Status</th>
@@ -307,6 +331,7 @@
                                 <table id="ms365UsedTable" class="table table-hover w-100">
                                     <thead>
                                         <tr>
+                                            <th><input type="checkbox" class="select-all-visible" /></th>
                                             <th>Pool ID</th>
                                             <th>Created By</th>
                                             <th>Status</th>
@@ -342,6 +367,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Bulk Update Days Modal -->
+    <div class="modal fade" id="bulkUpdateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bulkUpdateModalTitle">Update Warmup Days</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="bulkUpdateAction" value="">
+                    <div class="mb-3">
+                        <label for="bulkDaysInput" class="form-label" id="bulkDaysLabel">Number of Days</label>
+                        <input type="number" class="form-control" id="bulkDaysInput" min="1" value="30">
+                    </div>
+                    <p class="text-muted mb-0">
+                        <i class="fa fa-info-circle me-1"></i>
+                        This will update <span id="bulkUpdateCount">0</span> selected email account(s).
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmBulkUpdate">
+                        <i class="fa fa-save me-1"></i>Update
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -351,6 +405,8 @@
     <script>
         let poolToDelete = null;
         let dataTables = {};
+        // Set to track selected items across pagination (key: pool_id-domain_id-prefix_key)
+        let selectedItems = new Map();
 
         $(document).ready(function () {
             // Initialize all 6 DataTables
@@ -378,17 +434,21 @@
                         }
                     },
                     columns: getTableColumns(),
-                    order: [[0, 'desc']],
+                    order: [[1, 'desc']],
                     pageLength: 25,
                     lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                    drawCallback: function () {
+                        // Restore checkbox states after pagination
+                        restoreCheckboxStates();
+                    },
                     language: {
                         emptyTable: `
-                                    <div class="text-center py-4">
-                                        <i class="fa ${config.emptyIcon} fs-1 ${config.emptyColor} mb-3"></i>
-                                        <h5 class="">No ${config.status} email accounts found</h5>
-                                        <p class="">All ${config.status} email accounts will appear here.</p>
-                                    </div>
-                                `
+                                                        <div class="text-center py-4">
+                                                            <i class="fa ${config.emptyIcon} fs-1 ${config.emptyColor} mb-3"></i>
+                                                            <h5 class="">No ${config.status} email accounts found</h5>
+                                                            <p class="">All ${config.status} email accounts will appear here.</p>
+                                                        </div>
+                                                    `
                     },
                     drawCallback: function () {
                         $('[data-bs-toggle="tooltip"]').tooltip();
@@ -412,15 +472,29 @@
         function getTableColumns() {
             return [
                 {
+                    data: null,
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        const key = `${row.pool_id}-${row.domain_id}-${row.prefix_key}`;
+                        const checked = selectedItems.has(key) ? 'checked' : '';
+                        return `<input type="checkbox" class="row-checkbox" 
+                                    data-pool-id="${row.pool_id}" 
+                                    data-domain-id="${row.domain_id}" 
+                                    data-prefix-key="${row.prefix_key}" 
+                                    ${checked} />`;
+                    }
+                },
+                {
                     data: 'pool_id',
                     name: 'pool_id',
                     render: function (data, type, row) {
                         return `
-                                    <a href="/admin/pools/${data}" class="text-primary text-decoration-none">
-                                        <i class="ti ti-hash fs-6 opacity-50"></i>
-                                        <span>${data}</span>
-                                    </a>
-                                `;
+                                                        <a href="/admin/pools/${data}" class="text-primary text-decoration-none">
+                                                            <i class="ti ti-hash fs-6 opacity-50"></i>
+                                                            <span>${data}</span>
+                                                        </a>
+                                                    `;
                     }
                 },
                 {
@@ -428,11 +502,11 @@
                     name: 'created_by',
                     render: function (data, type, row) {
                         return `
-                                    <div class="d-flex gap-1 align-items-center">
-                                        <i class="ti ti-user fs-6 opacity-50"></i>
-                                        <span>${data || 'N/A'}</span>
-                                    </div>
-                                `;
+                                                        <div class="d-flex gap-1 align-items-center">
+                                                            <i class="ti ti-user fs-6 opacity-50"></i>
+                                                            <span>${data || 'N/A'}</span>
+                                                        </div>
+                                                    `;
                     }
                 },
                 {
@@ -457,10 +531,10 @@
                         }
 
                         return `
-                                    <span class="status-badge ${badgeClass}">
-                                        <i class="fa ${icon} me-1"></i>${data || 'Unknown'}
-                                    </span>
-                                `;
+                                                        <span class="status-badge ${badgeClass}">
+                                                            <i class="fa ${icon} me-1"></i>${data || 'Unknown'}
+                                                        </span>
+                                                    `;
                     }
                 },
                 {
@@ -472,11 +546,11 @@
                         const email = prefix && domain ? `${prefix}@${domain}` : domain;
 
                         return `
-                                    <div class="d-flex gap-1 align-items-center">
-                                        <i class="ti ti-mail fs-6 opacity-50"></i>
-                                        <span>${email || '-'}</span>
-                                    </div>
-                                `;
+                                                        <div class="d-flex gap-1 align-items-center">
+                                                            <i class="ti ti-mail fs-6 opacity-50"></i>
+                                                            <span>${email || '-'}</span>
+                                                        </div>
+                                                    `;
                     }
                 },
                 {
@@ -491,11 +565,11 @@
                             day: 'numeric'
                         });
                         return `
-                                    <div class="d-flex gap-1 align-items-center opacity-75">
-                                        <i class="ti ti-calendar-month fs-6"></i>
-                                        <span>${date}</span>
-                                    </div>
-                                `;
+                                                        <div class="d-flex gap-1 align-items-center opacity-75">
+                                                            <i class="ti ti-calendar-month fs-6"></i>
+                                                            <span>${date}</span>
+                                                        </div>
+                                                    `;
                     }
                 }
             ];
@@ -529,9 +603,9 @@
                             alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
                             alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
                             alert.innerHTML = `
-                                    <i class="fas fa-check-circle me-2"></i>Pool deleted successfully!
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                `;
+                                                        <i class="fas fa-check-circle me-2"></i>Pool deleted successfully!
+                                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                                    `;
                             document.body.appendChild(alert);
 
                             setTimeout(() => {
@@ -548,6 +622,123 @@
                         alert('Error deleting pool');
                     });
             }
+        });
+
+        // Row checkbox change handler
+        $(document).on('change', '.row-checkbox', function () {
+            const poolId = $(this).data('pool-id');
+            const domainId = $(this).data('domain-id');
+            const prefixKey = $(this).data('prefix-key');
+            const key = `${poolId}-${domainId}-${prefixKey}`;
+
+            if ($(this).is(':checked')) {
+                selectedItems.set(key, { pool_id: poolId, domain_id: domainId, prefix_key: prefixKey });
+            } else {
+                selectedItems.delete(key);
+            }
+            updateBulkActionBar();
+        });
+
+        // Select all visible checkbox handler
+        $(document).on('change', '.select-all-visible', function () {
+            const isChecked = $(this).is(':checked');
+            const table = $(this).closest('table');
+            table.find('.row-checkbox').each(function () {
+                $(this).prop('checked', isChecked).trigger('change');
+            });
+        });
+
+        function restoreCheckboxStates() {
+            $('.row-checkbox').each(function () {
+                const poolId = $(this).data('pool-id');
+                const domainId = $(this).data('domain-id');
+                const prefixKey = $(this).data('prefix-key');
+                const key = `${poolId}-${domainId}-${prefixKey}`;
+                $(this).prop('checked', selectedItems.has(key));
+            });
+        }
+
+        function updateBulkActionBar() {
+            const count = selectedItems.size;
+            $('#selectedCount').text(count);
+            if (count > 0) {
+                $('#bulkActionBar').removeClass('d-none').addClass('d-flex');
+            } else {
+                $('#bulkActionBar').removeClass('d-flex').addClass('d-none');
+            }
+        }
+
+        function clearAllSelections() {
+            selectedItems.clear();
+            $('.row-checkbox').prop('checked', false);
+            $('.select-all-visible').prop('checked', false);
+            updateBulkActionBar();
+        }
+
+        function openBulkUpdateModal(action) {
+            $('#bulkUpdateAction').val(action);
+            $('#bulkUpdateCount').text(selectedItems.size);
+            if (action === 'extend') {
+                $('#bulkUpdateModalTitle').text('Extend Warmup Days');
+                $('#bulkDaysLabel').text('Days to Add');
+            } else {
+                $('#bulkUpdateModalTitle').text('Reduce Warmup Days');
+                $('#bulkDaysLabel').text('Days to Reduce');
+            }
+            $('#bulkUpdateModal').modal('show');
+        }
+
+        $('#confirmBulkUpdate').on('click', function () {
+            const action = $('#bulkUpdateAction').val();
+            const days = parseInt($('#bulkDaysInput').val()) || 0;
+
+            if (days <= 0) {
+                alert('Please enter a valid number of days');
+                return;
+            }
+
+            const items = Array.from(selectedItems.values());
+            const payload = {
+                items: items,
+                extend_days: action === 'extend' ? days : 0,
+                reduce_days: action === 'reduce' ? days : 0
+            };
+
+            $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>Updating...');
+
+            $.ajax({
+                url: "{{ route('admin.pool-domains.bulk-update-days') }}",
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (response) {
+                    $('#bulkUpdateModal').modal('hide');
+                    clearAllSelections();
+
+                    // Reload all tables
+                    Object.values(dataTables).forEach(table => {
+                        if (table && table.ajax) table.ajax.reload();
+                    });
+
+                    // Show success message
+                    const alertDiv = $(`<div class="alert alert-success alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                                <i class="fas fa-check-circle me-2"></i>${response.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>`);
+                    $('body').append(alertDiv);
+                    setTimeout(() => alertDiv.remove(), 5000);
+                },
+                error: function (xhr) {
+                    const msg = xhr.responseJSON?.message || 'Error updating end dates';
+                    alert(msg);
+                },
+                complete: function () {
+                    $('#confirmBulkUpdate').prop('disabled', false).html('<i class="fa fa-save me-1"></i>Update');
+                }
+            });
         });
     </script>
 @endpush

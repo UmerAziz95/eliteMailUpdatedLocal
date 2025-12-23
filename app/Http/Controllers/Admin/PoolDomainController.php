@@ -839,4 +839,97 @@ class PoolDomainController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Bulk update end_date for multiple email accounts
+     */
+    public function bulkUpdateEndDate(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.pool_id' => 'required|integer',
+            'items.*.domain_id' => 'required',
+            'items.*.prefix_key' => 'required|string',
+            'extend_days' => 'nullable|integer|min:0',
+            'reduce_days' => 'nullable|integer|min:0',
+        ]);
+
+        try {
+            $items = $request->input('items');
+            $extendDays = (int) $request->input('extend_days', 0);
+            $reduceDays = (int) $request->input('reduce_days', 0);
+            $daysDelta = $extendDays - $reduceDays;
+
+            if ($daysDelta === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No days change specified'
+                ], 400);
+            }
+
+            $updatedCount = 0;
+            $errors = [];
+
+            // Group items by pool_id for efficient updates
+            $itemsByPool = [];
+            foreach ($items as $item) {
+                $poolId = $item['pool_id'];
+                if (!isset($itemsByPool[$poolId])) {
+                    $itemsByPool[$poolId] = [];
+                }
+                $itemsByPool[$poolId][] = $item;
+            }
+
+            // Process each pool
+            foreach ($itemsByPool as $poolId => $poolItems) {
+                $pool = \App\Models\Pool::find($poolId);
+                if (!$pool || !is_array($pool->domains)) {
+                    $errors[] = "Pool {$poolId} not found or has no domains";
+                    continue;
+                }
+
+                $domains = $pool->domains;
+                $poolUpdated = false;
+
+                foreach ($poolItems as $item) {
+                    $domainId = $item['domain_id'];
+                    $prefixKey = $item['prefix_key'];
+
+                    foreach ($domains as $index => &$domain) {
+                        if (isset($domain['id']) && $domain['id'] == $domainId) {
+                            if (isset($domain['prefix_statuses'][$prefixKey])) {
+                                $currentEnd = $domain['prefix_statuses'][$prefixKey]['end_date'] ?? null;
+                                $domain['prefix_statuses'][$prefixKey]['end_date'] = $this->adjustDomainEndDate($currentEnd, $daysDelta);
+                                $poolUpdated = true;
+                                $updatedCount++;
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                if ($poolUpdated) {
+                    $pool->domains = $domains;
+                    $pool->save();
+                }
+            }
+
+            // Clear cache after bulk update
+            $this->poolDomainService->clearCache();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully updated {$updatedCount} email account(s)",
+                'updated_count' => $updatedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in bulk update end date: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating end dates: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
