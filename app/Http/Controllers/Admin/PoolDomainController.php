@@ -28,10 +28,20 @@ class PoolDomainController extends Controller
         if ($request->ajax()) {
             $poolId = $request->get('pool_id');
             $userId = $request->get('user_id');
+            $providerType = $request->get('provider_type');
+            $statusFilter = $request->get('status_filter');
 
-            // Get all pool domains, optionally filtered by user or pool
-            $allData = $this->poolDomainService->getPoolDomainsData(true, $userId, $poolId);
-            
+            // Get all pool domains, optionally filtered by user, pool, provider_type
+            $allData = $this->poolDomainService->getPoolDomainsData(true, $userId, $poolId, $providerType);
+
+            // Apply status filter if provided
+            if ($statusFilter) {
+                $allData = array_filter($allData, function ($item) use ($statusFilter) {
+                    return ($item['status'] ?? '') === $statusFilter;
+                });
+                $allData = array_values($allData); // Reset array keys
+            }
+
             return DataTables::of($allData)
                 ->addIndexColumn()
                 ->addColumn('prefix_display', function ($row) {
@@ -44,11 +54,11 @@ class PoolDomainController extends Controller
                 })
                 ->addColumn('prefixes_formatted', function ($row) {
                     if (!empty($row['prefix_value']) && !empty($row['domain_name'])) {
-                         // If it's a specific prefix row, show that prefix entity
-                         if (strpos($row['prefix_value'], '@') !== false) {
-                             return $row['prefix_value'];
-                         }
-                         return $row['prefix_value'] . '@' . $row['domain_name'];
+                        // If it's a specific prefix row, show that prefix entity
+                        if (strpos($row['prefix_value'], '@') !== false) {
+                            return $row['prefix_value'];
+                        }
+                        return $row['prefix_value'] . '@' . $row['domain_name'];
                     }
                     return $this->poolDomainService->formatPrefixes($row['prefixes'], $row['domain_name']);
                 })
@@ -59,7 +69,7 @@ class PoolDomainController extends Controller
                     if ($row['pool_order_status'] === 'no_order') {
                         return '<span class="badge bg-light text-dark">No Order</span>';
                     }
-                    
+
                     $colorMap = [
                         'completed' => 'success',
                         'pending' => 'warning',
@@ -86,7 +96,7 @@ class PoolDomainController extends Controller
                     $status = $row['status'] ?? 'available';
                     $endDate = addslashes($row['end_date'] ?? '');
                     $prefixKey = addslashes($row['prefix_key'] ?? '');
-                    
+
                     return '
                         <div class="dropdown">
                             <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -116,17 +126,17 @@ class PoolDomainController extends Controller
     {
         $userId = $request->get('user_id');
         $poolId = $request->get('pool_id');
-        
+
         $this->poolDomainService->refreshCache($userId, $poolId);
-        
+
         if ($request->ajax()) {
             return response()->json([
-                'success' => true, 
+                'success' => true,
                 'message' => 'Cache refreshed successfully',
                 'filters' => compact('userId', 'poolId')
             ]);
         }
-        
+
         return redirect()->route('admin.pool-domains.index')
             ->with('success', 'Pool domains cache has been refreshed');
     }
@@ -137,11 +147,11 @@ class PoolDomainController extends Controller
     public function clearCache(Request $request)
     {
         $this->poolDomainService->clearCache();
-        
+
         if ($request->ajax()) {
             return response()->json(['success' => true, 'message' => 'All cache cleared successfully']);
         }
-        
+
         return redirect()->route('admin.pool-domains.index')
             ->with('success', 'All pool domains cache has been cleared');
     }
@@ -162,9 +172,9 @@ class PoolDomainController extends Controller
     {
         $poolsCount = \App\Models\Pool::whereNotNull('domains')->count();
         $poolOrdersCount = \App\Models\PoolOrder::whereNotNull('domains')->count();
-        
+
         $samplePool = \App\Models\Pool::whereNotNull('domains')->first();
-        
+
         $data = [
             'pools_with_domains' => $poolsCount,
             'pool_orders_with_domains' => $poolOrdersCount,
@@ -176,7 +186,7 @@ class PoolDomainController extends Controller
             ] : null,
             'service_data_count' => count($this->poolDomainService->getPoolDomainsData(false))
         ];
-        
+
         return response()->json($data);
     }
 
@@ -186,7 +196,7 @@ class PoolDomainController extends Controller
     public function update(Request $request)
     {
         $editableStatuses = config('domain_statuses.editable', ['warming', 'available', 'in-progress', 'used']);
-        
+
         $request->validate([
             'pool_id' => 'nullable|integer',
             'pool_order_id' => 'nullable|integer',
@@ -214,11 +224,11 @@ class PoolDomainController extends Controller
                     $domains = $pool->domains;
                     $domainIndex = null;
                     $updatedDomain = null;
-                    
+
                     foreach ($domains as $index => &$domain) {
                         if (isset($domain['id']) && $domain['id'] == $request->domain_id) {
                             $domain['name'] = $request->domain_name;
-                            
+
                             // Update prefix_statuses if they exist, otherwise update domain-level status
                             if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
                                 // If prefix_key is provided, only update that specific prefix
@@ -246,7 +256,7 @@ class PoolDomainController extends Controller
                                     $domain['end_date'] = $this->adjustDomainEndDate($currentEnd, $daysDelta);
                                 }
                             }
-                            
+
                             // is_used updated based on status (only if ALL prefixes would be non-available)
                             $domain['is_used'] = $request->status === 'available' ? false : true;
                             $domainIndex = $index;
@@ -255,7 +265,7 @@ class PoolDomainController extends Controller
                             break;
                         }
                     }
-                    
+
                     if ($updated && $domainIndex !== null) {
                         // Use JSON_SET to update only this specific domain - avoids max_allowed_packet issues
                         $domainJson = json_encode($updatedDomain, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -267,7 +277,7 @@ class PoolDomainController extends Controller
                     }
                 }
             }
-            
+
             // Try to update in PoolOrder if not found in Pool or also exists there
             if ($request->pool_order_id) {
                 $poolOrder = \App\Models\PoolOrder::find($request->pool_order_id);
@@ -276,14 +286,14 @@ class PoolDomainController extends Controller
                     $domainIndex = null;
                     $updatedDomain = null;
                     $orderUpdated = false;
-                    
+
                     foreach ($domains as $index => &$domain) {
                         // Check both 'domain_id' and 'id' keys for compatibility
                         $domainIdKey = isset($domain['domain_id']) ? 'domain_id' : (isset($domain['id']) ? 'id' : null);
-                        
+
                         if ($domainIdKey && $domain[$domainIdKey] == $request->domain_id) {
                             $domain['domain_name'] = $request->domain_name;
-                            
+
                             // Update prefix_statuses if they exist, otherwise update domain-level status
                             if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
                                 // If prefix_key is provided, only update that specific prefix
@@ -311,7 +321,7 @@ class PoolDomainController extends Controller
                                     $domain['end_date'] = $this->adjustDomainEndDate($currentEnd, $daysDelta);
                                 }
                             }
-                            
+
                             // is_used updated based on status
                             $domain['is_used'] = $request->status === 'available' ? false : true;
                             $domainIndex = $index;
@@ -321,7 +331,7 @@ class PoolDomainController extends Controller
                             break;
                         }
                     }
-                    
+
                     if ($orderUpdated && $domainIndex !== null) {
                         // Use JSON_SET to update only this specific domain - avoids max_allowed_packet issues
                         $domainJson = json_encode($updatedDomain, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -624,8 +634,8 @@ class PoolDomainController extends Controller
     public function viewPoolOrder($id)
     {
         $poolOrder = \App\Models\PoolOrder::with([
-            'user', 
-            'assignedTo', 
+            'user',
+            'assignedTo',
             'poolPlan',
             'poolInvoices'
         ])->findOrFail($id);
@@ -665,7 +675,7 @@ class PoolDomainController extends Controller
 
             // Generate PDF using dompdf
             $pdf = \PDF::loadView('customer.pool-invoices.pdf', compact('poolInvoice'));
-            
+
             // Generate filename
             $filename = 'pool_invoice_' . $poolInvoice->chargebee_invoice_id . '.pdf';
 
@@ -674,7 +684,7 @@ class PoolDomainController extends Controller
 
         } catch (\Exception $e) {
             \Log::error('Error downloading pool invoice: ' . $e->getMessage());
-            
+
             return redirect()->back()->with('error', 'Error downloading invoice');
         }
     }
@@ -702,12 +712,12 @@ class PoolDomainController extends Controller
             // Assign to current user
             $poolOrder->assigned_to = auth()->id();
             $poolOrder->assigned_at = now();
-            
+
             // Set status to 'in-progress' when contractor/admin is assigned (only if currently pending)
             if ($poolOrder->status_manage_by_admin === 'pending') {
                 $poolOrder->status_manage_by_admin = 'in-progress';
             }
-            
+
             $poolOrder->save();
 
             \Log::info('Pool order #' . $poolOrder->id . ' assigned to admin user #' . auth()->id() . ', status: ' . $poolOrder->status_manage_by_admin);
@@ -719,7 +729,7 @@ class PoolDomainController extends Controller
 
         } catch (\Exception $e) {
             \Log::error('Error assigning pool order: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error assigning pool order'
@@ -750,16 +760,16 @@ class PoolDomainController extends Controller
             }
 
             $oldStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
-            
+
             // Convert status format: underscore to hyphen for database ENUM compatibility
             $statusValue = str_replace('_', '-', $request->status);
-            
+
             // If changing to cancelled, use the cancellation service to handle subscription cancellation
             if ($statusValue === 'cancelled') {
                 $cancellationService = new \App\Services\PoolOrderCancelledService();
                 $reason = 'Admin cancelled the order';
                 $result = $cancellationService->cancelSubscription($request->order_id, $poolOrder->user_id, $reason);
-                
+
                 if ($result['success']) {
                     \Log::info('Pool order #' . $poolOrder->id . ' cancelled (status_manage_by_admin and subscription) by admin user #' . auth()->id());
                     return response()->json([
@@ -770,7 +780,7 @@ class PoolDomainController extends Controller
                     return response()->json($result, 400);
                 }
             }
-            
+
             // Use status_manage_by_admin column for admin status changes
             $poolOrder->status_manage_by_admin = $statusValue;
             $poolOrder->save();
@@ -790,7 +800,7 @@ class PoolDomainController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error changing pool order status: ' . $e->getMessage());
             \Log::error('Stack trace: ' . $e->getTraceAsString());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error changing pool order status: ' . $e->getMessage()

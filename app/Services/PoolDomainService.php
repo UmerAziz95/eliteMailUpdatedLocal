@@ -14,29 +14,29 @@ class PoolDomainService
 {
     private $cacheTime = 300; // 5 minutes
     private $chunkSize = 100; // Process records in chunks
-    
+
     /**
      * Get aggregated pool domains data - optimized for performance with caching
      */
-    
-    public function getPoolDomainsData($useCache = true, $userId = null, $poolId = null)
+
+    public function getPoolDomainsData($useCache = true, $userId = null, $poolId = null, $providerType = null)
     {
         if (!$useCache) {
-            return $this->fetchPoolDomainsData($userId, $poolId);
+            return $this->fetchPoolDomainsData($userId, $poolId, $providerType);
         }
-        
+
         // Use specific cache keys based on filters to reduce cache size
-        $cacheKey = $this->buildCacheKey($userId, $poolId);
-        
-        return Cache::remember($cacheKey, $this->cacheTime, function () use ($userId, $poolId) {
-            return $this->fetchPoolDomainsData($userId, $poolId);
+        $cacheKey = $this->buildCacheKey($userId, $poolId, $providerType);
+
+        return Cache::remember($cacheKey, $this->cacheTime, function () use ($userId, $poolId, $providerType) {
+            return $this->fetchPoolDomainsData($userId, $poolId, $providerType);
         });
     }
 
     /**
      * Build cache key based on filters
      */
-    private function buildCacheKey($userId = null, $poolId = null)
+    private function buildCacheKey($userId = null, $poolId = null, $providerType = null)
     {
         $key = 'pool_domains';
         if ($userId) {
@@ -45,43 +45,54 @@ class PoolDomainService
         if ($poolId) {
             $key .= "_pool_{$poolId}";
         }
+        if ($providerType) {
+            $key .= "_provider_{$providerType}";
+        }
         return $key;
     }
 
     /**
      * Internal method to fetch pool domains data with proper error handling and chunking
      */
-    private function fetchPoolDomainsData($userId = null, $poolId = null)
+    private function fetchPoolDomainsData($userId = null, $poolId = null, $providerType = null)
     {
         try {
             $results = [];
             $poolOrdersByDomain = [];
-            
+
             // Build queries with optional filters
-            $poolQuery = Pool::with(['user' => function($query) {
-                $query->select('id', 'name', 'email');
-            }])
-            ->select('id', 'user_id', 'domains', 'prefix_variants')
-            ->whereNotNull('domains')
-            ->whereNotNull('purchase_date')
-            ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()');
-            
-            $poolOrderQuery = PoolOrder::with(['user' => function($query) {
-                $query->select('id', 'name', 'email');
-            }])
-            ->select('id', 'user_id', 'domains', 'status', 'status_manage_by_admin')
-            // status_manage_by_admin not equal to 'cancelled' to reduce unnecessary data
-            ->where('status_manage_by_admin', '!=', 'cancelled')
-            ->whereNotNull('domains');
-            
+            $poolQuery = Pool::with([
+                'user' => function ($query) {
+                    $query->select('id', 'name', 'email');
+                }
+            ])
+                ->select('id', 'user_id', 'domains', 'prefix_variants', 'provider_type')
+                ->whereNotNull('domains')
+                ->whereNotNull('purchase_date')
+                ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()');
+
+            $poolOrderQuery = PoolOrder::with([
+                'user' => function ($query) {
+                    $query->select('id', 'name', 'email');
+                }
+            ])
+                ->select('id', 'user_id', 'domains', 'status', 'status_manage_by_admin')
+                // status_manage_by_admin not equal to 'cancelled' to reduce unnecessary data
+                ->where('status_manage_by_admin', '!=', 'cancelled')
+                ->whereNotNull('domains');
+
             // Apply filters if provided
             if ($userId) {
                 $poolQuery->where('user_id', (int) $userId);
                 $poolOrderQuery->where('user_id', (int) $userId);
             }
-            
+
             if ($poolId) {
                 $poolQuery->where('id', (int) $poolId);
+            }
+
+            if ($providerType) {
+                $poolQuery->where('provider_type', $providerType);
             }
 
             // First, process pool orders to create lookup map
@@ -99,14 +110,14 @@ class PoolDomainService
             });
 
             return $results;
-            
+
         } catch (Exception $e) {
             Log::error('Error fetching pool domains data: ' . $e->getMessage(), [
                 'userId' => $userId,
                 'poolId' => $poolId,
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             // Return empty array on error to prevent breaking the UI
             return [];
         }
@@ -130,7 +141,7 @@ class PoolDomainService
             if ($poolId && (int) $poolIdFromDomain !== (int) $poolId) {
                 continue;
             }
-            
+
             if ($domainId && $poolIdFromDomain) {
                 $orderInfo = [
                     'id' => (int) $poolOrder->id,
@@ -158,9 +169,9 @@ class PoolDomainService
                         // Only set if not already set (priority to first processed? Or maybe last? 
                         // With selected_prefixes it's explicit. Without it, it's ambiguous.
                         // Let's rely on this only if invalid structure.)
-                         if (!isset($poolOrdersByDomain[$granularKey])) {
+                        if (!isset($poolOrdersByDomain[$granularKey])) {
                             $poolOrdersByDomain[$granularKey] = $orderInfo;
-                         }
+                        }
                     }
                     $hasGranular = true;
                 }
@@ -191,11 +202,12 @@ class PoolDomainService
         foreach ($poolDomains as $domain) {
             // Normalize domain keys for consistency  
             $domainId = $domain['id'] ?? $domain['domain_id'] ?? null;
-            if (!$domainId) continue;
+            if (!$domainId)
+                continue;
 
             $domainName = $domain['name'] ?? $domain['domain_name'] ?? null;
             $prefixStatuses = $domain['prefix_statuses'] ?? null;
-            
+
             // Base lookup key (generic)
             $baseLookupKey = $domainId . '_' . $pool->id;
 
@@ -224,7 +236,7 @@ class PoolDomainService
                     // Extract prefix number from key (e.g., "prefix_variant_1" -> 1)
                     $prefixNumber = (int) preg_replace('/\D/', '', $prefixKey);
                     $prefixValue = $poolPrefixes[$prefixKey] ?? $poolPrefixes["prefix_variant_{$prefixNumber}"] ?? "Prefix {$prefixNumber}";
-                    
+
                     $status = $prefixData['status'] ?? 'unknown';
 
                     // Fix: If assigned to an order (Pool Order Exists) and status is 'available', it should be 'in-progress'
@@ -251,12 +263,14 @@ class PoolDomainService
                         'pool_order_status' => $poolOrderStatus,
                         'pool_order_admin_status' => $poolOrderAdminStatus,
                         'is_used' => (bool) ($domain['is_used'] ?? false),
+                        'created_by' => $pool->user ? $pool->user->name : 'Unknown',
+                        'provider_type' => $pool->provider_type ?? null,
                     ];
                 }
             } else {
                 // Fallback for domains without prefix_statuses (old format)
                 $poolOrderInfo = $poolOrdersByDomain[$baseLookupKey] ?? null;
-                
+
                 if ($poolOrderInfo) {
                     $customer = $poolOrderInfo['user'];
                     $poolOrderId = $poolOrderInfo['id'];
@@ -290,6 +304,8 @@ class PoolDomainService
                     'pool_order_status' => $poolOrderStatus,
                     'pool_order_admin_status' => $poolOrderAdminStatus,
                     'is_used' => (bool) ($domain['is_used'] ?? false),
+                    'created_by' => $pool->user ? $pool->user->name : 'Unknown',
+                    'provider_type' => $pool->provider_type ?? null,
                 ];
             }
         }
@@ -351,7 +367,7 @@ class PoolDomainService
             $cacheKey = $this->buildCacheKey($userId, $poolId);
             Cache::forget($cacheKey);
         }
-        
+
         // Also try to clear using the wildcard method for safety
         if (!$userId && !$poolId) {
             $this->clearAllPoolDomainCaches();
@@ -389,12 +405,12 @@ class PoolDomainService
     {
         // Clear general cache
         Cache::forget('pool_domains');
-        
+
         // Clear user-specific cache if provided
         if ($userId) {
             Cache::forget("pool_domains_user_{$userId}");
         }
-        
+
         // Clear pool-specific cache if provided  
         if ($poolId) {
             Cache::forget("pool_domains_pool_{$poolId}");
@@ -420,82 +436,99 @@ class PoolDomainService
         $length = (int) ($request->get('length') ?? 10);
         $userId = $request->get('user_id');
         $poolId = $request->get('pool_id');
-        
+        $providerType = $request->get('provider_type');
+        $statusFilter = $request->get('status_filter');
+
         // Always get all data first, then apply search and pagination
         // This ensures we don't miss any domains
         if (!empty(trim($search))) {
-            return $this->getFilteredPoolDomainsData($search, $start, $length, $userId, $poolId);
+            $data = $this->getFilteredPoolDomainsData($search, 0, 0, $userId, $poolId, $providerType);
+        } else {
+            // For no search, get all cached data
+            $data = $this->getPoolDomainsData(true, $userId, $poolId, $providerType);
         }
-        
-        // For no search, get all cached data and apply pagination
-        $data = $this->getPoolDomainsData(true, $userId, $poolId); // Use cache
-        
+
+        // Apply status filter if provided
+        if ($statusFilter) {
+            $data = array_filter($data, function ($item) use ($statusFilter) {
+                return ($item['status'] ?? '') === $statusFilter;
+            });
+            $data = array_values($data); // Reset array keys
+        }
+
         // Apply pagination if length is specified and > 0
         if ($length > 0) {
             $data = array_slice($data, $start, $length);
         }
-        
+
         return array_values($data); // Reset array keys
     }
 
     /**
      * Get filtered pool domains data using database queries for better performance
      */
-    private function getFilteredPoolDomainsData($search, $start = 0, $length = 10, $userId = null, $poolId = null)
+    private function getFilteredPoolDomainsData($search, $start = 0, $length = 10, $userId = null, $poolId = null, $providerType = null)
     {
         try {
             $results = [];
             $searchTerm = strtolower($search);
-            
+
             // Get ALL pools and pool orders, then filter domains in PHP
             // This ensures we don't miss domains due to pool-level filtering
             $poolOrdersByDomain = [];
-            
+
             // First, get all pool orders to build lookup map
-            PoolOrder::with(['user' => function($query) {
-                $query->select('id', 'name', 'email');
-            }])
-            ->select('id', 'user_id', 'domains', 'status', 'status_manage_by_admin')
-            ->whereNotNull('domains')
-            ->when($userId, function ($query) use ($userId) {
-                $query->where('user_id', (int) $userId);
-            })
-            ->chunk($this->chunkSize, function ($poolOrders) use (&$poolOrdersByDomain, $poolId) {
-                foreach ($poolOrders as $poolOrder) {
-                    $this->processPoolOrderForLookup($poolOrder, $poolOrdersByDomain, $poolId);
+            PoolOrder::with([
+                'user' => function ($query) {
+                    $query->select('id', 'name', 'email');
                 }
-            });
-            
+            ])
+                ->select('id', 'user_id', 'domains', 'status', 'status_manage_by_admin')
+                ->whereNotNull('domains')
+                ->when($userId, function ($query) use ($userId) {
+                    $query->where('user_id', (int) $userId);
+                })
+                ->chunk($this->chunkSize, function ($poolOrders) use (&$poolOrdersByDomain, $poolId) {
+                    foreach ($poolOrders as $poolOrder) {
+                        $this->processPoolOrderForLookup($poolOrder, $poolOrdersByDomain, $poolId);
+                    }
+                });
+
             // Get all pools and filter domains based on search
-            Pool::with(['user' => function($query) {
-                $query->select('id', 'name', 'email');
-            }])
-            ->select('id', 'user_id', 'domains', 'prefix_variants')
-            ->whereNotNull('domains')
-            ->whereNotNull('purchase_date')
-            ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()')
-            ->when($userId, function ($query) use ($userId) {
-                $query->where('user_id', (int) $userId);
-            })
-            ->when($poolId, function ($query) use ($poolId) {
-                $query->where('id', (int) $poolId);
-            })
-            ->chunk($this->chunkSize, function ($pools) use (&$results, $poolOrdersByDomain, $searchTerm, $poolId) {
-                foreach ($pools as $pool) {
-                    $this->processPoolDomainsWithSearch($pool, $poolOrdersByDomain, $results, $searchTerm, $poolId);
+            Pool::with([
+                'user' => function ($query) {
+                    $query->select('id', 'name', 'email');
                 }
-            });
-            
+            ])
+                ->select('id', 'user_id', 'domains', 'prefix_variants', 'provider_type')
+                ->whereNotNull('domains')
+                ->whereNotNull('purchase_date')
+                ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()')
+                ->when($userId, function ($query) use ($userId) {
+                    $query->where('user_id', (int) $userId);
+                })
+                ->when($poolId, function ($query) use ($poolId) {
+                    $query->where('id', (int) $poolId);
+                })
+                ->when($providerType, function ($query) use ($providerType) {
+                    $query->where('provider_type', $providerType);
+                })
+                ->chunk($this->chunkSize, function ($pools) use (&$results, $poolOrdersByDomain, $searchTerm, $poolId) {
+                    foreach ($pools as $pool) {
+                        $this->processPoolDomainsWithSearch($pool, $poolOrdersByDomain, $results, $searchTerm, $poolId);
+                    }
+                });
+
             // Apply pagination to results
             if ($length > 0) {
                 $results = array_slice($results, $start, $length);
             }
-            
+
             return array_values($results);
-            
+
         } catch (Exception $e) {
             Log::error('Error filtering pool domains data: ' . $e->getMessage());
-            
+
             // Fallback to original method if database search fails
             $data = $this->getPoolDomainsData(true, $userId, $poolId);
             return $this->applyPhpSearch($data, $search, $start, $length);
@@ -518,11 +551,12 @@ class PoolDomainService
         foreach ($poolDomains as $domain) {
             // Normalize domain keys
             $domainId = $domain['id'] ?? $domain['domain_id'] ?? null;
-            if (!$domainId) continue;
+            if (!$domainId)
+                continue;
 
             $domainName = $domain['name'] ?? $domain['domain_name'] ?? 'Unknown Domain';
             $prefixStatuses = $domain['prefix_statuses'] ?? null;
-            
+
             // Base lookup key
             $baseLookupKey = $domainId . '_' . $pool->id;
 
@@ -532,7 +566,7 @@ class PoolDomainService
                     $prefixNumber = (int) preg_replace('/\D/', '', $prefixKey);
                     $prefixValue = $poolPrefixes[$prefixKey] ?? $poolPrefixes["prefix_variant_{$prefixNumber}"] ?? "Prefix {$prefixNumber}";
                     $status = $prefixData['status'] ?? 'unknown';
-                    
+
                     // Try granular lookup first, then fallback to base
                     $granularKey = $baseLookupKey . '_' . $prefixKey;
                     $poolOrderInfo = $poolOrdersByDomain[$granularKey] ?? $poolOrdersByDomain[$baseLookupKey] ?? null;
@@ -556,18 +590,18 @@ class PoolDomainService
                     if ($poolOrderInfo && $status === 'available') {
                         $status = 'in-progress';
                     }
-                    
+
                     $customerName = $customer ? $customer->name : 'Unknown';
                     $customerEmail = $customer ? $customer->email : 'unknown@example.com';
-                    
+
                     // Check if any field matches the search term
                     $matchesSearch = stripos($customerName, $searchTerm) !== false ||
-                                   stripos($customerEmail, $searchTerm) !== false ||
-                                   stripos($domainName, $searchTerm) !== false ||
-                                   stripos($domainId, $searchTerm) !== false ||
-                                   stripos($status, $searchTerm) !== false ||
-                                   stripos($prefixValue, $searchTerm) !== false ||
-                                   stripos((string)$pool->id, $searchTerm) !== false;
+                        stripos($customerEmail, $searchTerm) !== false ||
+                        stripos($domainName, $searchTerm) !== false ||
+                        stripos($domainId, $searchTerm) !== false ||
+                        stripos($status, $searchTerm) !== false ||
+                        stripos($prefixValue, $searchTerm) !== false ||
+                        stripos((string) $pool->id, $searchTerm) !== false;
 
                     if (!$matchesSearch) {
                         continue;
@@ -591,6 +625,8 @@ class PoolDomainService
                         'pool_order_status' => $poolOrderStatus,
                         'pool_order_admin_status' => $poolOrderAdminStatus,
                         'is_used' => (bool) ($domain['is_used'] ?? false),
+                        'created_by' => $pool->user ? $pool->user->name : 'Unknown',
+                        'provider_type' => $pool->provider_type ?? null,
                     ];
                 }
             } else {
@@ -610,18 +646,18 @@ class PoolDomainService
                     $poolOrderStatus = 'no_order';
                     $poolOrderAdminStatus = 'no_order';
                 }
-                
+
                 $customerName = $customer ? $customer->name : 'Unknown';
                 $customerEmail = $customer ? $customer->email : 'unknown@example.com';
-                
+
                 $status = $domain['status'] ?? 'unknown';
-                
+
                 $matchesSearch = stripos($customerName, $searchTerm) !== false ||
-                               stripos($customerEmail, $searchTerm) !== false ||
-                               stripos($domainName, $searchTerm) !== false ||
-                               stripos($domainId, $searchTerm) !== false ||
-                               stripos($status, $searchTerm) !== false ||
-                               stripos((string)$pool->id, $searchTerm) !== false;
+                    stripos($customerEmail, $searchTerm) !== false ||
+                    stripos($domainName, $searchTerm) !== false ||
+                    stripos($domainId, $searchTerm) !== false ||
+                    stripos($status, $searchTerm) !== false ||
+                    stripos((string) $pool->id, $searchTerm) !== false;
 
                 if (!$matchesSearch) {
                     continue;
@@ -645,6 +681,8 @@ class PoolDomainService
                     'pool_order_status' => $poolOrderStatus,
                     'pool_order_admin_status' => $poolOrderAdminStatus,
                     'is_used' => (bool) ($domain['is_used'] ?? false),
+                    'created_by' => $pool->user ? $pool->user->name : 'Unknown',
+                    'provider_type' => $pool->provider_type ?? null,
                 ];
             }
         }
@@ -656,20 +694,20 @@ class PoolDomainService
     private function applyPhpSearch($data, $search, $start = 0, $length = 10)
     {
         $searchTerm = strtolower($search);
-        
-        $filtered = array_filter($data, function($item) use ($searchTerm) {
+
+        $filtered = array_filter($data, function ($item) use ($searchTerm) {
             return stripos($item['customer_name'] ?? '', $searchTerm) !== false ||
-                   stripos($item['customer_email'] ?? '', $searchTerm) !== false ||
-                   stripos($item['domain_name'] ?? '', $searchTerm) !== false ||
-                   stripos($item['domain_id'] ?? '', $searchTerm) !== false ||
-                   stripos($item['status'] ?? '', $searchTerm) !== false;
+                stripos($item['customer_email'] ?? '', $searchTerm) !== false ||
+                stripos($item['domain_name'] ?? '', $searchTerm) !== false ||
+                stripos($item['domain_id'] ?? '', $searchTerm) !== false ||
+                stripos($item['status'] ?? '', $searchTerm) !== false;
         });
-        
+
         // Apply pagination
         if ($length > 0) {
             $filtered = array_slice($filtered, $start, $length);
         }
-        
+
         return array_values($filtered);
     }
 
@@ -681,7 +719,7 @@ class PoolDomainService
         if (empty(trim($search))) {
             // For no search, get actual domain count from all pools
             $totalDomains = 0;
-            
+
             Pool::whereNotNull('domains')
                 ->whereNotNull('purchase_date')
                 ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()')
@@ -692,10 +730,10 @@ class PoolDomainService
                         }
                     }
                 });
-            
+
             return $totalDomains;
         }
-        
+
         // For search, get count from filtered results
         return count($this->getFilteredPoolDomainsData($search, 0, 0));
     }
@@ -706,7 +744,7 @@ class PoolDomainService
     public function getAllDomainsCount()
     {
         $totalDomains = 0;
-        
+
         Pool::whereNotNull('domains')
             ->whereNotNull('purchase_date')
             ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()')
@@ -717,7 +755,7 @@ class PoolDomainService
                     }
                 }
             });
-        
+
         return $totalDomains;
     }
 
@@ -727,14 +765,14 @@ class PoolDomainService
     public function debugPoolDomains()
     {
         $results = $this->getPoolDomainsData(false); // Force fresh data
-        
+
         Log::info('Debug Pool Domains', [
             'total_results' => count($results),
             'sample_results' => array_slice($results, 0, 5),
             'pools_count' => Pool::whereNotNull('domains')->count(),
             'pool_orders_count' => PoolOrder::whereNotNull('domains')->count()
         ]);
-        
+
         return [
             'total_domains' => count($results),
             'pools_with_domains' => Pool::whereNotNull('domains')->count(),
