@@ -274,14 +274,26 @@ class PoolOrderService
             if ($poolOrder->status_manage_by_admin !== 'cancelled') {
                 // Use status_manage_by_admin if set, otherwise use status
                 $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
-                $hasDomains = $poolOrder->hasDomains() ? 'true' : 'false';
-                $html .= '
-                    <li>
-                        <a class="dropdown-item" href="javascript:void(0)" 
-                           onclick="changePoolOrderStatus(' . $poolOrder->id . ', \'' . $currentStatus . '\', ' . $hasDomains . ')">
-                            <i class="fa-solid fa-sync me-1"></i>Change Status
-                        </a>
-                    </li>';
+                $hasDomains = $poolOrder->hasDomains();
+
+                // Check if dropdown would have valid options
+                // in-progress without domains = empty dropdown (only completed needs domains, cancelled is hidden)
+                // So hide Change Status if in-progress and no domains
+                $hasValidStatusOptions = true;
+                if ($currentStatus === 'in-progress' && !$hasDomains) {
+                    $hasValidStatusOptions = false;
+                }
+
+                if ($hasValidStatusOptions) {
+                    $hasDomainsStr = $hasDomains ? 'true' : 'false';
+                    $html .= '
+                        <li>
+                            <a class="dropdown-item" href="javascript:void(0)" 
+                               onclick="changePoolOrderStatus(' . $poolOrder->id . ', \'' . $currentStatus . '\', ' . $hasDomainsStr . ')">
+                                <i class="fa-solid fa-sync me-1"></i>Change Status
+                            </a>
+                        </li>';
+                }
             }
         }
 

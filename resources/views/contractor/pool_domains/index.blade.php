@@ -316,7 +316,7 @@
                             </select>
                         </div>
 
-                        <div class="alert alert-info small">
+                        <div class="alert alert-info small d-none">
                             <i class="fa fa-info-circle me-1"></i>
                             Note: Once an order is cancelled, its status cannot be changed.
                         </div>
@@ -671,12 +671,12 @@
                 if (hasDomains) {
                     statusSelect.append('<option value="completed">Completed</option>');
                 }
-                statusSelect.append('<option value="cancelled">Cancelled</option>');
-                statusSelect.val(hasDomains ? 'completed' : 'cancelled'); // Default based on domains
+                // statusSelect.append('<option value="cancelled">Cancelled</option>');
+                statusSelect.val(hasDomains ? 'completed' : ''); // Default based on domains
             } else if (currentStatus === 'pending') {
                 // When pending, show in-progress and cancelled options
                 statusSelect.append('<option value="in-progress">In Progress</option>');
-                statusSelect.append('<option value="cancelled">Cancelled</option>');
+                // statusSelect.append('<option value="cancelled">Cancelled</option>');
                 statusSelect.val('in-progress'); // Default to in-progress
             } else {
                 // For other statuses, show all options (respecting domain assignment for completed)
@@ -684,7 +684,7 @@
                 if (hasDomains) {
                     statusSelect.append('<option value="completed">Completed</option>');
                 }
-                statusSelect.append('<option value="cancelled">Cancelled</option>');
+                // statusSelect.append('<option value="cancelled">Cancelled</option>');
                 statusSelect.val(currentStatus);
             }
 
