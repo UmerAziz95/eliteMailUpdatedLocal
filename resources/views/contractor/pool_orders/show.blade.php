@@ -28,9 +28,9 @@
                 $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
             @endphp
             @if(in_array($currentStatus, $editableStatuses))
-            <a href="{{ route('contractor.pool-orders.edit', $poolOrder->id) }}" class="btn btn-sm btn-primary">
+            <!-- <a href="{{ route('contractor.pool-orders.edit', $poolOrder->id) }}" class="btn btn-sm btn-primary">
                 <i class="fa fa-edit me-1"></i> Edit Pool Order
-            </a>
+            </a> -->
             @endif
             <!-- @if(($poolOrder->status_manage_by_admin ?? $poolOrder->status) !== 'cancelled')
             <button class="btn btn-sm btn-danger" onclick="cancelPoolOrder({{ $poolOrder->id }})">
