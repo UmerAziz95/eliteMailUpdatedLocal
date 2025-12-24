@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Artisan;
 use Carbon\Carbon;
 use App\Services\ActivityLogService;
 use Illuminate\Support\Facades\Auth;
+use App\Jobs\ProvisionMailinForOrder;
 class OrderController extends Controller
 {
     private $statuses;
@@ -889,9 +890,11 @@ class OrderController extends Controller
                 }
             }
             // status is pending then pannelCreationAndOrderSplitOnPannels
-            if($status == 'pending'){
+            if($status == 'pending' && isset($order)){
                 // panel creation
                 // $this->pannelCreationAndOrderSplitOnPannels($order);
+
+                ProvisionMailinForOrder::dispatch($order->id);
             }
             // Create order tracking record at the end
             if($request->edit_id && $request->order_id) {
@@ -1861,4 +1864,3 @@ class OrderController extends Controller
         }
     }
 }
-

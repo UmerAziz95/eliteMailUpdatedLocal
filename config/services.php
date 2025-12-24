@@ -45,4 +45,22 @@ return [
         'api_version' => env('GHL_API_VERSION', '2021-07-28'),
     ],
 
+    'mailin' => [
+        'base_url' => env('MAILIN_BASE_URL'),
+        'email' => env('MAILIN_EMAIL'),
+        'password' => env('MAILIN_PASSWORD'),
+        'timeout' => env('MAILIN_TIMEOUT', 30),
+        'verify_ssl' => env('MAILIN_VERIFY_SSL', true),
+        'auth_endpoint' => env('MAILIN_AUTH_ENDPOINT', 'auth/login'),
+        'buy_domains_endpoint' => env('MAILIN_BUY_DOMAINS_ENDPOINT', 'domains/buy'),
+        'domain_status_endpoint' => env('MAILIN_DOMAIN_STATUS_ENDPOINT', 'domains/jobs'),
+        'list_domains_endpoint' => env('MAILIN_LIST_DOMAINS_ENDPOINT', 'domains'),
+        'create_mailboxes_endpoint' => env('MAILIN_CREATE_MAILBOXES_ENDPOINT', 'mailboxes/bulk'),
+        'mailbox_status_endpoint' => env('MAILIN_MAILBOX_STATUS_ENDPOINT', 'mailboxes/jobs'),
+        'list_mailboxes_endpoint' => env('MAILIN_LIST_MAILBOXES_ENDPOINT', 'mailboxes'),
+        'mailbox_chunk_size' => env('MAILIN_MAILBOX_CHUNK_SIZE', 50),
+        'auto_domain_tld' => env('MAILIN_AUTO_DOMAIN_TLD', 'mailin.ai'),
+        'auto_domain_prefix' => env('MAILIN_AUTO_DOMAIN_PREFIX', 'order-mailin'),
+    ],
+
 ];
