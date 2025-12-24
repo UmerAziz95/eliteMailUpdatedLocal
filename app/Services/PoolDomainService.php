@@ -352,6 +352,10 @@ class PoolDomainService
         // Always clear the global cache because it contains all data
         Cache::forget('pool_domains');
 
+        // Clear provider-specific caches (always, since bulk updates affect all providers)
+        Cache::forget('pool_domains_provider_Google');
+        Cache::forget('pool_domains_provider_Microsoft 365');
+
         // If specific user is involved, clear their cache
         if ($userId) {
             Cache::forget("pool_domains_user_{$userId}");
@@ -379,22 +383,15 @@ class PoolDomainService
      */
     private function clearAllPoolDomainCaches()
     {
-        // For Laravel, we need to use tags or clear specific keys
-        // Since we can't use wildcards easily, we'll track cache keys
+        // Clear all known cache keys explicitly
         $cacheKeys = [
             'pool_domains',
-            'pool_domains_user_*',
-            'pool_domains_pool_*'
+            'pool_domains_provider_Google',
+            'pool_domains_provider_Microsoft 365',
         ];
 
-        foreach ($cacheKeys as $pattern) {
-            if (str_contains($pattern, '*')) {
-                // For production, you might want to use cache tags
-                // For now, we'll clear the main cache
-                Cache::forget('pool_domains');
-            } else {
-                Cache::forget($pattern);
-            }
+        foreach ($cacheKeys as $key) {
+            Cache::forget($key);
         }
     }
 
