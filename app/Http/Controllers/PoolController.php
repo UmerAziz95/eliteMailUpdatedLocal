@@ -32,7 +32,7 @@ class PoolController extends Controller
         $startDate = Carbon::now();
         $warmingPeriodDays = (int) Configuration::get('POOL_WARMING_PERIOD', 21);
         $endDate = $startDate->copy()->addDays($warmingPeriodDays);
-        
+
         return [
             'start_date' => $startDate->format('Y-m-d'),
             'end_date' => $endDate->format('Y-m-d')
@@ -55,7 +55,7 @@ class PoolController extends Controller
 
         for ($i = 1; $i <= $inboxesPerDomain; $i++) {
             $prefixKey = "prefix_variant_{$i}";
-            
+
             // Preserve existing status if available, otherwise use defaults
             if ($existingPrefixStatuses && isset($existingPrefixStatuses[$prefixKey])) {
                 $prefixStatuses[$prefixKey] = [
@@ -112,10 +112,10 @@ class PoolController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'LIKE', "%{$search}%")
-                  ->orWhere('last_name', 'LIKE', "%{$search}%")
-                  ->orWhere('forwarding_url', 'LIKE', "%{$search}%")
-                  ->orWhere('hosting_platform', 'LIKE', "%{$search}%")
-                  ->orWhere('master_inbox_email', 'LIKE', "%{$search}%");
+                    ->orWhere('last_name', 'LIKE', "%{$search}%")
+                    ->orWhere('forwarding_url', 'LIKE', "%{$search}%")
+                    ->orWhere('hosting_platform', 'LIKE', "%{$search}%")
+                    ->orWhere('master_inbox_email', 'LIKE', "%{$search}%");
             });
         }
 
@@ -141,10 +141,10 @@ class PoolController extends Controller
     {
         $statusFilter = strtolower($statusFilter);
         $poolTable = (new Pool())->getTable();
-        
+
         // Old format: domains[*].status
         $jsonStatusesPath = "JSON_EXTRACT({$poolTable}.domains, '$[*].status')";
-        
+
         // New format: search in domains[*].prefix_statuses.*.status (all prefix variants)
         // We need to check if any prefix_statuses contains the target status
         $prefixStatusesPath = "JSON_EXTRACT({$poolTable}.domains, '$[*].prefix_statuses')";
@@ -153,20 +153,20 @@ class PoolController extends Controller
             $query->where(function ($q) use ($jsonStatusesPath, $prefixStatusesPath, $poolTable) {
                 // Check old format: domain-level status
                 $q->whereRaw("JSON_SEARCH({$jsonStatusesPath}, 'one', ?) IS NOT NULL", ['warming'])
-                  // Check new format: any prefix_statuses have 'warming' status
-                  ->orWhereRaw("JSON_SEARCH({$prefixStatusesPath}, 'one', ?) IS NOT NULL", ['warming'])
-                  // Fallback: admin-set status
-                  ->orWhereNull("{$poolTable}.status_manage_by_admin")
-                  ->orWhere("{$poolTable}.status_manage_by_admin", 'warming');
+                    // Check new format: any prefix_statuses have 'warming' status
+                    ->orWhereRaw("JSON_SEARCH({$prefixStatusesPath}, 'one', ?) IS NOT NULL", ['warming'])
+                    // Fallback: admin-set status
+                    ->orWhereNull("{$poolTable}.status_manage_by_admin")
+                    ->orWhere("{$poolTable}.status_manage_by_admin", 'warming');
             });
         } elseif ($statusFilter === 'available') {
             $query->where(function ($q) use ($jsonStatusesPath, $prefixStatusesPath, $poolTable) {
                 // Check old format: domain-level status
                 $q->whereRaw("JSON_SEARCH({$jsonStatusesPath}, 'one', ?) IS NOT NULL", ['available'])
-                  // Check new format: any prefix_statuses have 'available' status
-                  ->orWhereRaw("JSON_SEARCH({$prefixStatusesPath}, 'one', ?) IS NOT NULL", ['available'])
-                  // Fallback: admin-set status
-                  ->orWhere("{$poolTable}.status_manage_by_admin", 'available');
+                    // Check new format: any prefix_statuses have 'available' status
+                    ->orWhereRaw("JSON_SEARCH({$prefixStatusesPath}, 'one', ?) IS NOT NULL", ['available'])
+                    // Fallback: admin-set status
+                    ->orWhere("{$poolTable}.status_manage_by_admin", 'available');
             });
         }
     }
@@ -189,91 +189,91 @@ class PoolController extends Controller
                 $search = $request->search['value'];
                 $query->where(function ($q) use ($search) {
                     $q->where('id', 'LIKE', "%{$search}%")
-                      ->orWhere('first_name', 'LIKE', "%{$search}%")
-                      ->orWhere('last_name', 'LIKE', "%{$search}%")
-                      ->orWhere('forwarding_url', 'LIKE', "%{$search}%")
-                      ->orWhere('hosting_platform', 'LIKE', "%{$search}%")
-                      ->orWhere('sending_platform', 'LIKE', "%{$search}%")
-                      ->orWhere('master_inbox_email', 'LIKE', "%{$search}%")
-                      ->orWhereHas('user', function ($userQuery) use ($search) {
-                          $userQuery->where('name', 'LIKE', "%{$search}%");
-                      })
-                      ->orWhereHas('assignedTo', function ($assignedQuery) use ($search) {
-                          $assignedQuery->where('name', 'LIKE', "%{$search}%");
-                      });
+                        ->orWhere('first_name', 'LIKE', "%{$search}%")
+                        ->orWhere('last_name', 'LIKE', "%{$search}%")
+                        ->orWhere('forwarding_url', 'LIKE', "%{$search}%")
+                        ->orWhere('hosting_platform', 'LIKE', "%{$search}%")
+                        ->orWhere('sending_platform', 'LIKE', "%{$search}%")
+                        ->orWhere('master_inbox_email', 'LIKE', "%{$search}%")
+                        ->orWhereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->where('name', 'LIKE', "%{$search}%");
+                        })
+                        ->orWhereHas('assignedTo', function ($assignedQuery) use ($search) {
+                            $assignedQuery->where('name', 'LIKE', "%{$search}%");
+                        });
                 });
             }
 
             // Handle column sorting
-        if ($request->has('order')) {
-            $columnIndex = $request->order[0]['column'];
-            $sortDirection = $request->order[0]['dir'];
-            
-            $columns = [
-                0 => 'id',
-                1 => 'user.name',
-                3 => 'status',
-                4 => 'hosting_platform',
-                5 => 'sending_platform',
-                6 => 'total_inboxes',
-                7 => 'assignedTo.name',
-                9 => 'created_at'
-            ];
-            
-            if (isset($columns[$columnIndex])) {
-                $column = $columns[$columnIndex];
-                
-                if (strpos($column, '.') !== false) {
-                    // Handle relationship sorting
-                    $relation = explode('.', $column);
-                    $query->join($relation[0] === 'user' ? 'users' : 'users as assigned_users', function($join) use ($relation) {
-                        if ($relation[0] === 'user') {
-                            $join->on('pools.user_id', '=', 'users.id');
-                        } else {
-                            $join->on('pools.assigned_to', '=', 'assigned_users.id');
-                        }
-                    })->orderBy($relation[0] === 'user' ? 'users.name' : 'assigned_users.name', $sortDirection);
-                } else {
-                    $query->orderBy($column, $sortDirection);
+            if ($request->has('order')) {
+                $columnIndex = $request->order[0]['column'];
+                $sortDirection = $request->order[0]['dir'];
+
+                $columns = [
+                    0 => 'id',
+                    1 => 'user.name',
+                    3 => 'status',
+                    4 => 'hosting_platform',
+                    5 => 'sending_platform',
+                    6 => 'total_inboxes',
+                    7 => 'assignedTo.name',
+                    9 => 'created_at'
+                ];
+
+                if (isset($columns[$columnIndex])) {
+                    $column = $columns[$columnIndex];
+
+                    if (strpos($column, '.') !== false) {
+                        // Handle relationship sorting
+                        $relation = explode('.', $column);
+                        $query->join($relation[0] === 'user' ? 'users' : 'users as assigned_users', function ($join) use ($relation) {
+                            if ($relation[0] === 'user') {
+                                $join->on('pools.user_id', '=', 'users.id');
+                            } else {
+                                $join->on('pools.assigned_to', '=', 'assigned_users.id');
+                            }
+                        })->orderBy($relation[0] === 'user' ? 'users.name' : 'assigned_users.name', $sortDirection);
+                    } else {
+                        $query->orderBy($column, $sortDirection);
+                    }
                 }
+            } else {
+                $query->orderBy('created_at', 'desc');
             }
-        } else {
-            $query->orderBy('created_at', 'desc');
-        }
 
-        // Get total count before pagination
-        $totalRecords = Pool::count();
-        
-        // Clone query for counting filtered records (without pagination)
-        $countQuery = clone $query;
-        $filteredRecords = $countQuery->count();
+            // Get total count before pagination
+            $totalRecords = Pool::count();
 
-        // Handle pagination
-        $start = $request->start ?? 0;
-        $length = $request->length ?? 25;
-        
-        $pools = $query->skip($start)->take($length)->get();
+            // Clone query for counting filtered records (without pagination)
+            $countQuery = clone $query;
+            $filteredRecords = $countQuery->count();
 
-        // Format data for DataTable
-        $data = $pools->map(function ($pool) {
-            return [
-                'id' => $pool->id,
-                'user' => [
-                    'name' => $pool->user->name ?? 'N/A'
-                ],
-                'first_name' => $pool->first_name,
-                'last_name' => $pool->last_name,
-                'status' => $pool->status,
-                'status_manage_by_admin' => $pool->status_manage_by_admin ?? 'warming',
-                'hosting_platform' => $pool->hosting_platform,
-                'sending_platform' => $pool->sending_platform,
-                'total_inboxes' => $pool->total_inboxes,
-                'assigned_to_name' => $pool->assignedTo->name ?? null,
-                'is_internal' => $pool->is_internal,
-                'is_shared' => $pool->is_shared,
-                'created_at' => $pool->created_at->toISOString(),
-            ];
-        })->toArray();
+            // Handle pagination
+            $start = $request->start ?? 0;
+            $length = $request->length ?? 25;
+
+            $pools = $query->skip($start)->take($length)->get();
+
+            // Format data for DataTable
+            $data = $pools->map(function ($pool) {
+                return [
+                    'id' => $pool->id,
+                    'user' => [
+                        'name' => $pool->user->name ?? 'N/A'
+                    ],
+                    'first_name' => $pool->first_name,
+                    'last_name' => $pool->last_name,
+                    'status' => $pool->status,
+                    'status_manage_by_admin' => $pool->status_manage_by_admin ?? 'warming',
+                    'hosting_platform' => $pool->hosting_platform,
+                    'sending_platform' => $pool->sending_platform,
+                    'total_inboxes' => $pool->total_inboxes,
+                    'assigned_to_name' => $pool->assignedTo->name ?? null,
+                    'is_internal' => $pool->is_internal,
+                    'is_shared' => $pool->is_shared,
+                    'created_at' => $pool->created_at->toISOString(),
+                ];
+            })->toArray();
 
             return response()->json([
                 'draw' => intval($request->draw),
@@ -281,10 +281,10 @@ class PoolController extends Controller
                 'recordsFiltered' => $filteredRecords,
                 'data' => $data
             ]);
-            
+
         } catch (\Exception $e) {
             \Log::error('DataTable Error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'draw' => intval($request->draw ?? 0),
                 'recordsTotal' => 0,
@@ -313,19 +313,19 @@ class PoolController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        // Determine if this is SMTP mode
+        $isSmtpMode = $request->boolean('smtp_mode');
+
+        // Build validation rules based on mode
+        $rules = [
             'user_id' => 'required|exists:users,id',
             'plan_id' => 'nullable|exists:plans,id',
             'status' => 'in:pending,in_progress,completed,cancelled',
             'status_manage_by_admin' => 'nullable|in:warming,available',
             'amount' => 'nullable|numeric|min:0',
             'currency' => 'string|max:3',
-            // 'forwarding_url' => 'required|url',
             'hosting_platform' => 'required|string|max:255',
             'sending_platform' => 'required|string|max:255',
-            'domains' => 'required|json',
-            'total_inboxes' => 'nullable|integer|min:1',
-            'inboxes_per_domain' => 'required|integer|min:1|max:3',
             'first_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'master_inbox_email' => 'nullable|email',
@@ -339,7 +339,23 @@ class PoolController extends Controller
             'prefix_variants' => 'nullable|array',
             'prefix_variants_details' => 'nullable|array',
             'purchase_date' => 'required|date',
-        ]);
+        ];
+
+        // Add mode-specific validation rules
+        if ($isSmtpMode) {
+            // SMTP mode: require SMTP-specific fields, domains/inboxes come from CSV
+            $rules['smtp_provider_url'] = 'required|url|max:255';
+            $rules['smtp_accounts_data'] = 'required|json';
+            $rules['domains'] = 'nullable';
+            $rules['inboxes_per_domain'] = 'nullable|integer|min:1';
+        } else {
+            // Standard mode: require domains and inboxes_per_domain
+            $rules['domains'] = 'required|json';
+            $rules['total_inboxes'] = 'nullable|integer|min:1';
+            $rules['inboxes_per_domain'] = 'required|integer|min:1|max:3';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             if ($request->expectsJson()) {
@@ -352,17 +368,113 @@ class PoolController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
+
         try {
             $data = $request->all();
-            
-            // Handle domains JSON conversion and ensure unique id, is_used, prefix_statuses
-            if ($request->has('domains') && is_string($request->domains)) {
+
+            // Handle SMTP mode: process smtp_accounts_data
+            if ($isSmtpMode && $request->has('smtp_accounts_data')) {
+                $smtpData = json_decode($request->smtp_accounts_data, true);
+
+                if ($smtpData && isset($smtpData['accounts'])) {
+                    \Log::info('Creating SMTP Pool - Processing SMTP accounts data', [
+                        'total_accounts' => count($smtpData['accounts']),
+                        'unique_domains' => $smtpData['unique_domains'] ?? 0
+                    ]);
+
+                    // Build domains array from SMTP accounts
+                    $domainsFromCsv = [];
+                    $domainPrefixes = [];
+                    $warmingDates = $this->getDomainWarmingDates();
+
+                    // Group accounts by domain
+                    foreach ($smtpData['accounts'] as $account) {
+                        $domain = $account['domain'] ?? '';
+                        $prefix = $account['prefix'] ?? '';
+
+                        if (!isset($domainPrefixes[$domain])) {
+                            $domainPrefixes[$domain] = [];
+                        }
+                        if (!in_array($prefix, $domainPrefixes[$domain])) {
+                            $domainPrefixes[$domain][] = $prefix;
+                        }
+                    }
+
+                    // Build domains array with prefix_statuses
+                    $sequence = 1;
+                    foreach ($domainPrefixes as $domainName => $prefixes) {
+                        $prefixStatuses = [];
+                        $prefixIndex = 1;
+
+                        foreach ($prefixes as $prefix) {
+                            $prefixKey = "prefix_variant_{$prefixIndex}";
+                            $prefixStatuses[$prefixKey] = [
+                                'status' => 'warming',
+                                'start_date' => $warmingDates['start_date'],
+                                'end_date' => $warmingDates['end_date'],
+                                'prefix_value' => $prefix  // Store actual prefix value from CSV
+                            ];
+                            $prefixIndex++;
+                        }
+
+                        $domainsFromCsv[] = [
+                            'id' => 'smtp_' . $sequence++,
+                            'name' => $domainName,
+                            'is_used' => false,
+                            'prefix_statuses' => $prefixStatuses
+                        ];
+                    }
+
+                    $data['domains'] = $domainsFromCsv;
+                    $data['total_inboxes'] = count($smtpData['accounts']);
+                    $data['inboxes_per_domain'] = $smtpData['max_per_domain'] ?? 1;
+
+                    // Store SMTP-specific data
+                    $data['smtp_provider_url'] = $request->smtp_provider_url;
+                    $data['provider_type'] = 'SMTP';
+                    $data['smtp_accounts_data'] = $smtpData; // Store full CSV accounts data with all credentials
+
+                    // Store raw CSV file content and filename
+                    $data['smtp_csv_file'] = $request->smtp_csv_file ?? null;
+                    $data['smtp_csv_filename'] = $request->smtp_csv_filename ?? null;
+
+                    // Store prefix_variants from SMTP accounts
+                    $allPrefixes = [];
+                    foreach ($smtpData['accounts'] as $account) {
+                        if (!empty($account['prefix']) && !in_array($account['prefix'], $allPrefixes)) {
+                            $allPrefixes[] = $account['prefix'];
+                        }
+                    }
+                    $data['prefix_variants'] = array_slice($allPrefixes, 0, 3); // Max 3 variants
+
+                    // Store prefix_variants_details from first names/last names
+                    $prefixDetails = [];
+                    foreach ($smtpData['accounts'] as $index => $account) {
+                        $prefixKey = 'prefix_variant_' . (($index % 3) + 1);
+                        if (!isset($prefixDetails[$prefixKey])) {
+                            $prefixDetails[$prefixKey] = [
+                                'prefix' => $account['prefix'] ?? '',
+                                'first_name' => $account['first_name'] ?? '',
+                                'last_name' => $account['last_name'] ?? ''
+                            ];
+                        }
+                    }
+                    $data['prefix_variants_details'] = $prefixDetails;
+
+                    \Log::info('SMTP Pool - Domains built from CSV', [
+                        'domains_count' => count($domainsFromCsv),
+                        'total_inboxes' => $data['total_inboxes']
+                    ]);
+                }
+            }
+            // Handle standard domains JSON conversion and ensure unique id, is_used, prefix_statuses
+            elseif ($request->has('domains') && is_string($request->domains)) {
                 $domains = json_decode($request->domains, true);
                 $processedDomains = [];
                 $sequence = 1;
                 $warmingDates = $this->getDomainWarmingDates();
                 $inboxesPerDomain = (int) ($request->inboxes_per_domain ?? 1);
-                
+
                 foreach ($domains as $domain) {
                     // If domain is string, convert to object
                     if (is_string($domain)) {
@@ -374,18 +486,18 @@ class PoolController extends Controller
                         ];
                     } elseif (is_array($domain)) {
                         $isUsed = $domain['is_used'] ?? false;
-                        
+
                         // Build prefix_statuses - use existing if available, otherwise create new
                         $existingPrefixStatuses = $domain['prefix_statuses'] ?? null;
                         $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
-                        
+
                         // If domain is used, set all prefix statuses to in-progress
                         if ($isUsed) {
                             foreach ($prefixStatuses as $key => &$prefixStatus) {
                                 $prefixStatus['status'] = 'in-progress';
                             }
                         }
-                        
+
                         $processedDomains[] = [
                             'id' => $domain['id'] ?? ('new_' . $sequence++),
                             'name' => $domain['name'] ?? '',
@@ -425,26 +537,31 @@ class PoolController extends Controller
 
             $pool = Pool::create($data);
 
-            // Check if manual assignment data is provided
-            if ($request->has('manual_assignments') && !empty($request->manual_assignments)) {
-                // Use manual assignment service
-                try {
-                    $assignmentService = new ManualPanelAssignmentService();
-                    $assignmentService->processManualAssignments($pool, $request->manual_assignments);
-                    \Log::info('Manual panel assignment completed for pool ' . $pool->id);
-                } catch (\Exception $e) {
-                    \Log::error('Failed to manually assign panels for pool ' . $pool->id . ': ' . $e->getMessage());
-                    // Delete the pool if manual assignment fails
-                    $pool->delete();
-                    throw $e;
+            // Skip panel assignment for SMTP pools (SMTP doesn't use panel assignment)
+            if (!$isSmtpMode) {
+                // Check if manual assignment data is provided
+                if ($request->has('manual_assignments') && !empty($request->manual_assignments)) {
+                    // Use manual assignment service
+                    try {
+                        $assignmentService = new ManualPanelAssignmentService();
+                        $assignmentService->processManualAssignments($pool, $request->manual_assignments);
+                        \Log::info('Manual panel assignment completed for pool ' . $pool->id);
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to manually assign panels for pool ' . $pool->id . ': ' . $e->getMessage());
+                        // Delete the pool if manual assignment fails
+                        $pool->delete();
+                        throw $e;
+                    }
+                } else {
+                    // Use existing automatic assignment
+                    try {
+                        \Artisan::call('pool:assigned-panel');
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to auto-assign panel for pool ' . $pool->id . ': ' . $e->getMessage());
+                    }
                 }
             } else {
-                // Use existing automatic assignment
-                try {
-                    \Artisan::call('pool:assigned-panel');
-                } catch (\Exception $e) {
-                    \Log::error('Failed to auto-assign panel for pool ' . $pool->id . ': ' . $e->getMessage());
-                }
+                \Log::info('SMTP Pool created - skipping panel assignment', ['pool_id' => $pool->id]);
             }
 
 
@@ -483,7 +600,7 @@ class PoolController extends Controller
             'assignedTo',     // User assigned to this pool
             'plan'            // Associated plan if any
         ]);
-        
+
         return view('admin.pools.show', compact('pool'));
     }
 
@@ -496,24 +613,24 @@ class PoolController extends Controller
         $plans = Plan::all(); // Get all plans for edit form
         $hostingPlatforms = HostingPlatform::where('is_active', true)->orderBy('sort_order')->get();
         $sendingPlatforms = SendingPlatform::orderBy('name')->get();
-        
+
         // Self-Healing Logic: Fix "stuck" locked domains that are actually available
         try {
             $currentDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
-            
+
             if (is_array($currentDomains)) {
                 $hasFixes = false;
                 $fixedDomains = [];
-                
+
                 foreach ($currentDomains as $d) {
                     if (!is_array($d)) {
                         $fixedDomains[] = $d;
                         continue;
                     }
-                    
+
                     $isUsed = $d['is_used'] ?? false;
                     $status = $d['status'] ?? 'warming'; // Legacy status
-                    
+
                     // Check for granular prefix statuses (new format)
                     $hasActivePrefixes = false;
                     if (isset($d['prefix_statuses']) && is_array($d['prefix_statuses'])) {
@@ -530,25 +647,25 @@ class PoolController extends Controller
                             $hasActivePrefixes = true;
                         }
                     }
-                    
+
                     // Logic: If marked is_used=true, but NO active prefixes/status found -> Unlock it
                     if ($isUsed && !$hasActivePrefixes) {
                         $d['is_used'] = false;
                         $hasFixes = true;
                     }
-                    
+
                     $fixedDomains[] = $d;
                 }
-                
+
                 if ($hasFixes) {
                     // Update DB directly to preserve the fix
                     DB::table('pools')->where('id', $pool->id)->update([
                         'domains' => json_encode($fixedDomains)
                     ]);
-                    
+
                     // Update the model instance for the view
                     $pool->domains = $fixedDomains;
-                    
+
                     \Log::info("PoolController@edit: Self-healed locked domains for Pool ID {$pool->id}");
                 }
             }
@@ -611,13 +728,13 @@ class PoolController extends Controller
                 $domains = json_decode($request->domains, true);
                 $existingDomains = is_array($pool->domains) ? $pool->domains : [];
                 $inboxesPerDomain = (int) ($request->inboxes_per_domain ?? $pool->inboxes_per_domain ?? 1);
-                
+
                 // CRITICAL: Create protected list of all existing domain IDs that MUST NOT change
                 $protectedDomainIds = [];
                 $existingDomainMapByName = [];
                 $existingDomainMapById = [];
                 $existingDomainsByIndex = []; // Map by position to handle reordering
-                
+
                 foreach ($existingDomains as $index => $domain) {
                     if (isset($domain['name']) && isset($domain['id'])) {
                         $protectedDomainIds[] = $domain['id']; // LOCK this ID
@@ -626,7 +743,7 @@ class PoolController extends Controller
                         $existingDomainsByIndex[$index] = $domain;
                     }
                 }
-                
+
                 // Log for debugging
                 \Log::info('Domain Update - ABSOLUTE ID PROTECTION with prefix_statuses', [
                     'pool_id' => $pool->id,
@@ -635,38 +752,38 @@ class PoolController extends Controller
                     'submitted_domains_count' => count($domains),
                     'inboxes_per_domain' => $inboxesPerDomain
                 ]);
-                
+
                 $processedDomains = [];
                 $submittedDomainIds = [];
                 $newDomainSequence = 1;
                 $usedProtectedIds = []; // Track which protected IDs have been used
-                
+
                 // ABSOLUTE DOMAIN ID PRESERVATION ALGORITHM with prefix_statuses
                 // Process each submitted domain with GUARANTEED ID preservation
                 $warmingDates = $this->getDomainWarmingDates();
-                
+
                 foreach ($domains as $domainIndex => $domain) {
                     $domainData = null;
-                    
+
                     if (is_string($domain)) {
                         $domainName = trim($domain);
-                        
+
                         // Priority 1: Exact name match (no change)
                         if (isset($existingDomainMapByName[$domainName])) {
                             $existingDomain = $existingDomainMapByName[$domainName];
                             $isUsed = $existingDomain['is_used'] ?? false;
-                            
+
                             // Preserve or build prefix_statuses
                             $existingPrefixStatuses = $existingDomain['prefix_statuses'] ?? null;
                             $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
-                            
+
                             // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
                                 foreach ($prefixStatuses as $key => &$prefixStatus) {
                                     $prefixStatus['status'] = 'in-progress';
                                 }
                             }
-                            
+
                             $domainData = [
                                 'id' => $existingDomain['id'],
                                 'name' => $domainName,
@@ -679,18 +796,18 @@ class PoolController extends Controller
                         elseif (isset($existingDomainsByIndex[$domainIndex]) && !in_array($existingDomainsByIndex[$domainIndex]['id'], $usedProtectedIds)) {
                             $existingAtPosition = $existingDomainsByIndex[$domainIndex];
                             $isUsed = $existingAtPosition['is_used'] ?? false;
-                            
+
                             // Preserve or build prefix_statuses
                             $existingPrefixStatuses = $existingAtPosition['prefix_statuses'] ?? null;
                             $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
-                            
+
                             // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
                                 foreach ($prefixStatuses as $key => &$prefixStatus) {
                                     $prefixStatus['status'] = 'in-progress';
                                 }
                             }
-                            
+
                             $domainData = [
                                 'id' => $existingAtPosition['id'], // FORCE preserve existing ID
                                 'name' => $domainName,
@@ -698,10 +815,10 @@ class PoolController extends Controller
                                 'prefix_statuses' => $prefixStatuses
                             ];
                             $usedProtectedIds[] = $existingAtPosition['id'];
-                            
+
                             \Log::info('ABSOLUTE PROTECTION: Domain renamed with prefix_statuses', [
                                 'position' => $domainIndex,
-                                'old_name' => $existingAtPosition['name'], 
+                                'old_name' => $existingAtPosition['name'],
                                 'new_name' => $domainName,
                                 'PROTECTED_ID' => $existingAtPosition['id']
                             ]);
@@ -715,34 +832,33 @@ class PoolController extends Controller
                                 'prefix_statuses' => $this->buildPrefixStatuses($inboxesPerDomain, null, $warmingDates)
                             ];
                         }
-                    }
-                    elseif (is_array($domain)) {
+                    } elseif (is_array($domain)) {
                         $domainName = trim($domain['name'] ?? '');
-                        
+
                         // If domain comes with an ID, verify it's a protected ID
                         if (isset($domain['id']) && in_array($domain['id'], $protectedDomainIds)) {
                             // This is a protected ID - ABSOLUTELY preserve it
                             $existingDomain = $existingDomainMapById[$domain['id']];
                             $isUsed = $domain['is_used'] ?? $existingDomain['is_used'] ?? false;
-                            
+
                             // Handle prefix_statuses - preserve existing or use submitted
                             $existingPrefixStatuses = $existingDomain['prefix_statuses'] ?? null;
                             $submittedPrefixStatuses = $domain['prefix_statuses'] ?? null;
-                            
+
                             // If submitted prefix_statuses exist, use them; otherwise build from existing
                             if ($submittedPrefixStatuses) {
                                 $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $submittedPrefixStatuses, $warmingDates);
                             } else {
                                 $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
                             }
-                            
+
                             // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
                                 foreach ($prefixStatuses as $key => &$prefixStatus) {
                                     $prefixStatus['status'] = 'in-progress';
                                 }
                             }
-                            
+
                             $domainData = [
                                 'id' => $domain['id'], // PROTECTED - NEVER change
                                 'name' => $domainName,
@@ -750,7 +866,7 @@ class PoolController extends Controller
                                 'prefix_statuses' => $prefixStatuses
                             ];
                             $usedProtectedIds[] = $domain['id'];
-                            
+
                             \Log::info('ABSOLUTE PROTECTION: Protected ID preserved with prefix_statuses', [
                                 'PROTECTED_ID' => $domain['id'],
                                 'old_name' => $existingDomain['name'],
@@ -761,24 +877,24 @@ class PoolController extends Controller
                         elseif (isset($domain['original_id']) && in_array($domain['original_id'], $protectedDomainIds)) {
                             $existingDomain = $existingDomainMapById[$domain['original_id']];
                             $isUsed = $domain['is_used'] ?? $existingDomain['is_used'] ?? false;
-                            
+
                             // Handle prefix_statuses
                             $existingPrefixStatuses = $existingDomain['prefix_statuses'] ?? null;
                             $submittedPrefixStatuses = $domain['prefix_statuses'] ?? null;
-                            
+
                             if ($submittedPrefixStatuses) {
                                 $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $submittedPrefixStatuses, $warmingDates);
                             } else {
                                 $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
                             }
-                            
+
                             // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
                                 foreach ($prefixStatuses as $key => &$prefixStatus) {
                                     $prefixStatus['status'] = 'in-progress';
                                 }
                             }
-                            
+
                             $domainData = [
                                 'id' => $domain['original_id'], // PROTECTED - use original ID
                                 'name' => $domainName,
@@ -791,24 +907,24 @@ class PoolController extends Controller
                         elseif (isset($existingDomainMapByName[$domainName])) {
                             $existingDomain = $existingDomainMapByName[$domainName];
                             $isUsed = $domain['is_used'] ?? $existingDomain['is_used'] ?? false;
-                            
+
                             // Handle prefix_statuses
                             $existingPrefixStatuses = $existingDomain['prefix_statuses'] ?? null;
                             $submittedPrefixStatuses = $domain['prefix_statuses'] ?? null;
-                            
+
                             if ($submittedPrefixStatuses) {
                                 $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $submittedPrefixStatuses, $warmingDates);
                             } else {
                                 $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
                             }
-                            
+
                             // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
                                 foreach ($prefixStatuses as $key => &$prefixStatus) {
                                     $prefixStatus['status'] = 'in-progress';
                                 }
                             }
-                            
+
                             $domainData = [
                                 'id' => $existingDomain['id'],
                                 'name' => $domainName,
@@ -821,24 +937,24 @@ class PoolController extends Controller
                         elseif (isset($existingDomainsByIndex[$domainIndex]) && !in_array($existingDomainsByIndex[$domainIndex]['id'], $usedProtectedIds)) {
                             $existingAtPosition = $existingDomainsByIndex[$domainIndex];
                             $isUsed = $domain['is_used'] ?? $existingAtPosition['is_used'] ?? false;
-                            
+
                             // Handle prefix_statuses
                             $existingPrefixStatuses = $existingAtPosition['prefix_statuses'] ?? null;
                             $submittedPrefixStatuses = $domain['prefix_statuses'] ?? null;
-                            
+
                             if ($submittedPrefixStatuses) {
                                 $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $submittedPrefixStatuses, $warmingDates);
                             } else {
                                 $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $existingPrefixStatuses, $warmingDates);
                             }
-                            
+
                             // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
                                 foreach ($prefixStatuses as $key => &$prefixStatus) {
                                     $prefixStatus['status'] = 'in-progress';
                                 }
                             }
-                            
+
                             $domainData = [
                                 'id' => $existingAtPosition['id'], // FORCE preserve existing ID
                                 'name' => $domainName,
@@ -851,14 +967,14 @@ class PoolController extends Controller
                         else {
                             $isUsed = $domain['is_used'] ?? false;
                             $prefixStatuses = $this->buildPrefixStatuses($inboxesPerDomain, $domain['prefix_statuses'] ?? null, $warmingDates);
-                            
+
                             // If domain is used, set all prefix statuses to in-progress
                             if ($isUsed) {
                                 foreach ($prefixStatuses as $key => &$prefixStatus) {
                                     $prefixStatus['status'] = 'in-progress';
                                 }
                             }
-                            
+
                             $domainData = [
                                 'id' => isset($domain['id']) ? $domain['id'] : ($pool->id . '_new_' . $newDomainSequence++),
                                 'name' => $domainName,
@@ -867,13 +983,13 @@ class PoolController extends Controller
                             ];
                         }
                     }
-                    
+
                     if ($domainData) {
                         $processedDomains[] = $domainData;
                         $submittedDomainIds[] = $domainData['id'];
                     }
                 }
-                
+
                 // Second, preserve any existing domains that are marked as "is_used" = true
                 // even if they weren't submitted in the form (like missing 1008_3, 1008_4)
                 foreach ($existingDomains as $existingDomain) {
@@ -885,18 +1001,18 @@ class PoolController extends Controller
                             foreach ($prefixStatuses as $key => &$prefixStatus) {
                                 $prefixStatus['status'] = 'in-progress';
                             }
-                            
+
                             $existingDomain['prefix_statuses'] = $prefixStatuses;
                             $processedDomains[] = $existingDomain;
                         }
                     }
                 }
-                
+
                 // FINAL VERIFICATION: Check that NO protected IDs were changed
                 $finalDomainIds = array_column($processedDomains, 'id');
                 $changedIds = array_diff($protectedDomainIds, $finalDomainIds);
                 $newIds = array_diff($finalDomainIds, $protectedDomainIds);
-                
+
                 \Log::info('ABSOLUTE PROTECTION - FINAL VERIFICATION with prefix_statuses', [
                     'pool_id' => $pool->id,
                     'original_protected_ids' => $protectedDomainIds,
@@ -906,7 +1022,7 @@ class PoolController extends Controller
                     'processed_domains_count' => count($processedDomains),
                     'SUCCESS' => empty($changedIds) ? 'ALL_IDS_PRESERVED' : 'SOME_IDS_LOST'
                 ]);
-                
+
                 // Double-check: make sure all existing domain IDs are still present
                 foreach ($protectedDomainIds as $protectedId) {
                     if (!in_array($protectedId, $finalDomainIds)) {
@@ -918,7 +1034,7 @@ class PoolController extends Controller
                         ]);
                     }
                 }
-                
+
                 $data['domains'] = $processedDomains;
             }
 
@@ -1008,10 +1124,10 @@ class PoolController extends Controller
         try {
             // Get provider type from Configuration table (same as auto-assignment command)
             $providerType = Configuration::get('PROVIDER_TYPE', 'Google');
-            
+
             $assignmentService = new ManualPanelAssignmentService();
             $panels = $assignmentService->getAvailablePanels($providerType);
-            
+
             return response()->json([
                 'success' => true,
                 'panels' => $panels,
@@ -1035,10 +1151,10 @@ class PoolController extends Controller
         try {
             $poolData = $request->input('pool_data', []);
             $assignments = $request->input('manual_assignments', []);
-            
+
             $assignmentService = new ManualPanelAssignmentService();
             $validation = $assignmentService->validateManualAssignments($poolData, $assignments);
-            
+
             return response()->json($validation);
         } catch (\Exception $e) {
             \Log::error('Failed to validate manual assignments: ' . $e->getMessage());
@@ -1057,7 +1173,7 @@ class PoolController extends Controller
     {
         try {
             $panel = PoolPanel::findOrFail($panelId);
-            
+
             return response()->json([
                 'success' => true,
                 'panel' => [
@@ -1209,7 +1325,7 @@ class PoolController extends Controller
         try {
             // Here you can implement your capacity check logic
             // For now, just return a success response
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Capacity check completed successfully',
@@ -1248,7 +1364,7 @@ class PoolController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-            
+
             $adminId = Auth::id();
             $newProviderType = $request->input('provider_type');
             $reason = $request->input('reason');
@@ -1256,7 +1372,7 @@ class PoolController extends Controller
             // Find the pool
             $pool = Pool::with(['poolPanelSplits'])->findOrFail($poolId);
             $oldProviderType = $pool->provider_type;
-            
+
             if ($oldProviderType === $newProviderType) {
                 return response()->json([
                     'success' => false,
@@ -1276,20 +1392,20 @@ class PoolController extends Controller
             }
 
             $splitResetService = app(PoolSplitResetService::class);
-            
+
             // Perform the change in a transaction
             $splitCleanup = DB::transaction(function () use ($pool, $newProviderType, $splitResetService, $adminId, $reason) {
                 // Clear existing splits first
                 $cleanupResult = $splitResetService->resetOrderSplits($pool, $adminId, $reason, false);
-                
+
                 // Update provider type
                 $pool->provider_type = $newProviderType;
                 $pool->save();
 
                 return $cleanupResult;
             });
-            
-            $pool->update(['status'=> 'pending','is_splitting'=>0]);
+
+            $pool->update(['status' => 'pending', 'is_splitting' => 0]);
             // Call capacity check command
             \Artisan::call('pool:assigned-panel', [
                 '--provider' => $newProviderType
@@ -1311,7 +1427,7 @@ class PoolController extends Controller
                 ],
                 $adminId
             );
-            
+
             // Create notification for customer if applicable
             if ($pool->user_id) {
                 Notification::create([
@@ -1328,7 +1444,7 @@ class PoolController extends Controller
                     ]
                 ]);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => "Provider type successfully changed from '{$oldProviderType}' to '{$newProviderType}'",
@@ -1339,16 +1455,16 @@ class PoolController extends Controller
                     'reason' => $reason
                 ]
             ]);
-            
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
             ], 422);
-            
+
         } catch (Exception $e) {
             Log::error("Error in changeProviderType for pool {$poolId}: " . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to change provider type: ' . $e->getMessage()

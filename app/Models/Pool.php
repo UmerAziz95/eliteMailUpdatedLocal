@@ -13,7 +13,7 @@ class Pool extends Model
         // Common columns
         'user_id',
         'plan_id',
-        
+
         // Orders columns
         'chargebee_invoice_id',
         'chargebee_customer_id',
@@ -40,7 +40,7 @@ class Pool extends Model
         'shared_note',
         'reassignment_note',
         'assigned_to',
-        
+
         // ReorderInfo columns
         'forwarding_url',
         'hosting_platform',
@@ -73,7 +73,11 @@ class Pool extends Model
         'coupon_code',
         'purchase_date',
         'is_splitting',
-        'provider_type', // Provider type for panel assignment (Google, Microsoft 365, etc.)
+        'provider_type', // Provider type for panel assignment (Google, Microsoft 365, SMTP, etc.)
+        'smtp_provider_url', // SMTP provider URL when provider_type is SMTP
+        'smtp_accounts_data', // Full SMTP accounts data from CSV
+        'smtp_csv_file', // Raw CSV file content
+        'smtp_csv_filename', // Original CSV filename
     ];
 
     protected $casts = [
@@ -82,6 +86,7 @@ class Pool extends Model
         'domains' => 'array',
         'prefix_variants' => 'array',
         'prefix_variants_details' => 'array',
+        'smtp_accounts_data' => 'array',
         'last_draft_notification_sent_at' => 'datetime',
         'completed_at' => 'datetime',
         'timer_started_at' => 'datetime',
@@ -124,17 +129,17 @@ class Pool extends Model
         if (empty($this->helpers_ids)) {
             return collect();
         }
-        
+
         return User::whereIn('id', $this->helpers_ids)->get();
     }
-    
+
     // Get helper users as a method (not a relationship)
     public function getHelperUsers()
     {
         if (empty($this->helpers_ids)) {
             return collect();
         }
-        
+
         return User::whereIn('id', $this->helpers_ids)->get();
     }
 
