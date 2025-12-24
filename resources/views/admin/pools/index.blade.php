@@ -36,22 +36,22 @@
         }
 
         /* .table-responsive {
-                                            border-radius: 12px;
-                                            overflow: hidden;
-                                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                                        } */
+                                                border-radius: 12px;
+                                                overflow: hidden;
+                                                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                                            } */
 
 
         /* .action-buttons {
-                                            display: flex;
-                                            gap: 0.25rem;
-                                            justify-content: center;
-                                        }
+                                                display: flex;
+                                                gap: 0.25rem;
+                                                justify-content: center;
+                                            }
 
-                                        .action-buttons .btn {
-                                            padding: 0.375rem 0.5rem;
-                                            font-size: 0.75rem;
-                                        } */
+                                            .action-buttons .btn {
+                                                padding: 0.375rem 0.5rem;
+                                                font-size: 0.75rem;
+                                            } */
 
         .badge-type {
             font-size: 0.625rem;
@@ -130,20 +130,26 @@
         </div>
 
         <!-- Bulk Action Bar (hidden until items selected) -->
-        <div id="bulkActionBar" class="alert alert-info d-none align-items-center justify-content-between mb-3">
-            <div>
-                <i class="fa fa-check-circle me-2"></i>
+        <div id="bulkActionBar" class="card d-none align-items-center justify-content-between mb-3 px-4 py-3 flex-row"
+            style="border: 1px solid var(--second-primary); background: linear-gradient(135deg, rgba(74, 58, 255, 0.15), rgba(74, 58, 255, 0.05));">
+            <div class="d-flex align-items-center">
+                <i class="fa fa-check-circle me-2" style="color: var(--second-primary);"></i>
                 <span id="selectedCount">0</span> email account(s) selected
             </div>
-            <div>
-                <button type="button" class="btn btn-success btn-sm me-2" onclick="openBulkUpdateModal('extend')">
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm" style="background-color: var(--second-primary); color: #fff;"
+                    onclick="openBulkUpdateModal('extend')">
                     <i class="fa fa-plus me-1"></i>Extend Days
                 </button>
-                <button type="button" class="btn btn-warning btn-sm me-2" onclick="openBulkUpdateModal('reduce')">
+                <button type="button" class="btn btn-sm"
+                    style="background-color: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid #ffc107;"
+                    onclick="openBulkUpdateModal('reduce')">
                     <i class="fa fa-minus me-1"></i>Reduce Days
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllSelections()">
-                    <i class="fa fa-times me-1"></i>Clear Selection
+                <button type="button" class="btn btn-sm"
+                    style="background-color: transparent; color: var(--light-color); border: 1px solid var(--input-border);"
+                    onclick="clearAllSelections()">
+                    <i class="fa fa-times me-1"></i>Clear
                 </button>
             </div>
         </div>
@@ -443,12 +449,12 @@
                     },
                     language: {
                         emptyTable: `
-                                                        <div class="text-center py-4">
-                                                            <i class="fa ${config.emptyIcon} fs-1 ${config.emptyColor} mb-3"></i>
-                                                            <h5 class="">No ${config.status} email accounts found</h5>
-                                                            <p class="">All ${config.status} email accounts will appear here.</p>
-                                                        </div>
-                                                    `
+                                                            <div class="text-center py-4">
+                                                                <i class="fa ${config.emptyIcon} fs-1 ${config.emptyColor} mb-3"></i>
+                                                                <h5 class="">No ${config.status} email accounts found</h5>
+                                                                <p class="">All ${config.status} email accounts will appear here.</p>
+                                                            </div>
+                                                        `
                     },
                     drawCallback: function () {
                         $('[data-bs-toggle="tooltip"]').tooltip();
@@ -479,10 +485,10 @@
                         const key = `${row.pool_id}-${row.domain_id}-${row.prefix_key}`;
                         const checked = selectedItems.has(key) ? 'checked' : '';
                         return `<input type="checkbox" class="row-checkbox" 
-                                    data-pool-id="${row.pool_id}" 
-                                    data-domain-id="${row.domain_id}" 
-                                    data-prefix-key="${row.prefix_key}" 
-                                    ${checked} />`;
+                                        data-pool-id="${row.pool_id}" 
+                                        data-domain-id="${row.domain_id}" 
+                                        data-prefix-key="${row.prefix_key}" 
+                                        ${checked} />`;
                     }
                 },
                 {
@@ -490,11 +496,11 @@
                     name: 'pool_id',
                     render: function (data, type, row) {
                         return `
-                                                        <a href="/admin/pools/${data}" class="text-primary text-decoration-none">
-                                                            <i class="ti ti-hash fs-6 opacity-50"></i>
-                                                            <span>${data}</span>
-                                                        </a>
-                                                    `;
+                                                            <a href="/admin/pools/${data}" class="text-primary text-decoration-none">
+                                                                <i class="ti ti-hash fs-6 opacity-50"></i>
+                                                                <span>${data}</span>
+                                                            </a>
+                                                        `;
                     }
                 },
                 {
@@ -502,11 +508,11 @@
                     name: 'created_by',
                     render: function (data, type, row) {
                         return `
-                                                        <div class="d-flex gap-1 align-items-center">
-                                                            <i class="ti ti-user fs-6 opacity-50"></i>
-                                                            <span>${data || 'N/A'}</span>
-                                                        </div>
-                                                    `;
+                                                            <div class="d-flex gap-1 align-items-center">
+                                                                <i class="ti ti-user fs-6 opacity-50"></i>
+                                                                <span>${data || 'N/A'}</span>
+                                                            </div>
+                                                        `;
                     }
                 },
                 {
@@ -531,10 +537,10 @@
                         }
 
                         return `
-                                                        <span class="status-badge ${badgeClass}">
-                                                            <i class="fa ${icon} me-1"></i>${data || 'Unknown'}
-                                                        </span>
-                                                    `;
+                                                            <span class="status-badge ${badgeClass}">
+                                                                <i class="fa ${icon} me-1"></i>${data || 'Unknown'}
+                                                            </span>
+                                                        `;
                     }
                 },
                 {
@@ -546,11 +552,11 @@
                         const email = prefix && domain ? `${prefix}@${domain}` : domain;
 
                         return `
-                                                        <div class="d-flex gap-1 align-items-center">
-                                                            <i class="ti ti-mail fs-6 opacity-50"></i>
-                                                            <span>${email || '-'}</span>
-                                                        </div>
-                                                    `;
+                                                            <div class="d-flex gap-1 align-items-center">
+                                                                <i class="ti ti-mail fs-6 opacity-50"></i>
+                                                                <span>${email || '-'}</span>
+                                                            </div>
+                                                        `;
                     }
                 },
                 {
@@ -565,11 +571,11 @@
                             day: 'numeric'
                         });
                         return `
-                                                        <div class="d-flex gap-1 align-items-center opacity-75">
-                                                            <i class="ti ti-calendar-month fs-6"></i>
-                                                            <span>${date}</span>
-                                                        </div>
-                                                    `;
+                                                            <div class="d-flex gap-1 align-items-center opacity-75">
+                                                                <i class="ti ti-calendar-month fs-6"></i>
+                                                                <span>${date}</span>
+                                                            </div>
+                                                        `;
                     }
                 }
             ];
@@ -603,9 +609,9 @@
                             alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
                             alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
                             alert.innerHTML = `
-                                                        <i class="fas fa-check-circle me-2"></i>Pool deleted successfully!
-                                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                                    `;
+                                                            <i class="fas fa-check-circle me-2"></i>Pool deleted successfully!
+                                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                                        `;
                             document.body.appendChild(alert);
 
                             setTimeout(() => {
@@ -725,9 +731,9 @@
 
                     // Show success message
                     const alertDiv = $(`<div class="alert alert-success alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-                                <i class="fas fa-check-circle me-2"></i>${response.message}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>`);
+                                    <i class="fas fa-check-circle me-2"></i>${response.message}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>`);
                     $('body').append(alertDiv);
                     setTimeout(() => alertDiv.remove(), 5000);
                 },
