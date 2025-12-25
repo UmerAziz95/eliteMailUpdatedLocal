@@ -418,7 +418,7 @@ class PoolController extends Controller
                         }
 
                         $domainsFromCsv[] = [
-                            'id' => 'smtp_' . $sequence++,
+                            'id' => 'new_' . $sequence++,  // Use 'new_' prefix to match standard pool format
                             'name' => $domainName,
                             'is_used' => false,
                             'prefix_statuses' => $prefixStatuses
@@ -438,25 +438,34 @@ class PoolController extends Controller
                     $data['smtp_csv_file'] = $request->smtp_csv_file ?? null;
                     $data['smtp_csv_filename'] = $request->smtp_csv_filename ?? null;
 
-                    // Store prefix_variants from SMTP accounts
+                    // Store prefix_variants in standard format: {"prefix_variant_1": "bob", "prefix_variant_2": "eva", ...}
                     $allPrefixes = [];
                     foreach ($smtpData['accounts'] as $account) {
                         if (!empty($account['prefix']) && !in_array($account['prefix'], $allPrefixes)) {
                             $allPrefixes[] = $account['prefix'];
                         }
                     }
-                    $data['prefix_variants'] = array_slice($allPrefixes, 0, 3); // Max 3 variants
+                    // Build prefix_variants as JSON object with keys prefix_variant_1, prefix_variant_2, etc.
+                    $prefixVariants = [];
+                    foreach (array_slice($allPrefixes, 0, 3) as $index => $prefix) {
+                        $prefixVariants['prefix_variant_' . ($index + 1)] = $prefix;
+                    }
+                    $data['prefix_variants'] = $prefixVariants;
 
-                    // Store prefix_variants_details from first names/last names
+                    // Store prefix_variants_details in standard format
                     $prefixDetails = [];
-                    foreach ($smtpData['accounts'] as $index => $account) {
-                        $prefixKey = 'prefix_variant_' . (($index % 3) + 1);
-                        if (!isset($prefixDetails[$prefixKey])) {
+                    $usedPrefixes = [];
+                    foreach ($smtpData['accounts'] as $account) {
+                        $prefix = $account['prefix'] ?? '';
+                        if (!empty($prefix) && !in_array($prefix, $usedPrefixes) && count($prefixDetails) < 3) {
+                            $prefixKey = 'prefix_variant_' . (count($prefixDetails) + 1);
                             $prefixDetails[$prefixKey] = [
-                                'prefix' => $account['prefix'] ?? '',
-                                'first_name' => $account['first_name'] ?? '',
-                                'last_name' => $account['last_name'] ?? ''
+                                'first_name' => $account['first_name'] ?? null,
+                                'last_name' => $account['last_name'] ?? null,
+                                'profile_link' => null,
+                                'password' => $account['password'] ?? null
                             ];
+                            $usedPrefixes[] = $prefix;
                         }
                     }
                     $data['prefix_variants_details'] = $prefixDetails;
@@ -512,13 +521,13 @@ class PoolController extends Controller
             \Log::info('Creating Pool - Domains Processed', [
                 'domains' => $data['domains']
             ]);
-            // Handle prefix variants JSON conversion
-            if ($request->has('prefix_variants') && is_array($request->prefix_variants)) {
+            // Handle prefix variants JSON conversion (skip if SMTP mode - already set from CSV)
+            if (!$isSmtpMode && $request->has('prefix_variants') && is_array($request->prefix_variants)) {
                 $data['prefix_variants'] = $request->prefix_variants;
             }
 
-            // Handle prefix variants details JSON conversion
-            if ($request->has('prefix_variants_details') && is_array($request->prefix_variants_details)) {
+            // Handle prefix variants details JSON conversion (skip if SMTP mode - already set from CSV)
+            if (!$isSmtpMode && $request->has('prefix_variants_details') && is_array($request->prefix_variants_details)) {
                 $data['prefix_variants_details'] = $request->prefix_variants_details;
             }
 

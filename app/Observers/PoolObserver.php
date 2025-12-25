@@ -31,18 +31,18 @@ class PoolObserver
             foreach ($domains as &$domain) {
                 if (isset($domain['id'])) {
                     $currentId = $domain['id'];
-                    
+
                     // Check if this is a timestamp-based temporary ID
                     // Conditions: numeric, very large (13+ digits), or contains timestamp pattern
                     if ($this->isTemporaryTimestampId($currentId)) {
                         // Extract the sequence number if it exists (format: timestamp_sequence)
                         $parts = explode('_', $currentId);
                         $sequence = count($parts) > 1 ? $parts[1] : '1';
-                        
+
                         // Replace with actual pool ID format: poolId_sequence
                         $domain['id'] = $pool->id . '_' . $sequence;
                         $updated = true;
-                        
+
                         \Log::info("PoolObserver: Updated domain ID from '{$currentId}' to '{$domain['id']}' for pool {$pool->id}");
                     }
                 }
@@ -54,7 +54,7 @@ class PoolObserver
                     // Update the domains field without triggering observers again
                     // Use updateQuietly to prevent recursion
                     $pool->updateQuietly(['domains' => $domains]);
-                    
+
                     \Log::info("PoolObserver: Successfully updated domain IDs for pool {$pool->id}");
                 } catch (\Exception $e) {
                     \Log::error("PoolObserver: Failed to update domain IDs for pool {$pool->id}: " . $e->getMessage());
@@ -76,15 +76,20 @@ class PoolObserver
     {
         // Convert to string to handle numeric values
         $idStr = (string) $id;
-        
+
+        // Check if it starts with 'new_' prefix (used for newly created domains including SMTP)
+        if (strpos($idStr, 'new_') === 0) {
+            return true;
+        }
+
         // Extract the first part (before underscore if exists)
         $parts = explode('_', $idStr);
         $timestampPart = $parts[0];
-        
+
         // Check if it's numeric and has characteristics of a timestamp
         if (is_numeric($timestampPart)) {
             $timestampLength = strlen($timestampPart);
-            
+
             // JavaScript Date.now() returns milliseconds since epoch (13 digits)
             // Also check for PHP time() which returns seconds since epoch (10 digits)
             if ($timestampLength >= 10 && $timestampLength <= 13) {
@@ -93,11 +98,11 @@ class PoolObserver
                 $timestamp = intval($timestampPart);
                 $minTimestamp = strtotime('2000-01-01') * ($timestampLength === 13 ? 1000 : 1);
                 $maxTimestamp = strtotime('2100-01-01') * ($timestampLength === 13 ? 1000 : 1);
-                
+
                 return $timestamp >= $minTimestamp && $timestamp <= $maxTimestamp;
             }
         }
-        
+
         return false;
     }
 
@@ -112,7 +117,7 @@ class PoolObserver
     {
         // Handle any domain ID updates during pool updates if necessary
         // This could be useful for handling domain additions/modifications
-        
+
         // Clear related caches when pool is updated
         $this->clearRelatedCaches($pool);
     }
