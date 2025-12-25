@@ -74,7 +74,8 @@ class Pool extends Model
         'purchase_date',
         'is_splitting',
         'provider_type', // Provider type for panel assignment (Google, Microsoft 365, SMTP, etc.)
-        'smtp_provider_url', // SMTP provider URL when provider_type is SMTP
+        'smtp_provider_id', // Foreign key to smtp_providers table
+        'smtp_provider_url', // SMTP provider URL when provider_type is SMTP (legacy, kept for backward compatibility)
         'smtp_accounts_data', // Full SMTP accounts data from CSV
         'smtp_csv_file', // Raw CSV file content
         'smtp_csv_filename', // Original CSV filename
@@ -122,6 +123,12 @@ class Pool extends Model
     public function plan()
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    // SMTP Provider relationship
+    public function smtpProvider()
+    {
+        return $this->belongsTo(SmtpProvider::class, 'smtp_provider_id');
     }
     // Helper contractors accessor - returns collection of User models
     public function getHelpersAttribute()

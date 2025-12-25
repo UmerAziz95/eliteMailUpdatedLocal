@@ -235,6 +235,13 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('pools/import-data/{id}', [PoolController::class, 'importDataById'])->name('pools.import-data');
         Route::post('pools/capacity-check', [PoolController::class, 'capacityCheck'])->name('pools.capacity-check');
 
+        // SMTP Providers routes (for Select2 dropdown)
+        Route::get('smtp-providers', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'index'])->name('smtp-providers.index');
+        Route::post('smtp-providers', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'store'])->name('smtp-providers.store');
+        Route::get('smtp-providers/all', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'all'])->name('smtp-providers.all');
+        Route::put('smtp-providers/{smtpProvider}', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'update'])->name('smtp-providers.update');
+        Route::delete('smtp-providers/{smtpProvider}', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'destroy'])->name('smtp-providers.destroy');
+
         // Pool Panels routes
         Route::get('/pool-panels/next-id', [App\Http\Controllers\PoolPanelController::class, 'getNextId'])->name('pool-panels.next-id');
         Route::get('pool-panels/data', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanelsData'])->name('pool-panels.data');

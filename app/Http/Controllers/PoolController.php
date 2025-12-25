@@ -344,7 +344,8 @@ class PoolController extends Controller
         // Add mode-specific validation rules
         if ($isSmtpMode) {
             // SMTP mode: require SMTP-specific fields, domains/inboxes come from CSV
-            $rules['smtp_provider_url'] = 'required|url|max:255';
+            $rules['smtp_provider_id'] = 'required|exists:smtp_providers,id';
+            $rules['smtp_provider_url'] = 'nullable|url|max:255';
             $rules['smtp_accounts_data'] = 'required|json';
             $rules['domains'] = 'nullable';
             $rules['inboxes_per_domain'] = 'nullable|integer|min:1';
@@ -696,19 +697,19 @@ class PoolController extends Controller
      */
     public function update(Request $request, Pool $pool)
     {
-        $validator = Validator::make($request->all(), [
+        // Determine if this is SMTP mode (check from pool or request)
+        $isSmtpMode = $request->boolean('smtp_mode') || $pool->provider_type === 'SMTP';
+
+        // Build validation rules
+        $rules = [
             'user_id' => 'required|exists:users,id',
             'plan_id' => 'nullable|exists:plans,id',
             'status' => 'in:pending,in_progress,completed,cancelled',
             'status_manage_by_admin' => 'nullable|in:warming,available',
             'amount' => 'nullable|numeric|min:0',
             'currency' => 'string|max:3',
-            // 'forwarding_url' => 'required|url',
             'hosting_platform' => 'required|string|max:255',
             'sending_platform' => 'required|string|max:255',
-            'domains' => 'required|json',
-            'total_inboxes' => 'nullable|integer|min:1',
-            'inboxes_per_domain' => 'required|integer|min:1|max:3',
             'first_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'master_inbox_email' => 'nullable|email',
@@ -722,7 +723,24 @@ class PoolController extends Controller
             'prefix_variants' => 'nullable|array',
             'prefix_variants_details' => 'nullable|array',
             'purchase_date' => 'required|date',
-        ]);
+        ];
+
+        // Add mode-specific validation rules
+        if ($isSmtpMode) {
+            // SMTP mode: require SMTP-specific fields, domains/inboxes come from CSV
+            $rules['smtp_provider_id'] = 'required|exists:smtp_providers,id';
+            $rules['smtp_provider_url'] = 'nullable|url|max:255';
+            $rules['smtp_accounts_data'] = 'nullable|json';
+            $rules['domains'] = 'nullable';
+            $rules['inboxes_per_domain'] = 'nullable|integer|min:1';
+        } else {
+            // Standard mode: require domains and inboxes_per_domain
+            $rules['domains'] = 'required|json';
+            $rules['total_inboxes'] = 'nullable|integer|min:1';
+            $rules['inboxes_per_domain'] = 'required|integer|min:1|max:3';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             if ($request->expectsJson()) {

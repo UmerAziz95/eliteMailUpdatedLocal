@@ -405,12 +405,20 @@
                                 <div class="card-body">
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label for="smtp_provider_url">SMTP Provider URL *</label>
-                                            <input type="url" id="smtp_provider_url" name="smtp_provider_url"
-                                                class="form-control" placeholder="https://smtp.provider.com"
+                                            <label for="smtp_provider_id">SMTP Provider *</label>
+                                            <select id="smtp_provider_id" name="smtp_provider_id" class="form-control select2-smtp-provider"
+                                                style="width: 100%;">
+                                                <option value="">Select or Create SMTP Provider</option>
+                                                @if(isset($pool) && $pool->smtpProvider)
+                                                    <option value="{{ $pool->smtpProvider->id }}" selected>
+                                                        {{ $pool->smtpProvider->name }}
+                                                    </option>
+                                                @endif
+                                            </select>
+                                            <input type="hidden" id="smtp_provider_url" name="smtp_provider_url" 
                                                 value="{{ isset($pool) ? ($pool->smtp_provider_url ?? '') : '' }}">
-                                            <div class="invalid-feedback" id="smtp_provider_url-error"></div>
-                                            <p class="note mb-0">(The URL of your SMTP email provider)</p>
+                                            <div class="invalid-feedback" id="smtp_provider_id-error"></div>
+                                            <p class="note mb-0">(Select an existing provider or type to create new)</p>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="smtp_csv_file">Upload CSV File *</label>
@@ -1382,6 +1390,104 @@
                     .import-table tbody tr:nth-child(5) {
                         animation-delay: 0.5s;
                     }
+
+                    /* Select2 Dark Theme Styles for SMTP Provider */
+                    .select2-container--default .select2-selection--single {
+                        background-color: var(--secondary-color, #1a1a2e) !important;
+                        border: 1px solid var(--border-color, #3d3d5c) !important;
+                        border-radius: 4px !important;
+                        height: 38px !important;
+                        color: #fff !important;
+                    }
+
+                    .select2-container--default .select2-selection--single .select2-selection__rendered {
+                        color: #fff !important;
+                        line-height: 36px !important;
+                        padding-left: 12px !important;
+                        padding-right: 40px !important;
+                    }
+
+                    .select2-container--default .select2-selection--single .select2-selection__placeholder {
+                        color: rgba(255, 255, 255, 0.6) !important;
+                    }
+
+                    .select2-container--default .select2-selection--single .select2-selection__arrow {
+                        height: 36px !important;
+                        right: 8px !important;
+                    }
+
+                    .select2-container--default .select2-selection--single .select2-selection__arrow b {
+                        border-color: #fff transparent transparent transparent !important;
+                    }
+
+                    .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+                        border-color: transparent transparent #fff transparent !important;
+                    }
+
+                    /* Clear button (x) styling */
+                    .select2-container--default .select2-selection--single .select2-selection__clear {
+                        color: rgba(255, 255, 255, 0.6) !important;
+                        font-size: 18px !important;
+                        font-weight: normal !important;
+                        margin-right: 5px !important;
+                        position: absolute !important;
+                        right: 25px !important;
+                        top: 50% !important;
+                        transform: translateY(-50%) !important;
+                        cursor: pointer !important;
+                        line-height: 1 !important;
+                        padding: 0 5px !important;
+                    }
+
+                    .select2-container--default .select2-selection--single .select2-selection__clear:hover {
+                        color: #ff6b6b !important;
+                    }
+
+                    .select2-dropdown {
+                        background-color: var(--secondary-color, #1a1a2e) !important;
+                        border: 1px solid var(--border-color, #3d3d5c) !important;
+                        border-radius: 4px !important;
+                    }
+
+                    .select2-container--default .select2-search--dropdown .select2-search__field {
+                        background-color: var(--primary-color, #0f0f23) !important;
+                        border: 1px solid var(--border-color, #3d3d5c) !important;
+                        color: #fff !important;
+                        border-radius: 4px !important;
+                        padding: 8px 12px !important;
+                    }
+
+                    .select2-container--default .select2-search--dropdown .select2-search__field::placeholder {
+                        color: rgba(255, 255, 255, 0.5) !important;
+                    }
+
+                    .select2-container--default .select2-results__option {
+                        padding: 10px 12px !important;
+                        color: #fff !important;
+                        background-color: var(--secondary-color, #1a1a2e) !important;
+                    }
+
+                    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+                        background-color: var(--second-primary, #4a3aff) !important;
+                        color: #fff !important;
+                    }
+
+                    .select2-container--default .select2-results__option[aria-selected="true"] {
+                        background-color: rgba(74, 58, 255, 0.3) !important;
+                    }
+
+                    .select2-container--default .select2-results__option--disabled {
+                        color: rgba(255, 255, 255, 0.4) !important;
+                    }
+
+                    .select2-results__message {
+                        color: rgba(255, 255, 255, 0.6) !important;
+                    }
+
+                    /* Create new option styling */
+                    .select2-container--default .select2-results__option .text-success {
+                        color: #28a745 !important;
+                    }
                 </style>
 
 @endsection
@@ -1417,6 +1523,105 @@
 
                     // Initialize expiry date calculation on page load
                     calculateExpiryDate();
+
+                    // Initialize Select2 for SMTP Provider dropdown
+                    if ($('.select2-smtp-provider').length) {
+                        $('.select2-smtp-provider').select2({
+                            placeholder: 'Select or Create SMTP Provider',
+                            allowClear: true,
+                            tags: true,
+                            minimumInputLength: 0,
+                            ajax: {
+                                url: '{{ route("admin.smtp-providers.index") }}',
+                                dataType: 'json',
+                                delay: 250,
+                                data: function(params) {
+                                    return {
+                                        search: params.term || ''
+                                    };
+                                },
+                                processResults: function(data) {
+                                    return {
+                                        results: data.results || []
+                                    };
+                                },
+                                cache: true
+                            },
+                            createTag: function(params) {
+                                var term = $.trim(params.term);
+                                if (term === '') {
+                                    return null;
+                                }
+                                return {
+                                    id: 'new:' + term,
+                                    text: term,
+                                    newTag: true
+                                };
+                            },
+                            templateResult: function(data) {
+                                // Handle loading state
+                                if (data.loading) {
+                                    return $('<span><i class="fa fa-spinner fa-spin me-2"></i>Searching...</span>');
+                                }
+                                // Handle new tag creation
+                                if (data.newTag) {
+                                    return $('<span><i class="fa fa-plus-circle me-2" style="color: #28a745;"></i>Create: <strong>' + data.text + '</strong></span>');
+                                }
+                                // Handle normal options
+                                var $result = $('<span>' + (data.text || '') + '</span>');
+                                if (data.url) {
+                                    $result = $('<span>' + data.text + ' <small style="opacity: 0.7;">(' + data.url + ')</small></span>');
+                                }
+                                return $result;
+                            },
+                            templateSelection: function(data) {
+                                return data.text || data.id;
+                            }
+                        }).on('select2:select', function(e) {
+                            var data = e.params.data;
+                            // Check if it's a new provider being created
+                            if (data.id && data.id.toString().startsWith('new:')) {
+                                var providerName = data.id.replace('new:', '');
+                                // Create new provider via AJAX
+                                $.ajax({
+                                    url: '{{ route("admin.smtp-providers.store") }}',
+                                    type: 'POST',
+                                    data: {
+                                        _token: $('meta[name="csrf-token"]').attr('content'),
+                                        name: providerName,
+                                        url: ''
+                                    },
+                                    success: function(response) {
+                                        if (response.success) {
+                                            // Update the select with the real ID
+                                            var $select = $('.select2-smtp-provider');
+                                            $select.empty();
+                                            var newOption = new Option(response.provider.text, response.provider.id, true, true);
+                                            $select.append(newOption).trigger('change');
+                                            
+                                            // Show success notification
+                                            if (typeof toastr !== 'undefined') {
+                                                toastr.success('SMTP Provider "' + providerName + '" created successfully!');
+                                            }
+                                        } else {
+                                            if (typeof toastr !== 'undefined') {
+                                                toastr.error(response.message || 'Failed to create provider');
+                                            }
+                                        }
+                                    },
+                                    error: function(xhr) {
+                                        var message = 'Failed to create provider';
+                                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                                            message = xhr.responseJSON.message;
+                                        }
+                                        if (typeof toastr !== 'undefined') {
+                                            toastr.error(message);
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
                 });
 
                 // Function to calculate and display expiry date (12 months from purchase date)
@@ -3850,7 +4055,9 @@
                         'city': 'City',
                         'state': 'State',
                         'zip': 'ZIP Code',
-                        'country': 'Country'
+                        'country': 'Country',
+                        'smtp_provider_id': 'SMTP Provider',
+                        'smtp_provider_url': 'SMTP Provider URL'
                     };
 
                     let friendlyName = fieldName;
@@ -4185,7 +4392,7 @@
 
 
                         // Make SMTP fields required
-                        $('#smtp_provider_url').attr('required', true);
+                        $('#smtp_provider_id').attr('required', true);
                         // Remove required from standard fields
                         $('#domains').attr('required', false);
                         $('#inboxes_per_domain').attr('required', false);
@@ -4200,7 +4407,7 @@
 
 
                         // Remove required from SMTP fields
-                        $('#smtp_provider_url').attr('required', false);
+                        $('#smtp_provider_id').attr('required', false);
                         // Make standard fields required again
                         $('#domains').attr('required', true);
                         $('#inboxes_per_domain').attr('required', true);
