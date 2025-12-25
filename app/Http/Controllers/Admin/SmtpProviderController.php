@@ -138,4 +138,64 @@ class SmtpProviderController extends Controller
             'message' => 'SMTP Provider deleted successfully'
         ]);
     }
+
+    /**
+     * Display admin page listing all SMTP providers
+     */
+    public function indexView()
+    {
+        $providers = SmtpProvider::withCount('pools')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($provider) {
+                // Count total email accounts across all pools
+                $totalEmails = 0;
+                foreach ($provider->pools as $pool) {
+                    if ($pool->smtp_accounts_data && isset($pool->smtp_accounts_data['accounts'])) {
+                        $totalEmails += count($pool->smtp_accounts_data['accounts']);
+                    }
+                }
+                $provider->total_emails = $totalEmails;
+                return $provider;
+            });
+
+        // Summary stats
+        $totalProviders = $providers->count();
+        $activeProviders = $providers->where('is_active', true)->count();
+        $totalPools = $providers->sum('pools_count');
+        $totalEmails = $providers->sum('total_emails');
+
+        return view('admin.smtp_providers.index', compact(
+            'providers',
+            'totalProviders',
+            'activeProviders',
+            'totalPools',
+            'totalEmails'
+        ));
+    }
+
+    /**
+     * Display details for a specific SMTP provider with pools and email accounts
+     */
+    public function show(SmtpProvider $smtpProvider)
+    {
+        // Load pools with their smtp_accounts_data
+        $smtpProvider->load([
+            'pools' => function ($query) {
+                $query->orderBy('created_at', 'desc');
+            },
+            'pools.user'
+        ]);
+
+        // Count total emails
+        $totalEmails = 0;
+        foreach ($smtpProvider->pools as $pool) {
+            if ($pool->smtp_accounts_data && isset($pool->smtp_accounts_data['accounts'])) {
+                $totalEmails += count($pool->smtp_accounts_data['accounts']);
+            }
+        }
+
+        return view('admin.smtp_providers.show', compact('smtpProvider', 'totalEmails'));
+    }
 }
+
