@@ -36,22 +36,22 @@
         }
 
         /* .table-responsive {
-                                                    border-radius: 12px;
-                                                    overflow: hidden;
-                                                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                                                } */
+                                                        border-radius: 12px;
+                                                        overflow: hidden;
+                                                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                                                    } */
 
 
         /* .action-buttons {
-                                                    display: flex;
-                                                    gap: 0.25rem;
-                                                    justify-content: center;
-                                                }
+                                                        display: flex;
+                                                        gap: 0.25rem;
+                                                        justify-content: center;
+                                                    }
 
-                                                .action-buttons .btn {
-                                                    padding: 0.375rem 0.5rem;
-                                                    font-size: 0.75rem;
-                                                } */
+                                                    .action-buttons .btn {
+                                                        padding: 0.375rem 0.5rem;
+                                                        font-size: 0.75rem;
+                                                    } */
 
         .badge-type {
             font-size: 0.625rem;
@@ -170,282 +170,379 @@
                     <i class="fa-brands fa-microsoft me-1"></i>365 Pool
                 </button>
             </li>
-        </ul>
+        <li class="nav-item" role="presentation">
+                    <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white"
+                        id="smtp-pool-tab" data-bs-toggle="tab" data-bs-target="#smtp-pool-tab-pane" type="button" role="tab"
+                        aria-controls="smtp-pool-tab-pane" aria-selected="false">
+                        <i class="fa fa-envelope me-1"></i>SMTP Pool
+                    </button>
+                </li>
+            </ul>
 
-        <div class="tab-content" id="poolsTabContent">
-            <!-- Google Pool Tab -->
-            <div class="tab-pane fade show active" id="google-pool-tab-pane" role="tabpanel"
-                aria-labelledby="google-pool-tab" tabindex="0">
+            <div class="tab-content" id="poolsTabContent">
+                <!-- Google Pool Tab -->
+                <div class="tab-pane fade show active" id="google-pool-tab-pane" role="tabpanel"
+                    aria-labelledby="google-pool-tab" tabindex="0">
 
-                <!-- Nested Tabs for Google Pool -->
-                <ul class="nav nav-tabs mb-3" id="googleStatusTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="google-warming-tab" data-bs-toggle="tab"
-                            data-bs-target="#google-warming-pane" type="button" role="tab">
-                            <i class="fa fa-fire me-1 text-warning"></i>Warming
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="google-available-tab" data-bs-toggle="tab"
-                            data-bs-target="#google-available-pane" type="button" role="tab">
-                            <i class="fa fa-check-circle me-1 text-success"></i>Available
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="google-used-tab" data-bs-toggle="tab"
-                            data-bs-target="#google-used-pane" type="button" role="tab">
-                            <i class="fa fa-lock me-1 text-danger"></i>Used
-                        </button>
-                    </li>
-                </ul>
-
-                <div class="tab-content" id="googleStatusTabContent">
-                    <!-- Google Warming -->
-                    <div class="tab-pane fade show active" id="google-warming-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="googleWarmingTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Google Available -->
-                    <div class="tab-pane fade" id="google-available-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="googleAvailableTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Google Used -->
-                    <div class="tab-pane fade" id="google-used-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="googleUsedTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 365 Pool Tab -->
-            <div class="tab-pane fade" id="ms365-pool-tab-pane" role="tabpanel" aria-labelledby="ms365-pool-tab"
-                tabindex="0">
-
-                <!-- Nested Tabs for 365 Pool -->
-                <ul class="nav nav-tabs mb-3" id="ms365StatusTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="ms365-warming-tab" data-bs-toggle="tab"
-                            data-bs-target="#ms365-warming-pane" type="button" role="tab">
-                            <i class="fa fa-fire me-1 text-warning"></i>Warming
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="ms365-available-tab" data-bs-toggle="tab"
-                            data-bs-target="#ms365-available-pane" type="button" role="tab">
-                            <i class="fa fa-check-circle me-1 text-success"></i>Available
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="ms365-used-tab" data-bs-toggle="tab" data-bs-target="#ms365-used-pane"
-                            type="button" role="tab">
-                            <i class="fa fa-lock me-1 text-danger"></i>Used
-                        </button>
-                    </li>
-                </ul>
-
-                <div class="tab-content" id="ms365StatusTabContent">
-                    <!-- 365 Warming -->
-                    <div class="tab-pane fade show active" id="ms365-warming-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="ms365WarmingTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- 365 Available -->
-                    <div class="tab-pane fade" id="ms365-available-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="ms365AvailableTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- 365 Used -->
-                    <div class="tab-pane fade" id="ms365-used-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="ms365UsedTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Delete</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    Are you sure you want to delete this pool? This action cannot be undone.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bulk Update Days Offcanvas -->
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="bulkUpdateOffcanvas" style="width: 70%;">
-        <div class="offcanvas-header border-bottom" style="border-color: var(--input-border) !important;">
-            <h5 class="offcanvas-title" id="bulkUpdateOffcanvasTitle">
-                <i class="fa fa-calendar-plus me-2" style="color: var(--second-primary);"></i>
-                Update Warmup Days
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-            <input type="hidden" id="bulkUpdateAction" value="">
-
-            <!-- Days Input Section -->
-            <div class="card mb-4"
-                style="border: 1px solid var(--second-primary); background: linear-gradient(135deg, rgba(74, 58, 255, 0.1), rgba(74, 58, 255, 0.02));">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-4">
-                            <label for="bulkDaysInput" class="form-label mb-1" id="bulkDaysLabel">Number of Days</label>
-                            <div class="input-group">
-                                <input type="number" class="form-control form-control-lg" id="bulkDaysInput" min="1"
-                                    value="30"
-                                    style="background-color: var(--primary-color); border-color: var(--input-border);">
-                                <span class="input-group-text"
-                                    style="background-color: var(--secondary-color); border-color: var(--input-border);">days</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-center h-100 pt-4">
-                                <i class="fa fa-info-circle me-2" style="color: var(--second-primary);"></i>
-                                <span>Updating <strong id="bulkUpdateCount">0</strong> email account(s)</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4 text-end pt-4">
-                            <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="offcanvas">
-                                <i class="fa fa-times me-1"></i>Cancel
+                    <!-- Nested Tabs for Google Pool -->
+                    <ul class="nav nav-tabs mb-3" id="googleStatusTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="google-warming-tab" data-bs-toggle="tab"
+                                data-bs-target="#google-warming-pane" type="button" role="tab">
+                                <i class="fa fa-fire me-1 text-warning"></i>Warming
                             </button>
-                            <button type="button" class="btn btn-primary" id="confirmBulkUpdate">
-                                <i class="fa fa-save me-1"></i>Apply Changes
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="google-available-tab" data-bs-toggle="tab"
+                                data-bs-target="#google-available-pane" type="button" role="tab">
+                                <i class="fa fa-check-circle me-1 text-success"></i>Available
                             </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="google-used-tab" data-bs-toggle="tab"
+                                data-bs-target="#google-used-pane" type="button" role="tab">
+                                <i class="fa fa-lock me-1 text-danger"></i>Used
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="googleStatusTabContent">
+                        <!-- Google Warming -->
+                        <div class="tab-pane fade show active" id="google-warming-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="googleWarmingTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Google Available -->
+                        <div class="tab-pane fade" id="google-available-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="googleAvailableTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Google Used -->
+                        <div class="tab-pane fade" id="google-used-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="googleUsedTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 365 Pool Tab -->
+                <div class="tab-pane fade" id="ms365-pool-tab-pane" role="tabpanel" aria-labelledby="ms365-pool-tab"
+                    tabindex="0">
+
+                    <!-- Nested Tabs for 365 Pool -->
+                    <ul class="nav nav-tabs mb-3" id="ms365StatusTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="ms365-warming-tab" data-bs-toggle="tab"
+                                data-bs-target="#ms365-warming-pane" type="button" role="tab">
+                                <i class="fa fa-fire me-1 text-warning"></i>Warming
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ms365-available-tab" data-bs-toggle="tab"
+                                data-bs-target="#ms365-available-pane" type="button" role="tab">
+                                <i class="fa fa-check-circle me-1 text-success"></i>Available
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ms365-used-tab" data-bs-toggle="tab" data-bs-target="#ms365-used-pane"
+                                type="button" role="tab">
+                                <i class="fa fa-lock me-1 text-danger"></i>Used
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="ms365StatusTabContent">
+                        <!-- 365 Warming -->
+                        <div class="tab-pane fade show active" id="ms365-warming-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="ms365WarmingTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 365 Available -->
+                        <div class="tab-pane fade" id="ms365-available-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="ms365AvailableTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 365 Used -->
+                        <div class="tab-pane fade" id="ms365-used-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="ms365UsedTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SMTP Pool Tab -->
+                <div class="tab-pane fade" id="smtp-pool-tab-pane" role="tabpanel" aria-labelledby="smtp-pool-tab"
+                    tabindex="0">
+
+                    <!-- Nested Tabs for SMTP Pool -->
+                    <ul class="nav nav-tabs mb-3" id="smtpStatusTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="smtp-warming-tab" data-bs-toggle="tab"
+                                data-bs-target="#smtp-warming-pane" type="button" role="tab">
+                                <i class="fa fa-fire me-1 text-warning"></i>Warming
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="smtp-available-tab" data-bs-toggle="tab"
+                                data-bs-target="#smtp-available-pane" type="button" role="tab">
+                                <i class="fa fa-check-circle me-1 text-success"></i>Available
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="smtp-used-tab" data-bs-toggle="tab"
+                                data-bs-target="#smtp-used-pane" type="button" role="tab">
+                                <i class="fa fa-lock me-1 text-danger"></i>Used
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="smtpStatusTabContent">
+                        <!-- SMTP Warming -->
+                        <div class="tab-pane fade show active" id="smtp-warming-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="smtpWarmingTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- SMTP Available -->
+                        <div class="tab-pane fade" id="smtp-available-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="smtpAvailableTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- SMTP Used -->
+                        <div class="tab-pane fade" id="smtp-used-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="smtpUsedTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Selected Items Table -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fa fa-list me-2"></i>Selected Email Accounts</h6>
-                    <small class="opacity-75">Preview of changes</small>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0" id="bulkPreviewTable">
-                            <thead>
-                                <tr style="background-color: var(--primary-color);">
-                                    <th class="ps-3">Pool ID</th>
-                                    <th>Email Account</th>
-                                    <th>Current Expiry</th>
-                                    <th>New Expiry</th>
-                                    <th>Change</th>
-                                </tr>
-                            </thead>
-                            <tbody id="bulkPreviewTableBody">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this pool? This action cannot be undone.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- Bulk Update Days Offcanvas -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="bulkUpdateOffcanvas" style="width: 70%;">
+            <div class="offcanvas-header border-bottom" style="border-color: var(--input-border) !important;">
+                <h5 class="offcanvas-title" id="bulkUpdateOffcanvasTitle">
+                    <i class="fa fa-calendar-plus me-2" style="color: var(--second-primary);"></i>
+                    Update Warmup Days
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <input type="hidden" id="bulkUpdateAction" value="">
+
+                <!-- Days Input Section -->
+                <div class="card mb-4"
+                    style="border: 1px solid var(--second-primary); background: linear-gradient(135deg, rgba(74, 58, 255, 0.1), rgba(74, 58, 255, 0.02));">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <label for="bulkDaysInput" class="form-label mb-1" id="bulkDaysLabel">Number of Days</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control form-control-lg" id="bulkDaysInput" min="1"
+                                        value="30"
+                                        style="background-color: var(--primary-color); border-color: var(--input-border);">
+                                    <span class="input-group-text"
+                                        style="background-color: var(--secondary-color); border-color: var(--input-border);">days</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center h-100 pt-4">
+                                    <i class="fa fa-info-circle me-2" style="color: var(--second-primary);"></i>
+                                    <span>Updating <strong id="bulkUpdateCount">0</strong> email account(s)</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end pt-4">
+                                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="offcanvas">
+                                    <i class="fa fa-times me-1"></i>Cancel
+                                </button>
+                                <button type="button" class="btn btn-primary" id="confirmBulkUpdate">
+                                    <i class="fa fa-save me-1"></i>Apply Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Items Table -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fa fa-list me-2"></i>Selected Email Accounts</h6>
+                        <small class="opacity-75">Preview of changes</small>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="bulkPreviewTable">
+                                <thead>
+                                    <tr style="background-color: var(--primary-color);">
+                                        <th class="ps-3">Pool ID</th>
+                                        <th>Email Account</th>
+                                        <th>Current Expiry</th>
+                                        <th>New Expiry</th>
+                                        <th>Change</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulkPreviewTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 @endsection
 
 @push('scripts')
@@ -459,14 +556,17 @@
         let selectedItems = new Map();
 
         $(document).ready(function () {
-            // Initialize all 6 DataTables
+            // Initialize all 9 DataTables (Google, MS365, SMTP)
             const tableConfigs = [
                 { id: 'googleWarmingTable', provider: 'Google', status: 'warming', emptyIcon: 'fa-fire', emptyColor: 'text-warning' },
                 { id: 'googleAvailableTable', provider: 'Google', status: 'available', emptyIcon: 'fa-check-circle', emptyColor: 'text-success' },
                 { id: 'googleUsedTable', provider: 'Google', status: 'used', emptyIcon: 'fa-lock', emptyColor: 'text-danger' },
                 { id: 'ms365WarmingTable', provider: 'Microsoft 365', status: 'warming', emptyIcon: 'fa-fire', emptyColor: 'text-warning' },
                 { id: 'ms365AvailableTable', provider: 'Microsoft 365', status: 'available', emptyIcon: 'fa-check-circle', emptyColor: 'text-success' },
-                { id: 'ms365UsedTable', provider: 'Microsoft 365', status: 'used', emptyIcon: 'fa-lock', emptyColor: 'text-danger' }
+                { id: 'ms365UsedTable', provider: 'Microsoft 365', status: 'used', emptyIcon: 'fa-lock', emptyColor: 'text-danger' },
+                { id: 'smtpWarmingTable', provider: 'SMTP', status: 'warming', emptyIcon: 'fa-fire', emptyColor: 'text-warning' },
+                { id: 'smtpAvailableTable', provider: 'SMTP', status: 'available', emptyIcon: 'fa-check-circle', emptyColor: 'text-success' },
+                { id: 'smtpUsedTable', provider: 'SMTP', status: 'used', emptyIcon: 'fa-lock', emptyColor: 'text-danger' }
             ];
 
             tableConfigs.forEach(config => {
@@ -687,16 +787,16 @@
                 const $row = $checkbox.closest('tr');
                 const $table = $checkbox.closest('table');
                 const tableId = $table.attr('id');
-                
+
                 let rowData = {};
                 if (dataTables[tableId]) {
                     rowData = dataTables[tableId].row($row).data() || {};
                 }
-                
+
                 const prefixValue = rowData.prefix_value || '';
                 const domainName = rowData.domain_name || '';
                 const email = prefixValue && domainName ? `${prefixValue}@${domainName}` : domainName;
-                
+
                 selectedItems.set(key, { 
                     pool_id: poolId, 
                     domain_id: domainId, 
@@ -751,7 +851,7 @@
         function openBulkUpdateModal(action) {
             $('#bulkUpdateAction').val(action);
             $('#bulkUpdateCount').text(selectedItems.size);
-            
+
             if (action === 'extend') {
                 $('#bulkUpdateOffcanvasTitle').html('<i class="fa fa-calendar-plus me-2" style="color: var(--second-primary);"></i>Extend Warmup Days');
                 $('#bulkDaysLabel').text('Days to Add');
@@ -759,10 +859,10 @@
                 $('#bulkUpdateOffcanvasTitle').html('<i class="fa fa-calendar-minus me-2" style="color: #ffc107;"></i>Reduce Warmup Days');
                 $('#bulkDaysLabel').text('Days to Reduce');
             }
-            
+
             // Populate preview table
             updatePreviewTable();
-            
+
             // Show offcanvas
             const offcanvas = new bootstrap.Offcanvas(document.getElementById('bulkUpdateOffcanvas'));
             offcanvas.show();
@@ -788,11 +888,11 @@
                 const poolId = item.pool_id;
                 const email = item.email || '-';
                 const currentEndDate = item.end_date;
-                
+
                 // Calculate new date
                 let newEndDate = null;
                 let diffDays = 0;
-                
+
                 if (currentEndDate) {
                     const currentDate = new Date(currentEndDate);
                     diffDays = action === 'extend' ? days : -days;
@@ -872,7 +972,7 @@
                     const offcanvasEl = document.getElementById('bulkUpdateOffcanvas');
                     const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
                     if (offcanvas) offcanvas.hide();
-                    
+
                     clearAllSelections();
 
                     // Reload all tables
