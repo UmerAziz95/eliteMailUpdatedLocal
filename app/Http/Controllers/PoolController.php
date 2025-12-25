@@ -470,6 +470,11 @@ class PoolController extends Controller
                     }
                     $data['prefix_variants_details'] = $prefixDetails;
 
+                    // Set SMTP pool specific status fields
+                    $data['is_splitting'] = 1;
+                    $data['status'] = 'completed';
+                    $data['status_manage_by_admin'] = 'available';
+
                     \Log::info('SMTP Pool - Domains built from CSV', [
                         'domains_count' => count($domainsFromCsv),
                         'total_inboxes' => $data['total_inboxes']
