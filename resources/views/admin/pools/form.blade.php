@@ -202,37 +202,37 @@
         }
 
         /* 
-                                .prefix-variant-section .card:hover {
-                                    border-color: #667eea;
-                                    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
-                                    transform: translateY(-2px);
-                                } */
+                                        .prefix-variant-section .card:hover {
+                                            border-color: #667eea;
+                                            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+                                            transform: translateY(-2px);
+                                        } */
 
         /* .prefix-variant-section h6 {
-                                    color: #667eea;
-                                    font-weight: 600;
-                                    margin-bottom: 1rem;
-                                    padding-bottom: 0.5rem;
-                                    border-bottom: 1px solid #404040;
-                                } */
+                                            color: #667eea;
+                                            font-weight: 600;
+                                            margin-bottom: 1rem;
+                                            padding-bottom: 0.5rem;
+                                            border-bottom: 1px solid #404040;
+                                        } */
 
         /* .prefix-variant-section .form-control {
-                                    background-color: #1e1e1e !important;
-                                    border-color: #555;
-                                    transition: border-color 0.3s ease;
-                                }
+                                            background-color: #1e1e1e !important;
+                                            border-color: #555;
+                                            transition: border-color 0.3s ease;
+                                        }
 
-                                .prefix-variant-section .form-control:focus {
-                                    border-color: #667eea;
-                                    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
-                                }
+                                        .prefix-variant-section .form-control:focus {
+                                            border-color: #667eea;
+                                            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+                                        }
 
-                                .prefix-variant-section .note {
-                                    font-size: 0.875em;
-                                    color: #6c757d;
-                                    margin-top: 0.25rem;
-                                    margin-bottom: 0;
-                                } */
+                                        .prefix-variant-section .note {
+                                            font-size: 0.875em;
+                                            color: #6c757d;
+                                            margin-top: 0.25rem;
+                                            margin-bottom: 0;
+                                        } */
     </style>
 @endpush
 @section('content')
@@ -297,9 +297,9 @@
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="mb-0">Domains & hosting platform</h5>
                         <!-- <button type="button" class="m-btn py-1 px-3 rounded-2 border-0 import-btn" id="orderImportBtn">
-                                                <i class="fa-solid fa-file-import"></i>
-                                                Import Order
-                                            </button> -->
+                                                        <i class="fa-solid fa-file-import"></i>
+                                                        Import Order
+                                                    </button> -->
                     </div>
 
                     {{-- <div class="domain-forwarding mb-3">
@@ -341,10 +341,10 @@
                     </div>
 
                     <!-- <div id="other-platform-section" class="mb-3" style="display: none;">
-                                            <label for="other_platform">Please specify your hosting other platform *</label>
-                                            <input type="text" id="other_platform" name="other_platform" class="form-control">
-                                            <div class="invalid-feedback" id="other-platform-error"></div>
-                                        </div> -->
+                                                    <label for="other_platform">Please specify your hosting other platform *</label>
+                                                    <input type="text" id="other_platform" name="other_platform" class="form-control">
+                                                    <div class="invalid-feedback" id="other-platform-error"></div>
+                                                </div> -->
 
                     <div class="platform" id="platform-fields-container">
                         <!-- Dynamic platform fields will be inserted here -->
@@ -592,8 +592,8 @@
                                     <label>Remaining Inboxes</label>
 
                                     <div class="progress position-relative" style="height: 25px;
-                                                        background: linear-gradient(135deg, #f5f5f5, #eaeaea);
-                                                        border-radius: 6px;">
+                                                                background: linear-gradient(135deg, #f5f5f5, #eaeaea);
+                                                                border-radius: 6px;">
 
                                         <div class="progress-bar" role="progressbar" id="remaining-inboxes-bar"
                                             style="width: 0%; background: linear-gradient(45deg, #28a745, #20c997); border-radius: 6px;">
@@ -649,13 +649,13 @@
                             </div>
 
                             <!-- <div class="col-md-6">
-                                                <label>Persona Password</label>
-                                                <div class="password-wrapper">
-                                                    <input type="password" id="persona_password" name="persona_password" class="form-control" value="{{ isset($pool) ? $pool->persona_password : '' }}" required>
-                                                    <div class="invalid-feedback" id="persona_password-error"></div>
-                                                    <i class="fa-regular fa-eye password-toggle"></i>
-                                                </div>
-                                            </div> -->
+                                                        <label>Persona Password</label>
+                                                        <div class="password-wrapper">
+                                                            <input type="password" id="persona_password" name="persona_password" class="form-control" value="{{ isset($pool) ? $pool->persona_password : '' }}" required>
+                                                            <div class="invalid-feedback" id="persona_password-error"></div>
+                                                            <i class="fa-regular fa-eye password-toggle"></i>
+                                                        </div>
+                                                    </div> -->
 
                             <div class="col-md-6 profile-picture" style="display: none;">
                                 <label>Profile Picture Link</label>
@@ -853,11 +853,11 @@
                         </div>
                     </div>
                     <!-- <div class="modal-footer"> 
-                                                <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
-                                                    <i class="fa-solid fa-times me-2"></i>
-                                                    Cancel
-                                                </button>
-                                            </div> -->
+                                                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                                                            <i class="fa-solid fa-times me-2"></i>
+                                                            Cancel
+                                                        </button>
+                                                    </div> -->
                 </div>
             </div>
         </div>
@@ -1032,7 +1032,7 @@
                 background: #252525;
                 border-radius: 12px;
                 /* padding: 20px;
-                                    border: 1px solid #404040; */
+                                            border: 1px solid #404040; */
                 box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
             }
 
@@ -1406,6 +1406,7 @@
                 line-height: 36px !important;
                 padding-left: 12px !important;
                 padding-right: 40px !important;
+                font-size: 0.9rem !important;
             }
 
             .select2-container--default .select2-selection--single .select2-selection__placeholder {
@@ -1506,14 +1507,7 @@
 
             #smtp-csv-table tbody tr {
                 border-bottom: 1px solid var(--border-color, #3d3d5c) !important;
-            }
-
-            #smtp-csv-table tbody tr:nth-child(odd) {
-                background-color: rgba(255, 255, 255, 0.02) !important;
-            }
-
-            #smtp-csv-table tbody tr:nth-child(even) {
-                background-color: rgba(255, 255, 255, 0.05) !important;
+                background-color: transparent !important;
             }
 
             #smtp-csv-table tbody tr:hover {
@@ -1541,2046 +1535,1152 @@
             #smtp-csv-table .badge {
                 font-weight: 500 !important;
             }
-        /* Custom cell styling for CSV preview to match theme */
-                        .smtp-email-cell {
-                            color: #ff6b9d !important; /* Pink/magenta for emails - matches theme accent */
-                            font-family: inherit !important;
-                        }
 
-                        .smtp-domain-badge {
-                            background-color: var(--second-primary, #4a3aff) !important;
-                            color: #fff !important;
-                            font-weight: 500 !important;
-                        }
+            /* Custom cell styling for CSV preview to match theme */
+            .smtp-email-cell {
+                color: #ff6b9d !important;
+                /* Pink/magenta for emails - matches theme accent */
+                font-family: inherit !important;
+            }
 
-                        .smtp-password-cell {
-                            color: rgba(255, 255, 255, 0.6) !important; /* Muted white for passwords */
-                            font-family: inherit !important;
-                        }
+            .smtp-domain-badge {
+                background-color: var(--second-primary, #4a3aff) !important;
+                color: #fff !important;
+                font-weight: 500 !important;
+            }
 
-                        .smtp-data-cell {
-                            color: rgba(255, 255, 255, 0.9) !important;
-                            font-family: inherit !important;
-                        }
-                    </style>
+            .smtp-password-cell {
+                color: rgba(255, 255, 255, 0.6) !important;
+                /* Muted white for passwords */
+                font-family: inherit !important;
+            }
+
+            .smtp-data-cell {
+                color: rgba(255, 255, 255, 0.9) !important;
+                font-family: inherit !important;
+            }
+        </style>
 
 @endsection
     @push('scripts')
         <script>
-            // Function to toggle master inbox email field visibility
-            function toggleMasterInboxEmail() {
-                const masterInboxDropdown = $('.master-inbox');
-                if ($('#master_inbox_confirmation').val() == '1') {
-                    $('.master-inbox-email').show();
-                    $('#master_inbox_email').attr('required', true);
-                    // When email field is shown, use col-md-6 for both
-                    masterInboxDropdown.removeClass('col-md-12').addClass('col-md-6');
-                } else {
-                    $('.master-inbox-email').hide();
-                    // Don't clear the email field when hiding - keep the value
-                    $('#master_inbox_email').removeAttr('required');
-                    $('#master_inbox_email').removeClass('is-invalid'); // Remove validation error when hiding
-                    $('#master_inbox_email-error').text(''); // Clear error message
-                    // When email field is hidden, expand dropdown to full width
-                    masterInboxDropdown.removeClass('col-md-6').addClass('col-md-12');
-                }
-            }
+                    // Function to toggle master inbox e         mail         field visibility
+                    function toggleMasterInboxEmail() {
+                        const masterInboxDropdown = $('.master-inbox');
+                        if ($('#master_inbox_confirmation').val() == '1') {
+                            $('.master-inbox-email').show();
+                            $('#master_inbox_email').attr('required', true);
+                            // When email field is shown, use col-md-6 for both
+                            masterInboxDropdown.removeClass('col-md-12').addClass('col-md-6');
+                        } else {
+                            $('.master-inbox-email').hide();
+                            // Don't clear the email field when hiding - keep the value
+                            $('#master_inbox_email').removeAttr('required');
+                            $('#master_inbox_email').removeClass('is-invalid'); // Remove validation error when hiding
+                            $('#master_inbox_email-error').text(''); // Clear error message
+                            // When email field is hidden, expand dropdown to full width
+                            masterInboxDropdown.removeClass('col-md-6').addClass('col-md-12');
+                        }
+                    }
 
-            // Show/hide master inbox email field based on dropdown selection
-            $(document).on('change', '#master_inbox_confirmation', function() {
-                 toggleMasterInboxEmail();
-                });
+                    // Show/hide master inbox email field based on dropdown selection
+                    $(document).on('change', '#master_inbox_confirmation', function() {
+                         toggleMasterInboxEmail();
+                        });
 
-                // Initialize field visibility on page load
-                $(document).ready(function() {
-                    toggleMasterInboxEmail();
+                        // Initialize field visibility on page load
+                        $(document).ready(function() {
+                            toggleMasterInboxEmail();
 
-                    // Initialize expiry date calculation on page load
-                    calculateExpiryDate();
+                            // Initialize expiry date calculation on page load
+                            calculateExpiryDate();
 
-                    // Initialize Select2 for SMTP Provider dropdown
-                    if ($('.select2-smtp-provider').length) {
-                        $('.select2-smtp-provider').select2({
-                            placeholder: 'Select or Create SMTP Provider',
-                            allowClear: true,
-                            tags: true,
-                            minimumInputLength: 0,
-                            ajax: {
-                                url: '{{ route("admin.smtp-providers.index") }}',
-                                dataType: 'json',
-                                delay: 250,
-                                data: function(params) {
-                                    return {
-                                        search: params.term || ''
-                                    };
-                                },
-                                processResults: function(data) {
-                                    return {
-                                        results: data.results || []
-                                    };
-                                },
-                                cache: true
-                            },
-                            createTag: function(params) {
-                                var term = $.trim(params.term);
-                                if (term === '') {
-                                    return null;
-                                }
-                                return {
-                                    id: 'new:' + term,
-                                    text: term,
-                                    newTag: true
-                                };
-                            },
-                            templateResult: function(data) {
-                                // Handle loading state
-                                if (data.loading) {
-                                    return $('<span><i class="fa fa-spinner fa-spin me-2"></i>Searching...</span>');
-                                }
-                                // Handle new tag creation
-                                if (data.newTag) {
-                                    return $('<span><i class="fa fa-plus-circle me-2" style="color: #28a745;"></i>Create: <strong>' + data.text + '</strong></span>');
-                                }
-                                // Handle normal options
-                                var $result = $('<span>' + (data.text || '') + '</span>');
-                                if (data.url) {
-                                    $result = $('<span>' + data.text + ' <small style="opacity: 0.7;">(' + data.url + ')</small></span>');
-                                }
-                                return $result;
-                            },
-                            templateSelection: function(data) {
-                                return data.text || data.id;
-                            }
-                        }).on('select2:select', function(e) {
-                            var data = e.params.data;
-                            // Check if it's a new provider being created
-                            if (data.id && data.id.toString().startsWith('new:')) {
-                                var providerName = data.id.replace('new:', '');
-                                // Create new provider via AJAX
-                                $.ajax({
-                                    url: '{{ route("admin.smtp-providers.store") }}',
-                                    type: 'POST',
-                                    data: {
-                                        _token: $('meta[name="csrf-token"]').attr('content'),
-                                        name: providerName,
-                                        url: ''
+                            // Initialize Select2 for SMTP Provider dropdown
+                            if ($('.select2-smtp-provider').length) {
+                                $('.select2-smtp-provider').select2({
+                                    placeholder: 'Select or Create SMTP Provider',
+                                    allowClear: true,
+                                    tags: true,
+                                    minimumInputLength: 0,
+                                    ajax: {
+                                        url: '{{ route("admin.smtp-providers.index") }}',
+                                        dataType: 'json',
+                                        delay: 250,
+                                        data: function(params) {
+                                            return {
+                                                search: params.term || ''
+                                            };
+                                        },
+                                        processResults: function(data) {
+                                            return {
+                                                results: data.results || []
+                                            };
+                                        },
+                                        cache: true
                                     },
-                                    success: function(response) {
-                                        if (response.success) {
-                                            // Update the select with the real ID
-                                            var $select = $('.select2-smtp-provider');
-                                            $select.empty();
-                                            var newOption = new Option(response.provider.text, response.provider.id, true, true);
-                                            $select.append(newOption).trigger('change');
-
-                                            // Show success notification
-                                            if (typeof toastr !== 'undefined') {
-                                                toastr.success('SMTP Provider "' + providerName + '" created successfully!');
-                                            }
-                                        } else {
-                                            if (typeof toastr !== 'undefined') {
-                                                toastr.error(response.message || 'Failed to create provider');
-                                            }
+                                    createTag: function(params) {
+                                        var term = $.trim(params.term);
+                                        if (term === '') {
+                                            return null;
                                         }
+                                        return {
+                                            id: 'new:' + term,
+                                            text: term,
+                                            newTag: true
+                                        };
                                     },
-                                    error: function(xhr) {
-                                        var message = 'Failed to create provider';
-                                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                                            message = xhr.responseJSON.message;
+                                    templateResult: function(data) {
+                                        // Handle loading state
+                                        if (data.loading) {
+                                            return $('<span><i class="fa fa-spinner fa-spin me-2"></i>Searching...</span>');
                                         }
-                                        if (typeof toastr !== 'undefined') {
-                                            toastr.error(message);
+                                        // Handle new tag creation
+                                        if (data.newTag) {
+                                            return $('<span><i class="fa fa-plus-circle me-2" style="color: #28a745;"></i>Create: <strong>' + data.text + '</strong></span>');
                                         }
+                                        // Handle normal options
+                                        var $result = $('<span>' + (data.text || '') + '</span>');
+                                        if (data.url) {
+                                            $result = $('<span>' + data.text + ' <small style="opacity: 0.7;">(' + data.url + ')</small></span>');
+                                        }
+                                        return $result;
+                                    },
+                                    templateSelection: function(data) {
+                                        return data.text || data.id;
+                                    }
+                                }).on('select2:select', function(e) {
+                                    var data = e.params.data;
+                                    // Check if it's a new provider being created
+                                    if (data.id && data.id.toString().startsWith('new:')) {
+                                        var providerName = data.id.replace('new:', '');
+                                        // Create new provider via AJAX
+                                        $.ajax({
+                                            url: '{{ route("admin.smtp-providers.store") }}',
+                                            type: 'POST',
+                                            data: {
+                                                _token: $('meta[name="csrf-token"]').attr('content'),
+                                                name: providerName,
+                                                url: ''
+                                            },
+                                            success: function(response) {
+                                                if (response.success) {
+                                                    // Update the select with the real ID
+                                                    var $select = $('.select2-smtp-provider');
+                                                    $select.empty();
+                                                    var newOption = new Option(response.provider.text, response.provider.id, true, true);
+                                                    $select.append(newOption).trigger('change');
+
+                                                    // Show success notification
+                                                    if (typeof toastr !== 'undefined') {
+                                                        toastr.success('SMTP Provider "' + providerName + '" created successfully!');
+                                                    }
+                                                } else {
+                                                    if (typeof toastr !== 'undefined') {
+                                                        toastr.error(response.message || 'Failed to create provider');
+                                                    }
+                                                }
+                                            },
+                                            error: function(xhr) {
+                                                var message = 'Failed to create provider';
+                                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                                    message = xhr.responseJSON.message;
+                                                }
+                                                if (typeof toastr !== 'undefined') {
+                                                    toastr.error(message);
+                                                }
+                                            }
+                                        });
                                     }
                                 });
                             }
                         });
-                    }
-                });
 
-                // Function to calculate and display expiry date (12 months from purchase date)
-                function calculateExpiryDate() {
-                    const purchaseDateInput = $('#purchase_date');
-                    const expiryDateInput = $('#expiry_date');
-                    const expiryDateContainer = $('#expiry_date_container');
+                        // Function to calculate and display expiry date (12 months from purchase date)
+                        function calculateExpiryDate() {
+                            const purchaseDateInput = $('#purchase_date');
+                            const expiryDateInput = $('#expiry_date');
+                            const expiryDateContainer = $('#expiry_date_container');
 
-                    if (purchaseDateInput.val()) {
-                        const purchaseDate = new Date(purchaseDateInput.val());
+                            if (purchaseDateInput.val()) {
+                                const purchaseDate = new Date(purchaseDateInput.val());
 
-                        // Add 12 months to purchase date
-                        const expiryDate = new Date(purchaseDate);
-                        expiryDate.setMonth(expiryDate.getMonth() + 12);
+                                // Add 12 months to purchase date
+                                const expiryDate = new Date(purchaseDate);
+                                expiryDate.setMonth(expiryDate.getMonth() + 12);
 
-                        // Format the expiry date
-                        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-                        const formattedExpiryDate = expiryDate.toLocaleDateString('en-US', options);
+                                // Format the expiry date
+                                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                                const formattedExpiryDate = expiryDate.toLocaleDateString('en-US', options);
 
-                        // Display expiry date
-                        expiryDateInput.val(formattedExpiryDate);
-                        expiryDateContainer.show();
-                    } else {
-                        // Hide expiry date if no purchase date is selected
-                        expiryDateContainer.hide();
-                        expiryDateInput.val('');
-                    }
-                }
+                                // Display expiry date
+                                expiryDateInput.val(formattedExpiryDate);
+                                expiryDateContainer.show();
+                            } else {
+                                // Hide expiry date if no purchase date is selected
+                                expiryDateContainer.hide();
+                                expiryDateInput.val('');
+                            }
+                        }
 
-                // Listen for changes to purchase date
-                $(document).on('change', '#purchase_date', function() {
-                    calculateExpiryDate();
-                });
+                        // Listen for changes to purchase date
+                        $(document).on('change', '#purchase_date', function() {
+                            calculateExpiryDate();
+                        });
 
-                // Initialize domain arrays early for global functions
-                let usedDomains = []; // Array to store used domains that cannot be edited
-                let editableDomains = []; // Array to store editable domains
+                        // Initialize domain arrays early for global functions
+                        let usedDomains = []; // Array to store used domains that cannot be edited
+                        let editableDomains = []; // Array to store editable domains
 
-                // Initialize used domains from pool data
-                @if(isset($pool) && $pool->domains)
-                    @php
-                        $existingDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
-                    @endphp
-                    @if(is_array($existingDomains))
-                        @foreach($existingDomains as $domain)
-                            @if(isset($domain['is_used']) && $domain['is_used'] && isset($domain['name']))
-                                usedDomains.push({
-                                    id: '{{ $domain['id'] ?? '' }}',
-                                    name: '{{ $domain['name'] }}',
-                                    is_used: true,
-                                    prefix_statuses: @json($domain['prefix_statuses'] ?? null)
-                                });
-                            @elseif(isset($domain['name']))
-                                editableDomains.push('{{ $domain['name'] }}');
+                        // Initialize used domains from pool data
+                        @if(isset($pool) && $pool->domains)
+                            @php
+                                $existingDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+                            @endphp
+                            @if(is_array($existingDomains))
+                                @foreach($existingDomains as $domain)
+                                    @if(isset($domain['is_used']) && $domain['is_used'] && isset($domain['name']))
+                                        usedDomains.push({
+                                            id: '{{ $domain['id'] ?? '' }}',
+                                            name: '{{ $domain['name'] }}',
+                                            is_used: true,
+                                            prefix_statuses: @json($domain['prefix_statuses'] ?? null)
+                                        });
+                                    @elseif(isset($domain['name']))
+                                        editableDomains.push('{{ $domain['name'] }}');
+                                    @endif
+                                @endforeach
                             @endif
-                        @endforeach
-                    @endif
-                @endif
+                        @endif
 
-                // Global function for calculating total inboxes and updating price - accessible from import functionality
-            function calculateTotalInboxes() {
-                const domainsText = $('#domains').val();
-                const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+                        // Global function for calculating total inboxes and updating price - accessible from import functionality
+                    function calculateTotalInboxes() {
+                        const domainsText = $('#domains').val();
+                        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
 
-                let editableDomainsCount = 0;
-                if (domainsText) {
-                    // Split domains by newlines and filter out empty entries
-                    const domains = domainsText.split(/[\n,]+/)
-                        .map(domain => domain.trim())
-                        .filter(domain => domain.length > 0);
+                        let editableDomainsCount = 0;
+                        if (domainsText) {
+                            // Split domains by newlines and filter out empty entries
+                            const domains = domainsText.split(/[\n,]+/)
+                                .map(domain => domain.trim())
+                                .filter(domain => domain.length > 0);
 
-                    const uniqueDomains = [...new Set(domains)];
-                    editableDomainsCount = uniqueDomains.length;
-                }
-
-                // Total domains include both editable and used domains (safely check if usedDomains exists)
-                const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
-                const totalDomainsCount = editableDomainsCount + usedDomainsCount;
-                const calculatedInboxes = totalDomainsCount * inboxesPerDomain;
-
-                // Always use calculated inboxes and apply current order limit validation
-                $('#total_inboxes').val(calculatedInboxes);
-                updateRemainingInboxesBar(calculatedInboxes);
-                updatePriceDisplay(calculatedInboxes);
-                return calculatedInboxes;
-            }
-            // Global function for updating price display based on total inboxes
-            function updatePriceDisplay(totalInboxes) {
-                const currentPlan = null; // Removed plan dependency
-                const poolInfo = @json($pool ?? null);
-
-                // Calculate TOTAL_INBOXES based on poolInfo.total_inboxes
-                let TOTAL_INBOXES = 0;
-                if (poolInfo && poolInfo.total_inboxes !== undefined) {
-                    const rawTotalInboxes = poolInfo.total_inboxes;
-                    const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-
-                    // Calculate maximum usable inboxes based on inboxes_per_domain
-                    // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
-                    const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
-                    TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
-                }
-
-                const submitButton = $('button[type="submit"]');
-                let priceHtml = '';
-
-                if (!totalInboxes || totalInboxes === 0) {
-                    priceHtml = `
-                        <div class="d-flex align-items-center gap-3 mb-4">
-                            <div>
-                                <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
-                            </div>
-                            <div>
-                                <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                                <br>
-                                <span>Please add domains and inboxes to calculate price</span>
-                            </div>
-                        </div>
-                        <h6><span class="theme-text">Original Price:</span> <small>Please add domains and inboxes to calculate price</small></h6>
-                        <h6><span class="theme-text">Discount:</span> 0%</h6>
-                        <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
-                    `;
-                } else if (currentPlan && TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
-                    // Order limit exceeded (only show if order has a limit, i.e., total_inboxes > 0)
-                    priceHtml = `
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} inboxes.
-                            <br><small>Please reduce the number of domains.</small>
-                        </div>
-                        <h6><span class="theme-text">Original Price:</span> <small>Exceeds order limit</small></h6>
-                        <h6><span class="theme-text">Discount:</span> 0%</h6>
-                        <h6><span class="theme-text">Total:</span> <small>Please reduce domains</small></h6>
-                    `;
-                    if (submitButton.length) {
-                        submitButton.prop('disabled', true);
-                        submitButton.hide();
-                    }
-                } else if (currentPlan) {
-                    const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
-                    priceHtml = `
-                        <div class="d-flex align-items-center gap-3 mb-4">
-                            <div>
-                                <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
-                            </div>
-                            <div>
-                                <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                                <br>
-                                <span>${totalInboxes} x $${parseFloat(currentPlan.price).toFixed(2)} <small>/${currentPlan.duration}</small></span>
-                            </div>
-                        </div>
-                        <h6><span class="theme-text">Original Price:</span> $${originalPrice}</h6>
-                        <h6><span class="theme-text">Discount:</span> 0%</h6>
-                        <h6><span class="theme-text">Total:</span> $${originalPrice} <small>/${currentPlan.duration}</small></h6>
-                    `;
-                    if (submitButton.length) {
-                        submitButton.prop('disabled', false);
-                        submitButton.show();
-                    }
-                }
-
-                // Update the price display section
-                $('.price-display-section').html(priceHtml);
-            }
-
-            // Global function for updating remaining inboxes progress bar
-            function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
-                // Get current inboxes if not provided
-                if (currentInboxes === null) {
-                    const domainsText = $('#domains').val() || '';
-                    const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-
-                    let editableDomainsCount = 0;
-                    if (domainsText) {
-                        const domains = domainsText.split(/[\n,]+/)
-                            .map(domain => domain.trim())
-                            .filter(domain => domain.length > 0);
-                        const uniqueDomains = [...new Set(domains)];
-                        editableDomainsCount = uniqueDomains.length;
-                    }
-
-                    // Include used domains in total count (safely check if usedDomains exists)
-                    const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
-                    const totalDomainsCount = editableDomainsCount + usedDomainsCount;
-                    currentInboxes = totalDomainsCount * inboxesPerDomain;
-                }
-
-                // For progress bar display, maxInboxes should be the current total (used + editable domains)
-                // This shows "current inboxes / total current inboxes" rather than "current inboxes / pool limit"
-                const poolInfo = @json(isset($pool) ? $pool : null);
-                const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-
-                // Calculate current total domains (used + editable)
-                const domainsText = $('#domains').val() || '';
-                let editableDomainsCount = 0;
-                if (domainsText) {
-                    const domains = domainsText.split(/[\n,]+/)
-                        .map(domain => domain.trim())
-                        .filter(domain => domain.length > 0);
-                    const uniqueDomains = [...new Set(domains)];
-                    editableDomainsCount = uniqueDomains.length;
-                }
-                const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
-                const totalCurrentDomains = editableDomainsCount + usedDomainsCount;
-                const maxInboxes = totalCurrentDomains * inboxesPerDomain;
-
-                // Update hidden form fields for server submission
-                $('#current_inboxes').val(currentInboxes);
-                $('#max_inboxes').val(maxInboxes);
-
-                // Calculate percentage used (only if order has limits)
-                const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
-
-                // Update progress bar elements
-                const progressBar = $('#remaining-inboxes-bar');
-                const progressText = $('#remaining-inboxes-text');
-                const progressNote = $('#remaining-inboxes-note');
-
-                if (progressBar.length === 0) {
-                    return; // Progress bar not found, exit gracefully
-                }
-
-                // Set width and aria values
-                progressBar.css('width', Math.min(percentageUsed, 100) + '%');
-                progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
-                progressBar.attr('aria-valuemax', 100);
-
-                // Check against pool limits for validation
-                let poolLimit = 0;
-                let exceedsLimit = false;
-
-                if (poolInfo && poolInfo.total_inboxes !== undefined && poolInfo.total_inboxes > 0) {
-                    const rawTotalInboxes = poolInfo.total_inboxes;
-
-                    // For your case: rawTotalInboxes should be 3, inboxesPerDomain should be 1
-                    // So poolLimit should be 3 (3 domains × 1 inbox = 3 inboxes)
-                    poolLimit = rawTotalInboxes; // Direct assignment - pool limit is the total inboxes allowed
-
-                    // Check if current usage exceeds pool limit
-                    exceedsLimit = currentInboxes > poolLimit;
-
-                    // Show domain validation error if limit exceeded (but don't overwrite other validation errors)
-                    if (exceedsLimit) {
-                        const currentError = $('#domains-error').text();
-                        // Only show limit error if there's no other validation error (like duplicates)
-                        if (!currentError || (!currentError.includes('Duplicate') && !currentError.includes('Invalid'))) {
-                            const domainsField = $('#domains');
-                            // const usedDomainsText = usedDomainsCount > 0 ? ` (${editableDomainsCount} editable + ${usedDomainsCount} used)` : '';
-                            const usedDomainsText = '';
-                            domainsField.addClass('is-invalid');
-                            $('#domains-error').html(`
-                                <strong>Order Limit Exceeded</strong> — You currently have ${currentInboxes} inboxes, but this order supports only ${poolLimit} usable inboxes.
-                                <br><small>Pool Limit: ${rawTotalInboxes} total inboxes with ${inboxesPerDomain} inbox${inboxesPerDomain > 1 ? 'es' : ''} per domain</small>
-                            `);
-                        }
-                    } else {
-                        // Only clear limit-related errors, keep other validation errors (like duplicates)
-                        const currentError = $('#domains-error').text();
-                        if (currentError && currentError.includes('Order Limit Exceeded')) {
-                            $('#domains').removeClass('is-invalid');
-                            $('#domains-error').text('');
-                        }
-                    }
-                }
-
-                // Update text display - show current usage vs current total
-                if (maxInboxes > 0) {
-                    // Show current usage: "current inboxes / total current inboxes"
-                    // const domainBreakdown = usedDomainsCount > 0 ? ` (${editableDomainsCount} editable + ${usedDomainsCount} used)` : '';
-                    const domainBreakdown = '';
-
-                    if (exceedsLimit && poolLimit > 0) {
-                        // Show limit exceeded in progress text
-                        progressText.text(`${currentInboxes} / ${poolLimit} inboxes used (LIMIT EXCEEDED)${domainBreakdown}`);
-                        progressBar.css('width', '100%');
-                        progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
-                        progressNote.html(`(Pool limit: ${poolLimit} inboxes, Current: ${currentInboxes} inboxes)`);
-
-                        // Hide submit button when order limit is exceeded
-                        const submitButton = $('button[type="submit"]');
-                        if (submitButton.length) {
-                            submitButton.prop('disabled', true);
-                            submitButton.hide();
-                        }
-                    } else {
-                        // Normal display - show current vs current (not vs pool limit)
-                        progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used${domainBreakdown}`);
-                        progressBar.css('width', '100%');
-                        progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
-
-                        // Show submit button when within order limits
-                        const submitButton = $('button[type="submit"]');
-                        if (submitButton.length) {
-                            submitButton.prop('disabled', false);
-                            submitButton.show();
+                            const uniqueDomains = [...new Set(domains)];
+                            editableDomainsCount = uniqueDomains.length;
                         }
 
-                        // Show breakdown information with pool limit info if available
-                        if (poolLimit > 0) {
-                            const poolLimitText = poolLimit !== maxInboxes ? ` (Pool limit: ${poolLimit})` : '';
-                            if (usedDomainsCount > 0) {
-                                progressNote.html(`(Total: ${totalCurrentDomains} domains - ${editableDomainsCount} editable, ${usedDomainsCount} used${poolLimitText})`);
-                            } else {
-                                progressNote.html(`(Total: ${totalCurrentDomains} domains, ${inboxesPerDomain} inbox${inboxesPerDomain > 1 ? 'es' : ''} per domain${poolLimitText})`);
-                            }
-                        } else {
-                            if (usedDomainsCount > 0) {
-                                progressNote.html(`(Total: ${totalCurrentDomains} domains - ${editableDomainsCount} editable, ${usedDomainsCount} used)`);
-                            } else {
-                                progressNote.html(`(Total: ${totalCurrentDomains} domains, ${inboxesPerDomain} inbox${inboxesPerDomain > 1 ? 'es' : ''} per domain)`);
-                            }
-                        }
+                        // Total domains include both editable and used domains (safely check if usedDomains exists)
+                        const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
+                        const totalDomainsCount = editableDomainsCount + usedDomainsCount;
+                        const calculatedInboxes = totalDomainsCount * inboxesPerDomain;
+
+                        // Always use calculated inboxes and apply current order limit validation
+                        $('#total_inboxes').val(calculatedInboxes);
+                        updateRemainingInboxesBar(calculatedInboxes);
+                        updatePriceDisplay(calculatedInboxes);
+                        return calculatedInboxes;
                     }
-                } else {
-                    // No domains yet
-                    progressText.text('0 / 0 inboxes used');
-                    progressBar.css('width', '0%');
-                    progressNote.html('(Add domains to see usage)');
-                    progressBar.css('background', 'linear-gradient(45deg, #6c757d, #5a6268)');
-                }
-            }
-
-            $(document).ready(function() {
-                // Initialize domain counts and calculations on page load
-                if (typeof calculateTotalInboxes === 'function') {
-                    calculateTotalInboxes();
-                }
-                if (typeof updateRemainingInboxesBar === 'function') {
-                    updateRemainingInboxesBar();
-                }
-
-                // Show pool limit information
-                const poolInfo = @json(isset($pool) ? $pool : null);
-                if (poolInfo && poolInfo.total_inboxes) {
-                    if (poolInfo.total_inboxes === 0) {
-                        toastr.info('This pool has unlimited inboxes. No inbox limits apply.', 'Unlimited Pool', {
-                            timeOut: 4000,
-                            closeButton: true,
-                            progressBar: true
-                        });
-                    } else {
-                        toastr.info(`This order allows up to ${poolInfo.total_inboxes} inboxes.`, 'Order Limit', {
-                            timeOut: 4000,
-                            closeButton: true,
-                            progressBar: true
-                        });
-                    }
-                }
-
-                // Initialize Order Import Modal
-                $('#orderImportBtn').on('click', function() {
-                    initializeOrdersImportTable();
-                });
-
-                // Add event listeners for automatic progress bar updates
-                $(document).on('input change', '#domains, #inboxes_per_domain', function() {
-                    if (typeof calculateTotalInboxes === 'function') {
-                        calculateTotalInboxes();
-                    }
-                });
-
-                // Initial progress bar update on page load
-                setTimeout(() => {
-                    if (typeof updateRemainingInboxesBar === 'function') {
-                        updateRemainingInboxesBar();
-                    }
-                }, 1000);
-
-                function initializeOrdersImportTable() {
-                    // Show loading indicator
-                    Swal.fire({
-                        title: 'Loading Orders...',
-                        text: 'Please wait while we fetch your orders.',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        allowEnterKey: false,
-                        showConfirmButton: false,
-                        backdrop: true,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    // Clear existing table content
-                    $('#ordersImportTable tbody').empty();
-
-                    // AJAX call to fetch orders data
-                    $.ajax({
-                        url: "{{ route('admin.pools.import.data') }}",
-                        type: "GET",
-                        data: {
-                            for_import: true,
-                            exclude_current: "{{ isset($pool) ? $pool->id : '' }}"
-                        },
-                        success: function(response) {
-                            // Close loading indicator
-                            Swal.close();
-
-                            // Show modal
-                            $('#orderImportModal').modal('show');
-
-                            // Populate table with data
-                            populateOrdersTable(response.data || []);
-                        },
-                        error: function(xhr, status, error) {
-                            // Close loading indicator
-                            Swal.close();
-
-                            console.error('Error loading orders:', error);
-                            Swal.fire({
-                                title: 'Error!',
-                                text: 'Failed to load orders data. Please try again.',
-                                icon: 'error',
-                                confirmButtonText: 'OK'
-                            });
-                        }
-                    });
-                }
-
-                function populateOrdersTable(orders) {
-                    const tbody = $('#ordersImportTable tbody');
-                    tbody.empty();
-
-                    if (!orders || orders.length === 0) {
-                        tbody.append(`
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
-                                    <i class="fa-solid fa-inbox me-2"></i>
-                                    No orders available for import
-                                </td>
-                            </tr>
-                        `);
-                        return;
-                    }
-
-                    orders.forEach(function(order) {
-                        const row = `
-                            <tr class="table-row-hover">
-                                <td class="text-center">${order.id || 'N/A'}</td>
-                                <td title="${getPlanName(order)}">${getPlanName(order)}</td>
-                                <td class="text-center">${order.total_inboxes || '0'}</td>
-                                <td class="text-center">${order.status_badge || 'N/A'}</td>
-                                <td class="text-center" title="${order.created_at_formatted || 'N/A'}">${order.created_at_formatted || 'N/A'}</td>
-                                <td class="text-center">${getActionButton(order)}</td>
-                            </tr>
-                        `;
-                        tbody.append(row);
-                    });
-
-                    // Add horizontal scroll indicators for better UX
-                    setTimeout(() => {
-                        addScrollIndicators();
-                    }, 100);
-                }
-
-                // Function to add scroll indicators for better horizontal scrolling UX
-                function addScrollIndicators() {
-                    const tableContainer = $('.table-responsive');
-                    if (tableContainer.length) {
-                        const scrollWidth = tableContainer[0].scrollWidth;
-                        const clientWidth = tableContainer[0].clientWidth;
-
-                        // Only show indicators if table is wider than container
-                        if (scrollWidth > clientWidth) {
-                            // Add scroll indicators
-                            if (!$('.scroll-indicator-left').length) {
-                                tableContainer.before(`
-                                    <div class="scroll-indicators">
-                                        <div class="scroll-indicator-left">
-                                            <i class="fa-solid fa-chevron-left"></i>
-                                        </div>
-                                        <div class="scroll-indicator-right">
-                                            <i class="fa-solid fa-chevron-right"></i>
-                                        </div>
-                                    </div>
-                                `);
-                            }
-
-                            // Handle scroll events to update indicators
-                            tableContainer.on('scroll', function() {
-                                const scrollLeft = $(this).scrollLeft();
-                                const maxScroll = scrollWidth - clientWidth;
-
-                                $('.scroll-indicator-left').toggleClass('visible', scrollLeft > 0);
-                                $('.scroll-indicator-right').toggleClass('visible', scrollLeft < maxScroll - 5);
-                            });
-
-                            // Initial state
-                            $('.scroll-indicator-left').removeClass('visible');
-                            $('.scroll-indicator-right').addClass('visible');
-                        }
-                    }
-                }
-
-                function getPlanName(order) {
-                    if (order.plan && order.plan.name) {
-                        return order.plan.name;
-                    }
-                    return 'N/A';
-                }
-
-                function getActionButton(order) {
-                    return `
-                        <button type="button" 
-                                class="import-order-btn" 
-                                data-order-id="${order.id}"
-                                title="Import this order data">
-                            <i class="fa-solid fa-download me-1"></i>
-                            Import
-                        </button>
-                    `;
-                }    
-                // Handle order import
-                $(document).on('click', '.import-order-btn', function() {
-                    const poolId = $(this).data('pool-id');
-
-                    Swal.fire({
-                        title: 'Import Order Data?',
-                        text: 'This will replace all current form data with the selected order\'s information. Are you sure?',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, Import Data',
-                        cancelButtonText: 'Cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            importPoolData(poolId);
-                        }
-                    });
-                });
-
-                function importPoolData(poolId) {
-                    // Show loading
-                    Swal.fire({
-                        title: 'Importing Order Data...',
-                        text: 'Please wait while we import the order data.',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        allowEnterKey: false,
-                        showConfirmButton: false,
-                        backdrop: true,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    $.ajax({
-                        url: "{{ route('admin.pools.import-data', ':id') }}".replace(':id', poolId),
-                        method: 'GET',
-                        success: function(response) {
-                            if (response.success && response.data) {
-                                populateFormWithOrderData(response.data);
-                                $('#orderImportModal').modal('hide');
-
-                                Swal.fire({
-                                    title: 'Success!',
-                                    text: 'Order data has been imported successfully.',
-                                    icon: 'success',
-                                    timer: 2000,
-                                    showConfirmButton: false
-                                });
-                            } else {
-                                Swal.fire({
-                                    title: 'Error!',
-                                    text: response.message || 'Failed to import order data.',
-                                    icon: 'error',
-                                    confirmButtonText: 'OK'
-                                });
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.close();
-                            let errorMessage = 'An error occurred while importing order data.';
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message;
-                            }
-
-                            Swal.fire({
-                                title: 'Error!',
-                                text: errorMessage,
-                                icon: 'error',
-                                confirmButtonText: 'OK'
-                            });
-                        }
-                    });
-                }
-
-                function populateFormWithOrderData(orderData) {
-                    // Set import flag to prevent toastr notifications during import
-                    isImporting = true;
-
-                    // Clear any existing validation errors
-                    $('.is-invalid').removeClass('is-invalid');
-                    $('.invalid-feedback').text('');
-
-                    // Specifically clear domains error
-                    $('#domains').removeClass('is-invalid');
-                    $('#domains-error').text('');
-
-                    const poolData = orderData;
-                    if (!poolData) {
-                        toastr.warning('No detailed information available for this order.');
-                        return;
-                    }
-                    // Populate basic fields
-                    if (poolInfo.forwarding_url) $('#forwarding').val(poolInfo.forwarding_url);
-                    if (poolInfo.hosting_platform) $('#hosting').val(poolInfo.hosting_platform).trigger('change');
-                    if (poolInfo.domains) {
-                        // Handle both old format (array of strings) and new format (array of objects with id/name)
-                        let domainsText = '';
-                        if (Array.isArray(poolInfo.domains)) {
-                            if (poolInfo.domains.length > 0 && typeof poolInfo.domains[0] === 'object' && poolInfo.domains[0].name) {
-                                // New format: array of objects with id/name
-                                domainsText = poolInfo.domains.map(d => d.name).join('\n');
-                                // Update existing domain IDs to avoid duplicates
-                                poolInfo.domains.forEach(domain => {
-                                    if (domain.id && domain.name) {
-                                        existingDomainIds.set(domain.name, domain.id);
-                                        // Extract sequence number from imported ID (format: poolId_sequence)
-                                        const importIdParts = domain.id.toString().split('_');
-                                        if (importIdParts.length === 2 && !isNaN(importIdParts[1])) {
-                                            domainSequenceCounter = Math.max(domainSequenceCounter, parseInt(importIdParts[1]) + 1);
-                                        }
-                                    }
-                                });
-                            } else {
-                                // Old format: array of strings
-                                domainsText = poolInfo.domains.join('\n');
-                            }
-                        } else if (typeof poolInfo.domains === 'string') {
-                            domainsText = poolInfo.domains;
-                        }
-
-                        $('#domains').val(domainsText);
-                        // Trigger domain counting after populating domains
-                        setTimeout(() => {
-                            if (typeof countDomains === 'function') {
-                                countDomains();
-                            }
-                        }, 100);
-                    }
-                    if (poolData.sending_platform) $('#sending_platform').val(poolData.sending_platform).trigger('change');
-                    if (poolData.inboxes_per_domain) $('#inboxes_per_domain').val(poolData.inboxes_per_domain).trigger('change');
-
-                    // Don't import total_inboxes - always use current order's limit
-
-                    // Populate email account information
-                    if (poolData.first_name) $('input[name="first_name"]').val(poolData.first_name);
-                    if (poolData.last_name) $('input[name="last_name"]').val(poolData.last_name);
-                    if (poolData.email_persona_password) $('input[name="email_persona_password"]').val(poolData.email_persona_password);
-                    if (poolData.email_persona_picture_link) $('input[name="email_persona_picture_link"]').val(poolData.email_persona_picture_link);
-                    // Handle master inbox email and confirmation
-                    if (poolData.master_inbox_confirmation !== undefined) {
-                        $('#master_inbox_confirmation').val(poolData.master_inbox_confirmation ? '1' : '0');
-                    }
-                    if (poolData.master_inbox_email) {
-                        $('input[name="master_inbox_email"]').val(poolData.master_inbox_email);
-                    }
-                    // Trigger master inbox email field visibility toggle after setting values
-                    if (typeof toggleMasterInboxEmail === 'function') {
-                        toggleMasterInboxEmail();
-                    }
-                    if (poolData.additional_info) $('textarea[name="additional_info"]').val(poolData.additional_info);
-
-                    // Populate prefix variants if available
-                    if (poolData.prefix_variants) {
-                        try {
-                            const prefixVariants = typeof poolData.prefix_variants === 'string' 
-                                ? JSON.parse(poolData.prefix_variants) 
-                                : poolData.prefix_variants;
-
-                            Object.keys(prefixVariants).forEach(key => {
-                                const input = $(`input[name="prefix_variants[${key}]"]`);
-                                if (input.length && prefixVariants[key]) {
-                                    input.val(prefixVariants[key]);
-                                }
-                            });
-                        } catch (e) {
-                            console.warn('Could not parse prefix variants:', e);
-                        }
-                    }
-
-                    // Populate prefix variants details if available
-                    if (poolData.prefix_variants_details) {
-                        try {
-                            const prefixVariantsDetails = typeof poolData.prefix_variants_details === 'string' 
-                                ? JSON.parse(poolData.prefix_variants_details) 
-                                : poolData.prefix_variants_details;
-
-                            Object.keys(prefixVariantsDetails).forEach(variantKey => {
-                                const details = prefixVariantsDetails[variantKey];
-                                if (details) {
-                                    // Populate first name
-                                    if (details.first_name) {
-                                        $(`input[name="prefix_variants_details[${variantKey}][first_name]"]`).val(details.first_name);
-                                    }
-                                    // Populate last name
-                                    if (details.last_name) {
-                                        $(`input[name="prefix_variants_details[${variantKey}][last_name]"]`).val(details.last_name);
-                                    }
-                                    // Populate profile link
-                                    if (details.profile_link) {
-                                        $(`input[name="prefix_variants_details[${variantKey}][profile_link]"]`).val(details.profile_link);
-                                    }
-                                }
-                            });
-                        } catch (e) {
-                            console.warn('Could not parse prefix variants details:', e);
-                        }
-                    }
-
-                    // Populate dynamic platform fields
-                    setTimeout(() => {
-                        populateDynamicFields(poolData);
-                    }, 500);
-
-                    // Recalculate totals and check domain limits with a slight delay to ensure all fields are populated
-                    setTimeout(() => {
-                        if (typeof calculateTotalInboxes === 'function') {
-                            calculateTotalInboxes();
-                        }
-
-                        // Update domain count badge after import
-                        if (typeof countDomains === 'function') {
-                            countDomains();
-                        }
-
-                        // Check domain cutting if needed
-                        checkDomainCutting();
-
-                        // Force update progress bar and price one more time to ensure it's correct
-                        setTimeout(() => {
-                            if (typeof updateRemainingInboxesBar === 'function') {
-                                updateRemainingInboxesBar();
-                            }
-                            if (typeof calculateTotalInboxes === 'function') {
-                                calculateTotalInboxes();
-                            }
-                            // Final domain count update
-                            if (typeof countDomains === 'function') {
-                                // alert('Domains have been imported successfully. Please check the domain count.');
-                                $('#domains').trigger('input'); // Trigger input to recalculate domains
-                                countDomains();
-                            }
-                            $('#domains').trigger('input'); // Trigger input to recalculate domains
-                        }, 200);
-                    }, 600);
-
-                    // Clear import flag after a delay to ensure all operations are complete
-                    setTimeout(() => {
-                        isImporting = false;
-
-                        // Check if imported data exceeds current order limits and show appropriate notification
-                        const finalDomains = $('#domains').val();
-                        const finalInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-
-                        if (finalDomains) {
-                            const domainsArray = finalDomains.split(/[\n,]+/).filter(d => d.trim().length > 0);
-                            const totalInboxes = domainsArray.length * finalInboxesPerDomain;
-
-                            // Use the current order's total_inboxes value for validation (not imported)
-                            const poolInfo = @json(optional($pool));
-                            let currentOrderLimit = 0;
-                            let isConfigurationError = false;
-
-                            if (poolInfo && poolInfo.total_inboxes) {
-                                // Check for configuration error first (order has limit but can't fit any domains)
-                                if (poolInfo.total_inboxes > 0 && poolInfo.total_inboxes < finalInboxesPerDomain) {
-                                    currentOrderLimit = 0;
-                                    isConfigurationError = true;
-                                } else {
-                                    const maxDomainsAllowed = Math.floor(poolInfo.total_inboxes / finalInboxesPerDomain);
-                                    currentOrderLimit = maxDomainsAllowed * finalInboxesPerDomain;
-                                }
-                            }
-
-                            // Prioritize configuration error over order limit exceeded
-                            if (isConfigurationError) {
-                                // Configuration error: order has limit but can't fit any domains
-                                $('#domains').addClass('is-invalid');
-                                $('#domains-error').text('Can’t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
-                                toastr.warning('Can’t create inboxes with current settings. Please reduce inboxes per domain or contact support.', 'Import Complete - Configuration Issue', {
-                                    timeOut: 8000,
-                                    closeButton: true,
-                                    progressBar: true
-                                });
-                            } else if (currentOrderLimit > 0 && totalInboxes > currentOrderLimit) {
-                                // Show domains-error div for exceeding current order limit
-                                $('#domains').addClass('is-invalid');
-                                $('#domains-error').html(`
-                                    <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${currentOrderLimit} usable inboxes.
-                                    <br><small>Usable Limit: ${currentOrderLimit} inboxes</small>
-                                `);
-                                toastr.warning(`Order Limit Exceeded — You currently have ${totalInboxes} inboxes, but this order supports only ${currentOrderLimit} usable inboxes.`, 'Import Complete - Order Limit Exceeded', {
-                                    timeOut: 8000,
-                                    closeButton: true,
-                                    progressBar: true
-                                });
-                            } else {
-                                // Clear domain errors if within valid range
-                                $('#domains').removeClass('is-invalid');
-                                $('#domains-error').text('');
-                                toastr.success('Order data imported successfully!');
-                            }
-                        } else {
-                            // Clear domain errors if no domains
-                            $('#domains').removeClass('is-invalid');
-                            $('#domains-error').text('');
-                            toastr.success('Order data imported successfully!');
-                        }
-                    }, 1000);
-
-                }
-
-                function populateDynamicFields(poolData) {
-                    // Populate hosting platform fields
-                    const hostingFields = [
-                        'backup_codes', 'bison_url', 'bison_workspace', 
-                        'platform_login', 'platform_password'
-                    ];
-
-                    hostingFields.forEach(field => {
-                        if (poolData[field]) {
-                            const input = $(`input[name="${field}"], textarea[name="${field}"]`);
-                            if (input.length) {
-                                input.val(poolData[field]);
-                            }
-                        }
-                    });
-
-                    // Populate sending platform fields
-                    const sendingFields = [
-                        'sequencer_login', 'sequencer_password'
-                    ];
-
-                    sendingFields.forEach(field => {
-                        if (poolData[field]) {
-                            const input = $(`input[name="${field}"], textarea[name="${field}"]`);
-                            if (input.length) {
-                                input.val(poolData[field]);
-                            }
-                        }
-                    });
-                }
-
-                function checkDomainCutting() {
-                    // Don't auto-trim during import
-                    if (isImporting) {
-                        return;
-                    }
-
-                    const domainsText = $('#domains').val();
-                    const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-
-                    if (!domainsText) return;
-
-                    const domains = domainsText.split(/[\n,]+/)
-                        .map(domain => domain.trim())
-                        .filter(domain => domain.length > 0);
-
-                    const totalInboxes = domains.length * inboxesPerDomain;
-
-                    // Always use current order's total inboxes limit (not imported)
-                    const poolInfo = @json(optional($pool));
-                    let TOTAL_INBOXES = 0;
-
-                    if (poolInfo && poolInfo.total_inboxes !== undefined) {
-                        const rawTotalInboxes = poolInfo.total_inboxes;
-
-                        // Calculate maximum usable inboxes based on inboxes_per_domain
-                        // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
-                        const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
-                        TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
-                    }
-
-                    // Only enforce limits if order has a limit (total_inboxes > 0)
-                    if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
-                        // Automatically trim domains to fit within order limit
-                        const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
-                        const trimmedDomains = domains.slice(0, maxDomainsAllowed);
-                        const removedCount = domains.length - maxDomainsAllowed;
-
-                        $('#domains').val(trimmedDomains.join('\n'));
-
-                        // Clear the error message and update validation
-                        $('#domains').removeClass('is-invalid');
-                        $('#domains-error').text('');
-
-                        // Recalculate totals after trimming
-                        if (typeof calculateTotalInboxes === 'function') {
-                            calculateTotalInboxes();
-                        }
-
-                        // Force update the price display after domain trimming
-                        setTimeout(() => {
-                            if (typeof calculateTotalInboxes === 'function') {
-                                calculateTotalInboxes();
-                            }
-
-                            // Re-run validation to update error messages properly after trimming
-                            if (typeof validateDomainsFormat === 'function') {
-                                validateDomainsFormat(true, false);
-                            }
-
-                            // Also update domain count and other UI elements
-                            if (typeof countDomains === 'function') {
-                                countDomains();
-                            }
-                            if (typeof updateRemainingInboxesBar === 'function') {
-                                updateRemainingInboxesBar();
-                            }
-                        }, 100);
-
-                        // Show notification about the automatic trimming
-                        const poolInfo = @json(optional($pool));
-                        const rawTotal = poolInfo && poolInfo.total_inboxes ? poolInfo.total_inboxes : TOTAL_INBOXES;
-
-                        Swal.fire({
-                            title: 'Domains Automatically Trimmed',
-                            html: `<strong>${removedCount}</strong> domains were automatically removed because your order limit is <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br>`,
-                            icon: 'info',
-                            confirmButtonText: 'OK',
-                            confirmButtonColor: '#3085d6'
-                        });
-                    }
-                }
-
-            });  // Close the first $(document).ready() block
-            // Second document ready block for existing functionality
-            $(document).ready(function() {
-                // Flag to prevent multiple popups for the same limit exceeded situation
-                let limitExceededShown = false;
-                // Flag to prevent toastr notifications during import
-                let isImporting = false;
-                // Master inbox email functionality - no confirmation needed
-
-                // ========================================
-                // DOMAIN VALIDATION SYSTEM
-                // ========================================
-                // New unified validation system using one comprehensive function:
-                // - validateDomainsFormat(checkLimits, showPopups) - Main validation function
-                // - validateDomainLimits() - Helper for limit checking  
-                // - validateAndTrimDomains() - Legacy wrapper for backward compatibility
-                // ========================================
-
-                /**
-                 * Comprehensive domain validation function that handles all domain validations:
-                 * - Empty domain validation
-                 * - Duplicate domain detection  
-                 * - Domain format validation
-                 * - Configuration error checking
-                 * - Order limit validation and auto-trimming
-                 * - Error display and clearing
-                 * 
-                 * @param {boolean} checkLimits - Whether to check order limits (default: true)
-                 * @param {boolean} showPopups - Whether to show popups for limits (default: true)
-                 * @returns {boolean} - True if validation passes, false otherwise
-                 */
-                function validateDomainsFormat(checkLimits = true, showPopups = true) {
-                    const domainsField = $('#domains');
-                    const domainsText = domainsField.val();
-                    const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-
-                    // Handle empty domains input
-                    if (!domainsText.trim()) {
-                        // Only clear errors if no high-priority errors exist
-                        if (!$('#domains-error').text().includes('Duplicate') && 
-                            !$('#domains-error').text().includes('Invalid') && 
-                            !$('#domains-error').text().includes('Cannot create domains')) {
-                            domainsField.removeClass('is-invalid');
-                            $('#domains-error').text('').removeClass('show-error');
-                        }
-                        calculateTotalInboxes();
-                        return true;
-                    }
-
-                    // Parse and clean domains
-                    let domains = domainsText.split(/[\n,]+/)
-                        .map(domain => domain.trim())
-                        .filter(domain => domain.length > 0);
-
-                    if (domains.length === 0) {
-                        calculateTotalInboxes();
-                        return true;
-                    }
-
-                    // Step 1: Check for duplicate domains
-                    const seen = new Set();
-                    const duplicates = domains.filter(domain => {
-                        if (seen.has(domain)) {
-                            return true;
-                        }
-                        seen.add(domain);
-                        return false;
-                    });
-
-                    if (duplicates.length > 0) {
-                        domainsField.addClass('is-invalid');
-                        $('#domains-error')
-                            .text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`)
-                            .addClass('show-error');
-                        calculateTotalInboxes();
-                        return false;
-                    }
-
-                    // Step 2: Validate domain format
-                    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
-                    const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
-                    const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
-
-                    if (invalidDomains.length > 0) {
-                        domainsField.addClass('is-invalid');
-                        $('#domains-error')
-                            .text(`Invalid domain format: ${invalidDomains.join(', ')} Valid formats: example.com, example.co.uk`)
-                            .addClass('show-error');
-                        calculateTotalInboxes();
-                        return false;
-                    }
-
-                    // Step 3: Check limits if requested
-                    if (checkLimits) {
-                        return validateDomainLimits(domains, domainsField, inboxesPerDomain, showPopups);
-                    }
-
-                    // All basic validations passed - clear errors
-                    if (!$('#domains-error').text().includes('Cannot create domains')) {
-                        domainsField.removeClass('is-invalid');
-                        $('#domains-error').text('').removeClass('show-error');
-                    }
-
-                    calculateTotalInboxes();
-                    return true;
-                }
-                /**
-                 * Helper function to validate domain limits and handle configuration errors
-                 * @param {Array} domains - Array of domain strings
-                 * @param {jQuery} domainsField - jQuery object for domains textarea
-                 * @param {number} inboxesPerDomain - Number of inboxes per domain
-                 * @param {boolean} showPopups - Whether to show popups
-                 * @returns {boolean} - True if within limits, false otherwise
-                 */
-                function validateDomainLimits(domains, domainsField, inboxesPerDomain, showPopups) {
-                    const totalInboxes = domains.length * inboxesPerDomain;
-                    const poolInfo = @json(optional($pool));
-
-                    // Calculate limits based on pool configuration
-                    let TOTAL_INBOXES = 0;
-                    let isConfigurationError = false;
-
-                    if (poolInfo && poolInfo.total_inboxes !== undefined) {
-                        const rawTotalInboxes = poolInfo.total_inboxes;
-
-                        // Check for configuration error (order limit can't fit any domains)
-                        if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
-                            TOTAL_INBOXES = 0;
-                            isConfigurationError = true;
-                        } else {
-                            // Calculate maximum usable inboxes
-                            const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
-                            TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
-                        }
-                    }
-
-                    // Handle configuration error
-                    if (isConfigurationError) {
-                        domainsField.addClass('is-invalid');
-                        $('#domains-error')
-                            .text('Can\'t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.')
-                            .addClass('show-error');
-
-                        if (isImporting) {
-                            calculateTotalInboxes();
-                            return false;
-                        }
-
-                        // Show configuration error popup
-                        if (showPopups && domains.length > 0 && !limitExceededShown) {
-                            limitExceededShown = true;
-                            Swal.fire({
-                                title: 'Configuration Issue',
-                                html: `<strong>Can't create inboxes with current settings.</strong><br><br>
-                                       Your order limit is <strong>${poolInfo.total_inboxes}</strong> inboxes, but you have selected <strong>${inboxesPerDomain}</strong> inboxes per domain.<br><br>
-                                       <small>Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.</small>`,
-                                icon: 'warning',
-                                confirmButtonText: 'Clear All Domains',
-                                confirmButtonColor: '#dc3545',
-                                showCancelButton: true,
-                                cancelButtonText: 'Keep Domains',
-                                cancelButtonColor: '#6c757d'
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    domainsField.val('');
-                                    domainsField.removeClass('is-invalid');
-                                    $('#domains-error').text('').removeClass('show-error');
-
-                                    calculateTotalInboxes();
-                                    if (typeof countDomains === 'function') countDomains();
-                                    if (typeof updateRemainingInboxesBar === 'function') updateRemainingInboxesBar();
-
-                                    toastr.success('All domains have been cleared due to configuration constraints.', 'Domains Cleared');
-                                }
-                                limitExceededShown = false;
-                            });
-                        }
-                        calculateTotalInboxes();
-                        return false;
-                    }
-
-                    // Handle order limit exceeded
-                    if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
-                        const rawTotal = poolInfo && poolInfo.total_inboxes ? poolInfo.total_inboxes : TOTAL_INBOXES;
-
-                        domainsField.addClass('is-invalid');
-                        $('#domains-error').html(`
-                            <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} usable inboxes.
-                            <br><small>Usable Limit: ${TOTAL_INBOXES} inboxes</small>
-                        `).addClass('show-error');
-
-                        if (isImporting) {
-                            calculateTotalInboxes();
-                            return false;
-                        }
-
-                        // Show limit exceeded popup with auto-trim option
-                        if (showPopups && !limitExceededShown) {
-                            limitExceededShown = true;
-                            const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
-                            const excessDomains = domains.length - maxDomainsAllowed;
-
-                            Swal.fire({
-                                title: 'Order Limit Exceeded',
-                                html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but this order supports only <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br><br>
-                                       You need to remove <strong>${excessDomains}</strong> domains.<br><br>
-                                       <small>Maximum domains allowed: ${maxDomainsAllowed}</small>`,
-                                icon: 'warning',
-                                confirmButtonText: 'I Understand',
-                                confirmButtonColor: '#f0ad4e',
-                                showCancelButton: true,
-                                cancelButtonText: 'Remove Excess Domains',
-                                cancelButtonColor: '#dc3545'
-                            }).then((result) => {
-                                if (!result.isConfirmed && result.dismiss === Swal.DismissReason.cancel) {
-                                    // Auto-trim excess domains
-                                    const trimmedDomains = domains.slice(0, maxDomainsAllowed);
-                                    domainsField.val(trimmedDomains.join('\n'));
-
-                                    // Clear errors and revalidate
-                                    domainsField.removeClass('is-invalid');
-                                    $('#domains-error').text('').removeClass('show-error');
-
-                                    calculateTotalInboxes();
-
-                                    // Re-run validation after trimming
-                                    setTimeout(() => {
-                                        validateDomainsFormat(true, false);
-                                        if (typeof countDomains === 'function') countDomains();
-                                        if (typeof updateRemainingInboxesBar === 'function') updateRemainingInboxesBar();
-                                    }, 100);
-
-                                    toastr.success(`${excessDomains} domains were removed to fit your order limit. You now have ${maxDomainsAllowed} domains (${TOTAL_INBOXES} usable inboxes).`, 'Domains Trimmed');
-                                }
-                                limitExceededShown = false;
-                            });
-                        }
-                        calculateTotalInboxes();
-                        return false;
-                    }
-
-                    // Within limits - clear flags and errors
-                    limitExceededShown = false;
-                    domainsField.removeClass('is-invalid');
-                    $('#domains-error').text('').removeClass('show-error');
-
-                    calculateTotalInboxes();
-                    return true;
-                }
-
-                // Legacy function for backward compatibility - redirects to new function
-                function validateAndTrimDomains() {
-                    // Redirect to the new comprehensive validation function with full checks
-                    return validateDomainsFormat(true, true);
-
-                    if (!domainsText.trim()) {
-                        // Only clear errors if no high-priority errors exist
-                        if (!$('#domains-error').text().includes('Duplicate') && !$('#domains-error').text().includes('Invalid') && !$('#domains-error').text().includes('Cannot create domains')) {
-                            domainsField.removeClass('is-invalid');
-                            $('#domains-error').text('').removeClass('show-error');
-                        }             
-                        calculateTotalInboxes();
-                        return;
-                    }
-
-                    let domains = domainsText.split(/[\n,]+/)
-                        .map(domain => domain.trim())
-                        .filter(domain => domain.length > 0);
-
-                    if (domains.length > 0) {
-                        // Check for duplicates
-                        const seen = new Set();
-                        const duplicates = domains.filter(domain => {
-                            if (seen.has(domain)) {
-                                return true;
-                            }
-                            seen.add(domain);
-                            return false;
-                        });
-
-                        if (duplicates.length > 0) {
-                            domainsField.addClass('is-invalid');
-                            $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`).addClass('show-error');
-                            calculateTotalInboxes();
-                            return;
-                        }
-
-                        // Updated domain format validation to handle multi-level domains
-                        const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
-                        const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
-                        const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegex.test(d));
-
-                        if (invalidDomains.length > 0) {
-                            domainsField.addClass('is-invalid');
-                            $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`).addClass('show-error');
-                            calculateTotalInboxes();
-                            return;
-                        }
-
-                        // Auto-trim domains if they exceed order limit
-                        const totalInboxes = domains.length * inboxesPerDomain;
-
-                        // Get current order's total inboxes limit from reorder_info
-                        const poolInfo = @json(optional($pool));
+                    // Global function for updating price display based on total inboxes
+                    function updatePriceDisplay(totalInboxes) {
+                        const currentPlan = null; // Removed plan dependency
+                        const poolInfo = @json($pool ?? null);
 
                         // Calculate TOTAL_INBOXES based on poolInfo.total_inboxes
                         let TOTAL_INBOXES = 0;
-                        let isConfigurationError = false;
-
                         if (poolInfo && poolInfo.total_inboxes !== undefined) {
                             const rawTotalInboxes = poolInfo.total_inboxes;
+                            const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
 
-                            // Check for configuration error first (order has limit but can't fit any domains)
-                            if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
-                                TOTAL_INBOXES = 0;
-                                isConfigurationError = true;
+                            // Calculate maximum usable inboxes based on inboxes_per_domain
+                            // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
+                            const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
+                            TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
+                        }
+
+                        const submitButton = $('button[type="submit"]');
+                        let priceHtml = '';
+
+                        if (!totalInboxes || totalInboxes === 0) {
+                            priceHtml = `
+                                <div class="d-flex align-items-center gap-3 mb-4">
+                                    <div>
+                                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
+                                    </div>
+                                    <div>
+                                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                                        <br>
+                                        <span>Please add domains and inboxes to calculate price</span>
+                                    </div>
+                                </div>
+                                <h6><span class="theme-text">Original Price:</span> <small>Please add domains and inboxes to calculate price</small></h6>
+                                <h6><span class="theme-text">Discount:</span> 0%</h6>
+                                <h6><span class="theme-text">Total:</span> <small>Please add domains and inboxes to calculate price</small></h6>
+                            `;
+                        } else if (currentPlan && TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+                            // Order limit exceeded (only show if order has a limit, i.e., total_inboxes > 0)
+                            priceHtml = `
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} inboxes.
+                                    <br><small>Please reduce the number of domains.</small>
+                                </div>
+                                <h6><span class="theme-text">Original Price:</span> <small>Exceeds order limit</small></h6>
+                                <h6><span class="theme-text">Discount:</span> 0%</h6>
+                                <h6><span class="theme-text">Total:</span> <small>Please reduce domains</small></h6>
+                            `;
+                            if (submitButton.length) {
+                                submitButton.prop('disabled', true);
+                                submitButton.hide();
+                            }
+                        } else if (currentPlan) {
+                            const originalPrice = parseFloat(currentPlan.price * totalInboxes).toFixed(2);
+                            priceHtml = `
+                                <div class="d-flex align-items-center gap-3 mb-4">
+                                    <div>
+                                        <img src="https://cdn-icons-png.flaticon.com/128/300/300221.png" width="30" alt="">
+                                    </div>
+                                    <div>
+                                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                                        <br>
+                                        <span>${totalInboxes} x $${parseFloat(currentPlan.price).toFixed(2)} <small>/${currentPlan.duration}</small></span>
+                                    </div>
+                                </div>
+                                <h6><span class="theme-text">Original Price:</span> $${originalPrice}</h6>
+                                <h6><span class="theme-text">Discount:</span> 0%</h6>
+                                <h6><span class="theme-text">Total:</span> $${originalPrice} <small>/${currentPlan.duration}</small></h6>
+                            `;
+                            if (submitButton.length) {
+                                submitButton.prop('disabled', false);
+                                submitButton.show();
+                            }
+                        }
+
+                        // Update the price display section
+                        $('.price-display-section').html(priceHtml);
+                    }
+
+                    // Global function for updating remaining inboxes progress bar
+                    function updateRemainingInboxesBar(currentInboxes = null, totalLimit = null) {
+                        // Get current inboxes if not provided
+                        if (currentInboxes === null) {
+                            const domainsText = $('#domains').val() || '';
+                            const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+
+                            let editableDomainsCount = 0;
+                            if (domainsText) {
+                                const domains = domainsText.split(/[\n,]+/)
+                                    .map(domain => domain.trim())
+                                    .filter(domain => domain.length > 0);
+                                const uniqueDomains = [...new Set(domains)];
+                                editableDomainsCount = uniqueDomains.length;
+                            }
+
+                            // Include used domains in total count (safely check if usedDomains exists)
+                            const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
+                            const totalDomainsCount = editableDomainsCount + usedDomainsCount;
+                            currentInboxes = totalDomainsCount * inboxesPerDomain;
+                        }
+
+                        // For progress bar display, maxInboxes should be the current total (used + editable domains)
+                        // This shows "current inboxes / total current inboxes" rather than "current inboxes / pool limit"
+                        const poolInfo = @json(isset($pool) ? $pool : null);
+                        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+
+                        // Calculate current total domains (used + editable)
+                        const domainsText = $('#domains').val() || '';
+                        let editableDomainsCount = 0;
+                        if (domainsText) {
+                            const domains = domainsText.split(/[\n,]+/)
+                                .map(domain => domain.trim())
+                                .filter(domain => domain.length > 0);
+                            const uniqueDomains = [...new Set(domains)];
+                            editableDomainsCount = uniqueDomains.length;
+                        }
+                        const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
+                        const totalCurrentDomains = editableDomainsCount + usedDomainsCount;
+                        const maxInboxes = totalCurrentDomains * inboxesPerDomain;
+
+                        // Update hidden form fields for server submission
+                        $('#current_inboxes').val(currentInboxes);
+                        $('#max_inboxes').val(maxInboxes);
+
+                        // Calculate percentage used (only if order has limits)
+                        const percentageUsed = maxInboxes > 0 ? (currentInboxes / maxInboxes) * 100 : 0;
+
+                        // Update progress bar elements
+                        const progressBar = $('#remaining-inboxes-bar');
+                        const progressText = $('#remaining-inboxes-text');
+                        const progressNote = $('#remaining-inboxes-note');
+
+                        if (progressBar.length === 0) {
+                            return; // Progress bar not found, exit gracefully
+                        }
+
+                        // Set width and aria values
+                        progressBar.css('width', Math.min(percentageUsed, 100) + '%');
+                        progressBar.attr('aria-valuenow', Math.min(percentageUsed, 100));
+                        progressBar.attr('aria-valuemax', 100);
+
+                        // Check against pool limits for validation
+                        let poolLimit = 0;
+                        let exceedsLimit = false;
+
+                        if (poolInfo && poolInfo.total_inboxes !== undefined && poolInfo.total_inboxes > 0) {
+                            const rawTotalInboxes = poolInfo.total_inboxes;
+
+                            // For your case: rawTotalInboxes should be 3, inboxesPerDomain should be 1
+                            // So poolLimit should be 3 (3 domains × 1 inbox = 3 inboxes)
+                            poolLimit = rawTotalInboxes; // Direct assignment - pool limit is the total inboxes allowed
+
+                            // Check if current usage exceeds pool limit
+                            exceedsLimit = currentInboxes > poolLimit;
+
+                            // Show domain validation error if limit exceeded (but don't overwrite other validation errors)
+                            if (exceedsLimit) {
+                                const currentError = $('#domains-error').text();
+                                // Only show limit error if there's no other validation error (like duplicates)
+                                if (!currentError || (!currentError.includes('Duplicate') && !currentError.includes('Invalid'))) {
+                                    const domainsField = $('#domains');
+                                    // const usedDomainsText = usedDomainsCount > 0 ? ` (${editableDomainsCount} editable + ${usedDomainsCount} used)` : '';
+                                    const usedDomainsText = '';
+                                    domainsField.addClass('is-invalid');
+                                    $('#domains-error').html(`
+                                        <strong>Order Limit Exceeded</strong> — You currently have ${currentInboxes} inboxes, but this order supports only ${poolLimit} usable inboxes.
+                                        <br><small>Pool Limit: ${rawTotalInboxes} total inboxes with ${inboxesPerDomain} inbox${inboxesPerDomain > 1 ? 'es' : ''} per domain</small>
+                                    `);
+                                }
                             } else {
+                                // Only clear limit-related errors, keep other validation errors (like duplicates)
+                                const currentError = $('#domains-error').text();
+                                if (currentError && currentError.includes('Order Limit Exceeded')) {
+                                    $('#domains').removeClass('is-invalid');
+                                    $('#domains-error').text('');
+                                }
+                            }
+                        }
+
+                        // Update text display - show current usage vs current total
+                        if (maxInboxes > 0) {
+                            // Show current usage: "current inboxes / total current inboxes"
+                            // const domainBreakdown = usedDomainsCount > 0 ? ` (${editableDomainsCount} editable + ${usedDomainsCount} used)` : '';
+                            const domainBreakdown = '';
+
+                            if (exceedsLimit && poolLimit > 0) {
+                                // Show limit exceeded in progress text
+                                progressText.text(`${currentInboxes} / ${poolLimit} inboxes used (LIMIT EXCEEDED)${domainBreakdown}`);
+                                progressBar.css('width', '100%');
+                                progressBar.css('background', 'linear-gradient(45deg, #dc3545, #c82333)');
+                                progressNote.html(`(Pool limit: ${poolLimit} inboxes, Current: ${currentInboxes} inboxes)`);
+
+                                // Hide submit button when order limit is exceeded
+                                const submitButton = $('button[type="submit"]');
+                                if (submitButton.length) {
+                                    submitButton.prop('disabled', true);
+                                    submitButton.hide();
+                                }
+                            } else {
+                                // Normal display - show current vs current (not vs pool limit)
+                                progressText.text(`${currentInboxes} / ${maxInboxes} inboxes used${domainBreakdown}`);
+                                progressBar.css('width', '100%');
+                                progressBar.css('background', 'linear-gradient(45deg, #28a745, #20c997)');
+
+                                // Show submit button when within order limits
+                                const submitButton = $('button[type="submit"]');
+                                if (submitButton.length) {
+                                    submitButton.prop('disabled', false);
+                                    submitButton.show();
+                                }
+
+                                // Show breakdown information with pool limit info if available
+                                if (poolLimit > 0) {
+                                    const poolLimitText = poolLimit !== maxInboxes ? ` (Pool limit: ${poolLimit})` : '';
+                                    if (usedDomainsCount > 0) {
+                                        progressNote.html(`(Total: ${totalCurrentDomains} domains - ${editableDomainsCount} editable, ${usedDomainsCount} used${poolLimitText})`);
+                                    } else {
+                                        progressNote.html(`(Total: ${totalCurrentDomains} domains, ${inboxesPerDomain} inbox${inboxesPerDomain > 1 ? 'es' : ''} per domain${poolLimitText})`);
+                                    }
+                                } else {
+                                    if (usedDomainsCount > 0) {
+                                        progressNote.html(`(Total: ${totalCurrentDomains} domains - ${editableDomainsCount} editable, ${usedDomainsCount} used)`);
+                                    } else {
+                                        progressNote.html(`(Total: ${totalCurrentDomains} domains, ${inboxesPerDomain} inbox${inboxesPerDomain > 1 ? 'es' : ''} per domain)`);
+                                    }
+                                }
+                            }
+                        } else {
+                            // No domains yet
+                            progressText.text('0 / 0 inboxes used');
+                            progressBar.css('width', '0%');
+                            progressNote.html('(Add domains to see usage)');
+                            progressBar.css('background', 'linear-gradient(45deg, #6c757d, #5a6268)');
+                        }
+                    }
+
+                    $(document).ready(function() {
+                        // Initialize domain counts and calculations on page load
+                        if (typeof calculateTotalInboxes === 'function') {
+                            calculateTotalInboxes();
+                        }
+                        if (typeof updateRemainingInboxesBar === 'function') {
+                            updateRemainingInboxesBar();
+                        }
+
+                        // Show pool limit information
+                        const poolInfo = @json(isset($pool) ? $pool : null);
+                        if (poolInfo && poolInfo.total_inboxes) {
+                            if (poolInfo.total_inboxes === 0) {
+                                toastr.info('This pool has unlimited inboxes. No inbox limits apply.', 'Unlimited Pool', {
+                                    timeOut: 4000,
+                                    closeButton: true,
+                                    progressBar: true
+                                });
+                            } else {
+                                toastr.info(`This order allows up to ${poolInfo.total_inboxes} inboxes.`, 'Order Limit', {
+                                    timeOut: 4000,
+                                    closeButton: true,
+                                    progressBar: true
+                                });
+                            }
+                        }
+
+                        // Initialize Order Import Modal
+                        $('#orderImportBtn').on('click', function() {
+                            initializeOrdersImportTable();
+                        });
+
+                        // Add event listeners for automatic progress bar updates
+                        $(document).on('input change', '#domains, #inboxes_per_domain', function() {
+                            if (typeof calculateTotalInboxes === 'function') {
+                                calculateTotalInboxes();
+                            }
+                        });
+
+                        // Initial progress bar update on page load
+                        setTimeout(() => {
+                            if (typeof updateRemainingInboxesBar === 'function') {
+                                updateRemainingInboxesBar();
+                            }
+                        }, 1000);
+
+                        function initializeOrdersImportTable() {
+                            // Show loading indicator
+                            Swal.fire({
+                                title: 'Loading Orders...',
+                                text: 'Please wait while we fetch your orders.',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                allowEnterKey: false,
+                                showConfirmButton: false,
+                                backdrop: true,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+
+                            // Clear existing table content
+                            $('#ordersImportTable tbody').empty();
+
+                            // AJAX call to fetch orders data
+                            $.ajax({
+                                url: "{{ route('admin.pools.import.data') }}",
+                                type: "GET",
+                                data: {
+                                    for_import: true,
+                                    exclude_current: "{{ isset($pool) ? $pool->id : '' }}"
+                                },
+                                success: function(response) {
+                                    // Close loading indicator
+                                    Swal.close();
+
+                                    // Show modal
+                                    $('#orderImportModal').modal('show');
+
+                                    // Populate table with data
+                                    populateOrdersTable(response.data || []);
+                                },
+                                error: function(xhr, status, error) {
+                                    // Close loading indicator
+                                    Swal.close();
+
+                                    console.error('Error loading orders:', error);
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: 'Failed to load orders data. Please try again.',
+                                        icon: 'error',
+                                        confirmButtonText: 'OK'
+                                    });
+                                }
+                            });
+                        }
+
+                        function populateOrdersTable(orders) {
+                            const tbody = $('#ordersImportTable tbody');
+                            tbody.empty();
+
+                            if (!orders || orders.length === 0) {
+                                tbody.append(`
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="fa-solid fa-inbox me-2"></i>
+                                            No orders available for import
+                                        </td>
+                                    </tr>
+                                `);
+                                return;
+                            }
+
+                            orders.forEach(function(order) {
+                                const row = `
+                                    <tr class="table-row-hover">
+                                        <td class="text-center">${order.id || 'N/A'}</td>
+                                        <td title="${getPlanName(order)}">${getPlanName(order)}</td>
+                                        <td class="text-center">${order.total_inboxes || '0'}</td>
+                                        <td class="text-center">${order.status_badge || 'N/A'}</td>
+                                        <td class="text-center" title="${order.created_at_formatted || 'N/A'}">${order.created_at_formatted || 'N/A'}</td>
+                                        <td class="text-center">${getActionButton(order)}</td>
+                                    </tr>
+                                `;
+                                tbody.append(row);
+                            });
+
+                            // Add horizontal scroll indicators for better UX
+                            setTimeout(() => {
+                                addScrollIndicators();
+                            }, 100);
+                        }
+
+                        // Function to add scroll indicators for better horizontal scrolling UX
+                        function addScrollIndicators() {
+                            const tableContainer = $('.table-responsive');
+                            if (tableContainer.length) {
+                                const scrollWidth = tableContainer[0].scrollWidth;
+                                const clientWidth = tableContainer[0].clientWidth;
+
+                                // Only show indicators if table is wider than container
+                                if (scrollWidth > clientWidth) {
+                                    // Add scroll indicators
+                                    if (!$('.scroll-indicator-left').length) {
+                                        tableContainer.before(`
+                                            <div class="scroll-indicators">
+                                                <div class="scroll-indicator-left">
+                                                    <i class="fa-solid fa-chevron-left"></i>
+                                                </div>
+                                                <div class="scroll-indicator-right">
+                                                    <i class="fa-solid fa-chevron-right"></i>
+                                                </div>
+                                            </div>
+                                        `);
+                                    }
+
+                                    // Handle scroll events to update indicators
+                                    tableContainer.on('scroll', function() {
+                                        const scrollLeft = $(this).scrollLeft();
+                                        const maxScroll = scrollWidth - clientWidth;
+
+                                        $('.scroll-indicator-left').toggleClass('visible', scrollLeft > 0);
+                                        $('.scroll-indicator-right').toggleClass('visible', scrollLeft < maxScroll - 5);
+                                    });
+
+                                    // Initial state
+                                    $('.scroll-indicator-left').removeClass('visible');
+                                    $('.scroll-indicator-right').addClass('visible');
+                                }
+                            }
+                        }
+
+                        function getPlanName(order) {
+                            if (order.plan && order.plan.name) {
+                                return order.plan.name;
+                            }
+                            return 'N/A';
+                        }
+
+                        function getActionButton(order) {
+                            return `
+                                <button type="button" 
+                                        class="import-order-btn" 
+                                        data-order-id="${order.id}"
+                                        title="Import this order data">
+                                    <i class="fa-solid fa-download me-1"></i>
+                                    Import
+                                </button>
+                            `;
+                        }    
+                        // Handle order import
+                        $(document).on('click', '.import-order-btn', function() {
+                            const poolId = $(this).data('pool-id');
+
+                            Swal.fire({
+                                title: 'Import Order Data?',
+                                text: 'This will replace all current form data with the selected order\'s information. Are you sure?',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#3085d6',
+                                cancelButtonColor: '#d33',
+                                confirmButtonText: 'Yes, Import Data',
+                                cancelButtonText: 'Cancel'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    importPoolData(poolId);
+                                }
+                            });
+                        });
+
+                        function importPoolData(poolId) {
+                            // Show loading
+                            Swal.fire({
+                                title: 'Importing Order Data...',
+                                text: 'Please wait while we import the order data.',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                allowEnterKey: false,
+                                showConfirmButton: false,
+                                backdrop: true,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+
+                            $.ajax({
+                                url: "{{ route('admin.pools.import-data', ':id') }}".replace(':id', poolId),
+                                method: 'GET',
+                                success: function(response) {
+                                    if (response.success && response.data) {
+                                        populateFormWithOrderData(response.data);
+                                        $('#orderImportModal').modal('hide');
+
+                                        Swal.fire({
+                                            title: 'Success!',
+                                            text: 'Order data has been imported successfully.',
+                                            icon: 'success',
+                                            timer: 2000,
+                                            showConfirmButton: false
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            title: 'Error!',
+                                            text: response.message || 'Failed to import order data.',
+                                            icon: 'error',
+                                            confirmButtonText: 'OK'
+                                        });
+                                    }
+                                },
+                                error: function(xhr) {
+                                    Swal.close();
+                                    let errorMessage = 'An error occurred while importing order data.';
+                                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                                        errorMessage = xhr.responseJSON.message;
+                                    }
+
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: errorMessage,
+                                        icon: 'error',
+                                        confirmButtonText: 'OK'
+                                    });
+                                }
+                            });
+                        }
+
+                        function populateFormWithOrderData(orderData) {
+                            // Set import flag to prevent toastr notifications during import
+                            isImporting = true;
+
+                            // Clear any existing validation errors
+                            $('.is-invalid').removeClass('is-invalid');
+                            $('.invalid-feedback').text('');
+
+                            // Specifically clear domains error
+                            $('#domains').removeClass('is-invalid');
+                            $('#domains-error').text('');
+
+                            const poolData = orderData;
+                            if (!poolData) {
+                                toastr.warning('No detailed information available for this order.');
+                                return;
+                            }
+                            // Populate basic fields
+                            if (poolInfo.forwarding_url) $('#forwarding').val(poolInfo.forwarding_url);
+                            if (poolInfo.hosting_platform) $('#hosting').val(poolInfo.hosting_platform).trigger('change');
+                            if (poolInfo.domains) {
+                                // Handle both old format (array of strings) and new format (array of objects with id/name)
+                                let domainsText = '';
+                                if (Array.isArray(poolInfo.domains)) {
+                                    if (poolInfo.domains.length > 0 && typeof poolInfo.domains[0] === 'object' && poolInfo.domains[0].name) {
+                                        // New format: array of objects with id/name
+                                        domainsText = poolInfo.domains.map(d => d.name).join('\n');
+                                        // Update existing domain IDs to avoid duplicates
+                                        poolInfo.domains.forEach(domain => {
+                                            if (domain.id && domain.name) {
+                                                existingDomainIds.set(domain.name, domain.id);
+                                                // Extract sequence number from imported ID (format: poolId_sequence)
+                                                const importIdParts = domain.id.toString().split('_');
+                                                if (importIdParts.length === 2 && !isNaN(importIdParts[1])) {
+                                                    domainSequenceCounter = Math.max(domainSequenceCounter, parseInt(importIdParts[1]) + 1);
+                                                }
+                                            }
+                                        });
+                                    } else {
+                                        // Old format: array of strings
+                                        domainsText = poolInfo.domains.join('\n');
+                                    }
+                                } else if (typeof poolInfo.domains === 'string') {
+                                    domainsText = poolInfo.domains;
+                                }
+
+                                $('#domains').val(domainsText);
+                                // Trigger domain counting after populating domains
+                                setTimeout(() => {
+                                    if (typeof countDomains === 'function') {
+                                        countDomains();
+                                    }
+                                }, 100);
+                            }
+                            if (poolData.sending_platform) $('#sending_platform').val(poolData.sending_platform).trigger('change');
+                            if (poolData.inboxes_per_domain) $('#inboxes_per_domain').val(poolData.inboxes_per_domain).trigger('change');
+
+                            // Don't import total_inboxes - always use current order's limit
+
+                            // Populate email account information
+                            if (poolData.first_name) $('input[name="first_name"]').val(poolData.first_name);
+                            if (poolData.last_name) $('input[name="last_name"]').val(poolData.last_name);
+                            if (poolData.email_persona_password) $('input[name="email_persona_password"]').val(poolData.email_persona_password);
+                            if (poolData.email_persona_picture_link) $('input[name="email_persona_picture_link"]').val(poolData.email_persona_picture_link);
+                            // Handle master inbox email and confirmation
+                            if (poolData.master_inbox_confirmation !== undefined) {
+                                $('#master_inbox_confirmation').val(poolData.master_inbox_confirmation ? '1' : '0');
+                            }
+                            if (poolData.master_inbox_email) {
+                                $('input[name="master_inbox_email"]').val(poolData.master_inbox_email);
+                            }
+                            // Trigger master inbox email field visibility toggle after setting values
+                            if (typeof toggleMasterInboxEmail === 'function') {
+                                toggleMasterInboxEmail();
+                            }
+                            if (poolData.additional_info) $('textarea[name="additional_info"]').val(poolData.additional_info);
+
+                            // Populate prefix variants if available
+                            if (poolData.prefix_variants) {
+                                try {
+                                    const prefixVariants = typeof poolData.prefix_variants === 'string' 
+                                        ? JSON.parse(poolData.prefix_variants) 
+                                        : poolData.prefix_variants;
+
+                                    Object.keys(prefixVariants).forEach(key => {
+                                        const input = $(`input[name="prefix_variants[${key}]"]`);
+                                        if (input.length && prefixVariants[key]) {
+                                            input.val(prefixVariants[key]);
+                                        }
+                                    });
+                                } catch (e) {
+                                    console.warn('Could not parse prefix variants:', e);
+                                }
+                            }
+
+                            // Populate prefix variants details if available
+                            if (poolData.prefix_variants_details) {
+                                try {
+                                    const prefixVariantsDetails = typeof poolData.prefix_variants_details === 'string' 
+                                        ? JSON.parse(poolData.prefix_variants_details) 
+                                        : poolData.prefix_variants_details;
+
+                                    Object.keys(prefixVariantsDetails).forEach(variantKey => {
+                                        const details = prefixVariantsDetails[variantKey];
+                                        if (details) {
+                                            // Populate first name
+                                            if (details.first_name) {
+                                                $(`input[name="prefix_variants_details[${variantKey}][first_name]"]`).val(details.first_name);
+                                            }
+                                            // Populate last name
+                                            if (details.last_name) {
+                                                $(`input[name="prefix_variants_details[${variantKey}][last_name]"]`).val(details.last_name);
+                                            }
+                                            // Populate profile link
+                                            if (details.profile_link) {
+                                                $(`input[name="prefix_variants_details[${variantKey}][profile_link]"]`).val(details.profile_link);
+                                            }
+                                        }
+                                    });
+                                } catch (e) {
+                                    console.warn('Could not parse prefix variants details:', e);
+                                }
+                            }
+
+                            // Populate dynamic platform fields
+                            setTimeout(() => {
+                                populateDynamicFields(poolData);
+                            }, 500);
+
+                            // Recalculate totals and check domain limits with a slight delay to ensure all fields are populated
+                            setTimeout(() => {
+                                if (typeof calculateTotalInboxes === 'function') {
+                                    calculateTotalInboxes();
+                                }
+
+                                // Update domain count badge after import
+                                if (typeof countDomains === 'function') {
+                                    countDomains();
+                                }
+
+                                // Check domain cutting if needed
+                                checkDomainCutting();
+
+                                // Force update progress bar and price one more time to ensure it's correct
+                                setTimeout(() => {
+                                    if (typeof updateRemainingInboxesBar === 'function') {
+                                        updateRemainingInboxesBar();
+                                    }
+                                    if (typeof calculateTotalInboxes === 'function') {
+                                        calculateTotalInboxes();
+                                    }
+                                    // Final domain count update
+                                    if (typeof countDomains === 'function') {
+                                        // alert('Domains have been imported successfully. Please check the domain count.');
+                                        $('#domains').trigger('input'); // Trigger input to recalculate domains
+                                        countDomains();
+                                    }
+                                    $('#domains').trigger('input'); // Trigger input to recalculate domains
+                                }, 200);
+                            }, 600);
+
+                            // Clear import flag after a delay to ensure all operations are complete
+                            setTimeout(() => {
+                                isImporting = false;
+
+                                // Check if imported data exceeds current order limits and show appropriate notification
+                                const finalDomains = $('#domains').val();
+                                const finalInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+
+                                if (finalDomains) {
+                                    const domainsArray = finalDomains.split(/[\n,]+/).filter(d => d.trim().length > 0);
+                                    const totalInboxes = domainsArray.length * finalInboxesPerDomain;
+
+                                    // Use the current order's total_inboxes value for validation (not imported)
+                                    const poolInfo = @json(optional($pool));
+                                    let currentOrderLimit = 0;
+                                    let isConfigurationError = false;
+
+                                    if (poolInfo && poolInfo.total_inboxes) {
+                                        // Check for configuration error first (order has limit but can't fit any domains)
+                                        if (poolInfo.total_inboxes > 0 && poolInfo.total_inboxes < finalInboxesPerDomain) {
+                                            currentOrderLimit = 0;
+                                            isConfigurationError = true;
+                                        } else {
+                                            const maxDomainsAllowed = Math.floor(poolInfo.total_inboxes / finalInboxesPerDomain);
+                                            currentOrderLimit = maxDomainsAllowed * finalInboxesPerDomain;
+                                        }
+                                    }
+
+                                    // Prioritize configuration error over order limit exceeded
+                                    if (isConfigurationError) {
+                                        // Configuration error: order has limit but can't fit any domains
+                                        $('#domains').addClass('is-invalid');
+                                        $('#domains-error').text('Can’t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
+                                        toastr.warning('Can’t create inboxes with current settings. Please reduce inboxes per domain or contact support.', 'Import Complete - Configuration Issue', {
+                                            timeOut: 8000,
+                                            closeButton: true,
+                                            progressBar: true
+                                        });
+                                    } else if (currentOrderLimit > 0 && totalInboxes > currentOrderLimit) {
+                                        // Show domains-error div for exceeding current order limit
+                                        $('#domains').addClass('is-invalid');
+                                        $('#domains-error').html(`
+                                            <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${currentOrderLimit} usable inboxes.
+                                            <br><small>Usable Limit: ${currentOrderLimit} inboxes</small>
+                                        `);
+                                        toastr.warning(`Order Limit Exceeded — You currently have ${totalInboxes} inboxes, but this order supports only ${currentOrderLimit} usable inboxes.`, 'Import Complete - Order Limit Exceeded', {
+                                            timeOut: 8000,
+                                            closeButton: true,
+                                            progressBar: true
+                                        });
+                                    } else {
+                                        // Clear domain errors if within valid range
+                                        $('#domains').removeClass('is-invalid');
+                                        $('#domains-error').text('');
+                                        toastr.success('Order data imported successfully!');
+                                    }
+                                } else {
+                                    // Clear domain errors if no domains
+                                    $('#domains').removeClass('is-invalid');
+                                    $('#domains-error').text('');
+                                    toastr.success('Order data imported successfully!');
+                                }
+                            }, 1000);
+
+                        }
+
+                        function populateDynamicFields(poolData) {
+                            // Populate hosting platform fields
+                            const hostingFields = [
+                                'backup_codes', 'bison_url', 'bison_workspace', 
+                                'platform_login', 'platform_password'
+                            ];
+
+                            hostingFields.forEach(field => {
+                                if (poolData[field]) {
+                                    const input = $(`input[name="${field}"], textarea[name="${field}"]`);
+                                    if (input.length) {
+                                        input.val(poolData[field]);
+                                    }
+                                }
+                            });
+
+                            // Populate sending platform fields
+                            const sendingFields = [
+                                'sequencer_login', 'sequencer_password'
+                            ];
+
+                            sendingFields.forEach(field => {
+                                if (poolData[field]) {
+                                    const input = $(`input[name="${field}"], textarea[name="${field}"]`);
+                                    if (input.length) {
+                                        input.val(poolData[field]);
+                                    }
+                                }
+                            });
+                        }
+
+                        function checkDomainCutting() {
+                            // Don't auto-trim during import
+                            if (isImporting) {
+                                return;
+                            }
+
+                            const domainsText = $('#domains').val();
+                            const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+
+                            if (!domainsText) return;
+
+                            const domains = domainsText.split(/[\n,]+/)
+                                .map(domain => domain.trim())
+                                .filter(domain => domain.length > 0);
+
+                            const totalInboxes = domains.length * inboxesPerDomain;
+
+                            // Always use current order's total inboxes limit (not imported)
+                            const poolInfo = @json(optional($pool));
+                            let TOTAL_INBOXES = 0;
+
+                            if (poolInfo && poolInfo.total_inboxes !== undefined) {
+                                const rawTotalInboxes = poolInfo.total_inboxes;
+
                                 // Calculate maximum usable inboxes based on inboxes_per_domain
                                 // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
                                 const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
                                 TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
                             }
-                        }
 
-                        // Handle configuration error vs regular order limit exceeded
-                        if (isConfigurationError) {
-                            // Configuration error: order has limit but can't fit any domains with current inboxes per domain
-                            $('#domains').addClass('is-invalid');
-                            $('#domains-error').text('Can’t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
-
-                            // During import, just return early
-                            if (isImporting) {
-                                return;
-                            }
-
-                            // For configuration errors, show a specific dialog when user has domains that need to be cleared
-                            if (domains.length > 0 && !limitExceededShown) {
-                                limitExceededShown = true;
-                                Swal.fire({
-                                    title: 'Configuration Issue',
-                                    html: `<strong>Can’t create inboxes with current settings.</strong><br><br>
-                                           Your order limit is <strong>${poolInfo.total_inboxes}</strong> inboxes, but you have selected <strong>${inboxesPerDomain}</strong> inboxes per domain.<br><br>
-                                           <small>Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.</small>`,
-                                    icon: 'warning',
-                                    confirmButtonText: 'Clear All Domains',
-                                    confirmButtonColor: '#dc3545',
-                                    showCancelButton: true,
-                                    cancelButtonText: 'Keep Domains',
-                                    cancelButtonColor: '#6c757d'
-                                }).then((result) => {
-                                    if (result.isConfirmed) {
-                                        // Clear all domains
-                                        domainsField.val('');
-
-                                        // Clear the error message and update validation
-                                        $('#domains').removeClass('is-invalid');
-                                        $('#domains-error').text('');
-
-                                        // Recalculate totals after clearing
-                                        if (typeof calculateTotalInboxes === 'function') {
-                                            calculateTotalInboxes();
-                                        }
-
-                                        // Update other UI elements
-                                        if (typeof countDomains === 'function') {
-                                            countDomains();
-                                        }
-                                        if (typeof updateRemainingInboxesBar === 'function') {
-                                            updateRemainingInboxesBar();
-                                        }
-
-                                        toastr.success('All domains have been cleared due to configuration constraints.', 'Domains Cleared');
-                                    }
-                                    // Reset flag after popup is closed
-                                    limitExceededShown = false;
-                                });
-                            }
-                        } else if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES && !isConfigurationError) {
-                            // Get original total for display
-                            const rawTotal = poolInfo && poolInfo.total_inboxes ? poolInfo.total_inboxes : TOTAL_INBOXES;
-
-                            // Always show order limit in domains-error div when limit exceeded
-                            $('#domains').addClass('is-invalid');
-                            $('#domains-error').html(`
-                                <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} usable inboxes.
-                                <br><small>Usable Limit: ${TOTAL_INBOXES} inboxes</small>
-                            `);
-
-                            // During import, just return early
-                            if (isImporting) {
-                                return;
-                            }
-                            // Show popup warning but don't auto-trim (only show once per session)
-                            if (!limitExceededShown) {
-                                limitExceededShown = true;
+                            // Only enforce limits if order has a limit (total_inboxes > 0)
+                            if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+                                // Automatically trim domains to fit within order limit
                                 const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
-                                const excessDomains = domains.length - maxDomainsAllowed;
+                                const trimmedDomains = domains.slice(0, maxDomainsAllowed);
+                                const removedCount = domains.length - maxDomainsAllowed;
 
-                                // Show warning popup without auto-trimming
-                                Swal.fire({
-                                    title: 'Configuration Issue',
-                                    html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but this order supports only <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br><br>
-                                           You need to remove <strong>${excessDomains}</strong> domains.<br><br>
-                                           <small>Maximum domains allowed: ${maxDomainsAllowed}</small>`,
-                                    icon: 'warning',
-                                    confirmButtonText: 'I Understand',
-                                    confirmButtonColor: '#f0ad4e',
-                                    showCancelButton: true,
-                                    cancelButtonText: 'Remove Excess Domains',
-                                    cancelButtonColor: '#dc3545'
-                                }).then((result) => {
-                                    if (!result.isConfirmed && result.dismiss === Swal.DismissReason.cancel) {
-                                        // User chose to remove excess domains
-                                        const trimmedDomains = domains.slice(0, maxDomainsAllowed);
-                                        domainsField.val(trimmedDomains.join('\n'));
+                                $('#domains').val(trimmedDomains.join('\n'));
 
-                                        // Clear the error message and update validation
-                                        $('#domains').removeClass('is-invalid');
-                                        $('#domains-error').text('');
+                                // Clear the error message and update validation
+                                $('#domains').removeClass('is-invalid');
+                                $('#domains-error').text('');
 
-                                        // Recalculate and revalidate
+                                // Recalculate totals after trimming
+                                if (typeof calculateTotalInboxes === 'function') {
+                                    calculateTotalInboxes();
+                                }
+
+                                // Force update the price display after domain trimming
+                                setTimeout(() => {
+                                    if (typeof calculateTotalInboxes === 'function') {
                                         calculateTotalInboxes();
-
-                                        // Re-run validation to update error messages properly
-                                        setTimeout(() => {
-                                            validateDomainsFormat(true, false);
-
-                                            // Also update domain count and other UI elements
-                                            if (typeof countDomains === 'function') {
-                                                countDomains();
-                                            }
-                                            if (typeof updateRemainingInboxesBar === 'function') {
-                                                updateRemainingInboxesBar();
-                                            }
-                                        }, 100);
-
-                                        toastr.success(`${excessDomains} domains were removed to fit your order limit. You now have ${maxDomainsAllowed} domains (${TOTAL_INBOXES} usable inboxes).`, 'Domains Trimmed');
                                     }
-                                    // Reset flag after popup is closed
-                                    limitExceededShown = false;
+
+                                    // Re-run validation to update error messages properly after trimming
+                                    if (typeof validateDomainsFormat === 'function') {
+                                        validateDomainsFormat(true, false);
+                                    }
+
+                                    // Also update domain count and other UI elements
+                                    if (typeof countDomains === 'function') {
+                                        countDomains();
+                                    }
+                                    if (typeof updateRemainingInboxesBar === 'function') {
+                                        updateRemainingInboxesBar();
+                                    }
+                                }, 100);
+
+                                // Show notification about the automatic trimming
+                                const poolInfo = @json(optional($pool));
+                                const rawTotal = poolInfo && poolInfo.total_inboxes ? poolInfo.total_inboxes : TOTAL_INBOXES;
+
+                                Swal.fire({
+                                    title: 'Domains Automatically Trimmed',
+                                    html: `<strong>${removedCount}</strong> domains were automatically removed because your order limit is <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br>`,
+                                    icon: 'info',
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#3085d6'
                                 });
                             }
-                        } else {
-                            // Reset flag when within order limits or configuration error (already handled above)
-                            limitExceededShown = false;
-
-                            // Clear domain errors if within valid range and no other errors
-                            // Configuration errors are already handled in the main logic above
-                            if (!isConfigurationError && !$('#domains-error').text().includes('Duplicate') && !$('#domains-error').text().includes('Invalid') && !$('#domains-error').text().includes('Cannot create domains')) {
-                                $('#domains').removeClass('is-invalid');
-                                $('#domains-error').text('').removeClass('show-error');
-                            }
-                        }
-                    }
-
-                    // Update total inboxes calculation
-                    calculateTotalInboxes();
-                }
-
-                function generateField(name, field, existingValue = '', colClass = 'mb-3') {
-                    const fieldId = `${name}`;
-                    let html = `<div class="${colClass}">
-                        <label for="${fieldId}">${field.label}${field.required ? ' *' : ''}</label>`;
-
-                    if (field.type === 'select' && field.options) {
-                        html += `<select id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''}>`;
-                        Object.entries(field.options).forEach(([value, label]) => {
-                            const selected = value === existingValue ? ' selected' : '';
-                            html += `<option value="${value}"${selected}>${label}</option>`;
-                        });
-                        html += '</select>';
-                    } else if (field.type === 'textarea') {
-                        html += `<textarea id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} rows="8">${existingValue}</textarea>`;
-                    } else if (field.type === 'password') {
-                        html += `
-                        <div class="password-wrapper">
-                            <input type="password" id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} value="${existingValue}">
-                            <i class="fa-regular fa-eye password-toggle"></i>
-                        </div>`;
-                    } else {
-                        html += `<input type="${field.type}" id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} value="${existingValue}">`;
-                    }
-
-                    if (field.note) {
-                        html += `<p class="note mb-0">${field.note}</p>`;
-                    }
-
-                    html += `<div class="invalid-feedback" id="${fieldId}-error"></div></div>`;
-                    return html;
-                }
-
-                function generatePairedFields(fieldsData, existingValues) {
-                    let html = '';
-                    const processedFields = new Set();
-
-                    Object.entries(fieldsData).forEach(([name, field]) => {
-                        if (processedFields.has(name)) return;
-
-                        // Check for login/password pairs
-                        const isLoginField = name.includes('login') || name.includes('Login');
-                        const passwordFieldKey = name.replace(/login/gi, 'password').replace(/Login/gi, 'Password');
-                        const hasPasswordPair = fieldsData[passwordFieldKey];
-
-                        if (isLoginField && hasPasswordPair) {
-                            // Generate paired login/password fields
-                            const loginValue = existingValues && existingValues[name] ? existingValues[name] : '';
-                            const passwordValue = existingValues && existingValues[passwordFieldKey] ? existingValues[passwordFieldKey] : '';
-
-                            html += '<div class="row gx-3 mb-3">';
-                            html += generateField(name, field, loginValue, 'col-md-6');
-                            html += generateField(passwordFieldKey, fieldsData[passwordFieldKey], passwordValue, 'col-md-6');
-                            html += '</div>';
-
-                            processedFields.add(name);
-                            processedFields.add(passwordFieldKey);
-                        } else if (!processedFields.has(name)) {
-                            // Generate single field
-                            const existingValue = existingValues && existingValues[name] ? existingValues[name] : '';
-                            html += generateField(name, field, existingValue);
-                            processedFields.add(name);
-                        }
-                    });
-
-                    return html;
-                }
-
-                // function updatePlatformFields() {
-                //     const selectedOption = $('#hosting option:selected');
-                //     const fieldsData = selectedOption.data('fields');
-                //     const requiresTutorial = selectedOption.data('requires-tutorial');
-                //     const tutorialLink = selectedOption.data('tutorial-link');
-                //     const platformValue = selectedOption.val();
-
-                //     const container = $('#platform-fields-container');
-                //     container.empty();
-
-                //     if (fieldsData) {
-                //         Object.entries(fieldsData).forEach(([name, field]) => {
-                //             container.append(generateField(name, field));
-                //         });
-
-                //         // Reinitialize password toggles for new fields
-                //         initializePasswordToggles();
-                //     }
-
-                //     // Handle tutorial section visibility
-                //     if (requiresTutorial && tutorialLink) {
-                //         $('#tutorial_section').show();
-                //         $('.tutorial-link').attr('href', tutorialLink);
-                //     } else {
-                //         $('#tutorial_section').hide();
-                //     }
-                // }
-                function updatePlatformFields() {
-                    const selectedOption = $('#hosting option:selected');
-                    const fieldsData = selectedOption.data('fields');
-                    const requiresTutorial = selectedOption.data('requires-tutorial');
-                    const tutorialLink = selectedOption.data('tutorial-link');
-                    const importNote = selectedOption.data('import-note');
-                    const platformValue = selectedOption.val();
-
-                    const container = $('#platform-fields-container');
-                    container.empty();
-
-                    if (fieldsData) {
-                        // Get existing values from the pool if available
-                        const existingValues = @json(isset($pool) ? $pool : null);
-
-                        // Use the new paired field generation
-                        container.append(generatePairedFields(fieldsData, existingValues));
-
-                        // Reinitialize password toggles for new fields
-                        initializePasswordToggles();
-                    }
-
-                    // Handle other platform section
-                    if (platformValue === 'other') {
-                        $('#other-platform-section').show();
-                        $('#other_platform').prop('required', true);
-                    } else {
-                        $('#other-platform-section').hide();
-                        $('#other_platform').prop('required', false);
-                        $('#other_platform').removeClass('is-invalid');
-                        $('#other-platform-error').text('');
-                    }
-                    // Handle tutorial section visibility
-                    if (requiresTutorial && tutorialLink) {
-                        $('#tutorial_section').show();
-                        $('.tutorial-link').attr('href', tutorialLink);
-
-                        // Update import note dynamically
-                        const importNoteElement = $('#hosting-platform-import-note');
-                        console.log('Import Note from Seeder:', importNote);
-                        if (importNote && importNote.trim() !== '') {
-                            // Show the import note from seeder with tutorial link if it's not just '#'
-                            if (tutorialLink && tutorialLink !== '#') {
-                                importNoteElement.html(importNote + ' <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>');
-                            } else {
-                                // Show just the import note without tutorial link if tutorialLink is '#'
-                                importNoteElement.html(importNote);
-                            }
-                        } else {
-                            // Fallback to default message if no import note is set
-                            importNoteElement.html('<strong>IMPORTANT</strong> - please follow the steps from this document to grant us access to your hosting account: <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>');
-                        }
-                    } else if (importNote && importNote.trim() !== '') {
-                        // Show tutorial section with import note even when no tutorial link is provided
-                        $('#tutorial_section').show();
-                        const importNoteElement = $('#hosting-platform-import-note');
-                        console.log('Import Note from Seeder (no tutorial):', importNote);
-                        // Show just the import note without tutorial link
-                        importNoteElement.html(importNote);
-                    } else {
-                        $('#tutorial_section').hide();
-                    }
-                }
-
-                function initializePasswordToggles() {
-                    $('.password-toggle').off('click').on('click', function() {
-                        const input = $(this).closest('.password-wrapper').find('input');
-                        if (input.attr('type') === 'password') {
-                            input.attr('type', 'text');
-                            $(this).removeClass('fa-eye').addClass('fa-eye-slash');
-                        } else {
-                            input.attr('type', 'password');
-                            $(this).removeClass('fa-eye-slash').addClass('fa-eye');
-                        }
-                    });
-                }
-
-                // Initial setup
-                updatePlatformFields();
-                initializePasswordToggles();
-
-                // Handle platform changes
-                $('#hosting').on('change', updatePlatformFields);
-
-                    // Handle sending platform changes
-                    function updateSendingPlatformFields() {
-                    const selectedOption = $('#sending_platform option:selected');
-                    const fieldsData = selectedOption.data('fields');
-                    const container = $('#sending-platform-fields');
-                    container.empty();
-
-                    if (fieldsData) {
-                        const existingValues = @json(isset($pool) ? $pool : null);
-
-                        // Use the new paired field generation
-                        container.append(generatePairedFields(fieldsData, existingValues));
-
-                        // Reinitialize password toggles for new fields
-                        initializePasswordToggles();
-                    }
-                }
-                // Initial sending platform setup
-                updateSendingPlatformFields();
-
-                // Handle sending platform changes
-                $('#sending_platform').on('change', updateSendingPlatformFields);
-                // Update remaining inboxes progress bar (legacy function for existing code)
-                function updateRemainingInboxes() {
-                    // Use the global function instead
-                    if (typeof updateRemainingInboxesBar === 'function') {
-                        updateRemainingInboxesBar();
-                    }
-                }
-
-                // Calculate total inboxes and update pricing - enhanced for auto-domain trimming
-                function calculateTotalInboxes() {
-                    const domainsText = $('#domains').val();
-                    const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
-
-                    let editableDomainsCount = 0;
-                    if (domainsText) {
-                        // Split domains by newlines and filter out empty entries
-                        const domains = domainsText.split(/[\n,]+/)
-                            .map(domain => domain.trim())
-                            .filter(domain => domain.length > 0);
-
-                        const uniqueDomains = [...new Set(domains)];
-                        editableDomainsCount = uniqueDomains.length;
-                    }
-
-                    // Include used domains in total calculation (safely check if usedDomains exists)
-                    const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
-                    const totalDomainsCount = editableDomainsCount + usedDomainsCount;
-                    const totalInboxes = totalDomainsCount * inboxesPerDomain;
-
-                    $('#total_inboxes').val(totalInboxes);
-
-                    // Update remaining inboxes progress bar using global function
-                    if (typeof updateRemainingInboxesBar === 'function') {
-                        updateRemainingInboxesBar(totalInboxes);
-                    }
-
-                    // Update price display using global function
-                    if (typeof updatePriceDisplay === 'function') {
-                        updatePriceDisplay(totalInboxes);
-                    }
-
-                    return totalInboxes;
-                }
-                // Domain validation with auto-trimming - using centralized function (less aggressive for input)
-                $('#domains').on('input', function() {
-                    // Only validate format, don't check limits or show popups on input
-                    validateDomainsFormat(false, false);
-                });
-
-                // Add event listener for inboxes per domain changes with domain validation
-                $('#inboxes_per_domain').on('input change', function() {
-                    // Reset the limit exceeded flag when user changes inboxes per domain
-                    limitExceededShown = false;
-                    validateDomainsFormat(true, true);
-                });
-
-                // Add paste event handler for domains field to handle auto-trimming
-                $('#domains').on('paste', function() {
-                    // Use setTimeout to allow the paste content to be processed first
-                    setTimeout(() => {
-                        validateDomainsFormat(true, true);
-                    }, 100);
-                });
-
-                // Add change event handler for domains field to handle auto-trimming when content changes
-                $('#domains').on('change', function() {
-                    validateDomainsFormat(true, true);
-                });
-
-                // Add focusout event handler for domains field to show popup when user leaves the field
-                $('#domains').on('focusout', function() {
-                    validateDomainsFormat(true, true);
-                });
-
-                // Initial validation and calculation
-                validateDomainsFormat(true, false);
-
-                // Debug function to test order limit display (can be called from browser console)
-                window.testOrderLimitDisplay = function(totalInboxes) {
-                    const poolInfo = @json(optional($pool));
-                    if (poolInfo) {
-                        console.log('Order Info:', poolInfo);
-                        console.log('Testing with totalInboxes:', totalInboxes);
-
-                        if (poolInfo.total_inboxes > 0 && totalInboxes > poolInfo.total_inboxes) {
-                            $('#domains').addClass('is-invalid');
-                            $('#domains-error').html(`
-                                <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${poolInfo.total_inboxes} inboxes.
-                                <br><small>Order Limit: ${poolInfo.total_inboxes} inboxes</small>
-                            `);
-                            console.log('Order limit exceeded error displayed');
-                        } else {
-                            $('#domains').removeClass('is-invalid');
-                            $('#domains-error').text('');
-                            console.log('Within valid range - errors cleared');
-                        }
-                    } else {
-                        console.log('No order info available');
-                    }
-                };
-
-                // Initial remaining inboxes progress bar update
-                if (typeof updateRemainingInboxesBar === 'function') {
-                    updateRemainingInboxesBar();
-                }
-
-                // Initial URL validation
-                $('#forwarding').trigger('blur');
-
-                // Form submission state management
-                let isFormSubmitting = false;
-                let formValidationInProgress = false;
-
-                // Form validation and submission
-                $('#editOrderForm').on('submit', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    // Prevent multiple simultaneous submissions
-                    if (isFormSubmitting || formValidationInProgress) {
-                        console.log('Form submission blocked: already in progress');
-                        return false;
-                    }
-
-                    // Set validation flag
-                    formValidationInProgress = true;
-
-                    // Disable submit button immediately
-                    const submitButton = $(this).find('button[type="submit"]');
-                    const originalButtonText = submitButton.text();
-                    submitButton.prop('disabled', true).text('Validating...');
-
-                    // Clear master inbox email if confirmation is set to "No" (0)
-                    if ($('#master_inbox_confirmation').val() == '0') {
-                        $('#master_inbox_email').val('');
-                    }
-
-                    // Reset all validations
-                    $('.is-invalid').removeClass('is-invalid');
-                    $('.invalid-feedback').text('');
-                    $('#domains-error').text('').removeClass('show-error');
-
-                    let isValid = true;
-                    let firstErrorField = null;
-                    let validationErrors = [];
-
-                    // Check if SMTP mode is enabled for skipping standard pool field validation
-                    const isSmtpModeEnabled = $('#smtp_mode_toggle').prop('checked');
-
-                    // Validate required fields
-                    $(this).find(':input[required]').each(function() {
-                        const field = $(this);
-                        const value = field.val()?.trim();
-                        const fieldName = field.attr('name') || field.attr('id') || 'Unknown field';
-
-                        // Skip validation for fields inside hidden sections when SMTP mode is enabled
-                        if (isSmtpModeEnabled) {
-                            // Skip fields inside standard-pool-fields (which is hidden in SMTP mode)
-                            if (field.closest('#standard-pool-fields').length > 0) {
-                                return; // Skip this field
-                            }
-                            // Skip fields inside prefix-variant-section
-                            if (field.closest('.prefix-variant-section').length > 0) {
-                                return; // Skip this field
-                            }
-                            // Skip master inbox email field
-                            if (fieldName.includes('master_inbox_email')) {
-                                return; // Skip this field
-                            }
                         }
 
-                        if (!value) {
-                            isValid = false;
-                            field.addClass('is-invalid');
-                            const friendlyMessage = formatValidationError(fieldName, 'This field is required');
-                            field.siblings('.invalid-feedback').text(friendlyMessage);
-                            validationErrors.push(friendlyMessage);
+                    });  // Close the first $(document).ready() block
+                    // Second document ready block for existing functionality
+                    $(document).ready(function() {
+                        // Flag to prevent multiple popups for the same limit exceeded situation
+                        let limitExceededShown = false;
+                        // Flag to prevent toastr notifications during import
+                        let isImporting = false;
+                        // Master inbox email functionality - no confirmation needed
 
-                            if (!firstErrorField) {
-                                firstErrorField = field;
-                            }
-                        }
-                    });
+                        // ========================================
+                        // DOMAIN VALIDATION SYSTEM
+                        // ========================================
+                        // New unified validation system using one comprehensive function:
+                        // - validateDomainsFormat(checkLimits, showPopups) - Main validation function
+                        // - validateDomainLimits() - Helper for limit checking  
+                        // - validateAndTrimDomains() - Legacy wrapper for backward compatibility
+                        // ========================================
 
-                    // Validate email fields
-                    $(this).find('input[type="email"]').each(function() {
-                        const field = $(this);
-                        const value = field.val()?.trim();
-                        const fieldName = field.attr('name') || field.attr('id') || 'Email field';
+                        /**
+                         * Comprehensive domain validation function that handles all domain validations:
+                         * - Empty domain validation
+                         * - Duplicate domain detection  
+                         * - Domain format validation
+                         * - Configuration error checking
+                         * - Order limit validation and auto-trimming
+                         * - Error display and clearing
+                         * 
+                         * @param {boolean} checkLimits - Whether to check order limits (default: true)
+                         * @param {boolean} showPopups - Whether to show popups for limits (default: true)
+                         * @returns {boolean} - True if validation passes, false otherwise
+                         */
+                        function validateDomainsFormat(checkLimits = true, showPopups = true) {
+                            const domainsField = $('#domains');
+                            const domainsText = domainsField.val();
+                            const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
 
-                        if (value) {
-                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                            if (!emailRegex.test(value)) {
-                                isValid = false;
-                                field.addClass('is-invalid');
-                                const friendlyMessage = formatValidationError(fieldName, 'Please enter a valid email address');
-                                field.siblings('.invalid-feedback').text(friendlyMessage);
-                                validationErrors.push(friendlyMessage);
-
-                                if (!firstErrorField) {
-                                    firstErrorField = field;
+                            // Handle empty domains input
+                            if (!domainsText.trim()) {
+                                // Only clear errors if no high-priority errors exist
+                                if (!$('#domains-error').text().includes('Duplicate') && 
+                                    !$('#domains-error').text().includes('Invalid') && 
+                                    !$('#domains-error').text().includes('Cannot create domains')) {
+                                    domainsField.removeClass('is-invalid');
+                                    $('#domains-error').text('').removeClass('show-error');
                                 }
+                                calculateTotalInboxes();
+                                return true;
                             }
-                        }
-                    });
 
-                    // Validate URL fields
-                    $(this).find('input[type="url"]').each(function() {
-                        const field = $(this);
-                        const value = field.val()?.trim();
-                        const fieldName = field.attr('name') || field.attr('id') || 'URL field';
+                            // Parse and clean domains
+                            let domains = domainsText.split(/[\n,]+/)
+                                .map(domain => domain.trim())
+                                .filter(domain => domain.length > 0);
 
-                        if (value) {
-                            try {
-                                new URL(value);
-                            } catch (_) {
-                                isValid = false;
-                                field.addClass('is-invalid');
-                                const friendlyMessage = formatValidationError(fieldName, 'Please enter a valid URL');
-                                field.siblings('.invalid-feedback').text('Please enter a valid URL (include http:// or https://)');
-                                validationErrors.push(friendlyMessage);
-
-                                if (!firstErrorField) {
-                                    firstErrorField = field;
-                                }
+                            if (domains.length === 0) {
+                                calculateTotalInboxes();
+                                return true;
                             }
-                        }
-                    });
-                    // domain hosting platform access tutorial validation 
-                    const accessTutorial = $('#access_tutorial');
-                    const selectedValue = accessTutorial.val()?.trim();
 
-                    if (selectedValue === 'no') {
-                        isValid = false;
-                        accessTutorial.addClass('is-invalid');
-                        accessTutorial.siblings('.invalid-feedback').text(
-                            'Please review the Domain Hosting Platform - Access Tutorial and select "Yes".'
-                        );
-                        validationErrors.push('Access Tutorial: Please review and select "Yes"');
-
-                        if (!firstErrorField) {
-                            firstErrorField = accessTutorial;
-                        }
-                    }
-                    // Validate dynamic prefix variant fields (skip for SMTP mode)
-                    if (!isSmtpModeEnabled) {
-                        const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-                        for (let i = 1; i <= inboxesPerDomain; i++) {
-                            const prefixField = $(`input[name="prefix_variants[prefix_variant_${i}]"]`);
-                            const value = prefixField.val()?.trim();
-
-                            if (i === 1 && !value) {
-                                // First prefix variant is required
-                                isValid = false;
-                                prefixField.addClass('is-invalid');
-                                prefixField.siblings('.invalid-feedback').text('This field is required');
-                                validationErrors.push(`Prefix Variant ${i}: This field is required`);
-
-                                if (!firstErrorField) {
-                                    firstErrorField = prefixField;
-                                }
-                            } else if (value) {
-                                // Validate prefix variant format (alphanumeric and basic characters only)
-                                const prefixRegex = /^[a-zA-Z0-9._-]+$/;
-                                if (!prefixRegex.test(value)) {
-                                    isValid = false;
-                                    prefixField.addClass('is-invalid');
-                                    prefixField.siblings('.invalid-feedback').text('Only letters, numbers, dots, hyphens and underscores are allowed');
-                                    validationErrors.push(`Prefix Variant ${i}: Invalid format`);
-
-                                    if (!firstErrorField) {
-                                        firstErrorField = prefixField;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-
-                    // Validate domains (skip for SMTP mode)
-                    if (!isSmtpModeEnabled) {
-                        const domainsField = $('#domains');
-                        const domains = domainsField.val().trim().split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
-
-                        // Check if we have used domains
-                        const hasUsedDomains = (typeof usedDomains !== 'undefined' && usedDomains.length > 0);
-
-                        if (domains.length === 0 && !hasUsedDomains) {
-                            isValid = false;
-                            domainsField.addClass('is-invalid');
-                            $('#domains-error').text('Please enter at least one domain').addClass('show-error');
-                            validationErrors.push('Domains: Please enter at least one domain');
-
-                            if (!firstErrorField) {
-                                firstErrorField = domainsField;
-                            }
-                        } else if (domains.length > 0) {
-                            // Check for duplicates
+                            // Step 1: Check for duplicate domains
                             const seen = new Set();
                             const duplicates = domains.filter(domain => {
                                 if (seen.has(domain)) {
@@ -3591,409 +2691,1163 @@
                             });
 
                             if (duplicates.length > 0) {
-                                isValid = false;
                                 domainsField.addClass('is-invalid');
-                                $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`).addClass('show-error');
-                                validationErrors.push(`Domains: Duplicate domains found - ${duplicates.join(', ')}`);
+                                $('#domains-error')
+                                    .text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`)
+                                    .addClass('show-error');
+                                calculateTotalInboxes();
+                                return false;
+                            }
 
-                                if (!firstErrorField) {
-                                    firstErrorField = domainsField;
+                            // Step 2: Validate domain format
+                            const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+                            const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+                            const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
+
+                            if (invalidDomains.length > 0) {
+                                domainsField.addClass('is-invalid');
+                                $('#domains-error')
+                                    .text(`Invalid domain format: ${invalidDomains.join(', ')} Valid formats: example.com, example.co.uk`)
+                                    .addClass('show-error');
+                                calculateTotalInboxes();
+                                return false;
+                            }
+
+                            // Step 3: Check limits if requested
+                            if (checkLimits) {
+                                return validateDomainLimits(domains, domainsField, inboxesPerDomain, showPopups);
+                            }
+
+                            // All basic validations passed - clear errors
+                            if (!$('#domains-error').text().includes('Cannot create domains')) {
+                                domainsField.removeClass('is-invalid');
+                                $('#domains-error').text('').removeClass('show-error');
+                            }
+
+                            calculateTotalInboxes();
+                            return true;
+                        }
+                        /**
+                         * Helper function to validate domain limits and handle configuration errors
+                         * @param {Array} domains - Array of domain strings
+                         * @param {jQuery} domainsField - jQuery object for domains textarea
+                         * @param {number} inboxesPerDomain - Number of inboxes per domain
+                         * @param {boolean} showPopups - Whether to show popups
+                         * @returns {boolean} - True if within limits, false otherwise
+                         */
+                        function validateDomainLimits(domains, domainsField, inboxesPerDomain, showPopups) {
+                            const totalInboxes = domains.length * inboxesPerDomain;
+                            const poolInfo = @json(optional($pool));
+
+                            // Calculate limits based on pool configuration
+                            let TOTAL_INBOXES = 0;
+                            let isConfigurationError = false;
+
+                            if (poolInfo && poolInfo.total_inboxes !== undefined) {
+                                const rawTotalInboxes = poolInfo.total_inboxes;
+
+                                // Check for configuration error (order limit can't fit any domains)
+                                if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
+                                    TOTAL_INBOXES = 0;
+                                    isConfigurationError = true;
+                                } else {
+                                    // Calculate maximum usable inboxes
+                                    const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
+                                    TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
                                 }
-                            } else {
-                                // Validate domain format
+                            }
+
+                            // Handle configuration error
+                            if (isConfigurationError) {
+                                domainsField.addClass('is-invalid');
+                                $('#domains-error')
+                                    .text('Can\'t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.')
+                                    .addClass('show-error');
+
+                                if (isImporting) {
+                                    calculateTotalInboxes();
+                                    return false;
+                                }
+
+                                // Show configuration error popup
+                                if (showPopups && domains.length > 0 && !limitExceededShown) {
+                                    limitExceededShown = true;
+                                    Swal.fire({
+                                        title: 'Configuration Issue',
+                                        html: `<strong>Can't create inboxes with current settings.</strong><br><br>
+                                               Your order limit is <strong>${poolInfo.total_inboxes}</strong> inboxes, but you have selected <strong>${inboxesPerDomain}</strong> inboxes per domain.<br><br>
+                                               <small>Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.</small>`,
+                                        icon: 'warning',
+                                        confirmButtonText: 'Clear All Domains',
+                                        confirmButtonColor: '#dc3545',
+                                        showCancelButton: true,
+                                        cancelButtonText: 'Keep Domains',
+                                        cancelButtonColor: '#6c757d'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            domainsField.val('');
+                                            domainsField.removeClass('is-invalid');
+                                            $('#domains-error').text('').removeClass('show-error');
+
+                                            calculateTotalInboxes();
+                                            if (typeof countDomains === 'function') countDomains();
+                                            if (typeof updateRemainingInboxesBar === 'function') updateRemainingInboxesBar();
+
+                                            toastr.success('All domains have been cleared due to configuration constraints.', 'Domains Cleared');
+                                        }
+                                        limitExceededShown = false;
+                                    });
+                                }
+                                calculateTotalInboxes();
+                                return false;
+                            }
+
+                            // Handle order limit exceeded
+                            if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES) {
+                                const rawTotal = poolInfo && poolInfo.total_inboxes ? poolInfo.total_inboxes : TOTAL_INBOXES;
+
+                                domainsField.addClass('is-invalid');
+                                $('#domains-error').html(`
+                                    <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} usable inboxes.
+                                    <br><small>Usable Limit: ${TOTAL_INBOXES} inboxes</small>
+                                `).addClass('show-error');
+
+                                if (isImporting) {
+                                    calculateTotalInboxes();
+                                    return false;
+                                }
+
+                                // Show limit exceeded popup with auto-trim option
+                                if (showPopups && !limitExceededShown) {
+                                    limitExceededShown = true;
+                                    const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
+                                    const excessDomains = domains.length - maxDomainsAllowed;
+
+                                    Swal.fire({
+                                        title: 'Order Limit Exceeded',
+                                        html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but this order supports only <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br><br>
+                                               You need to remove <strong>${excessDomains}</strong> domains.<br><br>
+                                               <small>Maximum domains allowed: ${maxDomainsAllowed}</small>`,
+                                        icon: 'warning',
+                                        confirmButtonText: 'I Understand',
+                                        confirmButtonColor: '#f0ad4e',
+                                        showCancelButton: true,
+                                        cancelButtonText: 'Remove Excess Domains',
+                                        cancelButtonColor: '#dc3545'
+                                    }).then((result) => {
+                                        if (!result.isConfirmed && result.dismiss === Swal.DismissReason.cancel) {
+                                            // Auto-trim excess domains
+                                            const trimmedDomains = domains.slice(0, maxDomainsAllowed);
+                                            domainsField.val(trimmedDomains.join('\n'));
+
+                                            // Clear errors and revalidate
+                                            domainsField.removeClass('is-invalid');
+                                            $('#domains-error').text('').removeClass('show-error');
+
+                                            calculateTotalInboxes();
+
+                                            // Re-run validation after trimming
+                                            setTimeout(() => {
+                                                validateDomainsFormat(true, false);
+                                                if (typeof countDomains === 'function') countDomains();
+                                                if (typeof updateRemainingInboxesBar === 'function') updateRemainingInboxesBar();
+                                            }, 100);
+
+                                            toastr.success(`${excessDomains} domains were removed to fit your order limit. You now have ${maxDomainsAllowed} domains (${TOTAL_INBOXES} usable inboxes).`, 'Domains Trimmed');
+                                        }
+                                        limitExceededShown = false;
+                                    });
+                                }
+                                calculateTotalInboxes();
+                                return false;
+                            }
+
+                            // Within limits - clear flags and errors
+                            limitExceededShown = false;
+                            domainsField.removeClass('is-invalid');
+                            $('#domains-error').text('').removeClass('show-error');
+
+                            calculateTotalInboxes();
+                            return true;
+                        }
+
+                        // Legacy function for backward compatibility - redirects to new function
+                        function validateAndTrimDomains() {
+                            // Redirect to the new comprehensive validation function with full checks
+                            return validateDomainsFormat(true, true);
+
+                            if (!domainsText.trim()) {
+                                // Only clear errors if no high-priority errors exist
+                                if (!$('#domains-error').text().includes('Duplicate') && !$('#domains-error').text().includes('Invalid') && !$('#domains-error').text().includes('Cannot create domains')) {
+                                    domainsField.removeClass('is-invalid');
+                                    $('#domains-error').text('').removeClass('show-error');
+                                }             
+                                calculateTotalInboxes();
+                                return;
+                            }
+
+                            let domains = domainsText.split(/[\n,]+/)
+                                .map(domain => domain.trim())
+                                .filter(domain => domain.length > 0);
+
+                            if (domains.length > 0) {
+                                // Check for duplicates
+                                const seen = new Set();
+                                const duplicates = domains.filter(domain => {
+                                    if (seen.has(domain)) {
+                                        return true;
+                                    }
+                                    seen.add(domain);
+                                    return false;
+                                });
+
+                                if (duplicates.length > 0) {
+                                    domainsField.addClass('is-invalid');
+                                    $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`).addClass('show-error');
+                                    calculateTotalInboxes();
+                                    return;
+                                }
+
+                                // Updated domain format validation to handle multi-level domains
                                 const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
                                 const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
-                                const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
+                                const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegex.test(d));
 
                                 if (invalidDomains.length > 0) {
-                                    isValid = false;
                                     domainsField.addClass('is-invalid');
                                     $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`).addClass('show-error');
-                                    validationErrors.push(`Domains: Invalid format - ${invalidDomains.join(', ')}`);
+                                    calculateTotalInboxes();
+                                    return;
+                                }
 
-                                    if (!firstErrorField) {
-                                        firstErrorField = domainsField;
+                                // Auto-trim domains if they exceed order limit
+                                const totalInboxes = domains.length * inboxesPerDomain;
+
+                                // Get current order's total inboxes limit from reorder_info
+                                const poolInfo = @json(optional($pool));
+
+                                // Calculate TOTAL_INBOXES based on poolInfo.total_inboxes
+                                let TOTAL_INBOXES = 0;
+                                let isConfigurationError = false;
+
+                                if (poolInfo && poolInfo.total_inboxes !== undefined) {
+                                    const rawTotalInboxes = poolInfo.total_inboxes;
+
+                                    // Check for configuration error first (order has limit but can't fit any domains)
+                                    if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
+                                        TOTAL_INBOXES = 0;
+                                        isConfigurationError = true;
+                                    } else {
+                                        // Calculate maximum usable inboxes based on inboxes_per_domain
+                                        // For example: 500 total inboxes with 3 inboxes per domain = 166 domains max = 498 usable inboxes
+                                        const maxDomainsAllowed = Math.floor(rawTotalInboxes / inboxesPerDomain);
+                                        TOTAL_INBOXES = maxDomainsAllowed * inboxesPerDomain;
+                                    }
+                                }
+
+                                // Handle configuration error vs regular order limit exceeded
+                                if (isConfigurationError) {
+                                    // Configuration error: order has limit but can't fit any domains with current inboxes per domain
+                                    $('#domains').addClass('is-invalid');
+                                    $('#domains-error').text('Can’t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
+
+                                    // During import, just return early
+                                    if (isImporting) {
+                                        return;
+                                    }
+
+                                    // For configuration errors, show a specific dialog when user has domains that need to be cleared
+                                    if (domains.length > 0 && !limitExceededShown) {
+                                        limitExceededShown = true;
+                                        Swal.fire({
+                                            title: 'Configuration Issue',
+                                            html: `<strong>Can’t create inboxes with current settings.</strong><br><br>
+                                                   Your order limit is <strong>${poolInfo.total_inboxes}</strong> inboxes, but you have selected <strong>${inboxesPerDomain}</strong> inboxes per domain.<br><br>
+                                                   <small>Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.</small>`,
+                                            icon: 'warning',
+                                            confirmButtonText: 'Clear All Domains',
+                                            confirmButtonColor: '#dc3545',
+                                            showCancelButton: true,
+                                            cancelButtonText: 'Keep Domains',
+                                            cancelButtonColor: '#6c757d'
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                // Clear all domains
+                                                domainsField.val('');
+
+                                                // Clear the error message and update validation
+                                                $('#domains').removeClass('is-invalid');
+                                                $('#domains-error').text('');
+
+                                                // Recalculate totals after clearing
+                                                if (typeof calculateTotalInboxes === 'function') {
+                                                    calculateTotalInboxes();
+                                                }
+
+                                                // Update other UI elements
+                                                if (typeof countDomains === 'function') {
+                                                    countDomains();
+                                                }
+                                                if (typeof updateRemainingInboxesBar === 'function') {
+                                                    updateRemainingInboxesBar();
+                                                }
+
+                                                toastr.success('All domains have been cleared due to configuration constraints.', 'Domains Cleared');
+                                            }
+                                            // Reset flag after popup is closed
+                                            limitExceededShown = false;
+                                        });
+                                    }
+                                } else if (TOTAL_INBOXES > 0 && totalInboxes > TOTAL_INBOXES && !isConfigurationError) {
+                                    // Get original total for display
+                                    const rawTotal = poolInfo && poolInfo.total_inboxes ? poolInfo.total_inboxes : TOTAL_INBOXES;
+
+                                    // Always show order limit in domains-error div when limit exceeded
+                                    $('#domains').addClass('is-invalid');
+                                    $('#domains-error').html(`
+                                        <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${TOTAL_INBOXES} usable inboxes.
+                                        <br><small>Usable Limit: ${TOTAL_INBOXES} inboxes</small>
+                                    `);
+
+                                    // During import, just return early
+                                    if (isImporting) {
+                                        return;
+                                    }
+                                    // Show popup warning but don't auto-trim (only show once per session)
+                                    if (!limitExceededShown) {
+                                        limitExceededShown = true;
+                                        const maxDomainsAllowed = Math.floor(TOTAL_INBOXES / inboxesPerDomain);
+                                        const excessDomains = domains.length - maxDomainsAllowed;
+
+                                        // Show warning popup without auto-trimming
+                                        Swal.fire({
+                                            title: 'Configuration Issue',
+                                            html: `<strong>Warning:</strong> You have entered ${domains.length} domains (${totalInboxes} inboxes), but this order supports only <strong>${TOTAL_INBOXES}</strong> usable inboxes${rawTotal > TOTAL_INBOXES ? ` (${rawTotal} total with ${inboxesPerDomain} inboxes per domain)` : ''}.<br><br>
+                                                   You need to remove <strong>${excessDomains}</strong> domains.<br><br>
+                                                   <small>Maximum domains allowed: ${maxDomainsAllowed}</small>`,
+                                            icon: 'warning',
+                                            confirmButtonText: 'I Understand',
+                                            confirmButtonColor: '#f0ad4e',
+                                            showCancelButton: true,
+                                            cancelButtonText: 'Remove Excess Domains',
+                                            cancelButtonColor: '#dc3545'
+                                        }).then((result) => {
+                                            if (!result.isConfirmed && result.dismiss === Swal.DismissReason.cancel) {
+                                                // User chose to remove excess domains
+                                                const trimmedDomains = domains.slice(0, maxDomainsAllowed);
+                                                domainsField.val(trimmedDomains.join('\n'));
+
+                                                // Clear the error message and update validation
+                                                $('#domains').removeClass('is-invalid');
+                                                $('#domains-error').text('');
+
+                                                // Recalculate and revalidate
+                                                calculateTotalInboxes();
+
+                                                // Re-run validation to update error messages properly
+                                                setTimeout(() => {
+                                                    validateDomainsFormat(true, false);
+
+                                                    // Also update domain count and other UI elements
+                                                    if (typeof countDomains === 'function') {
+                                                        countDomains();
+                                                    }
+                                                    if (typeof updateRemainingInboxesBar === 'function') {
+                                                        updateRemainingInboxesBar();
+                                                    }
+                                                }, 100);
+
+                                                toastr.success(`${excessDomains} domains were removed to fit your order limit. You now have ${maxDomainsAllowed} domains (${TOTAL_INBOXES} usable inboxes).`, 'Domains Trimmed');
+                                            }
+                                            // Reset flag after popup is closed
+                                            limitExceededShown = false;
+                                        });
                                     }
                                 } else {
-                                    // Check for configuration errors (order limit too small for inboxes per domain)
-                                    const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-                                    const totalInboxes = domains.length * inboxesPerDomain;
-                                    const poolInfo = @json(optional($pool));
+                                    // Reset flag when within order limits or configuration error (already handled above)
+                                    limitExceededShown = false;
 
-                                    if (poolInfo && poolInfo.total_inboxes !== undefined) {
-                                        const rawTotalInboxes = poolInfo.total_inboxes;
+                                    // Clear domain errors if within valid range and no other errors
+                                    // Configuration errors are already handled in the main logic above
+                                    if (!isConfigurationError && !$('#domains-error').text().includes('Duplicate') && !$('#domains-error').text().includes('Invalid') && !$('#domains-error').text().includes('Cannot create domains')) {
+                                        $('#domains').removeClass('is-invalid');
+                                        $('#domains-error').text('').removeClass('show-error');
+                                    }
+                                }
+                            }
 
-                                        // Configuration error: order has limit but can't fit any domains with current inboxes per domain
-                                        if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
+                            // Update total inboxes calculation
+                            calculateTotalInboxes();
+                        }
+
+                        function generateField(name, field, existingValue = '', colClass = 'mb-3') {
+                            const fieldId = `${name}`;
+                            let html = `<div class="${colClass}">
+                                <label for="${fieldId}">${field.label}${field.required ? ' *' : ''}</label>`;
+
+                            if (field.type === 'select' && field.options) {
+                                html += `<select id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''}>`;
+                                Object.entries(field.options).forEach(([value, label]) => {
+                                    const selected = value === existingValue ? ' selected' : '';
+                                    html += `<option value="${value}"${selected}>${label}</option>`;
+                                });
+                                html += '</select>';
+                            } else if (field.type === 'textarea') {
+                                html += `<textarea id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} rows="8">${existingValue}</textarea>`;
+                            } else if (field.type === 'password') {
+                                html += `
+                                <div class="password-wrapper">
+                                    <input type="password" id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} value="${existingValue}">
+                                    <i class="fa-regular fa-eye password-toggle"></i>
+                                </div>`;
+                            } else {
+                                html += `<input type="${field.type}" id="${fieldId}" name="${name}" class="form-control"${field.required ? ' required' : ''} value="${existingValue}">`;
+                            }
+
+                            if (field.note) {
+                                html += `<p class="note mb-0">${field.note}</p>`;
+                            }
+
+                            html += `<div class="invalid-feedback" id="${fieldId}-error"></div></div>`;
+                            return html;
+                        }
+
+                        function generatePairedFields(fieldsData, existingValues) {
+                            let html = '';
+                            const processedFields = new Set();
+
+                            Object.entries(fieldsData).forEach(([name, field]) => {
+                                if (processedFields.has(name)) return;
+
+                                // Check for login/password pairs
+                                const isLoginField = name.includes('login') || name.includes('Login');
+                                const passwordFieldKey = name.replace(/login/gi, 'password').replace(/Login/gi, 'Password');
+                                const hasPasswordPair = fieldsData[passwordFieldKey];
+
+                                if (isLoginField && hasPasswordPair) {
+                                    // Generate paired login/password fields
+                                    const loginValue = existingValues && existingValues[name] ? existingValues[name] : '';
+                                    const passwordValue = existingValues && existingValues[passwordFieldKey] ? existingValues[passwordFieldKey] : '';
+
+                                    html += '<div class="row gx-3 mb-3">';
+                                    html += generateField(name, field, loginValue, 'col-md-6');
+                                    html += generateField(passwordFieldKey, fieldsData[passwordFieldKey], passwordValue, 'col-md-6');
+                                    html += '</div>';
+
+                                    processedFields.add(name);
+                                    processedFields.add(passwordFieldKey);
+                                } else if (!processedFields.has(name)) {
+                                    // Generate single field
+                                    const existingValue = existingValues && existingValues[name] ? existingValues[name] : '';
+                                    html += generateField(name, field, existingValue);
+                                    processedFields.add(name);
+                                }
+                            });
+
+                            return html;
+                        }
+
+                        // function updatePlatformFields() {
+                        //     const selectedOption = $('#hosting option:selected');
+                        //     const fieldsData = selectedOption.data('fields');
+                        //     const requiresTutorial = selectedOption.data('requires-tutorial');
+                        //     const tutorialLink = selectedOption.data('tutorial-link');
+                        //     const platformValue = selectedOption.val();
+
+                        //     const container = $('#platform-fields-container');
+                        //     container.empty();
+
+                        //     if (fieldsData) {
+                        //         Object.entries(fieldsData).forEach(([name, field]) => {
+                        //             container.append(generateField(name, field));
+                        //         });
+
+                        //         // Reinitialize password toggles for new fields
+                        //         initializePasswordToggles();
+                        //     }
+
+                        //     // Handle tutorial section visibility
+                        //     if (requiresTutorial && tutorialLink) {
+                        //         $('#tutorial_section').show();
+                        //         $('.tutorial-link').attr('href', tutorialLink);
+                        //     } else {
+                        //         $('#tutorial_section').hide();
+                        //     }
+                        // }
+                        function updatePlatformFields() {
+                            const selectedOption = $('#hosting option:selected');
+                            const fieldsData = selectedOption.data('fields');
+                            const requiresTutorial = selectedOption.data('requires-tutorial');
+                            const tutorialLink = selectedOption.data('tutorial-link');
+                            const importNote = selectedOption.data('import-note');
+                            const platformValue = selectedOption.val();
+
+                            const container = $('#platform-fields-container');
+                            container.empty();
+
+                            if (fieldsData) {
+                                // Get existing values from the pool if available
+                                const existingValues = @json(isset($pool) ? $pool : null);
+
+                                // Use the new paired field generation
+                                container.append(generatePairedFields(fieldsData, existingValues));
+
+                                // Reinitialize password toggles for new fields
+                                initializePasswordToggles();
+                            }
+
+                            // Handle other platform section
+                            if (platformValue === 'other') {
+                                $('#other-platform-section').show();
+                                $('#other_platform').prop('required', true);
+                            } else {
+                                $('#other-platform-section').hide();
+                                $('#other_platform').prop('required', false);
+                                $('#other_platform').removeClass('is-invalid');
+                                $('#other-platform-error').text('');
+                            }
+                            // Handle tutorial section visibility
+                            if (requiresTutorial && tutorialLink) {
+                                $('#tutorial_section').show();
+                                $('.tutorial-link').attr('href', tutorialLink);
+
+                                // Update import note dynamically
+                                const importNoteElement = $('#hosting-platform-import-note');
+                                console.log('Import Note from Seeder:', importNote);
+                                if (importNote && importNote.trim() !== '') {
+                                    // Show the import note from seeder with tutorial link if it's not just '#'
+                                    if (tutorialLink && tutorialLink !== '#') {
+                                        importNoteElement.html(importNote + ' <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>');
+                                    } else {
+                                        // Show just the import note without tutorial link if tutorialLink is '#'
+                                        importNoteElement.html(importNote);
+                                    }
+                                } else {
+                                    // Fallback to default message if no import note is set
+                                    importNoteElement.html('<strong>IMPORTANT</strong> - please follow the steps from this document to grant us access to your hosting account: <a href="' + tutorialLink + '" class="highlight-link tutorial-link" target="_blank">Click here to view tutorial</a>');
+                                }
+                            } else if (importNote && importNote.trim() !== '') {
+                                // Show tutorial section with import note even when no tutorial link is provided
+                                $('#tutorial_section').show();
+                                const importNoteElement = $('#hosting-platform-import-note');
+                                console.log('Import Note from Seeder (no tutorial):', importNote);
+                                // Show just the import note without tutorial link
+                                importNoteElement.html(importNote);
+                            } else {
+                                $('#tutorial_section').hide();
+                            }
+                        }
+
+                        function initializePasswordToggles() {
+                            $('.password-toggle').off('click').on('click', function() {
+                                const input = $(this).closest('.password-wrapper').find('input');
+                                if (input.attr('type') === 'password') {
+                                    input.attr('type', 'text');
+                                    $(this).removeClass('fa-eye').addClass('fa-eye-slash');
+                                } else {
+                                    input.attr('type', 'password');
+                                    $(this).removeClass('fa-eye-slash').addClass('fa-eye');
+                                }
+                            });
+                        }
+
+                        // Initial setup
+                        updatePlatformFields();
+                        initializePasswordToggles();
+
+                        // Handle platform changes
+                        $('#hosting').on('change', updatePlatformFields);
+
+                            // Handle sending platform changes
+                            function updateSendingPlatformFields() {
+                            const selectedOption = $('#sending_platform option:selected');
+                            const fieldsData = selectedOption.data('fields');
+                            const container = $('#sending-platform-fields');
+                            container.empty();
+
+                            if (fieldsData) {
+                                const existingValues = @json(isset($pool) ? $pool : null);
+
+                                // Use the new paired field generation
+                                container.append(generatePairedFields(fieldsData, existingValues));
+
+                                // Reinitialize password toggles for new fields
+                                initializePasswordToggles();
+                            }
+                        }
+                        // Initial sending platform setup
+                        updateSendingPlatformFields();
+
+                        // Handle sending platform changes
+                        $('#sending_platform').on('change', updateSendingPlatformFields);
+                        // Update remaining inboxes progress bar (legacy function for existing code)
+                        function updateRemainingInboxes() {
+                            // Use the global function instead
+                            if (typeof updateRemainingInboxesBar === 'function') {
+                                updateRemainingInboxesBar();
+                            }
+                        }
+
+                        // Calculate total inboxes and update pricing - enhanced for auto-domain trimming
+                        function calculateTotalInboxes() {
+                            const domainsText = $('#domains').val();
+                            const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 0;
+
+                            let editableDomainsCount = 0;
+                            if (domainsText) {
+                                // Split domains by newlines and filter out empty entries
+                                const domains = domainsText.split(/[\n,]+/)
+                                    .map(domain => domain.trim())
+                                    .filter(domain => domain.length > 0);
+
+                                const uniqueDomains = [...new Set(domains)];
+                                editableDomainsCount = uniqueDomains.length;
+                            }
+
+                            // Include used domains in total calculation (safely check if usedDomains exists)
+                            const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
+                            const totalDomainsCount = editableDomainsCount + usedDomainsCount;
+                            const totalInboxes = totalDomainsCount * inboxesPerDomain;
+
+                            $('#total_inboxes').val(totalInboxes);
+
+                            // Update remaining inboxes progress bar using global function
+                            if (typeof updateRemainingInboxesBar === 'function') {
+                                updateRemainingInboxesBar(totalInboxes);
+                            }
+
+                            // Update price display using global function
+                            if (typeof updatePriceDisplay === 'function') {
+                                updatePriceDisplay(totalInboxes);
+                            }
+
+                            return totalInboxes;
+                        }
+                        // Domain validation with auto-trimming - using centralized function (less aggressive for input)
+                        $('#domains').on('input', function() {
+                            // Only validate format, don't check limits or show popups on input
+                            validateDomainsFormat(false, false);
+                        });
+
+                        // Add event listener for inboxes per domain changes with domain validation
+                        $('#inboxes_per_domain').on('input change', function() {
+                            // Reset the limit exceeded flag when user changes inboxes per domain
+                            limitExceededShown = false;
+                            validateDomainsFormat(true, true);
+                        });
+
+                        // Add paste event handler for domains field to handle auto-trimming
+                        $('#domains').on('paste', function() {
+                            // Use setTimeout to allow the paste content to be processed first
+                            setTimeout(() => {
+                                validateDomainsFormat(true, true);
+                            }, 100);
+                        });
+
+                        // Add change event handler for domains field to handle auto-trimming when content changes
+                        $('#domains').on('change', function() {
+                            validateDomainsFormat(true, true);
+                        });
+
+                        // Add focusout event handler for domains field to show popup when user leaves the field
+                        $('#domains').on('focusout', function() {
+                            validateDomainsFormat(true, true);
+                        });
+
+                        // Initial validation and calculation
+                        validateDomainsFormat(true, false);
+
+                        // Debug function to test order limit display (can be called from browser console)
+                        window.testOrderLimitDisplay = function(totalInboxes) {
+                            const poolInfo = @json(optional($pool));
+                            if (poolInfo) {
+                                console.log('Order Info:', poolInfo);
+                                console.log('Testing with totalInboxes:', totalInboxes);
+
+                                if (poolInfo.total_inboxes > 0 && totalInboxes > poolInfo.total_inboxes) {
+                                    $('#domains').addClass('is-invalid');
+                                    $('#domains-error').html(`
+                                        <strong>Order Limit Exceeded</strong> — You currently have ${totalInboxes} inboxes, but this order supports only ${poolInfo.total_inboxes} inboxes.
+                                        <br><small>Order Limit: ${poolInfo.total_inboxes} inboxes</small>
+                                    `);
+                                    console.log('Order limit exceeded error displayed');
+                                } else {
+                                    $('#domains').removeClass('is-invalid');
+                                    $('#domains-error').text('');
+                                    console.log('Within valid range - errors cleared');
+                                }
+                            } else {
+                                console.log('No order info available');
+                            }
+                        };
+
+                        // Initial remaining inboxes progress bar update
+                        if (typeof updateRemainingInboxesBar === 'function') {
+                            updateRemainingInboxesBar();
+                        }
+
+                        // Initial URL validation
+                        $('#forwarding').trigger('blur');
+
+                        // Form submission state management
+                        let isFormSubmitting = false;
+                        let formValidationInProgress = false;
+
+                        // Form validation and submission
+                        $('#editOrderForm').on('submit', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            // Prevent multiple simultaneous submissions
+                            if (isFormSubmitting || formValidationInProgress) {
+                                console.log('Form submission blocked: already in progress');
+                                return false;
+                            }
+
+                            // Set validation flag
+                            formValidationInProgress = true;
+
+                            // Disable submit button immediately
+                            const submitButton = $(this).find('button[type="submit"]');
+                            const originalButtonText = submitButton.text();
+                            submitButton.prop('disabled', true).text('Validating...');
+
+                            // Clear master inbox email if confirmation is set to "No" (0)
+                            if ($('#master_inbox_confirmation').val() == '0') {
+                                $('#master_inbox_email').val('');
+                            }
+
+                            // Reset all validations
+                            $('.is-invalid').removeClass('is-invalid');
+                            $('.invalid-feedback').text('');
+                            $('#domains-error').text('').removeClass('show-error');
+
+                            let isValid = true;
+                            let firstErrorField = null;
+                            let validationErrors = [];
+
+                            // Check if SMTP mode is enabled for skipping standard pool field validation
+                            const isSmtpModeEnabled = $('#smtp_mode_toggle').prop('checked');
+
+                            // Validate required fields
+                            $(this).find(':input[required]').each(function() {
+                                const field = $(this);
+                                const value = field.val()?.trim();
+                                const fieldName = field.attr('name') || field.attr('id') || 'Unknown field';
+
+                                // Skip validation for fields inside hidden sections when SMTP mode is enabled
+                                if (isSmtpModeEnabled) {
+                                    // Skip fields inside standard-pool-fields (which is hidden in SMTP mode)
+                                    if (field.closest('#standard-pool-fields').length > 0) {
+                                        return; // Skip this field
+                                    }
+                                    // Skip fields inside prefix-variant-section
+                                    if (field.closest('.prefix-variant-section').length > 0) {
+                                        return; // Skip this field
+                                    }
+                                    // Skip master inbox email field
+                                    if (fieldName.includes('master_inbox_email')) {
+                                        return; // Skip this field
+                                    }
+                                }
+
+                                if (!value) {
+                                    isValid = false;
+                                    field.addClass('is-invalid');
+                                    const friendlyMessage = formatValidationError(fieldName, 'This field is required');
+                                    field.siblings('.invalid-feedback').text(friendlyMessage);
+                                    validationErrors.push(friendlyMessage);
+
+                                    if (!firstErrorField) {
+                                        firstErrorField = field;
+                                    }
+                                }
+                            });
+
+                            // Validate email fields
+                            $(this).find('input[type="email"]').each(function() {
+                                const field = $(this);
+                                const value = field.val()?.trim();
+                                const fieldName = field.attr('name') || field.attr('id') || 'Email field';
+
+                                if (value) {
+                                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                    if (!emailRegex.test(value)) {
+                                        isValid = false;
+                                        field.addClass('is-invalid');
+                                        const friendlyMessage = formatValidationError(fieldName, 'Please enter a valid email address');
+                                        field.siblings('.invalid-feedback').text(friendlyMessage);
+                                        validationErrors.push(friendlyMessage);
+
+                                        if (!firstErrorField) {
+                                            firstErrorField = field;
+                                        }
+                                    }
+                                }
+                            });
+
+                            // Validate URL fields
+                            $(this).find('input[type="url"]').each(function() {
+                                const field = $(this);
+                                const value = field.val()?.trim();
+                                const fieldName = field.attr('name') || field.attr('id') || 'URL field';
+
+                                if (value) {
+                                    try {
+                                        new URL(value);
+                                    } catch (_) {
+                                        isValid = false;
+                                        field.addClass('is-invalid');
+                                        const friendlyMessage = formatValidationError(fieldName, 'Please enter a valid URL');
+                                        field.siblings('.invalid-feedback').text('Please enter a valid URL (include http:// or https://)');
+                                        validationErrors.push(friendlyMessage);
+
+                                        if (!firstErrorField) {
+                                            firstErrorField = field;
+                                        }
+                                    }
+                                }
+                            });
+                            // domain hosting platform access tutorial validation 
+                            const accessTutorial = $('#access_tutorial');
+                            const selectedValue = accessTutorial.val()?.trim();
+
+                            if (selectedValue === 'no') {
+                                isValid = false;
+                                accessTutorial.addClass('is-invalid');
+                                accessTutorial.siblings('.invalid-feedback').text(
+                                    'Please review the Domain Hosting Platform - Access Tutorial and select "Yes".'
+                                );
+                                validationErrors.push('Access Tutorial: Please review and select "Yes"');
+
+                                if (!firstErrorField) {
+                                    firstErrorField = accessTutorial;
+                                }
+                            }
+                            // Validate dynamic prefix variant fields (skip for SMTP mode)
+                            if (!isSmtpModeEnabled) {
+                                const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+                                for (let i = 1; i <= inboxesPerDomain; i++) {
+                                    const prefixField = $(`input[name="prefix_variants[prefix_variant_${i}]"]`);
+                                    const value = prefixField.val()?.trim();
+
+                                    if (i === 1 && !value) {
+                                        // First prefix variant is required
+                                        isValid = false;
+                                        prefixField.addClass('is-invalid');
+                                        prefixField.siblings('.invalid-feedback').text('This field is required');
+                                        validationErrors.push(`Prefix Variant ${i}: This field is required`);
+
+                                        if (!firstErrorField) {
+                                            firstErrorField = prefixField;
+                                        }
+                                    } else if (value) {
+                                        // Validate prefix variant format (alphanumeric and basic characters only)
+                                        const prefixRegex = /^[a-zA-Z0-9._-]+$/;
+                                        if (!prefixRegex.test(value)) {
                                             isValid = false;
-                                            domainsField.addClass('is-invalid');
-                                            $('#domains-error').text('Can\'t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
+                                            prefixField.addClass('is-invalid');
+                                            prefixField.siblings('.invalid-feedback').text('Only letters, numbers, dots, hyphens and underscores are allowed');
+                                            validationErrors.push(`Prefix Variant ${i}: Invalid format`);
 
                                             if (!firstErrorField) {
-                                                firstErrorField = domainsField;
+                                                firstErrorField = prefixField;
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    if (!isValid) {
-                        // Reset form submission state
-                        formValidationInProgress = false;
-                        isFormSubmitting = false;
 
-                        // Re-enable submit button
-                        submitButton.prop('disabled', false).text(originalButtonText);
+                            // Validate domains (skip for SMTP mode)
+                            if (!isSmtpModeEnabled) {
+                                const domainsField = $('#domains');
+                                const domains = domainsField.val().trim().split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
 
-                        // Log validation errors for debugging
-                        console.error('Form validation failed:', validationErrors);
+                                // Check if we have used domains
+                                const hasUsedDomains = (typeof usedDomains !== 'undefined' && usedDomains.length > 0);
 
-                        // Focus and scroll to the first error field
-                        if (firstErrorField) {
-                            // Smooth scroll to the error field
-                            firstErrorField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            // Set focus after scroll animation completes
-                            setTimeout(() => {
-                                firstErrorField.focus();
-                            }, 500);
-                        }
+                                if (domains.length === 0 && !hasUsedDomains) {
+                                    isValid = false;
+                                    domainsField.addClass('is-invalid');
+                                    $('#domains-error').text('Please enter at least one domain').addClass('show-error');
+                                    validationErrors.push('Domains: Please enter at least one domain');
 
-                        // Show validation error alert
-                        Swal.fire({
-                            title: 'Validation Error!',
-                            html: `<p>Please fix the following errors before submitting:</p><ul>${validationErrors.map(err => `<li>${err}</li>`).join('')}</ul>`,
-                            icon: 'error',
-                            confirmButtonText: 'OK',
-                            confirmButtonColor: '#dc3545'
-                        });
-
-                        // Absolutely prevent any form submission
-                        return false;
-                    }
-
-                    // Reset validation flag as we passed validation
-                    formValidationInProgress = false;
-
-                    // Check if total inboxes are not fully completed
-                    const currentTotalInboxes = parseInt($('#total_inboxes').val()) || 0;
-                    const poolInfo = @json(optional($pool));
-                    let originalTotalInboxes = 0;
-
-                    if (poolInfo && poolInfo.total_inboxes !== undefined) {
-                        originalTotalInboxes = parseInt(poolInfo.total_inboxes) || 0;
-                    }
-
-                    // If current inboxes are less than original, show confirmation dialog
-                    if (originalTotalInboxes > 0 && currentTotalInboxes < originalTotalInboxes) {
-                        Swal.fire({
-                            title: 'Incomplete Order',
-                            html: `
-                                <p>You haven't finished adding all of your domains.</p>
-                                <p><strong>Planned Total:</strong> ${originalTotalInboxes} inboxes</p>
-                                <p><strong>Currently Used:</strong> ${currentTotalInboxes} inboxes</p>
-                                <p>Are you sure you want to continue?</p>
-                            `,
-                            icon: 'warning',
-                            showCancelButton: true,
-                            showDenyButton: true,
-                            confirmButtonText: 'Save as Draft',
-                            denyButtonText: 'Continue Anyway',
-                            cancelButtonText: 'Cancel',
-                            confirmButtonColor: '#6c757d',
-                            denyButtonColor: '#0d6efd',
-                            cancelButtonColor: '#dc3545'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                // Save as draft
-                                $('#is_draft').val('1');
-                                submitForm();
-                            } else if (result.isDenied) {
-                                // Continue anyway (keep original total)
-                                $('#total_inboxes').val(originalTotalInboxes);
-                                $('#is_draft').val('0');
-                                submitForm();
-                            } else {
-                                // If cancelled, reset form state and re-enable button
-                                isFormSubmitting = false;
-                                formValidationInProgress = false;
-                                submitButton.prop('disabled', false).text(originalButtonText);
-                            }
-                        });
-                        return false;
-                    }
-
-                    // If validation passes and no confirmation needed, submit directly
-                    submitForm();
-                });
-
-                // Function to handle the actual form submission
-                // Function to manage domain IDs with pool prefix for uniqueness
-                @if(isset($pool) && $pool->id)
-                    const poolId = {{ $pool->id }}; // Use existing pool ID
-                @else
-                    const poolId = Date.now(); // Generate timestamp-based ID for new pools (will be updated by PoolObserver after creation)
-                @endif
-                let domainSequenceCounter = 1;
-                let existingDomainIds = new Map(); // Map to store domain name -> ID mapping
-                let existingDomainsById = new Map(); // Map to store ID -> domain data mapping
-                let existingDomainsByPosition = []; // Array to store original domain order with IDs
-
-                // Initialize existing domain IDs if editing
-                @if(isset($pool) && $pool->domains)
-                    @php
-                        $existingDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
-                    @endphp
-                    @if(is_array($existingDomains))
-                        @foreach($existingDomains as $index => $domain)
-                            @if(isset($domain['id']) && isset($domain['name']))
-                                const domainData{{ $index }} = {
-                                    id: '{{ $domain['id'] }}',
-                                    name: '{{ $domain['name'] }}',
-                                    is_used: {{ isset($domain['is_used']) && $domain['is_used'] ? 'true' : 'false' }},
-                                    prefix_statuses: @json($domain['prefix_statuses'] ?? null)
-                                };
-                                existingDomainIds.set('{{ $domain['name'] }}', domainData{{ $index }});
-                                existingDomainsById.set('{{ $domain['id'] }}', domainData{{ $index }});
-                                existingDomainsByPosition[{{ $index }}] = domainData{{ $index }};
-                                // Extract sequence number from existing ID (format: poolId_sequence)
-                                (function() {
-                                    const parts = '{{ $domain['id'] }}'.split('_');
-                                    if (parts.length === 2 && !isNaN(parts[1])) {
-                                        domainSequenceCounter = Math.max(domainSequenceCounter, parseInt(parts[1]) + 1);
+                                    if (!firstErrorField) {
+                                        firstErrorField = domainsField;
                                     }
-                                })();
-                            @endif
-                        @endforeach
-                    @endif
-                @endif
-
-                function processDomainIds(domainArray) {
-                    const processedDomains = [];
-
-                    // First, add all used domains (they cannot be edited)
-                    usedDomains.forEach(domain => {
-                        const existingData = existingDomainsById.get(domain.id);
-                        processedDomains.push({
-                            id: domain.id,
-                            name: domain.name,
-                            is_used: true,
-                            prefix_statuses: existingData?.prefix_statuses || null
-                        });
-                    });
-
-                    // Then process editable domains from textarea
-                    for (let i = 0; i < domainArray.length; i++) {
-                        const domainName = domainArray[i];
-                        if (domainName.trim()) {
-                            let domainData;
-
-                            // Priority 1: Check if this domain name already exists
-                            if (existingDomainIds.has(domainName)) {
-                                const existing = existingDomainIds.get(domainName);
-                                domainData = {
-                                    id: existing.id,
-                                    name: domainName,
-                                    is_used: existing.is_used || false,
-                                    prefix_statuses: existing.prefix_statuses || null
-                                };
-                            }
-                            // Priority 2: Check if we have an existing domain at this position (name might have changed)
-                            else if (existingDomainsByPosition[i] && !existingDomainsByPosition[i].is_used) {
-                                // Domain name changed but position is same, preserve the original ID
-                                const existingAtPosition = existingDomainsByPosition[i];
-                                domainData = {
-                                    id: existingAtPosition.id, // PRESERVE original ID
-                                    name: domainName.trim(), // Use new name
-                                    is_used: existingAtPosition.is_used || false,
-                                    original_id: existingAtPosition.id, // Keep track of original ID for backend
-                                    prefix_statuses: existingAtPosition.prefix_statuses || null
-                                };
-
-                                console.log('Domain renamed:', {
-                                    position: i,
-                                    oldName: existingAtPosition.name,
-                                    newName: domainName.trim(),
-                                    preservedId: existingAtPosition.id
-                                });
-                            }
-                            // Priority 3: Completely new domain (prefix_statuses will be generated by backend)
-                            else {
-                                // Assign new unique ID with pool prefix: poolId_sequence
-                                const newId = poolId + '_' + domainSequenceCounter++;
-                                domainData = {
-                                    id: newId,
-                                    name: domainName.trim(),
-                                    is_used: false,
-                                    prefix_statuses: null // Backend will generate prefix_statuses for new domains
-                                };
-                                existingDomainIds.set(domainName.trim(), { id: newId, is_used: false, prefix_statuses: null });
-                            }
-
-                            // Only add if not already in used domains
-                            if (!usedDomains.some(used => used.name === domainName.trim())) {
-                                processedDomains.push(domainData);
-                            }
-                        }
-                    }
-
-                    return processedDomains;
-                }
-                function submitForm() {
-                    // Final validation check before submission
-                    const hasValidationErrors = $('.is-invalid').length > 0;
-                    const hasErrorMessages = $('#domains-error').hasClass('show-error') || $('#domains-error').text().trim() !== '';
-
-                    if (hasValidationErrors || hasErrorMessages) {
-                        console.error('Attempted to submit form with validation errors present');
-                        console.log('Invalid fields:', $('.is-invalid').length);
-                        console.log('Error messages:', hasErrorMessages);
-
-                        // Reset form state
-                        isFormSubmitting = false;
-                        formValidationInProgress = false;
-
-                        // Re-enable submit button
-                        const submitButton = $('#editOrderForm').find('button[type="submit"]');
-                        submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
-
-                        Swal.fire({
-                            title: 'Validation Error!',
-                            text: 'Please fix all validation errors before submitting the form.',
-                            icon: 'error',
-                            confirmButtonText: 'OK',
-                            confirmButtonColor: '#dc3545'
-                        });
-                        return false;
-                    }
-
-                    // Check manual panel assignment validation if enabled
-                    if (window.manualPanelAssignment && typeof window.manualPanelAssignment.validateManualAssignments === 'function') {
-                        const validationResult = window.manualPanelAssignment.validateManualAssignments();
-
-                        if (!validationResult.valid) {
-                            console.error('Manual panel assignment validation failed');
-                            console.log('Errors:', validationResult.errors);
-
-                            // Reset form state
-                            isFormSubmitting = false;
-                            formValidationInProgress = false;
-
-                            // Re-enable submit button
-                            const submitButton = $('#editOrderForm').find('button[type="submit"]');
-                            submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
-
-                            // Build error message HTML
-                            let errorHtml = '<div style="text-align: left;">';
-                            errorHtml += '<ul style="margin: 10px 0; padding-left: 20px;">';
-                            validationResult.errors.forEach(error => {
-                                errorHtml += '<li>' + error + '</li>';
-                            });
-                            errorHtml += '</ul></div>';
-
-                            Swal.fire({
-                                title: 'Manual Assignment Errors!',
-                                html: errorHtml,
-                                icon: 'error',
-                                confirmButtonText: 'OK',
-                                confirmButtonColor: '#dc3545',
-                                width: '600px'
-                            });
-                            return false;
-                        }
-                    }
-
-                    // Set form submitting flag
-                    isFormSubmitting = true;
-
-                    // Show loading indicator
-                    const isEdit = {{ isset($pool) && $pool->id ? 'true' : 'false' }};
-                    Swal.fire({
-                        title: isEdit ? 'Updating Pool...' : 'Creating Pool...',
-                        text: isEdit ? 'Please wait while we process your pool update.' : 'Please wait while we create your pool.',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        allowEnterKey: false,
-                        showConfirmButton: false,
-                        backdrop: true,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    // If validation passes, submit via AJAX
-                    const form = $('#editOrderForm');
-
-                    // Process domains to JSON format with unique IDs
-                    const domainsText = $('#domains').val().trim();
-                    let domainsArray = [];
-                    if (domainsText) {
-                        const domainLines = domainsText.split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
-                        domainsArray = processDomainIds(domainLines);
-                    }
-
-                    // Get form data and replace domains with processed JSON
-                    let formData = form.serializeArray();
-                    formData = formData.filter(item => item.name !== 'domains');
-                    formData.push({
-                        name: 'domains',
-                        value: JSON.stringify(domainsArray)
-                    });
-
-                    // Provider type and manual panel assignments (managed by panel assignment component)
-                    const providerTypeValue = window.manualPanelAssignment?.getProviderType?.() ?? 'Google';
-                    if (providerTypeValue) {
-                        formData.push({
-                            name: 'provider_type',
-                            value: providerTypeValue
-                        });
-                    }
-
-                    if (window.manualPanelAssignment?.appendAssignments) {
-                        formData = window.manualPanelAssignment.appendAssignments(formData);
-                    }
-
-                    $.ajax({
-                        url: form.attr('action'),
-                        method: form.attr('method') || 'POST',
-                        data: formData,
-                        success: function(response) {
-                            Swal.close();
-                            if (response.success) {
-                                // Check if status is draft and show appropriate message
-                                const messageText = response.status == 'draft' ? 
-                                    'Your pool has been saved as draft because some domain information is incomplete' : 
-                                    (isEdit ? 'Pool updated successfully' : 'Pool created successfully');
-                                Swal.fire({
-                                    title: 'Success!',
-                                    text: messageText,
-                                    icon: 'success',
-                                    timer: 5000,
-                                    showConfirmButton: false
-                                }).then(() => {
-                                    // Send a separate request to run panel capacity check
-                                    $.ajax({
-                                        url: '{{ route("admin.pools.capacity-check") }}',
-                                        method: 'POST',
-                                        data: {
-                                            order_id: response.order_id || '',
-                                            user_id: response.user_id || '',
-                                            _token: $('meta[name="csrf-token"]').attr('content')
-                                        },
-                                        success: function(capacityResponse) {
-                                            console.log('Panel capacity check completed:', capacityResponse);
-                                        },
-                                        error: function(xhr) {
-                                            console.log('Panel capacity check failed:', xhr.responseJSON);
-                                            // Don't show error to user as it's a background process
+                                } else if (domains.length > 0) {
+                                    // Check for duplicates
+                                    const seen = new Set();
+                                    const duplicates = domains.filter(domain => {
+                                        if (seen.has(domain)) {
+                                            return true;
                                         }
+                                        seen.add(domain);
+                                        return false;
                                     });
 
-                                    window.location.href = "{{ route('admin.pools.index') }}";
+                                    if (duplicates.length > 0) {
+                                        isValid = false;
+                                        domainsField.addClass('is-invalid');
+                                        $('#domains-error').text(`Duplicate domains are not allowed: ${duplicates.join(', ')}`).addClass('show-error');
+                                        validationErrors.push(`Domains: Duplicate domains found - ${duplicates.join(', ')}`);
+
+                                        if (!firstErrorField) {
+                                            firstErrorField = domainsField;
+                                        }
+                                    } else {
+                                        // Validate domain format
+                                        const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+                                        const domainRegexSimple = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+                                        const invalidDomains = domains.filter(d => !domainRegex.test(d) && !domainRegexSimple.test(d));
+
+                                        if (invalidDomains.length > 0) {
+                                            isValid = false;
+                                            domainsField.addClass('is-invalid');
+                                            $('#domains-error').text(`Invalid domain format: ${invalidDomains.join(', ')}`).addClass('show-error');
+                                            validationErrors.push(`Domains: Invalid format - ${invalidDomains.join(', ')}`);
+
+                                            if (!firstErrorField) {
+                                                firstErrorField = domainsField;
+                                            }
+                                        } else {
+                                            // Check for configuration errors (order limit too small for inboxes per domain)
+                                            const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+                                            const totalInboxes = domains.length * inboxesPerDomain;
+                                            const poolInfo = @json(optional($pool));
+
+                                            if (poolInfo && poolInfo.total_inboxes !== undefined) {
+                                                const rawTotalInboxes = poolInfo.total_inboxes;
+
+                                                // Configuration error: order has limit but can't fit any domains with current inboxes per domain
+                                                if (rawTotalInboxes > 0 && rawTotalInboxes < inboxesPerDomain) {
+                                                    isValid = false;
+                                                    domainsField.addClass('is-invalid');
+                                                    $('#domains-error').text('Can\'t create inboxes with current settings. Please reduce the inboxes per domain, lower the domain count, or contact support to increase your order.');
+
+                                                    if (!firstErrorField) {
+                                                        firstErrorField = domainsField;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (!isValid) {
+                                // Reset form submission state
+                                formValidationInProgress = false;
+                                isFormSubmitting = false;
+
+                                // Re-enable submit button
+                                submitButton.prop('disabled', false).text(originalButtonText);
+
+                                // Log validation errors for debugging
+                                console.error('Form validation failed:', validationErrors);
+
+                                // Focus and scroll to the first error field
+                                if (firstErrorField) {
+                                    // Smooth scroll to the error field
+                                    firstErrorField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    // Set focus after scroll animation completes
+                                    setTimeout(() => {
+                                        firstErrorField.focus();
+                                    }, 500);
+                                }
+
+                                // Show validation error alert
+                                Swal.fire({
+                                    title: 'Validation Error!',
+                                    html: `<p>Please fix the following errors before submitting:</p><ul>${validationErrors.map(err => `<li>${err}</li>`).join('')}</ul>`,
+                                    icon: 'error',
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#dc3545'
                                 });
-                            } else {
-                                // Reset form state on response error
+
+                                // Absolutely prevent any form submission
+                                return false;
+                            }
+
+                            // Reset validation flag as we passed validation
+                            formValidationInProgress = false;
+
+                            // Check if total inboxes are not fully completed
+                            const currentTotalInboxes = parseInt($('#total_inboxes').val()) || 0;
+                            const poolInfo = @json(optional($pool));
+                            let originalTotalInboxes = 0;
+
+                            if (poolInfo && poolInfo.total_inboxes !== undefined) {
+                                originalTotalInboxes = parseInt(poolInfo.total_inboxes) || 0;
+                            }
+
+                            // If current inboxes are less than original, show confirmation dialog
+                            if (originalTotalInboxes > 0 && currentTotalInboxes < originalTotalInboxes) {
+                                Swal.fire({
+                                    title: 'Incomplete Order',
+                                    html: `
+                                        <p>You haven't finished adding all of your domains.</p>
+                                        <p><strong>Planned Total:</strong> ${originalTotalInboxes} inboxes</p>
+                                        <p><strong>Currently Used:</strong> ${currentTotalInboxes} inboxes</p>
+                                        <p>Are you sure you want to continue?</p>
+                                    `,
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    showDenyButton: true,
+                                    confirmButtonText: 'Save as Draft',
+                                    denyButtonText: 'Continue Anyway',
+                                    cancelButtonText: 'Cancel',
+                                    confirmButtonColor: '#6c757d',
+                                    denyButtonColor: '#0d6efd',
+                                    cancelButtonColor: '#dc3545'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        // Save as draft
+                                        $('#is_draft').val('1');
+                                        submitForm();
+                                    } else if (result.isDenied) {
+                                        // Continue anyway (keep original total)
+                                        $('#total_inboxes').val(originalTotalInboxes);
+                                        $('#is_draft').val('0');
+                                        submitForm();
+                                    } else {
+                                        // If cancelled, reset form state and re-enable button
+                                        isFormSubmitting = false;
+                                        formValidationInProgress = false;
+                                        submitButton.prop('disabled', false).text(originalButtonText);
+                                    }
+                                });
+                                return false;
+                            }
+
+                            // If validation passes and no confirmation needed, submit directly
+                            submitForm();
+                        });
+
+                        // Function to handle the actual form submission
+                        // Function to manage domain IDs with pool prefix for uniqueness
+                        @if(isset($pool) && $pool->id)
+                            const poolId = {{ $pool->id }}; // Use existing pool ID
+                        @else
+                            const poolId = Date.now(); // Generate timestamp-based ID for new pools (will be updated by PoolObserver after creation)
+                        @endif
+                        let domainSequenceCounter = 1;
+                        let existingDomainIds = new Map(); // Map to store domain name -> ID mapping
+                        let existingDomainsById = new Map(); // Map to store ID -> domain data mapping
+                        let existingDomainsByPosition = []; // Array to store original domain order with IDs
+
+                        // Initialize existing domain IDs if editing
+                        @if(isset($pool) && $pool->domains)
+                            @php
+                                $existingDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+                            @endphp
+                            @if(is_array($existingDomains))
+                                @foreach($existingDomains as $index => $domain)
+                                    @if(isset($domain['id']) && isset($domain['name']))
+                                        const domainData{{ $index }} = {
+                                            id: '{{ $domain['id'] }}',
+                                            name: '{{ $domain['name'] }}',
+                                            is_used: {{ isset($domain['is_used']) && $domain['is_used'] ? 'true' : 'false' }},
+                                            prefix_statuses: @json($domain['prefix_statuses'] ?? null)
+                                        };
+                                        existingDomainIds.set('{{ $domain['name'] }}', domainData{{ $index }});
+                                        existingDomainsById.set('{{ $domain['id'] }}', domainData{{ $index }});
+                                        existingDomainsByPosition[{{ $index }}] = domainData{{ $index }};
+                                        // Extract sequence number from existing ID (format: poolId_sequence)
+                                        (function() {
+                                            const parts = '{{ $domain['id'] }}'.split('_');
+                                            if (parts.length === 2 && !isNaN(parts[1])) {
+                                                domainSequenceCounter = Math.max(domainSequenceCounter, parseInt(parts[1]) + 1);
+                                            }
+                                        })();
+                                    @endif
+                                @endforeach
+                            @endif
+                        @endif
+
+                        function processDomainIds(domainArray) {
+                            const processedDomains = [];
+
+                            // First, add all used domains (they cannot be edited)
+                            usedDomains.forEach(domain => {
+                                const existingData = existingDomainsById.get(domain.id);
+                                processedDomains.push({
+                                    id: domain.id,
+                                    name: domain.name,
+                                    is_used: true,
+                                    prefix_statuses: existingData?.prefix_statuses || null
+                                });
+                            });
+
+                            // Then process editable domains from textarea
+                            for (let i = 0; i < domainArray.length; i++) {
+                                const domainName = domainArray[i];
+                                if (domainName.trim()) {
+                                    let domainData;
+
+                                    // Priority 1: Check if this domain name already exists
+                                    if (existingDomainIds.has(domainName)) {
+                                        const existing = existingDomainIds.get(domainName);
+                                        domainData = {
+                                            id: existing.id,
+                                            name: domainName,
+                                            is_used: existing.is_used || false,
+                                            prefix_statuses: existing.prefix_statuses || null
+                                        };
+                                    }
+                                    // Priority 2: Check if we have an existing domain at this position (name might have changed)
+                                    else if (existingDomainsByPosition[i] && !existingDomainsByPosition[i].is_used) {
+                                        // Domain name changed but position is same, preserve the original ID
+                                        const existingAtPosition = existingDomainsByPosition[i];
+                                        domainData = {
+                                            id: existingAtPosition.id, // PRESERVE original ID
+                                            name: domainName.trim(), // Use new name
+                                            is_used: existingAtPosition.is_used || false,
+                                            original_id: existingAtPosition.id, // Keep track of original ID for backend
+                                            prefix_statuses: existingAtPosition.prefix_statuses || null
+                                        };
+
+                                        console.log('Domain renamed:', {
+                                            position: i,
+                                            oldName: existingAtPosition.name,
+                                            newName: domainName.trim(),
+                                            preservedId: existingAtPosition.id
+                                        });
+                                    }
+                                    // Priority 3: Completely new domain (prefix_statuses will be generated by backend)
+                                    else {
+                                        // Assign new unique ID with pool prefix: poolId_sequence
+                                        const newId = poolId + '_' + domainSequenceCounter++;
+                                        domainData = {
+                                            id: newId,
+                                            name: domainName.trim(),
+                                            is_used: false,
+                                            prefix_statuses: null // Backend will generate prefix_statuses for new domains
+                                        };
+                                        existingDomainIds.set(domainName.trim(), { id: newId, is_used: false, prefix_statuses: null });
+                                    }
+
+                                    // Only add if not already in used domains
+                                    if (!usedDomains.some(used => used.name === domainName.trim())) {
+                                        processedDomains.push(domainData);
+                                    }
+                                }
+                            }
+
+                            return processedDomains;
+                        }
+                        function submitForm() {
+                            // Final validation check before submission
+                            const hasValidationErrors = $('.is-invalid').length > 0;
+                            const hasErrorMessages = $('#domains-error').hasClass('show-error') || $('#domains-error').text().trim() !== '';
+
+                            if (hasValidationErrors || hasErrorMessages) {
+                                console.error('Attempted to submit form with validation errors present');
+                                console.log('Invalid fields:', $('.is-invalid').length);
+                                console.log('Error messages:', hasErrorMessages);
+
+                                // Reset form state
                                 isFormSubmitting = false;
                                 formValidationInProgress = false;
 
@@ -4002,831 +3856,974 @@
                                 submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
 
                                 Swal.fire({
-                                    title: 'Error!',
-                                    text: response.message || 'An error occurred. Please try again later.',
-                                    icon: 'error',
-                                    confirmButtonText: 'OK'
-                                });
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.close();
-
-                            // Reset form state on any error
-                            isFormSubmitting = false;
-                            formValidationInProgress = false;
-
-                            // Re-enable submit button
-                            const submitButton = $('#editOrderForm').find('button[type="submit"]');
-                            submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
-
-                            if (xhr.status === 422 && xhr.responseJSON.errors) {
-                                // Handle validation errors from server
-                                let firstErrorField = null;
-                                const errorMessages = [];
-
-                                console.log('Raw validation errors:', xhr.responseJSON.errors);
-
-                                Object.keys(xhr.responseJSON.errors).forEach(key => {
-                                    const originalMessage = xhr.responseJSON.errors[key][0];
-                                    const friendlyMessage = formatValidationError(key, originalMessage);
-
-                                    console.log(`Field: ${key}, Original: ${originalMessage}, Friendly: ${friendlyMessage}`);
-
-                                    errorMessages.push(friendlyMessage);
-
-                                    // Try to find the field with exact name match
-                                    let field = $(`[name="${key}"]`);
-
-                                    // If not found, try to find by field name with dots converted to brackets
-                                    if (!field.length && key.includes('.')) {
-                                        const bracketNotation = key.replace(/\.(\d+)\./g, '[$1].').replace(/\.(\w+)/g, '[$1]');
-                                        field = $(`[name="${bracketNotation}"]`);
-                                    }
-
-                                    if (field.length) {
-                                        field.addClass('is-invalid');
-                                        if (!firstErrorField) {
-                                            firstErrorField = field;
-                                        }
-
-                                        // Find or create feedback element
-                                        let feedbackEl = field.siblings('.invalid-feedback');
-                                        if (!feedbackEl.length) {
-                                            feedbackEl = field.closest('.form-group, .mb-3').find('.invalid-feedback');
-                                        }
-                                        if (!feedbackEl.length) {
-                                            field.after(`<div class="invalid-feedback">${friendlyMessage}</div>`);
-                                        } else {
-                                            feedbackEl.text(friendlyMessage);
-                                        }
-                                    }
-                                });
-
-                                // Focus and scroll to the first error field
-                                if (firstErrorField) {
-                                    firstErrorField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    setTimeout(() => {
-                                        firstErrorField.focus();
-                                    }, 1500);
-                                }
-
-                                // Build error list HTML
-                                let errorListHtml = '<div style="text-align: left; max-height: 400px; overflow-y: auto;">';
-                                errorListHtml += '<p style="margin-bottom: 10px;">Please fix the following errors:</p>';
-                                errorListHtml += '<ul style="margin: 0; padding-left: 20px;">';
-                                errorMessages.forEach(msg => {
-                                    errorListHtml += '<li style="margin-bottom: 5px;">' + msg + '</li>';
-                                });
-                                errorListHtml += '</ul></div>';
-
-                                Swal.fire({
                                     title: 'Validation Error!',
-                                    html: errorListHtml,
+                                    text: 'Please fix all validation errors before submitting the form.',
                                     icon: 'error',
                                     confirmButtonText: 'OK',
-                                    confirmButtonColor: '#dc3545',
-                                    width: '600px'
+                                    confirmButtonColor: '#dc3545'
                                 });
-                            } else {
-                                Swal.fire({
-                                    title: 'Error!',
-                                    text: xhr.responseJSON?.message || 'An error occurred. Please try again later.',
-                                    icon: 'error',
-                                    confirmButtonText: 'OK'
+                                return false;
+                            }
+
+                            // Check manual panel assignment validation if enabled
+                            if (window.manualPanelAssignment && typeof window.manualPanelAssignment.validateManualAssignments === 'function') {
+                                const validationResult = window.manualPanelAssignment.validateManualAssignments();
+
+                                if (!validationResult.valid) {
+                                    console.error('Manual panel assignment validation failed');
+                                    console.log('Errors:', validationResult.errors);
+
+                                    // Reset form state
+                                    isFormSubmitting = false;
+                                    formValidationInProgress = false;
+
+                                    // Re-enable submit button
+                                    const submitButton = $('#editOrderForm').find('button[type="submit"]');
+                                    submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
+
+                                    // Build error message HTML
+                                    let errorHtml = '<div style="text-align: left;">';
+                                    errorHtml += '<ul style="margin: 10px 0; padding-left: 20px;">';
+                                    validationResult.errors.forEach(error => {
+                                        errorHtml += '<li>' + error + '</li>';
+                                    });
+                                    errorHtml += '</ul></div>';
+
+                                    Swal.fire({
+                                        title: 'Manual Assignment Errors!',
+                                        html: errorHtml,
+                                        icon: 'error',
+                                        confirmButtonText: 'OK',
+                                        confirmButtonColor: '#dc3545',
+                                        width: '600px'
+                                    });
+                                    return false;
+                                }
+                            }
+
+                            // Set form submitting flag
+                            isFormSubmitting = true;
+
+                            // Show loading indicator
+                            const isEdit = {{ isset($pool) && $pool->id ? 'true' : 'false' }};
+                            Swal.fire({
+                                title: isEdit ? 'Updating Pool...' : 'Creating Pool...',
+                                text: isEdit ? 'Please wait while we process your pool update.' : 'Please wait while we create your pool.',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                allowEnterKey: false,
+                                showConfirmButton: false,
+                                backdrop: true,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+
+                            // If validation passes, submit via AJAX
+                            const form = $('#editOrderForm');
+
+                            // Process domains to JSON format with unique IDs
+                            const domainsText = $('#domains').val().trim();
+                            let domainsArray = [];
+                            if (domainsText) {
+                                const domainLines = domainsText.split(/[\n,]+/).map(d => d.trim()).filter(d => d.length > 0);
+                                domainsArray = processDomainIds(domainLines);
+                            }
+
+                            // Get form data and replace domains with processed JSON
+                            let formData = form.serializeArray();
+                            formData = formData.filter(item => item.name !== 'domains');
+                            formData.push({
+                                name: 'domains',
+                                value: JSON.stringify(domainsArray)
+                            });
+
+                            // Provider type and manual panel assignments (managed by panel assignment component)
+                            const providerTypeValue = window.manualPanelAssignment?.getProviderType?.() ?? 'Google';
+                            if (providerTypeValue) {
+                                formData.push({
+                                    name: 'provider_type',
+                                    value: providerTypeValue
                                 });
                             }
-                        }
-                    });
-                }
 
-                // Function to format validation error messages to be user-friendly
-                function formatValidationError(fieldName, errorMessage) {
-                    // Map of field names to friendly labels
-                    const fieldLabels = {
-                        'backup_codes': 'Backup Codes',
-                        'platform_login': 'Platform Login',
-                        'platform_password': 'Platform Password',
-                        'bison_url': 'Bison URL',
-                        'bison_workspace': 'Bison Workspace',
-                        'sequencer_login': 'Sequencer Login',
-                        'sequencer_password': 'Sequencer Password',
-                        'domains': 'Domains',
-                        'purchase_date': 'Purchase Date',
-                        'hosting_platform': 'Hosting Platform',
-                        'forwarding_email': 'Forwarding Email',
-                        'status_manage_by_admin': 'Status Manage by Admin',
-                        'first_name': 'First Name',
-                        'last_name': 'Last Name',
-                        'profile_picture_link': 'Profile Picture Link',
-                        'email_persona_password': 'Email Persona Password',
-                        'email_persona_picture_link': 'Email Persona Picture Link',
-                        'email': 'Email',
-                        'password': 'Password',
-                        'name': 'Name',
-                        'phone': 'Phone',
-                        'address': 'Address',
-                        'city': 'City',
-                        'state': 'State',
-                        'zip': 'ZIP Code',
-                        'country': 'Country',
-                        'smtp_provider_id': 'SMTP Provider',
-                        'smtp_provider_url': 'SMTP Provider URL'
-                    };
+                            if (window.manualPanelAssignment?.appendAssignments) {
+                                formData = window.manualPanelAssignment.appendAssignments(formData);
+                            }
 
-                    let friendlyName = fieldName;
+                            $.ajax({
+                                url: form.attr('action'),
+                                method: form.attr('method') || 'POST',
+                                data: formData,
+                                success: function(response) {
+                                    Swal.close();
+                                    if (response.success) {
+                                        // Check if status is draft and show appropriate message
+                                        const messageText = response.status == 'draft' ? 
+                                            'Your pool has been saved as draft because some domain information is incomplete' : 
+                                            (isEdit ? 'Pool updated successfully' : 'Pool created successfully');
+                                        Swal.fire({
+                                            title: 'Success!',
+                                            text: messageText,
+                                            icon: 'success',
+                                            timer: 5000,
+                                            showConfirmButton: false
+                                        }).then(() => {
+                                            // Send a separate request to run panel capacity check
+                                            $.ajax({
+                                                url: '{{ route("admin.pools.capacity-check") }}',
+                                                method: 'POST',
+                                                data: {
+                                                    order_id: response.order_id || '',
+                                                    user_id: response.user_id || '',
+                                                    _token: $('meta[name="csrf-token"]').attr('content')
+                                                },
+                                                success: function(capacityResponse) {
+                                                    console.log('Panel capacity check completed:', capacityResponse);
+                                                },
+                                                error: function(xhr) {
+                                                    console.log('Panel capacity check failed:', xhr.responseJSON);
+                                                    // Don't show error to user as it's a background process
+                                                }
+                                            });
 
-                    // Handle prefix variant details fields (e.g., prefix_variants_details[prefix_variant_1][first_name])
-                    if (fieldName.includes('prefix_variants_details')) {
-                        const matches = fieldName.match(/prefix_variants_details\[prefix_variant_(\d+)\]\[(\w+)\]/);
-                        if (matches) {
-                            const variantNum = matches[1];
-                            const fieldType = matches[2];
-                            const fieldTypeLabel = fieldLabels[fieldType] || fieldType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                            friendlyName = `Prefix Variant ${variantNum} - ${fieldTypeLabel}`;
-                        }
-                    } 
-                    // Handle simple prefix variants fields (e.g., prefix_variants[prefix_variant_1])
-                    else if (fieldName.includes('prefix_variants[prefix_variant_')) {
-                        const matches = fieldName.match(/prefix_variants\[prefix_variant_(\d+)\]/);
-                        if (matches) {
-                            friendlyName = `Prefix Variant ${matches[1]}`;
-                        }
-                    } 
-                    // Handle already friendly names
-                    else if (fieldName.startsWith('Prefix Variant') || fieldName.startsWith('Batch ')) {
-                        friendlyName = fieldName;
-                    } 
-                    // Handle array notation fields (e.g., field_name[0], field_name[key])
-                    else if (fieldName.includes('[') && fieldName.includes(']')) {
-                        // Extract base field and index/key
-                        const baseMatch = fieldName.match(/^([^\[]+)/);
-                        const indexMatch = fieldName.match(/\[([^\]]+)\]/g);
+                                            window.location.href = "{{ route('admin.pools.index') }}";
+                                        });
+                                    } else {
+                                        // Reset form state on response error
+                                        isFormSubmitting = false;
+                                        formValidationInProgress = false;
 
-                        if (baseMatch) {
-                            let baseName = baseMatch[1];
-                            baseName = fieldLabels[baseName] || baseName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                        // Re-enable submit button
+                                        const submitButton = $('#editOrderForm').find('button[type="submit"]');
+                                        submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
 
-                            if (indexMatch && indexMatch.length > 0) {
-                                // Extract all indices/keys
-                                const indices = indexMatch.map(m => m.replace(/[\[\]]/g, ''));
-                                const indexStr = indices.map(idx => {
-                                    // Check if it's a number
-                                    if (!isNaN(idx)) {
-                                        return parseInt(idx) + 1; // Make 1-indexed for display
+                                        Swal.fire({
+                                            title: 'Error!',
+                                            text: response.message || 'An error occurred. Please try again later.',
+                                            icon: 'error',
+                                            confirmButtonText: 'OK'
+                                        });
                                     }
-                                    // Otherwise clean up the key name
-                                    return idx.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                                }).join(' - ');
+                                },
+                                error: function(xhr) {
+                                    Swal.close();
 
-                                friendlyName = `${baseName} (${indexStr})`;
+                                    // Reset form state on any error
+                                    isFormSubmitting = false;
+                                    formValidationInProgress = false;
+
+                                    // Re-enable submit button
+                                    const submitButton = $('#editOrderForm').find('button[type="submit"]');
+                                    submitButton.prop('disabled', false).text('{{ isset($pool) ? "Update Pool" : "Create Pool" }}');
+
+                                    if (xhr.status === 422 && xhr.responseJSON.errors) {
+                                        // Handle validation errors from server
+                                        let firstErrorField = null;
+                                        const errorMessages = [];
+
+                                        console.log('Raw validation errors:', xhr.responseJSON.errors);
+
+                                        Object.keys(xhr.responseJSON.errors).forEach(key => {
+                                            const originalMessage = xhr.responseJSON.errors[key][0];
+                                            const friendlyMessage = formatValidationError(key, originalMessage);
+
+                                            console.log(`Field: ${key}, Original: ${originalMessage}, Friendly: ${friendlyMessage}`);
+
+                                            errorMessages.push(friendlyMessage);
+
+                                            // Try to find the field with exact name match
+                                            let field = $(`[name="${key}"]`);
+
+                                            // If not found, try to find by field name with dots converted to brackets
+                                            if (!field.length && key.includes('.')) {
+                                                const bracketNotation = key.replace(/\.(\d+)\./g, '[$1].').replace(/\.(\w+)/g, '[$1]');
+                                                field = $(`[name="${bracketNotation}"]`);
+                                            }
+
+                                            if (field.length) {
+                                                field.addClass('is-invalid');
+                                                if (!firstErrorField) {
+                                                    firstErrorField = field;
+                                                }
+
+                                                // Find or create feedback element
+                                                let feedbackEl = field.siblings('.invalid-feedback');
+                                                if (!feedbackEl.length) {
+                                                    feedbackEl = field.closest('.form-group, .mb-3').find('.invalid-feedback');
+                                                }
+                                                if (!feedbackEl.length) {
+                                                    field.after(`<div class="invalid-feedback">${friendlyMessage}</div>`);
+                                                } else {
+                                                    feedbackEl.text(friendlyMessage);
+                                                }
+                                            }
+                                        });
+
+                                        // Focus and scroll to the first error field
+                                        if (firstErrorField) {
+                                            firstErrorField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            setTimeout(() => {
+                                                firstErrorField.focus();
+                                            }, 1500);
+                                        }
+
+                                        // Build error list HTML
+                                        let errorListHtml = '<div style="text-align: left; max-height: 400px; overflow-y: auto;">';
+                                        errorListHtml += '<p style="margin-bottom: 10px;">Please fix the following errors:</p>';
+                                        errorListHtml += '<ul style="margin: 0; padding-left: 20px;">';
+                                        errorMessages.forEach(msg => {
+                                            errorListHtml += '<li style="margin-bottom: 5px;">' + msg + '</li>';
+                                        });
+                                        errorListHtml += '</ul></div>';
+
+                                        Swal.fire({
+                                            title: 'Validation Error!',
+                                            html: errorListHtml,
+                                            icon: 'error',
+                                            confirmButtonText: 'OK',
+                                            confirmButtonColor: '#dc3545',
+                                            width: '600px'
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            title: 'Error!',
+                                            text: xhr.responseJSON?.message || 'An error occurred. Please try again later.',
+                                            icon: 'error',
+                                            confirmButtonText: 'OK'
+                                        });
+                                    }
+                                }
+                            });
+                        }
+
+                        // Function to format validation error messages to be user-friendly
+                        function formatValidationError(fieldName, errorMessage) {
+                            // Map of field names to friendly labels
+                            const fieldLabels = {
+                                'backup_codes': 'Backup Codes',
+                                'platform_login': 'Platform Login',
+                                'platform_password': 'Platform Password',
+                                'bison_url': 'Bison URL',
+                                'bison_workspace': 'Bison Workspace',
+                                'sequencer_login': 'Sequencer Login',
+                                'sequencer_password': 'Sequencer Password',
+                                'domains': 'Domains',
+                                'purchase_date': 'Purchase Date',
+                                'hosting_platform': 'Hosting Platform',
+                                'forwarding_email': 'Forwarding Email',
+                                'status_manage_by_admin': 'Status Manage by Admin',
+                                'first_name': 'First Name',
+                                'last_name': 'Last Name',
+                                'profile_picture_link': 'Profile Picture Link',
+                                'email_persona_password': 'Email Persona Password',
+                                'email_persona_picture_link': 'Email Persona Picture Link',
+                                'email': 'Email',
+                                'password': 'Password',
+                                'name': 'Name',
+                                'phone': 'Phone',
+                                'address': 'Address',
+                                'city': 'City',
+                                'state': 'State',
+                                'zip': 'ZIP Code',
+                                'country': 'Country',
+                                'smtp_provider_id': 'SMTP Provider',
+                                'smtp_provider_url': 'SMTP Provider URL'
+                            };
+
+                            let friendlyName = fieldName;
+
+                            // Handle prefix variant details fields (e.g., prefix_variants_details[prefix_variant_1][first_name])
+                            if (fieldName.includes('prefix_variants_details')) {
+                                const matches = fieldName.match(/prefix_variants_details\[prefix_variant_(\d+)\]\[(\w+)\]/);
+                                if (matches) {
+                                    const variantNum = matches[1];
+                                    const fieldType = matches[2];
+                                    const fieldTypeLabel = fieldLabels[fieldType] || fieldType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                    friendlyName = `Prefix Variant ${variantNum} - ${fieldTypeLabel}`;
+                                }
+                            } 
+                            // Handle simple prefix variants fields (e.g., prefix_variants[prefix_variant_1])
+                            else if (fieldName.includes('prefix_variants[prefix_variant_')) {
+                                const matches = fieldName.match(/prefix_variants\[prefix_variant_(\d+)\]/);
+                                if (matches) {
+                                    friendlyName = `Prefix Variant ${matches[1]}`;
+                                }
+                            } 
+                            // Handle already friendly names
+                            else if (fieldName.startsWith('Prefix Variant') || fieldName.startsWith('Batch ')) {
+                                friendlyName = fieldName;
+                            } 
+                            // Handle array notation fields (e.g., field_name[0], field_name[key])
+                            else if (fieldName.includes('[') && fieldName.includes(']')) {
+                                // Extract base field and index/key
+                                const baseMatch = fieldName.match(/^([^\[]+)/);
+                                const indexMatch = fieldName.match(/\[([^\]]+)\]/g);
+
+                                if (baseMatch) {
+                                    let baseName = baseMatch[1];
+                                    baseName = fieldLabels[baseName] || baseName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                                    if (indexMatch && indexMatch.length > 0) {
+                                        // Extract all indices/keys
+                                        const indices = indexMatch.map(m => m.replace(/[\[\]]/g, ''));
+                                        const indexStr = indices.map(idx => {
+                                            // Check if it's a number
+                                            if (!isNaN(idx)) {
+                                                return parseInt(idx) + 1; // Make 1-indexed for display
+                                            }
+                                            // Otherwise clean up the key name
+                                            return idx.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                        }).join(' - ');
+
+                                        friendlyName = `${baseName} (${indexStr})`;
+                                    } else {
+                                        friendlyName = baseName;
+                                    }
+                                }
+                            } 
+                            // Use predefined label or convert snake_case to Title Case
+                            else {
+                                friendlyName = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            }
+
+                            // Format the error message
+                            if (errorMessage.toLowerCase().includes('required')) {
+                                return `${friendlyName} is required`;
+                            } else if (errorMessage.toLowerCase().includes('at least one domain')) {
+                                return 'Please enter at least one domain';
+                            } else if (errorMessage.toLowerCase().includes('invalid')) {
+                                return `${friendlyName} is invalid`;
+                            } else if (errorMessage.toLowerCase().includes('must be')) {
+                                return `${friendlyName} ${errorMessage.toLowerCase().replace(/^the .+ field /, '')}`;
                             } else {
-                                friendlyName = baseName;
+                                return `${friendlyName}: ${errorMessage}`;
                             }
                         }
-                    } 
-                    // Use predefined label or convert snake_case to Title Case
-                    else {
-                        friendlyName = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    }
 
-                    // Format the error message
-                    if (errorMessage.toLowerCase().includes('required')) {
-                        return `${friendlyName} is required`;
-                    } else if (errorMessage.toLowerCase().includes('at least one domain')) {
-                        return 'Please enter at least one domain';
-                    } else if (errorMessage.toLowerCase().includes('invalid')) {
-                        return `${friendlyName} is invalid`;
-                    } else if (errorMessage.toLowerCase().includes('must be')) {
-                        return `${friendlyName} ${errorMessage.toLowerCase().replace(/^the .+ field /, '')}`;
-                    } else {
-                        return `${friendlyName}: ${errorMessage}`;
-                    }
-                }
+                        // Dynamic prefix variant functionality
+                       function generatePrefixVariantFields(count) {
+                        const container = $('#prefix-variants-container');
+                        container.empty();
 
-                // Dynamic prefix variant functionality
-               function generatePrefixVariantFields(count) {
-                const container = $('#prefix-variants-container');
-                container.empty();
+                        // Add header
+                        container.append('<h5 class="mb-2 col-12">Email Persona - Prefix Variants</h5>');
 
-                // Add header
-                container.append('<h5 class="mb-2 col-12">Email Persona - Prefix Variants</h5>');
+                        const existingPrefixVariants = @json(isset($pool) ? ($pool->prefix_variants ?? []) : []);
+                        const existingPrefixVariantsDetails = @json(isset($pool) ? ($pool->prefix_variants_details ?? []) : []);
 
-                const existingPrefixVariants = @json(isset($pool) ? ($pool->prefix_variants ?? []) : []);
-                const existingPrefixVariantsDetails = @json(isset($pool) ? ($pool->prefix_variants_details ?? []) : []);
+                        for (let i = 1; i <= count; i++) {
+                            const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
+                                (i === 1 ? '{{ isset($pool) && $pool->prefix_variant_1 ? $pool->prefix_variant_1 : '' }}' : '') ||
+                                (i === 2 ? '{{ isset($pool) && $pool->prefix_variant_2 ? $pool->prefix_variant_2 : '' }}' : '');
 
-                for (let i = 1; i <= count; i++) {
-                    const existingValue = existingPrefixVariants[`prefix_variant_${i}`] || 
-                        (i === 1 ? '{{ isset($pool) && $pool->prefix_variant_1 ? $pool->prefix_variant_1 : '' }}' : '') ||
-                        (i === 2 ? '{{ isset($pool) && $pool->prefix_variant_2 ? $pool->prefix_variant_2 : '' }}' : '');
+                            // Get existing values for the detailed fields
+                            const detailsKey = `prefix_variant_${i}`;
+                            const existingDetails = existingPrefixVariantsDetails[detailsKey] || {};
 
-                    // Get existing values for the detailed fields
-                    const detailsKey = `prefix_variant_${i}`;
-                    const existingDetails = existingPrefixVariantsDetails[detailsKey] || {};
+                            // Determine example prefix and note based on iteration
+                            let examplePrefix = '';
+                            let noteHtml = '';
 
-                    // Determine example prefix and note based on iteration
-                    let examplePrefix = '';
-                    let noteHtml = '';
+                            if (i === 1) {
+                                examplePrefix = 'john';
+                                noteHtml = `
+                                    <p class="note">
+                                        Enter the email prefix for variant ${i} (the part before @). 
+                                        For example, in "<strong>${examplePrefix}@example.com</strong>", 
+                                        "<strong>${examplePrefix}</strong>" is the prefix. 
+                                        You currently have chosen <strong>${count}</strong> inboxes/prefix variants per domain.
+                                    </p>
+                                `;
+                            } else if (i === 2) {
+                                examplePrefix = 'john.smith';
+                                noteHtml = `<p class="note">e.g <strong>${examplePrefix}</strong></p>`;
+                            } else if (i === 3) {
+                                examplePrefix = 'j.smith';
+                                noteHtml = `<p class="note">e.g <strong>${examplePrefix}</strong></p>`;
+                            }
 
-                    if (i === 1) {
-                        examplePrefix = 'john';
-                        noteHtml = `
-                            <p class="note">
-                                Enter the email prefix for variant ${i} (the part before @). 
-                                For example, in "<strong>${examplePrefix}@example.com</strong>", 
-                                "<strong>${examplePrefix}</strong>" is the prefix. 
-                                You currently have chosen <strong>${count}</strong> inboxes/prefix variants per domain.
-                            </p>
-                        `;
-                    } else if (i === 2) {
-                        examplePrefix = 'john.smith';
-                        noteHtml = `<p class="note">e.g <strong>${examplePrefix}</strong></p>`;
-                    } else if (i === 3) {
-                        examplePrefix = 'j.smith';
-                        noteHtml = `<p class="note">e.g <strong>${examplePrefix}</strong></p>`;
-                    }
+                            const fieldHtml = `
+                                <div class="col-12 prefix-variant-section" data-variant="${i}">
+                                    <div class="card p-3 mb-3">
+                                        <h6 class="mb-3 text-white">Particulars Variant ${String(i).padStart(2, '0')}</h6>
 
-                    const fieldHtml = `
-                        <div class="col-12 prefix-variant-section" data-variant="${i}">
-                            <div class="card p-3 mb-3">
-                                <h6 class="mb-3 text-white">Particulars Variant ${String(i).padStart(2, '0')}</h6>
+                                        <div class="row g-3">
 
-                                <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label>First Name*</label>
+                                                <input type="text" name="prefix_variants_details[prefix_variant_${i}][first_name]" 
+                                                    class="form-control" value="${existingDetails.first_name || ''}" required>
+                                                <div class="invalid-feedback" id="prefix_variant_${i}_first_name-error"></div>
+                                                <p class="note">First name for this email persona</p>
+                                            </div>
 
-                                    <div class="col-md-4">
-                                        <label>First Name*</label>
-                                        <input type="text" name="prefix_variants_details[prefix_variant_${i}][first_name]" 
-                                            class="form-control" value="${existingDetails.first_name || ''}" required>
-                                        <div class="invalid-feedback" id="prefix_variant_${i}_first_name-error"></div>
-                                        <p class="note">First name for this email persona</p>
-                                    </div>
+                                            <div class="col-md-4">
+                                                <label>Last Name*</label>
+                                                <input type="text" name="prefix_variants_details[prefix_variant_${i}][last_name]" 
+                                                    class="form-control" value="${existingDetails.last_name || ''}" required>
+                                                <div class="invalid-feedback" id="prefix_variant_${i}_last_name-error"></div>
+                                                <p class="note">Last name for this email persona</p>
+                                            </div>
 
-                                    <div class="col-md-4">
-                                        <label>Last Name*</label>
-                                        <input type="text" name="prefix_variants_details[prefix_variant_${i}][last_name]" 
-                                            class="form-control" value="${existingDetails.last_name || ''}" required>
-                                        <div class="invalid-feedback" id="prefix_variant_${i}_last_name-error"></div>
-                                        <p class="note">Last name for this email persona</p>
-                                    </div>
+                                            <div class="col-md-4">
+                                                <label>Profile Picture Link</label>
+                                                <input type="url" name="prefix_variants_details[prefix_variant_${i}][profile_link]" 
+                                                    class="form-control" value="${existingDetails.profile_link || ''}" >
+                                                <div class="invalid-feedback" id="prefix_variant_${i}_profile_link-error"></div>
+                                                <p class="note">Profile picture URL for this persona</p>
+                                            </div>
 
-                                    <div class="col-md-4">
-                                        <label>Profile Picture Link</label>
-                                        <input type="url" name="prefix_variants_details[prefix_variant_${i}][profile_link]" 
-                                            class="form-control" value="${existingDetails.profile_link || ''}" >
-                                        <div class="invalid-feedback" id="prefix_variant_${i}_profile_link-error"></div>
-                                        <p class="note">Profile picture URL for this persona</p>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label>Email Prefix ${i} *</label>
-                                        <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
-                                            value="${existingValue}" required>
-                                        <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
-                                        ${noteHtml}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label>Prefix ${i} Password*</label>
-                                        <input type="text" name="prefix_variants_details[prefix_variant_${i}][password]" 
-                                            class="form-control" value="${existingDetails.password || ''}" required>
-                                        <div class="invalid-feedback" id="prefix_variant_${i}_password-error"></div>
-                                        <p class="note">Password for this email persona</p>
+                                            <div class="col-md-6">
+                                                <label>Email Prefix ${i} *</label>
+                                                <input type="text" name="prefix_variants[prefix_variant_${i}]" class="form-control" 
+                                                    value="${existingValue}" required>
+                                                <div class="invalid-feedback" id="prefix_variant_${i}-error"></div>
+                                                ${noteHtml}
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label>Prefix ${i} Password*</label>
+                                                <input type="text" name="prefix_variants_details[prefix_variant_${i}][password]" 
+                                                    class="form-control" value="${existingDetails.password || ''}" required>
+                                                <div class="invalid-feedback" id="prefix_variant_${i}_password-error"></div>
+                                                <p class="note">Password for this email persona</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    `;
+                            `;
 
-                    container.append(fieldHtml);
-                }
-
-                //highlight the prefix note on focus input
-                container.find('input').on('focus', function () {
-                    $(this).siblings('.note').css('color', 'orange');
-                }).on('blur', function () {
-                    $(this).siblings('.note').css('color', ''); // Reset to default
-                });
-
-                // Validate prefix variants for duplicates
-                container.find('input[name*="prefix_variants[prefix_variant_"]').on('input', function () {
-                    const values = [];
-                    const seen = new Set();
-                    let hasDuplicate = false;
-
-                    container.find('input[name*="prefix_variants[prefix_variant_"]').each(function () {
-                        const val = $(this).val().trim();
-                        values.push(val);
-
-                        if (val !== '' && seen.has(val)) {
-                            hasDuplicate = true;
-                            $(this).addClass('is-invalid');
-                            $(this).siblings('.invalid-feedback').text('Same Prefixes are not allowed.');
-                        } else {
-                            seen.add(val);
-                            $(this).removeClass('is-invalid');
-                            $(this).siblings('.invalid-feedback').text('');
+                            container.append(fieldHtml);
                         }
-                    });
-                });
-            }
 
+                        //highlight the prefix note on focus input
+                        container.find('input').on('focus', function () {
+                            $(this).siblings('.note').css('color', 'orange');
+                        }).on('blur', function () {
+                            $(this).siblings('.note').css('color', ''); // Reset to default
+                        });
 
-                // 🔁 After generating all fields, bind change event
+                        // Validate prefix variants for duplicates
+                        container.find('input[name*="prefix_variants[prefix_variant_"]').on('input', function () {
+                            const values = [];
+                            const seen = new Set();
+                            let hasDuplicate = false;
 
-                // Handle inboxes per domain change event
-                $('#inboxes_per_domain').on('change', function() {
-                    const inboxesPerDomain = parseInt($(this).val()) || 1;
-                    generatePrefixVariantFields(inboxesPerDomain);
+                            container.find('input[name*="prefix_variants[prefix_variant_"]').each(function () {
+                                const val = $(this).val().trim();
+                                values.push(val);
 
-                    // Recalculate total inboxes when inboxes per domain changes
-                    calculateTotalInboxes();
-                });
-
-                // Initialize prefix variant fields on page load
-                const initialInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
-                generatePrefixVariantFields(initialInboxesPerDomain);
-
-                // Initialize remaining inboxes progress bar on page load
-                updateRemainingInboxesBar();
-                // Function to display used domains in read-only section
-                function displayUsedDomains() {
-                    const readonlyContainer = $('#readonly-domains');
-                    const readonlyList = $('#readonly-domains-list');
-                    const usedNote = $('#used-domains-note');
-
-                    // Safely check if usedDomains exists and has items
-                    if (typeof usedDomains !== 'undefined' && usedDomains.length > 0) {
-                        readonlyContainer.show();
-                        usedNote.show();
-                        const domainsList = usedDomains.map(domain => 
-                            `<span class="badge bg-warning text-dark me-2 mb-1 d-inline-flex align-items-center">
-                                <i class="fa-solid fa-lock me-1"></i>
-                                ${domain.name}
-                            </span>`
-                        ).join('');
-
-                        readonlyList.html(domainsList);
-                    } else {
-                        readonlyContainer.hide();
-                        usedNote.hide();
+                                if (val !== '' && seen.has(val)) {
+                                    hasDuplicate = true;
+                                    $(this).addClass('is-invalid');
+                                    $(this).siblings('.invalid-feedback').text('Same Prefixes are not allowed.');
+                                } else {
+                                    seen.add(val);
+                                    $(this).removeClass('is-invalid');
+                                    $(this).siblings('.invalid-feedback').text('');
+                                }
+                            });
+                        });
                     }
-                }
 
-                // Initialize used domains display
-                displayUsedDomains();
 
-                // Domain counting functionality
-                function countDomains() {
-                    const domainsText = $('#domains').val().trim();
-                    let editableDomainCount = 0;
+                        // 🔁 After generating all fields, bind change event
 
-                    if (domainsText) {
-                        // Handle both comma-separated and newline-separated domains
-                        let domains;
-                        if (domainsText.includes(',')) {
-                            // Comma-separated format
-                            domains = domainsText.split(',').map(d => d.trim()).filter(d => d.length > 0);
-                        } else {
-                            // Newline-separated format (default)
-                            domains = domainsText.split('\n').map(d => d.trim()).filter(d => d.length > 0);
+                        // Handle inboxes per domain change event
+                        $('#inboxes_per_domain').on('change', function() {
+                            const inboxesPerDomain = parseInt($(this).val()) || 1;
+                            generatePrefixVariantFields(inboxesPerDomain);
+
+                            // Recalculate total inboxes when inboxes per domain changes
+                            calculateTotalInboxes();
+                        });
+
+                        // Initialize prefix variant fields on page load
+                        const initialInboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
+                        generatePrefixVariantFields(initialInboxesPerDomain);
+
+                        // Initialize remaining inboxes progress bar on page load
+                        updateRemainingInboxesBar();
+                        // Function to display used domains in read-only section
+                        function displayUsedDomains() {
+                            const readonlyContainer = $('#readonly-domains');
+                            const readonlyList = $('#readonly-domains-list');
+                            const usedNote = $('#used-domains-note');
+
+                            // Safely check if usedDomains exists and has items
+                            if (typeof usedDomains !== 'undefined' && usedDomains.length > 0) {
+                                readonlyContainer.show();
+                                usedNote.show();
+                                const domainsList = usedDomains.map(domain => 
+                                    `<span class="badge bg-warning text-dark me-2 mb-1 d-inline-flex align-items-center">
+                                        <i class="fa-solid fa-lock me-1"></i>
+                                        ${domain.name}
+                                    </span>`
+                                ).join('');
+
+                                readonlyList.html(domainsList);
+                            } else {
+                                readonlyContainer.hide();
+                                usedNote.hide();
+                            }
                         }
-                        editableDomainCount = domains.length;
-                    }
 
-                    // Total count includes both editable and used domains (safely check if usedDomains exists)
-                    const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
-                    const totalDomainCount = editableDomainCount + usedDomainsCount;
+                        // Initialize used domains display
+                        displayUsedDomains();
 
-                    // Update badge with total count
-                    let badgeText = `${totalDomainCount} domain${totalDomainCount !== 1 ? 's' : ''}`;
-                    if (usedDomainsCount > 0) {
-                        badgeText += ` (${usedDomainsCount} locked)`;
-                    }
-                    $('#domain-count-badge').text(badgeText);
-                    $('#domain-count-text').text(totalDomainCount);
+                        // Domain counting functionality
+                        function countDomains() {
+                            const domainsText = $('#domains').val().trim();
+                            let editableDomainCount = 0;
 
-                    // Add visual feedback based on count
-                    const badge = $('#domain-count-badge');
-                    badge.removeClass('bg-primary bg-success bg-warning bg-danger');
+                            if (domainsText) {
+                                // Handle both comma-separated and newline-separated domains
+                                let domains;
+                                if (domainsText.includes(',')) {
+                                    // Comma-separated format
+                                    domains = domainsText.split(',').map(d => d.trim()).filter(d => d.length > 0);
+                                } else {
+                                    // Newline-separated format (default)
+                                    domains = domainsText.split('\n').map(d => d.trim()).filter(d => d.length > 0);
+                                }
+                                editableDomainCount = domains.length;
+                            }
 
-                    if (totalDomainCount === 0) {
-                        badge.addClass('bg-danger');
-                    } else if (totalDomainCount < 10) {
-                        badge.addClass('bg-warning');
-                    } else if (totalDomainCount < 50) {
-                        badge.addClass('bg-primary');
-                    } else {
-                        badge.addClass('bg-success');
-                    }
+                            // Total count includes both editable and used domains (safely check if usedDomains exists)
+                            const usedDomainsCount = (typeof usedDomains !== 'undefined') ? usedDomains.length : 0;
+                            const totalDomainCount = editableDomainCount + usedDomainsCount;
 
-                    return totalDomainCount;
-                }
+                            // Update badge with total count
+                            let badgeText = `${totalDomainCount} domain${totalDomainCount !== 1 ? 's' : ''}`;
+                            if (usedDomainsCount > 0) {
+                                badgeText += ` (${usedDomainsCount} locked)`;
+                            }
+                            $('#domain-count-badge').text(badgeText);
+                            $('#domain-count-text').text(totalDomainCount);
 
-                // Real-time domain counting
-                $('#domains').on('input paste keyup', function() {
-                    // Small delay to handle paste operations
-                    setTimeout(countDomains, 100);
-                });
+                            // Add visual feedback based on count
+                            const badge = $('#domain-count-badge');
+                            badge.removeClass('bg-primary bg-success bg-warning bg-danger');
 
-                // Initial domain count on page load - with delay to ensure DOM is fully loaded
-                setTimeout(() => {
-                    countDomains();
+                            if (totalDomainCount === 0) {
+                                badge.addClass('bg-danger');
+                            } else if (totalDomainCount < 10) {
+                                badge.addClass('bg-warning');
+                            } else if (totalDomainCount < 50) {
+                                badge.addClass('bg-primary');
+                            } else {
+                                badge.addClass('bg-success');
+                            }
 
-                    // Additional check after a longer delay for pre-populated data
-                    setTimeout(() => {
-                        if ($('#domains').val().trim()) {
+                            return totalDomainCount;
+                        }
+
+                        // Real-time domain counting
+                        $('#domains').on('input paste keyup', function() {
+                            // Small delay to handle paste operations
+                            setTimeout(countDomains, 100);
+                        });
+
+                        // Initial domain count on page load - with delay to ensure DOM is fully loaded
+                        setTimeout(() => {
+                            countDomains();
+
+                            // Additional check after a longer delay for pre-populated data
+                            setTimeout(() => {
+                                if ($('#domains').val().trim()) {
+                                    countDomains();
+                                }
+                            }, 500);
+                        }, 100);
+
+                        // Master inbox email field - no confirmation alerts needed
+                        // Users can freely enter and clear the email field without any popups
+
+                        // Initialize tooltips
+                        $('[data-bs-toggle="tooltip"]').tooltip();
+
+                        // ==========================================
+                        // SMTP Pool Mode Handling
+                        // ==========================================
+
+                        // Toggle SMTP mode
+                        $('#smtp_mode_toggle').on('change', function() {
+                            const isSmtpMode = $(this).is(':checked');
+                            toggleSmtpMode(isSmtpMode);
+                        });
+
+                        function toggleSmtpMode(isSmtpMode) {
+                            if (isSmtpMode) {
+                                // Show SMTP fields
+                                $('#smtp-fields-container').slideDown(300);
+                                // Hide standard pool fields
+                                $('#standard-pool-fields').slideUp(300);
+                                // Hide panel assignment section (SMTP doesn't need panel assignment)
+                                $('#panel-assignment-section').slideUp(300);
+
+
+                                // Make SMTP fields required
+                                $('#smtp_provider_id').attr('required', true);
+                                // Remove required from standard fields
+                                $('#domains').attr('required', false);
+                                $('#inboxes_per_domain').attr('required', false);
+
+                            } else {
+                                // Hide SMTP fields
+                                $('#smtp-fields-container').slideUp(300);
+                                // Show standard pool fields
+                                $('#standard-pool-fields').slideDown(300);
+                                // Show panel assignment section
+                                $('#panel-assignment-section').slideDown(300);
+
+
+                                // Remove required from SMTP fields
+                                $('#smtp_provider_id').attr('required', false);
+                                // Make standard fields required again
+                                $('#domains').attr('required', true);
+                                $('#inboxes_per_domain').attr('required', true);
+
+                                // Clear SMTP data
+                                $('#smtp_accounts_data').val('');
+                            }
+                        }
+
+                        // Initialize SMTP mode on page load
+                        if ($('#smtp_mode_toggle').is(':checked')) {
+                            toggleSmtpMode(true);
+                        }
+
+                        // CSV File Upload Handler
+                        $('#smtp_csv_file').on('change', function(e) {
+                            const file = e.target.files[0];
+                            if (!file) return;
+
+                            if (!file.name.toLowerCase().endsWith('.csv')) {
+                                alert('Please upload a CSV file');
+                                $(this).val('');
+                                return;
+                            }
+
+                            const reader = new FileReader();
+                            reader.onload = function(event) {
+                                const csvContent = event.target.result;
+
+                                // Store raw CSV content and filename in hidden fields (use unique IDs)
+                                $('#smtp_csv_content').val(csvContent);
+                                $('#smtp_csv_filename_input').val(file.name);
+
+                                parseSmtpCsv(csvContent);
+                            };
+                            reader.readAsText(file);
+                        });
+
+                        function parseSmtpCsv(csvContent) {
+                            const lines = csvContent.split('\n').filter(line => line.trim());
+                            if (lines.length < 2) {
+                                alert('CSV file is empty or has no data rows');
+                                return;
+                            }
+
+                            // Parse header row
+                            const headers = parseCsvLine(lines[0]);
+                            const headerMap = {};
+                            headers.forEach((header, index) => {
+                                const normalizedHeader = header.toLowerCase().trim();
+
+                                // Basic fields
+                                if (normalizedHeader === 'email' || normalizedHeader === 'email address') {
+                                    headerMap['email'] = index;
+                                } else if (normalizedHeader === 'first name' || (normalizedHeader.includes('first') && normalizedHeader.includes('name'))) {
+                                    headerMap['first_name'] = index;
+                                } else if (normalizedHeader === 'last name' || (normalizedHeader.includes('last') && normalizedHeader.includes('name'))) {
+                                    headerMap['last_name'] = index;
+                                } else if (normalizedHeader === 'password') {
+                                    // Exact match for "password" column
+                                    headerMap['password'] = index;
+                                } else if (normalizedHeader.includes('org') || normalizedHeader.includes('unit') || (normalizedHeader.includes('path') && !normalizedHeader.includes('imap') && !normalizedHeader.includes('smtp'))) {
+                                    headerMap['org_unit_path'] = index;
+                                }
+                                // IMAP fields
+                                else if (normalizedHeader === 'imap username' || normalizedHeader === 'imap user') {
+                                    headerMap['imap_username'] = index;
+                                } else if (normalizedHeader === 'imap password' || normalizedHeader.includes('imap') && normalizedHeader.includes('password')) {
+                                    headerMap['imap_password'] = index;
+                                } else if (normalizedHeader === 'imap host') {
+                                    headerMap['imap_host'] = index;
+                                } else if (normalizedHeader === 'imap port') {
+                                    headerMap['imap_port'] = index;
+                                }
+                                // SMTP fields
+                                else if (normalizedHeader === 'smtp username' || normalizedHeader === 'smtp user') {
+                                    headerMap['smtp_username'] = index;
+                                } else if (normalizedHeader === 'smtp password' || normalizedHeader.includes('smtp') && normalizedHeader.includes('password')) {
+                                    headerMap['smtp_password'] = index;
+                                } else if (normalizedHeader === 'smtp host') {
+                                    headerMap['smtp_host'] = index;
+                                } else if (normalizedHeader === 'smtp port') {
+                                    headerMap['smtp_port'] = index;
+                                }
+                                // Warmup/Limit fields
+                                else if (normalizedHeader === 'daily limit') {
+                                    headerMap['daily_limit'] = index;
+                                } else if (normalizedHeader === 'warmup enabled') {
+                                    headerMap['warmup_enabled'] = index;
+                                } else if (normalizedHeader === 'warmup limit') {
+                                    headerMap['warmup_limit'] = index;
+                                } else if (normalizedHeader === 'warmup increment') {
+                                    headerMap['warmup_increment'] = index;
+                                }
+                            });
+
+                            // Validate required headers
+                            if (headerMap['email'] === undefined) {
+                                alert('CSV must have an Email column');
+                                return;
+                            }
+
+                            // Parse data rows
+                            const accounts = [];
+                            const domains = {};
+                            const prefixes = new Set();
+
+                            for (let i = 1; i < lines.length; i++) {
+                                const values = parseCsvLine(lines[i]);
+                                if (values.length === 0) continue;
+
+                                const email = values[headerMap['email']] || '';
+                                if (!email || !email.includes('@')) continue;
+
+                                const [prefix, domain] = email.split('@');
+                                if (!domain) continue;
+
+                                // Get password values with proper fallbacks
+                                const basePassword = headerMap['password'] !== undefined ? (values[headerMap['password']] || '') : '';
+                                const imapPwd = headerMap['imap_password'] !== undefined ? (values[headerMap['imap_password']] || '') : '';
+                                const smtpPwd = headerMap['smtp_password'] !== undefined ? (values[headerMap['smtp_password']] || '') : '';
+
+                                // Use the first available password
+                                const primaryPassword = basePassword || imapPwd || smtpPwd;
+
+                                const account = {
+                                    // Basic fields
+                                    first_name: headerMap['first_name'] !== undefined ? (values[headerMap['first_name']] || '') : '',
+                                    last_name: headerMap['last_name'] !== undefined ? (values[headerMap['last_name']] || '') : '',
+                                    email: email,
+                                    prefix: prefix,
+                                    domain: domain,
+                                    password: primaryPassword,
+                                    org_unit_path: headerMap['org_unit_path'] !== undefined ? (values[headerMap['org_unit_path']] || '/') : '/',
+                                    // IMAP fields
+                                    imap_username: headerMap['imap_username'] !== undefined ? (values[headerMap['imap_username']] || email) : email,
+                                    imap_password: imapPwd || primaryPassword,
+                                    imap_host: headerMap['imap_host'] !== undefined ? (values[headerMap['imap_host']] || '') : '',
+                                    imap_port: headerMap['imap_port'] !== undefined ? (values[headerMap['imap_port']] || '') : '',
+                                    // SMTP fields
+                                    smtp_username: headerMap['smtp_username'] !== undefined ? (values[headerMap['smtp_username']] || email) : email,
+                                    smtp_password: smtpPwd || primaryPassword,
+                                    smtp_host: headerMap['smtp_host'] !== undefined ? (values[headerMap['smtp_host']] || '') : '',
+                                    smtp_port: headerMap['smtp_port'] !== undefined ? (values[headerMap['smtp_port']] || '') : '',
+                                    // Warmup fields
+                                    daily_limit: headerMap['daily_limit'] !== undefined ? (values[headerMap['daily_limit']] || '') : '',
+                                    warmup_enabled: headerMap['warmup_enabled'] !== undefined ? (values[headerMap['warmup_enabled']] || '') : '',
+                                    warmup_limit: headerMap['warmup_limit'] !== undefined ? (values[headerMap['warmup_limit']] || '') : '',
+                                    warmup_increment: headerMap['warmup_increment'] !== undefined ? (values[headerMap['warmup_increment']] || '') : ''
+                                };
+
+                                accounts.push(account);
+
+                                // Track domains and their inbox counts
+                                if (!domains[domain]) {
+                                    domains[domain] = { count: 0, prefixes: new Set() };
+                                }
+                                domains[domain].count++;
+                                domains[domain].prefixes.add(prefix);
+                                prefixes.add(prefix);
+                            }
+
+                            if (accounts.length === 0) {
+                                alert('No valid email accounts found in CSV');
+                                return;
+                            }
+
+                            // Update preview
+                            updateSmtpCsvPreview(accounts, domains, prefixes);
+
+                            // Store data in hidden field
+                            $('#smtp_accounts_data').val(JSON.stringify({
+                                accounts: accounts,
+                                domains: Object.keys(domains).map(d => ({
+                                    name: d,
+                                    inbox_count: domains[d].count,
+                                    prefixes: Array.from(domains[d].prefixes)
+                                })),
+                                total_inboxes: accounts.length,
+                                unique_domains: Object.keys(domains).length,
+                                max_per_domain: Math.max(...Object.values(domains).map(d => d.count)),
+                                prefix_count: prefixes.size
+                            }));
+
+                            // Also update the hidden form fields for domains and total_inboxes
+                            const domainsArray = Object.keys(domains).map((domainName, index) => ({
+                                id: 'smtp_' + (index + 1),
+                                name: domainName,
+                                is_used: false,
+                                prefix_statuses: {}
+                            }));
+
+                            // Populate domains textarea with domain list (for backend processing)
+                            $('#domains').val(Object.keys(domains).join('\n'));
+                            $('#total_inboxes').val(accounts.length);
+                            $('#inboxes_per_domain').val(Math.max(...Object.values(domains).map(d => d.count)));
+
+                            // Trigger domain count update
                             countDomains();
                         }
-                    }, 500);
-                }, 100);
 
-                // Master inbox email field - no confirmation alerts needed
-                // Users can freely enter and clear the email field without any popups
+                        function parseCsvLine(line) {
+                            const result = [];
+                            let current = '';
+                            let inQuotes = false;
 
-                // Initialize tooltips
-                $('[data-bs-toggle="tooltip"]').tooltip();
+                            for (let i = 0; i < line.length; i++) {
+                                const char = line[i];
 
-                // ==========================================
-                // SMTP Pool Mode Handling
-                // ==========================================
-
-                // Toggle SMTP mode
-                $('#smtp_mode_toggle').on('change', function() {
-                    const isSmtpMode = $(this).is(':checked');
-                    toggleSmtpMode(isSmtpMode);
-                });
-
-                function toggleSmtpMode(isSmtpMode) {
-                    if (isSmtpMode) {
-                        // Show SMTP fields
-                        $('#smtp-fields-container').slideDown(300);
-                        // Hide standard pool fields
-                        $('#standard-pool-fields').slideUp(300);
-                        // Hide panel assignment section (SMTP doesn't need panel assignment)
-                        $('#panel-assignment-section').slideUp(300);
-
-
-                        // Make SMTP fields required
-                        $('#smtp_provider_id').attr('required', true);
-                        // Remove required from standard fields
-                        $('#domains').attr('required', false);
-                        $('#inboxes_per_domain').attr('required', false);
-
-                    } else {
-                        // Hide SMTP fields
-                        $('#smtp-fields-container').slideUp(300);
-                        // Show standard pool fields
-                        $('#standard-pool-fields').slideDown(300);
-                        // Show panel assignment section
-                        $('#panel-assignment-section').slideDown(300);
-
-
-                        // Remove required from SMTP fields
-                        $('#smtp_provider_id').attr('required', false);
-                        // Make standard fields required again
-                        $('#domains').attr('required', true);
-                        $('#inboxes_per_domain').attr('required', true);
-
-                        // Clear SMTP data
-                        $('#smtp_accounts_data').val('');
-                    }
-                }
-
-                // Initialize SMTP mode on page load
-                if ($('#smtp_mode_toggle').is(':checked')) {
-                    toggleSmtpMode(true);
-                }
-
-                // CSV File Upload Handler
-                $('#smtp_csv_file').on('change', function(e) {
-                    const file = e.target.files[0];
-                    if (!file) return;
-
-                    if (!file.name.toLowerCase().endsWith('.csv')) {
-                        alert('Please upload a CSV file');
-                        $(this).val('');
-                        return;
-                    }
-
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        const csvContent = event.target.result;
-
-                        // Store raw CSV content and filename in hidden fields (use unique IDs)
-                        $('#smtp_csv_content').val(csvContent);
-                        $('#smtp_csv_filename_input').val(file.name);
-
-                        parseSmtpCsv(csvContent);
-                    };
-                    reader.readAsText(file);
-                });
-
-                function parseSmtpCsv(csvContent) {
-                    const lines = csvContent.split('\n').filter(line => line.trim());
-                    if (lines.length < 2) {
-                        alert('CSV file is empty or has no data rows');
-                        return;
-                    }
-
-                    // Parse header row
-                    const headers = parseCsvLine(lines[0]);
-                    const headerMap = {};
-                    headers.forEach((header, index) => {
-                        const normalizedHeader = header.toLowerCase().trim();
-
-                        // Basic fields
-                        if (normalizedHeader === 'email' || normalizedHeader === 'email address') {
-                            headerMap['email'] = index;
-                        } else if (normalizedHeader === 'first name' || (normalizedHeader.includes('first') && normalizedHeader.includes('name'))) {
-                            headerMap['first_name'] = index;
-                        } else if (normalizedHeader === 'last name' || (normalizedHeader.includes('last') && normalizedHeader.includes('name'))) {
-                            headerMap['last_name'] = index;
-                        } else if (normalizedHeader === 'password') {
-                            // Exact match for "password" column
-                            headerMap['password'] = index;
-                        } else if (normalizedHeader.includes('org') || normalizedHeader.includes('unit') || (normalizedHeader.includes('path') && !normalizedHeader.includes('imap') && !normalizedHeader.includes('smtp'))) {
-                            headerMap['org_unit_path'] = index;
-                        }
-                        // IMAP fields
-                        else if (normalizedHeader === 'imap username' || normalizedHeader === 'imap user') {
-                            headerMap['imap_username'] = index;
-                        } else if (normalizedHeader === 'imap password' || normalizedHeader.includes('imap') && normalizedHeader.includes('password')) {
-                            headerMap['imap_password'] = index;
-                        } else if (normalizedHeader === 'imap host') {
-                            headerMap['imap_host'] = index;
-                        } else if (normalizedHeader === 'imap port') {
-                            headerMap['imap_port'] = index;
-                        }
-                        // SMTP fields
-                        else if (normalizedHeader === 'smtp username' || normalizedHeader === 'smtp user') {
-                            headerMap['smtp_username'] = index;
-                        } else if (normalizedHeader === 'smtp password' || normalizedHeader.includes('smtp') && normalizedHeader.includes('password')) {
-                            headerMap['smtp_password'] = index;
-                        } else if (normalizedHeader === 'smtp host') {
-                            headerMap['smtp_host'] = index;
-                        } else if (normalizedHeader === 'smtp port') {
-                            headerMap['smtp_port'] = index;
-                        }
-                        // Warmup/Limit fields
-                        else if (normalizedHeader === 'daily limit') {
-                            headerMap['daily_limit'] = index;
-                        } else if (normalizedHeader === 'warmup enabled') {
-                            headerMap['warmup_enabled'] = index;
-                        } else if (normalizedHeader === 'warmup limit') {
-                            headerMap['warmup_limit'] = index;
-                        } else if (normalizedHeader === 'warmup increment') {
-                            headerMap['warmup_increment'] = index;
-                        }
-                    });
-
-                    // Validate required headers
-                    if (headerMap['email'] === undefined) {
-                        alert('CSV must have an Email column');
-                        return;
-                    }
-
-                    // Parse data rows
-                    const accounts = [];
-                    const domains = {};
-                    const prefixes = new Set();
-
-                    for (let i = 1; i < lines.length; i++) {
-                        const values = parseCsvLine(lines[i]);
-                        if (values.length === 0) continue;
-
-                        const email = values[headerMap['email']] || '';
-                        if (!email || !email.includes('@')) continue;
-
-                        const [prefix, domain] = email.split('@');
-                        if (!domain) continue;
-
-                        // Get password values with proper fallbacks
-                        const basePassword = headerMap['password'] !== undefined ? (values[headerMap['password']] || '') : '';
-                        const imapPwd = headerMap['imap_password'] !== undefined ? (values[headerMap['imap_password']] || '') : '';
-                        const smtpPwd = headerMap['smtp_password'] !== undefined ? (values[headerMap['smtp_password']] || '') : '';
-
-                        // Use the first available password
-                        const primaryPassword = basePassword || imapPwd || smtpPwd;
-
-                        const account = {
-                            // Basic fields
-                            first_name: headerMap['first_name'] !== undefined ? (values[headerMap['first_name']] || '') : '',
-                            last_name: headerMap['last_name'] !== undefined ? (values[headerMap['last_name']] || '') : '',
-                            email: email,
-                            prefix: prefix,
-                            domain: domain,
-                            password: primaryPassword,
-                            org_unit_path: headerMap['org_unit_path'] !== undefined ? (values[headerMap['org_unit_path']] || '/') : '/',
-                            // IMAP fields
-                            imap_username: headerMap['imap_username'] !== undefined ? (values[headerMap['imap_username']] || email) : email,
-                            imap_password: imapPwd || primaryPassword,
-                            imap_host: headerMap['imap_host'] !== undefined ? (values[headerMap['imap_host']] || '') : '',
-                            imap_port: headerMap['imap_port'] !== undefined ? (values[headerMap['imap_port']] || '') : '',
-                            // SMTP fields
-                            smtp_username: headerMap['smtp_username'] !== undefined ? (values[headerMap['smtp_username']] || email) : email,
-                            smtp_password: smtpPwd || primaryPassword,
-                            smtp_host: headerMap['smtp_host'] !== undefined ? (values[headerMap['smtp_host']] || '') : '',
-                            smtp_port: headerMap['smtp_port'] !== undefined ? (values[headerMap['smtp_port']] || '') : '',
-                            // Warmup fields
-                            daily_limit: headerMap['daily_limit'] !== undefined ? (values[headerMap['daily_limit']] || '') : '',
-                            warmup_enabled: headerMap['warmup_enabled'] !== undefined ? (values[headerMap['warmup_enabled']] || '') : '',
-                            warmup_limit: headerMap['warmup_limit'] !== undefined ? (values[headerMap['warmup_limit']] || '') : '',
-                            warmup_increment: headerMap['warmup_increment'] !== undefined ? (values[headerMap['warmup_increment']] || '') : ''
-                        };
-
-                        accounts.push(account);
-
-                        // Track domains and their inbox counts
-                        if (!domains[domain]) {
-                            domains[domain] = { count: 0, prefixes: new Set() };
-                        }
-                        domains[domain].count++;
-                        domains[domain].prefixes.add(prefix);
-                        prefixes.add(prefix);
-                    }
-
-                    if (accounts.length === 0) {
-                        alert('No valid email accounts found in CSV');
-                        return;
-                    }
-
-                    // Update preview
-                    updateSmtpCsvPreview(accounts, domains, prefixes);
-
-                    // Store data in hidden field
-                    $('#smtp_accounts_data').val(JSON.stringify({
-                        accounts: accounts,
-                        domains: Object.keys(domains).map(d => ({
-                            name: d,
-                            inbox_count: domains[d].count,
-                            prefixes: Array.from(domains[d].prefixes)
-                        })),
-                        total_inboxes: accounts.length,
-                        unique_domains: Object.keys(domains).length,
-                        max_per_domain: Math.max(...Object.values(domains).map(d => d.count)),
-                        prefix_count: prefixes.size
-                    }));
-
-                    // Also update the hidden form fields for domains and total_inboxes
-                    const domainsArray = Object.keys(domains).map((domainName, index) => ({
-                        id: 'smtp_' + (index + 1),
-                        name: domainName,
-                        is_used: false,
-                        prefix_statuses: {}
-                    }));
-
-                    // Populate domains textarea with domain list (for backend processing)
-                    $('#domains').val(Object.keys(domains).join('\n'));
-                    $('#total_inboxes').val(accounts.length);
-                    $('#inboxes_per_domain').val(Math.max(...Object.values(domains).map(d => d.count)));
-
-                    // Trigger domain count update
-                    countDomains();
-                }
-
-                function parseCsvLine(line) {
-                    const result = [];
-                    let current = '';
-                    let inQuotes = false;
-
-                    for (let i = 0; i < line.length; i++) {
-                        const char = line[i];
-
-                        if (char === '"') {
-                            inQuotes = !inQuotes;
-                        } else if (char === ',' && !inQuotes) {
-                            result.push(current.trim());
-                            current = '';
-                        } else {
-                            current += char;
-                        }
-                    }
-                    result.push(current.trim());
-
-                    return result;
-                }
-
-                function updateSmtpCsvPreview(accounts, domains, prefixes) {
-                    // Show preview section
-                    $('#smtp-csv-preview').slideDown(300);
-
-                    // Update badges
-                    $('#smtp-csv-count').text(accounts.length + ' accounts');
-                    $('#smtp-csv-domains').text(Object.keys(domains).length + ' domains');
-
-                    // Determine which extended columns have data
-                    const hasImapData = accounts.some(a => a.imap_host || a.imap_port);
-                    const hasSmtpData = accounts.some(a => a.smtp_host || a.smtp_port);
-                    const hasImapPassword = accounts.some(a => a.imap_password && a.imap_password !== a.password);
-                    const hasSmtpPassword = accounts.some(a => a.smtp_password && a.smtp_password !== a.password);
-                    const hasWarmupData = accounts.some(a => a.daily_limit || a.warmup_enabled || a.warmup_limit || a.warmup_increment);
-
-                    // Build table header dynamically
-                    const thead = $('#smtp-csv-table thead tr');
-                    thead.empty();
-
-                    // Base columns
-                    thead.append('<th>First Name</th>');
-                    thead.append('<th>Last Name</th>');
-                    thead.append('<th>Email Address</th>');
-                    thead.append('<th>Domain</th>');
-                    thead.append('<th>Password</th>');
-
-                    // IMAP columns (if data exists)
-                    if (hasImapData) {
-                        thead.append('<th>IMAP Host</th>');
-                        thead.append('<th>IMAP Port</th>');
-                    }
-                    if (hasImapPassword) {
-                        thead.append('<th>IMAP Password</th>');
-                    }
-
-                    // SMTP columns (if data exists)
-                    if (hasSmtpData) {
-                        thead.append('<th>SMTP Host</th>');
-                        thead.append('<th>SMTP Port</th>');
-                    }
-                    if (hasSmtpPassword) {
-                        thead.append('<th>SMTP Password</th>');
-                    }
-
-                    // Warmup columns (if data exists)
-                    if (hasWarmupData) {
-                        thead.append('<th>Daily Limit</th>');
-                        thead.append('<th>Warmup</th>');
-                    }
-
-                    // Build table rows
-                    const tbody = $('#smtp-csv-tbody');
-                    tbody.empty();
-
-                    accounts.forEach(account => {
-                        let row = '<tr>';
-
-                        // Base columns - using theme-compatible styling
-                        row += '<td class="text-white">' + safeDisplayVal(account.first_name) + '</td>';
-                        row += '<td class="text-white">' + safeDisplayVal(account.last_name) + '</td>';
-                        row += '<td><span class="smtp-email-cell">' + safeDisplayVal(account.email) + '</span></td>';
-                        row += '<td><span class="badge smtp-domain-badge">' + safeDisplayVal(account.domain) + '</span></td>';
-                        row += '<td><span class="smtp-password-cell">' + safeDisplayVal(account.password) + '</span></td>';
-
-                        // IMAP columns
-                        if (hasImapData) {
-                            row += '<td><span class="smtp-data-cell">' + safeDisplayVal(account.imap_host) + '</span></td>';
-                            row += '<td class="text-white">' + safeDisplayVal(account.imap_port) + '</td>';
-                        }
-                        if (hasImapPassword) {
-                            row += '<td><span class="smtp-password-cell">' + safeDisplayVal(account.imap_password) + '</span></td>';
-                        }
-
-                        // SMTP columns
-                        if (hasSmtpData) {
-                            row += '<td><span class="smtp-data-cell">' + safeDisplayVal(account.smtp_host) + '</span></td>';
-                            row += '<td class="text-white">' + safeDisplayVal(account.smtp_port) + '</td>';
-                        }
-                        if (hasSmtpPassword) {
-                            row += '<td><span class="smtp-password-cell">' + safeDisplayVal(account.smtp_password) + '</span></td>';
-                        }
-
-                        // Warmup columns
-                        if (hasWarmupData) {
-                            row += '<td>' + safeDisplayVal(account.daily_limit) + '</td>';
-
-                            let warmupStatus = '-';
-                            if (account.warmup_enabled === true || account.warmup_enabled === "true" || account.warmup_enabled === "1") {
-                                warmupStatus = '<span class="badge bg-success">Yes</span>';
-                            } else if (account.warmup_enabled === false || account.warmup_enabled === "false" || account.warmup_enabled === "0") {
-                                warmupStatus = '<span class="badge bg-secondary">No</span>';
+                                if (char === '"') {
+                                    inQuotes = !inQuotes;
+                                } else if (char === ',' && !inQuotes) {
+                                    result.push(current.trim());
+                                    current = '';
+                                } else {
+                                    current += char;
+                                }
                             }
-                            row += '<td>' + warmupStatus + '</td>';
+                            result.push(current.trim());
+
+                            return result;
                         }
 
-                        row += '</tr>';
-                        tbody.append(row);
+                        function updateSmtpCsvPreview(accounts, domains, prefixes) {
+                            // Show preview section
+                            $('#smtp-csv-preview').slideDown(300);
+
+                            // Update badges
+                            $('#smtp-csv-count').text(accounts.length + ' accounts');
+                            $('#smtp-csv-domains').text(Object.keys(domains).length + ' domains');
+
+                            // Determine which extended columns have data
+                            const hasImapData = accounts.some(a => a.imap_host || a.imap_port);
+                            const hasSmtpData = accounts.some(a => a.smtp_host || a.smtp_port);
+                            const hasImapPassword = accounts.some(a => a.imap_password && a.imap_password !== a.password);
+                            const hasSmtpPassword = accounts.some(a => a.smtp_password && a.smtp_password !== a.password);
+                            const hasWarmupData = accounts.some(a => a.daily_limit || a.warmup_enabled || a.warmup_limit || a.warmup_increment);
+
+                            // Build table header dynamically
+                            const thead = $('#smtp-csv-table thead tr');
+                            thead.empty();
+
+                            // Base columns
+                            thead.append('<th>First Name</th>');
+                            thead.append('<th>Last Name</th>');
+                            thead.append('<th>Email Address</th>');
+                            thead.append('<th>Domain</th>');
+                            thead.append('<th>Password</th>');
+
+                            // IMAP columns (if data exists)
+                            if (hasImapData) {
+                                thead.append('<th>IMAP Host</th>');
+                                thead.append('<th>IMAP Port</th>');
+                            }
+                            if (hasImapPassword) {
+                                thead.append('<th>IMAP Password</th>');
+                            }
+
+                            // SMTP columns (if data exists)
+                            if (hasSmtpData) {
+                                thead.append('<th>SMTP Host</th>');
+                                thead.append('<th>SMTP Port</th>');
+                            }
+                            if (hasSmtpPassword) {
+                                thead.append('<th>SMTP Password</th>');
+                            }
+
+                            // Warmup columns (if data exists)
+                            if (hasWarmupData) {
+                                thead.append('<th>Daily Limit</th>');
+                                thead.append('<th>Warmup</th>');
+                            }
+
+                            // Build table rows
+                            const tbody = $('#smtp-csv-tbody');
+                            tbody.empty();
+
+                            accounts.forEach(account => {
+                                let row = '<tr>';
+
+                                // Base columns - using theme-compatible styling
+                                row += '<td class="text-white">' + safeDisplayVal(account.first_name) + '</td>';
+                                row += '<td class="text-white">' + safeDisplayVal(account.last_name) + '</td>';
+                                row += '<td><span class="smtp-email-cell">' + safeDisplayVal(account.email) + '</span></td>';
+                                row += '<td><span class="badge smtp-domain-badge">' + safeDisplayVal(account.domain) + '</span></td>';
+                                row += '<td><span class="smtp-password-cell">' + safeDisplayVal(account.password) + '</span></td>';
+
+                                // IMAP columns
+                                if (hasImapData) {
+                                    row += '<td><span class="smtp-data-cell">' + safeDisplayVal(account.imap_host) + '</span></td>';
+                                    row += '<td class="text-white">' + safeDisplayVal(account.imap_port) + '</td>';
+                                }
+                                if (hasImapPassword) {
+                                    row += '<td><span class="smtp-password-cell">' + safeDisplayVal(account.imap_password) + '</span></td>';
+                                }
+
+                                // SMTP columns
+                                if (hasSmtpData) {
+                                    row += '<td><span class="smtp-data-cell">' + safeDisplayVal(account.smtp_host) + '</span></td>';
+                                    row += '<td class="text-white">' + safeDisplayVal(account.smtp_port) + '</td>';
+                                }
+                                if (hasSmtpPassword) {
+                                    row += '<td><span class="smtp-password-cell">' + safeDisplayVal(account.smtp_password) + '</span></td>';
+                                }
+
+                                // Warmup columns
+                                if (hasWarmupData) {
+                                    row += '<td>' + safeDisplayVal(account.daily_limit) + '</td>';
+
+                                    let warmupStatus = '-';
+                                    if (account.warmup_enabled === true || account.warmup_enabled === "true" || account.warmup_enabled === "1") {
+                                        warmupStatus = '<span class="badge bg-success">Yes</span>';
+                                    } else if (account.warmup_enabled === false || account.warmup_enabled === "false" || account.warmup_enabled === "0") {
+                                        warmupStatus = '<span class="badge bg-secondary">No</span>';
+                                    }
+                                    row += '<td>' + warmupStatus + '</td>';
+                                }
+
+                                row += '</tr>';
+                                tbody.append(row);
+                            });
+
+                            // Update summary cards
+                            $("#smtp-total-inboxes").text(accounts.length);
+                            $("#smtp-unique-domains").text(Object.keys(domains).length);
+                            $("#smtp-max-per-domain").text(Math.max(...Object.values(domains).map(d => d.count)));
+                            $("#smtp-prefix-count").text(prefixes.size);
+                        }
+
+                        function safeDisplayVal(val) {
+                            if (val === null || val === undefined || val === '') return '-';
+                            return escapeHtml(String(val));
+                        }
+
+                        function escapeHtml(text) {
+                            if (!text) return '';
+                            return text.replace(/&/g, '&amp;')
+                                       .replace(/</g, '&lt;')
+                                       .replace(/>/g, '&gt;')
+                                       .replace(/"/g, '&quot;')
+                                       .replace(/'/g, '&#039;');
+                        }
+
                     });
-
-                    // Update summary cards
-                    $("#smtp-total-inboxes").text(accounts.length);
-                    $("#smtp-unique-domains").text(Object.keys(domains).length);
-                    $("#smtp-max-per-domain").text(Math.max(...Object.values(domains).map(d => d.count)));
-                    $("#smtp-prefix-count").text(prefixes.size);
-                }
-
-                function safeDisplayVal(val) {
-                    if (val === null || val === undefined || val === '') return '-';
-                    return escapeHtml(String(val));
-                }
-
-                function escapeHtml(text) {
-                    if (!text) return '';
-                    return text.replace(/&/g, '&amp;')
-                               .replace(/</g, '&lt;')
-                               .replace(/>/g, '&gt;')
-                               .replace(/"/g, '&quot;')
-                               .replace(/'/g, '&#039;');
-                }
-
-            });
-            </script>
+                    </script>
 
 
     @endpush
