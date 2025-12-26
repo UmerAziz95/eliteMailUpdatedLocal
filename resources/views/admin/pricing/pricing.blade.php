@@ -2188,6 +2188,8 @@
                 //     });
 
                        $('#masterPlanId').val(''); // Clear ID for new plan
+                       // Set provider type to default from Configuration
+                       $('#providerType').val('{{ $defaultProviderType ?? 'Google' }}');
                       $('#masterPlanModal').modal('show');
             });
 
@@ -2238,6 +2240,7 @@ $(document).on('click', '.editMasterPlanBtn', function () {
                     internal_name: $('#masterPlanInternalName').val(),
                     description: $('#masterPlanDescription').val(),
                     discountMode : $('#planTypeRole').val(), // ✅ Only read once
+                    provider_type: $('#providerType').val() || '', // Provider type from dropdown
                     volume_items: collectVolumeItems(),
                     masterPlanId: $('#masterPlanId').val() || null,
                     _token: '{{ csrf_token() }}'
@@ -3525,6 +3528,12 @@ function collectVolumeItems() {
         $('#internalNamePreview').text(generatedInternalName || 'plan_name_preview');
         $('#masterPlanDescription').val(plan.description || '');
         $('#planTypeRole').val(plan.is_discounted ? 'Discounted' : 'Without Discount');
+        // Set provider_type if available (check both plan.provider_type and volume_items[0].provider_type)
+        if (plan.provider_type) {
+            $('#providerType').val(plan.provider_type);
+        } else if (plan.volume_items && plan.volume_items.length > 0 && plan.volume_items[0].provider_type) {
+            $('#providerType').val(plan.volume_items[0].provider_type);
+        }
 
         // Clear and add volume items
         $('#volumeItemsContainer').empty();
@@ -3551,6 +3560,8 @@ function collectVolumeItems() {
                 $('#volumeItemsContainer').empty();
                 $('#internalNamePreview').text('plan_name_preview');
                 volumeItemIndex = 0;
+                // Reset provider type to default from Configuration
+                $('#providerType').val('{{ $defaultProviderType ?? 'Google' }}');
             });
 
             // Load data when modal is shown
@@ -3687,6 +3698,18 @@ function collectVolumeItems() {
                                         <option value="Without Discount">Without Discount</option>
 
                                     </select>
+                                </div>
+
+                                <!-- Provider Type Dropdown -->
+                                <div class="col-12 mt-3">
+                                    <label for="providerType" class="form-label">Provider Type</label>
+                                    <select class="form-select" id="providerType" name="provider_type">
+                                        <option value="">-- Select Provider Type --</option>
+                                        <option value="Google" {{ ($defaultProviderType ?? 'Google') === 'Google' ? 'selected' : '' }}>Google</option>
+                                        <option value="Microsoft 365" {{ ($defaultProviderType ?? 'Google') === 'Microsoft 365' ? 'selected' : '' }}>Microsoft 365</option>
+                                        <option value="Private SMTP" {{ ($defaultProviderType ?? 'Google') === 'Private SMTP' ? 'selected' : '' }}>Private SMTP</option>
+                                    </select>
+                                    <small class="opacity-50">Default: {{ $defaultProviderType ?? 'Google' }} (from Configuration). Change if needed.</small>
                                 </div>
 
                                 <!-- Other Type Input -->

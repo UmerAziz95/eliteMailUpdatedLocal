@@ -2864,10 +2864,14 @@ $(document).ready(function() {
                                 feedbackEl = field.closest('.form-group, .mb-3').find('.invalid-feedback');
                             }
                             if (!feedbackEl.length) {
-                                field.after(`<div class="invalid-feedback">${xhr.responseJSON.errors[key][0]}</div>`);
+                                feedbackEl = $(`<div class="invalid-feedback">${xhr.responseJSON.errors[key][0]}</div>`);
+                                field.after(feedbackEl);
                             } else {
                                 feedbackEl.text(xhr.responseJSON.errors[key][0]);
                             }
+                            // Ensure the feedback is displayed and stays visible (no auto-hide)
+                            feedbackEl.show();
+                            feedbackEl.css('display', 'block'); // Force display
                         }
                     });
                     
@@ -2879,12 +2883,17 @@ $(document).ready(function() {
                         }, 1500);
                     }
                     
-                    Swal.fire({
-                        title: 'Validation Error!',
-                        text: 'Please check the form for errors and try again.',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
+                    // Only show SweetAlert if the error is NOT for domains field
+                    // Domain validation errors should only show on the field itself
+                    const hasDomainError = xhr.responseJSON.errors && xhr.responseJSON.errors.domains;
+                    if (!hasDomainError) {
+                        Swal.fire({
+                            title: 'Validation Error!',
+                            text: 'Please check the form for errors and try again.',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
                 } else {
                     Swal.fire({
                         title: 'Error!',

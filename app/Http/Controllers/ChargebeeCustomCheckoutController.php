@@ -766,6 +766,16 @@ private function updateUserBilling($user, $billingData)
 
 private function createOrUpdateOrder($invoice, $user, $planId, array $subscription, $customer)
 {
+    // Get provider_type from plan if available, otherwise from Configuration
+    $plan = \App\Models\Plan::find($planId);
+    $providerType = $plan->provider_type 
+        ?? \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
+    
+    // Ensure it's one of the valid order provider types
+    if (!in_array($providerType, ['Google', 'Microsoft 365', 'Private SMTP'])) {
+        $providerType = 'Google';
+    }
+    
     $order = Order::firstOrCreate(
         ['chargebee_invoice_id' => $invoice["id"]],
         [
@@ -778,6 +788,7 @@ private function createOrUpdateOrder($invoice, $user, $planId, array $subscripti
             'currency' => $invoice["currency_code"],
             'paid_at' => Carbon::createFromTimestamp($invoice["paid_at"]),
             'meta' => json_encode(compact('invoice', 'customer', 'subscription')),
+            'provider_type' => $providerType,
         ]
     );
 

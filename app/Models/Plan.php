@@ -19,7 +19,8 @@ class Plan extends Model
         'tier_discount_value',
         'tier_discount_type',
         'actual_price_before_discount',
-        'is_discounted'
+        'is_discounted',
+        'provider_type'
     ];
 
     protected $casts = [

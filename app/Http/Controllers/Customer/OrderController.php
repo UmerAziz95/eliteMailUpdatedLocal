@@ -535,7 +535,6 @@ class OrderController extends Controller
     
     public function store(Request $request)
     {
-       
         try {
             // Validate the request data
             $validated = $request->validate([
@@ -600,6 +599,147 @@ class OrderController extends Controller
                 'profile_picture_link.url' => 'Profile picture link must be a valid URL',
                 'email_persona_picture_link.url' => 'Email persona picture link must be a valid URL'
             ]);
+            
+            $is_draft = $request->is_draft ?? 0;
+            // If is_draft is set to 1, set status to draft, otherwise pending
+            $status = $is_draft == 1 ? 'draft' : 'pending';
+            
+            // Get requested plan to check provider_type
+            $plan = Plan::findOrFail($request->plan_id);
+            
+            // Mailin.ai Domain Purchase Automation
+            // Only process if automation is enabled and provider_type is 'Private SMTP'
+            $mailinJobUuid = null;
+            $mailinJobResponse = null;
+            
+            if (config('mailin_ai.automation_enabled') === true && $plan->provider_type === 'Private SMTP') {
+                try {
+                    Log::channel('mailin-ai')->info('Starting Mailin.ai domain purchase automation', [
+                        'action' => 'domain_purchase',
+                        'plan_id' => $plan->id,
+                        'provider_type' => $plan->provider_type,
+                    ]);
+                    
+                    // Extract domains from request
+                    $domainNames = array_map(
+                        'trim',
+                        array_filter(preg_split('/[\r\n,]+/', $request->domains))
+                    );
+                    
+                    if (empty($domainNames)) {
+                        Log::channel('mailin-ai')->warning('No domains found in request for Mailin.ai automation');
+                    } else {
+                        Log::channel('mailin-ai')->info('Extracted domains for Mailin.ai purchase', [
+                            'action' => 'domain_purchase',
+                            'domains' => $domainNames,
+                            'domain_count' => count($domainNames),
+                        ]);
+                        
+                        // Initialize Mailin.ai service
+                        $mailinService = new \App\Services\MailinAiService();
+                        
+                        // Authenticate (token is cached internally)
+                        $token = $mailinService->authenticate();
+                        if (!$token) {
+                            Log::channel('mailin-ai')->error('Failed to authenticate with Mailin.ai for domain purchase');
+                            throw new \Exception('Failed to authenticate with Mailin.ai. Please try again later.');
+                        }
+                        
+                        // Call Mailin.ai API to purchase domains
+                        $response = $mailinService->makeRequest(
+                            'POST',
+                            '/domains/buy-multiple',
+                            ['domain_names' => $domainNames]
+                        );
+                        
+                        if (!$response || !$response->successful()) {
+                            $responseBody = $response ? $response->json() : null;
+                            $statusCode = $response ? $response->status() : 0;
+                            
+                            Log::channel('mailin-ai')->error('Mailin.ai domain purchase API call failed', [
+                                'action' => 'domain_purchase',
+                                'status_code' => $statusCode,
+                                'response' => $responseBody,
+                                'domains' => $domainNames,
+                            ]);
+                            
+                            // Check if domains are unavailable
+                            if ($responseBody && isset($responseBody['unavailable']) && is_array($responseBody['unavailable'])) {
+                                return response()->json([
+                                    'success' => false,
+                                    'message' => 'Some domains are unavailable.',
+                                    'errors' => [
+                                        'domains' => array_map(
+                                            fn ($d) => "Domain is unavailable: {$d}",
+                                            $responseBody['unavailable']
+                                        )
+                                    ]
+                                ], 422);
+                            }
+                            
+                            throw new \Exception('Failed to purchase domains via Mailin.ai. Please try again later.');
+                        }
+                        
+                        $responseBody = $response->json();
+                        
+                        // Check for unavailable domains in successful response
+                        if (isset($responseBody['unavailable']) && is_array($responseBody['unavailable']) && !empty($responseBody['unavailable'])) {
+                            Log::channel('mailin-ai')->warning('Some domains are unavailable', [
+                                'action' => 'domain_purchase',
+                                'unavailable_domains' => $responseBody['unavailable'],
+                            ]);
+                            
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Some domains are unavailable.',
+                                'errors' => [
+                                    'domains' => array_map(
+                                        fn ($d) => "Domain is unavailable: {$d}",
+                                        $responseBody['unavailable']
+                                    )
+                                ]
+                            ], 422);
+                        }
+                        
+                        // Check for success response with UUID
+                        if (isset($responseBody['uuid']) && isset($responseBody['message'])) {
+                            Log::channel('mailin-ai')->info('Mailin.ai domain purchase request successful', [
+                                'action' => 'domain_purchase',
+                                'job_uuid' => $responseBody['uuid'],
+                                'message' => $responseBody['message'],
+                                'domains' => $domainNames,
+                            ]);
+                            
+                            // Store job UUID - will be saved to order_automations after order creation
+                            $mailinJobUuid = $responseBody['uuid'];
+                            $mailinJobResponse = $responseBody;
+
+                            $status = 'in-progress'; // Default status for new orders
+
+                        } else {
+                            Log::channel('mailin-ai')->warning('Mailin.ai domain purchase response missing UUID', [
+                                'action' => 'domain_purchase',
+                                'response' => $responseBody,
+                            ]);
+                            $mailinJobUuid = null;
+                            $mailinJobResponse = $responseBody;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::channel('mailin-ai')->error('Mailin.ai domain purchase exception', [
+                        'action' => 'domain_purchase',
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                    
+                    // Re-throw validation-style errors, otherwise throw generic error
+                    if ($e instanceof \Illuminate\Http\Client\RequestException) {
+                        throw new \Exception('Failed to communicate with Mailin.ai. Please try again later.');
+                    }
+                    throw $e;
+                }
+            }
+
             // Additional validation for prefix variants based on inboxes_per_domain
             $inboxesPerDomain = (int) $request->inboxes_per_domain;
             $prefixVariants = $request->prefix_variants ?? [];
@@ -657,16 +797,13 @@ class OrderController extends Controller
                     // }
                 }
             }
-            $status = 'pending'; // Default status for new orders
+            
             // persona_password set 123
             $request->persona_password = '123';
             // Calculate number of domains and total inboxes
             $domains = array_filter(preg_split('/[\r\n,]+/', $request->domains));
             $domainCount = count($domains);
             $calculatedTotalInboxes = $domainCount * $request->inboxes_per_domain;
-
-            // Get requested plan
-            $plan = Plan::findOrFail($request->plan_id);
             
             // Store session data if validation passes
             // $request->session()->put('order_info', $request->all());
@@ -723,9 +860,8 @@ class OrderController extends Controller
                 // Set status based on whether total_inboxes equals calculated total from request domains
                 // $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
                 // $status = ($currentInboxes == $maxInboxes) ? 'pending' : 'draft';
-                $is_draft = $request->is_draft ?? 0;
-                // If is_draft is set to 1, set status to draft, otherwise pending
-                $status = $is_draft == 1 ? 'draft' : 'pending';
+            
+                
                 // Update order status
                 $order->update([
                     'status_manage_by_admin' => $status,
@@ -736,6 +872,21 @@ class OrderController extends Controller
                         'status_manage_by_admin' => 'in-progress',
                     ]);
                 }
+                
+                // Handle Mailin.ai automation if enabled and order status is draft/pending
+                // Note: Mailin.ai automation for order editing will be implemented later
+                // Currently, domain purchase automation only runs during new order creation
+                // if (in_array($status, ['draft', 'pending'])) {
+                //     try {
+                //         $mailinAiOrderService = new \App\Services\MailinAiOrderService();
+                //         $mailinAiOrderService->handleOrderAutomation($order->fresh());
+                //     } catch (\Exception $e) {
+                //         \Log::error('Failed to handle Mailin.ai automation for order', [
+                //             'order_id' => $order->id,
+                //             'error' => $e->getMessage()
+                //         ]);
+                //     }
+                // }
                 // Get the current session data
                 $orderInfo = $request->session()->get('order_info', []);
                 
@@ -888,6 +1039,35 @@ class OrderController extends Controller
                     // Continue execution - don't let email failure stop the process
                 }
             }
+            
+            // Save order automation record if domain purchase was successful
+            if (isset($mailinJobUuid) && $mailinJobUuid && isset($order) && $order) {
+                try {
+                    \App\Models\OrderAutomation::create([
+                        'order_id' => $order->id,
+                        'provider_type' => $plan->provider_type,
+                        'job_uuid' => $mailinJobUuid,
+                        'status' => 'pending',
+                        'response_data' => $mailinJobResponse ?? null,
+                    ]);
+
+                    
+                    Log::channel('mailin-ai')->info('Order automation record created', [
+                        'action' => 'save_order_automation',
+                        'order_id' => $order->id,
+                        'job_uuid' => $mailinJobUuid,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::channel('mailin-ai')->error('Failed to save order automation record', [
+                        'action' => 'save_order_automation',
+                        'order_id' => isset($order) ? $order->id : null,
+                        'job_uuid' => $mailinJobUuid,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Don't fail the request if automation record save fails
+                }
+            }
+            
             // status is pending then pannelCreationAndOrderSplitOnPannels
             if($status == 'pending'){
                 // panel creation
@@ -994,6 +1174,16 @@ class OrderController extends Controller
     public function pannelCreationAndOrderSplitOnPannels($order)
     {
         try {
+            // Skip panel assignment if order uses Mailin.ai automation (Private SMTP)
+            // Note: This will be implemented when full Mailin.ai automation is added
+            if (config('mailin_ai.automation_enabled') === true && $order->provider_type === 'Private SMTP') {
+                Log::info("Skipping panel assignment for automated order #{$order->id}", [
+                    'order_id' => $order->id,
+                    'provider_type' => $order->provider_type
+                ]);
+                return;
+            }
+            
             // Wrap everything in a database transaction for consistency
             DB::beginTransaction();
             

@@ -499,7 +499,11 @@ class PlanController extends Controller
 
             // create session for set observer_total_inboxes
             $request->session()->put('observer_total_inboxes', $subscription->subscriptionItems[0]->quantity ?? 1);
-            $defaultProviderType = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+          
+            // Get provider_type from plan if available, otherwise from Configuration
+            $plan = Plan::find($plan_id);
+            $providerType = $plan->provider_type ?? Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+    
             // Create or update order
             $order = Order::firstOrCreate(
                 ['chargebee_invoice_id' => $invoice->id],
@@ -513,7 +517,7 @@ class PlanController extends Controller
                     'currency' => $invoice->currencyCode,
                     'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
                     'meta' => $meta_json,
-                    'provider_type' => $defaultProviderType,
+                    'provider_type' => $providerType,
                 ]
             );
             $order_info = $request->session()->get('order_info');
