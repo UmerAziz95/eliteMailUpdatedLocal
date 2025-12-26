@@ -36,22 +36,22 @@
         }
 
         /* .table-responsive {
-                                            border-radius: 12px;
-                                            overflow: hidden;
-                                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                                        } */
+                                                        border-radius: 12px;
+                                                        overflow: hidden;
+                                                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                                                    } */
 
 
         /* .action-buttons {
-                                            display: flex;
-                                            gap: 0.25rem;
-                                            justify-content: center;
-                                        }
+                                                        display: flex;
+                                                        gap: 0.25rem;
+                                                        justify-content: center;
+                                                    }
 
-                                        .action-buttons .btn {
-                                            padding: 0.375rem 0.5rem;
-                                            font-size: 0.75rem;
-                                        } */
+                                                    .action-buttons .btn {
+                                                        padding: 0.375rem 0.5rem;
+                                                        font-size: 0.75rem;
+                                                    } */
 
         .badge-type {
             font-size: 0.625rem;
@@ -130,20 +130,26 @@
         </div>
 
         <!-- Bulk Action Bar (hidden until items selected) -->
-        <div id="bulkActionBar" class="alert alert-info d-none align-items-center justify-content-between mb-3">
-            <div>
-                <i class="fa fa-check-circle me-2"></i>
+        <div id="bulkActionBar" class="card d-none align-items-center justify-content-between mb-3 px-4 py-3 flex-row"
+            style="border: 1px solid var(--second-primary); background: linear-gradient(135deg, rgba(74, 58, 255, 0.15), rgba(74, 58, 255, 0.05));">
+            <div class="d-flex align-items-center">
+                <i class="fa fa-check-circle me-2" style="color: var(--second-primary);"></i>
                 <span id="selectedCount">0</span> email account(s) selected
             </div>
-            <div>
-                <button type="button" class="btn btn-success btn-sm me-2" onclick="openBulkUpdateModal('extend')">
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm" style="background-color: var(--second-primary); color: #fff;"
+                    onclick="openBulkUpdateModal('extend')">
                     <i class="fa fa-plus me-1"></i>Extend Days
                 </button>
-                <button type="button" class="btn btn-warning btn-sm me-2" onclick="openBulkUpdateModal('reduce')">
+                <button type="button" class="btn btn-sm"
+                    style="background-color: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid #ffc107;"
+                    onclick="openBulkUpdateModal('reduce')">
                     <i class="fa fa-minus me-1"></i>Reduce Days
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllSelections()">
-                    <i class="fa fa-times me-1"></i>Clear Selection
+                <button type="button" class="btn btn-sm"
+                    style="background-color: transparent; color: var(--light-color); border: 1px solid var(--input-border);"
+                    onclick="clearAllSelections()">
+                    <i class="fa fa-times me-1"></i>Clear
                 </button>
             </div>
         </div>
@@ -164,238 +170,379 @@
                     <i class="fa-brands fa-microsoft me-1"></i>365 Pool
                 </button>
             </li>
-        </ul>
-
-        <div class="tab-content" id="poolsTabContent">
-            <!-- Google Pool Tab -->
-            <div class="tab-pane fade show active" id="google-pool-tab-pane" role="tabpanel"
-                aria-labelledby="google-pool-tab" tabindex="0">
-
-                <!-- Nested Tabs for Google Pool -->
-                <ul class="nav nav-tabs mb-3" id="googleStatusTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="google-warming-tab" data-bs-toggle="tab"
-                            data-bs-target="#google-warming-pane" type="button" role="tab">
-                            <i class="fa fa-fire me-1 text-warning"></i>Warming
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="google-available-tab" data-bs-toggle="tab"
-                            data-bs-target="#google-available-pane" type="button" role="tab">
-                            <i class="fa fa-check-circle me-1 text-success"></i>Available
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="google-used-tab" data-bs-toggle="tab"
-                            data-bs-target="#google-used-pane" type="button" role="tab">
-                            <i class="fa fa-lock me-1 text-danger"></i>Used
-                        </button>
-                    </li>
-                </ul>
-
-                <div class="tab-content" id="googleStatusTabContent">
-                    <!-- Google Warming -->
-                    <div class="tab-pane fade show active" id="google-warming-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="googleWarmingTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Google Available -->
-                    <div class="tab-pane fade" id="google-available-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="googleAvailableTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Google Used -->
-                    <div class="tab-pane fade" id="google-used-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="googleUsedTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 365 Pool Tab -->
-            <div class="tab-pane fade" id="ms365-pool-tab-pane" role="tabpanel" aria-labelledby="ms365-pool-tab"
-                tabindex="0">
-
-                <!-- Nested Tabs for 365 Pool -->
-                <ul class="nav nav-tabs mb-3" id="ms365StatusTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="ms365-warming-tab" data-bs-toggle="tab"
-                            data-bs-target="#ms365-warming-pane" type="button" role="tab">
-                            <i class="fa fa-fire me-1 text-warning"></i>Warming
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="ms365-available-tab" data-bs-toggle="tab"
-                            data-bs-target="#ms365-available-pane" type="button" role="tab">
-                            <i class="fa fa-check-circle me-1 text-success"></i>Available
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="ms365-used-tab" data-bs-toggle="tab" data-bs-target="#ms365-used-pane"
-                            type="button" role="tab">
-                            <i class="fa fa-lock me-1 text-danger"></i>Used
-                        </button>
-                    </li>
-                </ul>
-
-                <div class="tab-content" id="ms365StatusTabContent">
-                    <!-- 365 Warming -->
-                    <div class="tab-pane fade show active" id="ms365-warming-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="ms365WarmingTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- 365 Available -->
-                    <div class="tab-pane fade" id="ms365-available-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="ms365AvailableTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- 365 Used -->
-                    <div class="tab-pane fade" id="ms365-used-pane" role="tabpanel">
-                        <div class="card py-3 px-4 mb-4 shadow-sm border-0">
-                            <div class="table-responsive">
-                                <table id="ms365UsedTable" class="table table-hover w-100">
-                                    <thead>
-                                        <tr>
-                                            <th><input type="checkbox" class="select-all-visible" /></th>
-                                            <th>Pool ID</th>
-                                            <th>Created By</th>
-                                            <th>Status</th>
-                                            <th>Email Account</th>
-                                            <th>Expiry Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Delete</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    Are you sure you want to delete this pool? This action cannot be undone.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bulk Update Days Modal -->
-    <div class="modal fade" id="bulkUpdateModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="bulkUpdateModalTitle">Update Warmup Days</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="bulkUpdateAction" value="">
-                    <div class="mb-3">
-                        <label for="bulkDaysInput" class="form-label" id="bulkDaysLabel">Number of Days</label>
-                        <input type="number" class="form-control" id="bulkDaysInput" min="1" value="30">
-                    </div>
-                    <p class="text-muted mb-0">
-                        <i class="fa fa-info-circle me-1"></i>
-                        This will update <span id="bulkUpdateCount">0</span> selected email account(s).
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmBulkUpdate">
-                        <i class="fa fa-save me-1"></i>Update
+        <li class="nav-item" role="presentation">
+                    <button style="font-size: 13px" class="nav-link rounded-1 py-1 text-capitalize text-white"
+                        id="smtp-pool-tab" data-bs-toggle="tab" data-bs-target="#smtp-pool-tab-pane" type="button" role="tab"
+                        aria-controls="smtp-pool-tab-pane" aria-selected="false">
+                        <i class="fa fa-envelope me-1"></i>SMTP Pool
                     </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="poolsTabContent">
+                <!-- Google Pool Tab -->
+                <div class="tab-pane fade show active" id="google-pool-tab-pane" role="tabpanel"
+                    aria-labelledby="google-pool-tab" tabindex="0">
+
+                    <!-- Nested Tabs for Google Pool -->
+                    <ul class="nav nav-tabs mb-3" id="googleStatusTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="google-warming-tab" data-bs-toggle="tab"
+                                data-bs-target="#google-warming-pane" type="button" role="tab">
+                                <i class="fa fa-fire me-1 text-warning"></i>Warming
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="google-available-tab" data-bs-toggle="tab"
+                                data-bs-target="#google-available-pane" type="button" role="tab">
+                                <i class="fa fa-check-circle me-1 text-success"></i>Available
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="google-used-tab" data-bs-toggle="tab"
+                                data-bs-target="#google-used-pane" type="button" role="tab">
+                                <i class="fa fa-lock me-1 text-danger"></i>Used
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="googleStatusTabContent">
+                        <!-- Google Warming -->
+                        <div class="tab-pane fade show active" id="google-warming-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="googleWarmingTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Google Available -->
+                        <div class="tab-pane fade" id="google-available-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="googleAvailableTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Google Used -->
+                        <div class="tab-pane fade" id="google-used-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="googleUsedTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 365 Pool Tab -->
+                <div class="tab-pane fade" id="ms365-pool-tab-pane" role="tabpanel" aria-labelledby="ms365-pool-tab"
+                    tabindex="0">
+
+                    <!-- Nested Tabs for 365 Pool -->
+                    <ul class="nav nav-tabs mb-3" id="ms365StatusTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="ms365-warming-tab" data-bs-toggle="tab"
+                                data-bs-target="#ms365-warming-pane" type="button" role="tab">
+                                <i class="fa fa-fire me-1 text-warning"></i>Warming
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ms365-available-tab" data-bs-toggle="tab"
+                                data-bs-target="#ms365-available-pane" type="button" role="tab">
+                                <i class="fa fa-check-circle me-1 text-success"></i>Available
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ms365-used-tab" data-bs-toggle="tab" data-bs-target="#ms365-used-pane"
+                                type="button" role="tab">
+                                <i class="fa fa-lock me-1 text-danger"></i>Used
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="ms365StatusTabContent">
+                        <!-- 365 Warming -->
+                        <div class="tab-pane fade show active" id="ms365-warming-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="ms365WarmingTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 365 Available -->
+                        <div class="tab-pane fade" id="ms365-available-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="ms365AvailableTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 365 Used -->
+                        <div class="tab-pane fade" id="ms365-used-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="ms365UsedTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SMTP Pool Tab -->
+                <div class="tab-pane fade" id="smtp-pool-tab-pane" role="tabpanel" aria-labelledby="smtp-pool-tab"
+                    tabindex="0">
+
+                    <!-- Nested Tabs for SMTP Pool -->
+                    <ul class="nav nav-tabs mb-3" id="smtpStatusTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="smtp-warming-tab" data-bs-toggle="tab"
+                                data-bs-target="#smtp-warming-pane" type="button" role="tab">
+                                <i class="fa fa-fire me-1 text-warning"></i>Warming
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="smtp-available-tab" data-bs-toggle="tab"
+                                data-bs-target="#smtp-available-pane" type="button" role="tab">
+                                <i class="fa fa-check-circle me-1 text-success"></i>Available
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="smtp-used-tab" data-bs-toggle="tab"
+                                data-bs-target="#smtp-used-pane" type="button" role="tab">
+                                <i class="fa fa-lock me-1 text-danger"></i>Used
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="smtpStatusTabContent">
+                        <!-- SMTP Warming -->
+                        <div class="tab-pane fade show active" id="smtp-warming-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="smtpWarmingTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- SMTP Available -->
+                        <div class="tab-pane fade" id="smtp-available-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="smtpAvailableTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- SMTP Used -->
+                        <div class="tab-pane fade" id="smtp-used-pane" role="tabpanel">
+                            <div class="card py-3 px-4 mb-4 shadow-sm border-0">
+                                <div class="table-responsive">
+                                    <table id="smtpUsedTable" class="table table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" class="select-all-visible" /></th>
+                                                <th>Pool ID</th>
+                                                <th>Created By</th>
+                                                <th>Status</th>
+                                                <th>Email Account</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this pool? This action cannot be undone.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- Bulk Update Days Offcanvas -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="bulkUpdateOffcanvas" style="width: 70%;">
+            <div class="offcanvas-header border-bottom" style="border-color: var(--input-border) !important;">
+                <h5 class="offcanvas-title" id="bulkUpdateOffcanvasTitle">
+                    <i class="fa fa-calendar-plus me-2" style="color: var(--second-primary);"></i>
+                    Update Warmup Days
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <input type="hidden" id="bulkUpdateAction" value="">
+
+                <!-- Days Input Section -->
+                <div class="card mb-4"
+                    style="border: 1px solid var(--second-primary); background: linear-gradient(135deg, rgba(74, 58, 255, 0.1), rgba(74, 58, 255, 0.02));">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <label for="bulkDaysInput" class="form-label mb-1" id="bulkDaysLabel">Number of Days</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control form-control-lg" id="bulkDaysInput" min="1"
+                                        value="30"
+                                        style="background-color: var(--primary-color); border-color: var(--input-border);">
+                                    <span class="input-group-text"
+                                        style="background-color: var(--secondary-color); border-color: var(--input-border);">days</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center h-100 pt-4">
+                                    <i class="fa fa-info-circle me-2" style="color: var(--second-primary);"></i>
+                                    <span>Updating <strong id="bulkUpdateCount">0</strong> email account(s)</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end pt-4">
+                                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="offcanvas">
+                                    <i class="fa fa-times me-1"></i>Cancel
+                                </button>
+                                <button type="button" class="btn btn-primary" id="confirmBulkUpdate">
+                                    <i class="fa fa-save me-1"></i>Apply Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Items Table -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fa fa-list me-2"></i>Selected Email Accounts</h6>
+                        <small class="opacity-75">Preview of changes</small>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="bulkPreviewTable">
+                                <thead>
+                                    <tr style="background-color: var(--primary-color);">
+                                        <th class="ps-3">Pool ID</th>
+                                        <th>Email Account</th>
+                                        <th>Current Expiry</th>
+                                        <th>New Expiry</th>
+                                        <th>Change</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulkPreviewTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 @endsection
 
 @push('scripts')
@@ -409,14 +556,17 @@
         let selectedItems = new Map();
 
         $(document).ready(function () {
-            // Initialize all 6 DataTables
+            // Initialize all 9 DataTables (Google, MS365, SMTP)
             const tableConfigs = [
                 { id: 'googleWarmingTable', provider: 'Google', status: 'warming', emptyIcon: 'fa-fire', emptyColor: 'text-warning' },
                 { id: 'googleAvailableTable', provider: 'Google', status: 'available', emptyIcon: 'fa-check-circle', emptyColor: 'text-success' },
                 { id: 'googleUsedTable', provider: 'Google', status: 'used', emptyIcon: 'fa-lock', emptyColor: 'text-danger' },
                 { id: 'ms365WarmingTable', provider: 'Microsoft 365', status: 'warming', emptyIcon: 'fa-fire', emptyColor: 'text-warning' },
                 { id: 'ms365AvailableTable', provider: 'Microsoft 365', status: 'available', emptyIcon: 'fa-check-circle', emptyColor: 'text-success' },
-                { id: 'ms365UsedTable', provider: 'Microsoft 365', status: 'used', emptyIcon: 'fa-lock', emptyColor: 'text-danger' }
+                { id: 'ms365UsedTable', provider: 'Microsoft 365', status: 'used', emptyIcon: 'fa-lock', emptyColor: 'text-danger' },
+                { id: 'smtpWarmingTable', provider: 'SMTP', status: 'warming', emptyIcon: 'fa-fire', emptyColor: 'text-warning' },
+                { id: 'smtpAvailableTable', provider: 'SMTP', status: 'available', emptyIcon: 'fa-check-circle', emptyColor: 'text-success' },
+                { id: 'smtpUsedTable', provider: 'SMTP', status: 'used', emptyIcon: 'fa-lock', emptyColor: 'text-danger' }
             ];
 
             tableConfigs.forEach(config => {
@@ -443,12 +593,12 @@
                     },
                     language: {
                         emptyTable: `
-                                                        <div class="text-center py-4">
-                                                            <i class="fa ${config.emptyIcon} fs-1 ${config.emptyColor} mb-3"></i>
-                                                            <h5 class="">No ${config.status} email accounts found</h5>
-                                                            <p class="">All ${config.status} email accounts will appear here.</p>
-                                                        </div>
-                                                    `
+                                                                <div class="text-center py-4">
+                                                                    <i class="fa ${config.emptyIcon} fs-1 ${config.emptyColor} mb-3"></i>
+                                                                    <h5 class="">No ${config.status} email accounts found</h5>
+                                                                    <p class="">All ${config.status} email accounts will appear here.</p>
+                                                                </div>
+                                                            `
                     },
                     drawCallback: function () {
                         $('[data-bs-toggle="tooltip"]').tooltip();
@@ -479,10 +629,10 @@
                         const key = `${row.pool_id}-${row.domain_id}-${row.prefix_key}`;
                         const checked = selectedItems.has(key) ? 'checked' : '';
                         return `<input type="checkbox" class="row-checkbox" 
-                                    data-pool-id="${row.pool_id}" 
-                                    data-domain-id="${row.domain_id}" 
-                                    data-prefix-key="${row.prefix_key}" 
-                                    ${checked} />`;
+                                            data-pool-id="${row.pool_id}" 
+                                            data-domain-id="${row.domain_id}" 
+                                            data-prefix-key="${row.prefix_key}" 
+                                            ${checked} />`;
                     }
                 },
                 {
@@ -490,11 +640,11 @@
                     name: 'pool_id',
                     render: function (data, type, row) {
                         return `
-                                                        <a href="/admin/pools/${data}" class="text-primary text-decoration-none">
-                                                            <i class="ti ti-hash fs-6 opacity-50"></i>
-                                                            <span>${data}</span>
-                                                        </a>
-                                                    `;
+                                                                <a href="/admin/pools/${data}" class="text-primary text-decoration-none">
+                                                                    <i class="ti ti-hash fs-6 opacity-50"></i>
+                                                                    <span>${data}</span>
+                                                                </a>
+                                                            `;
                     }
                 },
                 {
@@ -502,11 +652,11 @@
                     name: 'created_by',
                     render: function (data, type, row) {
                         return `
-                                                        <div class="d-flex gap-1 align-items-center">
-                                                            <i class="ti ti-user fs-6 opacity-50"></i>
-                                                            <span>${data || 'N/A'}</span>
-                                                        </div>
-                                                    `;
+                                                                <div class="d-flex gap-1 align-items-center">
+                                                                    <i class="ti ti-user fs-6 opacity-50"></i>
+                                                                    <span>${data || 'N/A'}</span>
+                                                                </div>
+                                                            `;
                     }
                 },
                 {
@@ -531,10 +681,10 @@
                         }
 
                         return `
-                                                        <span class="status-badge ${badgeClass}">
-                                                            <i class="fa ${icon} me-1"></i>${data || 'Unknown'}
-                                                        </span>
-                                                    `;
+                                                                <span class="status-badge ${badgeClass}">
+                                                                    <i class="fa ${icon} me-1"></i>${data || 'Unknown'}
+                                                                </span>
+                                                            `;
                     }
                 },
                 {
@@ -546,11 +696,11 @@
                         const email = prefix && domain ? `${prefix}@${domain}` : domain;
 
                         return `
-                                                        <div class="d-flex gap-1 align-items-center">
-                                                            <i class="ti ti-mail fs-6 opacity-50"></i>
-                                                            <span>${email || '-'}</span>
-                                                        </div>
-                                                    `;
+                                                                <div class="d-flex gap-1 align-items-center">
+                                                                    <i class="ti ti-mail fs-6 opacity-50"></i>
+                                                                    <span>${email || '-'}</span>
+                                                                </div>
+                                                            `;
                     }
                 },
                 {
@@ -565,11 +715,11 @@
                             day: 'numeric'
                         });
                         return `
-                                                        <div class="d-flex gap-1 align-items-center opacity-75">
-                                                            <i class="ti ti-calendar-month fs-6"></i>
-                                                            <span>${date}</span>
-                                                        </div>
-                                                    `;
+                                                                <div class="d-flex gap-1 align-items-center opacity-75">
+                                                                    <i class="ti ti-calendar-month fs-6"></i>
+                                                                    <span>${date}</span>
+                                                                </div>
+                                                            `;
                     }
                 }
             ];
@@ -603,9 +753,9 @@
                             alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
                             alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
                             alert.innerHTML = `
-                                                        <i class="fas fa-check-circle me-2"></i>Pool deleted successfully!
-                                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                                    `;
+                                                                <i class="fas fa-check-circle me-2"></i>Pool deleted successfully!
+                                                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                                            `;
                             document.body.appendChild(alert);
 
                             setTimeout(() => {
@@ -626,13 +776,36 @@
 
         // Row checkbox change handler
         $(document).on('change', '.row-checkbox', function () {
-            const poolId = $(this).data('pool-id');
-            const domainId = $(this).data('domain-id');
-            const prefixKey = $(this).data('prefix-key');
+            const $checkbox = $(this);
+            const poolId = $checkbox.data('pool-id');
+            const domainId = $checkbox.data('domain-id');
+            const prefixKey = $checkbox.data('prefix-key');
             const key = `${poolId}-${domainId}-${prefixKey}`;
 
-            if ($(this).is(':checked')) {
-                selectedItems.set(key, { pool_id: poolId, domain_id: domainId, prefix_key: prefixKey });
+            if ($checkbox.is(':checked')) {
+                // Get the row data from DataTable
+                const $row = $checkbox.closest('tr');
+                const $table = $checkbox.closest('table');
+                const tableId = $table.attr('id');
+
+                let rowData = {};
+                if (dataTables[tableId]) {
+                    rowData = dataTables[tableId].row($row).data() || {};
+                }
+
+                const prefixValue = rowData.prefix_value || '';
+                const domainName = rowData.domain_name || '';
+                const email = prefixValue && domainName ? `${prefixValue}@${domainName}` : domainName;
+
+                selectedItems.set(key, { 
+                    pool_id: poolId, 
+                    domain_id: domainId, 
+                    prefix_key: prefixKey,
+                    email: email,
+                    end_date: rowData.end_date || null,
+                    prefix_value: prefixValue,
+                    domain_name: domainName
+                });
             } else {
                 selectedItems.delete(key);
             }
@@ -678,14 +851,94 @@
         function openBulkUpdateModal(action) {
             $('#bulkUpdateAction').val(action);
             $('#bulkUpdateCount').text(selectedItems.size);
+
             if (action === 'extend') {
-                $('#bulkUpdateModalTitle').text('Extend Warmup Days');
+                $('#bulkUpdateOffcanvasTitle').html('<i class="fa fa-calendar-plus me-2" style="color: var(--second-primary);"></i>Extend Warmup Days');
                 $('#bulkDaysLabel').text('Days to Add');
             } else {
-                $('#bulkUpdateModalTitle').text('Reduce Warmup Days');
+                $('#bulkUpdateOffcanvasTitle').html('<i class="fa fa-calendar-minus me-2" style="color: #ffc107;"></i>Reduce Warmup Days');
                 $('#bulkDaysLabel').text('Days to Reduce');
             }
-            $('#bulkUpdateModal').modal('show');
+
+            // Populate preview table
+            updatePreviewTable();
+
+            // Show offcanvas
+            const offcanvas = new bootstrap.Offcanvas(document.getElementById('bulkUpdateOffcanvas'));
+            offcanvas.show();
+        }
+
+        // Update preview table when days input changes
+        $('#bulkDaysInput').on('input', function() {
+            updatePreviewTable();
+        });
+
+        function updatePreviewTable() {
+            const action = $('#bulkUpdateAction').val();
+            const days = parseInt($('#bulkDaysInput').val()) || 0;
+            const $tbody = $('#bulkPreviewTableBody');
+            $tbody.empty();
+
+            if (selectedItems.size === 0) {
+                $tbody.append('<tr><td colspan="5" class="text-center py-4 opacity-75">No items selected</td></tr>');
+                return;
+            }
+
+            selectedItems.forEach((item, key) => {
+                const poolId = item.pool_id;
+                const email = item.email || '-';
+                const currentEndDate = item.end_date;
+
+                // Calculate new date
+                let newEndDate = null;
+                let diffDays = 0;
+
+                if (currentEndDate) {
+                    const currentDate = new Date(currentEndDate);
+                    diffDays = action === 'extend' ? days : -days;
+                    currentDate.setDate(currentDate.getDate() + diffDays);
+                    newEndDate = currentDate.toISOString().split('T')[0];
+                } else {
+                    // If no current date, use today + days
+                    const today = new Date();
+                    diffDays = action === 'extend' ? days : -days;
+                    today.setDate(today.getDate() + diffDays);
+                    newEndDate = today.toISOString().split('T')[0];
+                }
+
+                // Format dates for display
+                const formatDate = (dateStr) => {
+                    if (!dateStr) return '<span class="opacity-50">Not set</span>';
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                };
+
+                // Difference badge
+                const diffBadge = action === 'extend' 
+                    ? `<span class="badge" style="background-color: rgba(25, 135, 84, 0.2); color: #198754; border: 1px solid #198754;">+${days} days</span>`
+                    : `<span class="badge" style="background-color: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid #dc3545;">-${days} days</span>`;
+
+                const row = `
+                    <tr>
+                        <td class="ps-3">
+                            <a href="/admin/pools/${poolId}" class="text-primary text-decoration-none">
+                                <i class="ti ti-hash fs-6 opacity-50"></i>${poolId}
+                            </a>
+                        </td>
+                        <td>
+                            <i class="ti ti-mail fs-6 opacity-50 me-1"></i>${email}
+                        </td>
+                        <td>
+                            <span class="opacity-75">${formatDate(currentEndDate)}</span>
+                        </td>
+                        <td>
+                            <strong style="color: ${action === 'extend' ? '#198754' : '#ffc107'};">${formatDate(newEndDate)}</strong>
+                        </td>
+                        <td>${diffBadge}</td>
+                    </tr>
+                `;
+                $tbody.append(row);
+            });
         }
 
         $('#confirmBulkUpdate').on('click', function () {
@@ -704,7 +957,7 @@
                 reduce_days: action === 'reduce' ? days : 0
             };
 
-            $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>Updating...');
+            $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>Applying...');
 
             $.ajax({
                 url: "{{ route('admin.pool-domains.bulk-update-days') }}",
@@ -715,7 +968,11 @@
                 contentType: 'application/json',
                 data: JSON.stringify(payload),
                 success: function (response) {
-                    $('#bulkUpdateModal').modal('hide');
+                    // Hide offcanvas
+                    const offcanvasEl = document.getElementById('bulkUpdateOffcanvas');
+                    const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                    if (offcanvas) offcanvas.hide();
+
                     clearAllSelections();
 
                     // Reload all tables
@@ -736,7 +993,7 @@
                     alert(msg);
                 },
                 complete: function () {
-                    $('#confirmBulkUpdate').prop('disabled', false).html('<i class="fa fa-save me-1"></i>Update');
+                    $('#confirmBulkUpdate').prop('disabled', false).html('<i class="fa fa-save me-1"></i>Apply Changes');
                 }
             });
         });

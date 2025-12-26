@@ -355,6 +355,7 @@ class PoolDomainService
         // Clear provider-specific caches (always, since bulk updates affect all providers)
         Cache::forget('pool_domains_provider_Google');
         Cache::forget('pool_domains_provider_Microsoft 365');
+        Cache::forget('pool_domains_provider_SMTP');
 
         // If specific user is involved, clear their cache
         if ($userId) {
@@ -388,6 +389,7 @@ class PoolDomainService
             'pool_domains',
             'pool_domains_provider_Google',
             'pool_domains_provider_Microsoft 365',
+            'pool_domains_provider_SMTP',
         ];
 
         foreach ($cacheKeys as $key) {

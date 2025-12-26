@@ -1,94 +1,40 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Elite Mail (Laravel)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Elite Mail is a Laravel-based platform for subscription-driven email inbox ordering and fulfillment, with operational tooling for admins and contractors (orders, panels/capacity, pools), plus billing (Chargebee), support tickets (IMAP), and notifications (Pusher/Slack/Discord).
 
-## About Laravel
+## Documentation
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Start here: `docs/README.md`
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Key docs:
+- `docs/TECHNICAL_DOCUMENTATION.md`
+- `docs/API_DOCUMENTATION.md`
+- `docs/DEPLOYMENT_GUIDE.md`
+- `docs/NON_TECHNICAL_GUIDE.md`
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Local development (typical)
 
-## Learning Laravel
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+npm install
+npm run dev
+php artisan serve
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Maintenance
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-
-## Maintenance: Fix legacy pool domain JSON
-
-If you see malformed `domains` data after upgrading, run the artisan helper to normalize old domain JSON into the new prefix_statuses format:
+### Fix legacy pool domain JSON
 
 ```bash
 php artisan pools:migrate-prefix-statuses
 ```
 
-This command will:
-- Add missing `provider_type` values to pools (using your configured `PROVIDER_TYPE` default).
-- Normalize legacy domain entries into the new schema expected by the app.
-
-Run it once after deploying the migration; it is safe to rerun if needed.
-
-## Maintenance: Migrate Pool Orders Domains
-
-If you are upgrading to the new system logic that requires rich domain data (including prefixes) on pool orders, run the following command to migrate old orders:
+### Migrate/enrich pool orders domains
 
 ```bash
 php artisan pool-orders:fix-domains
 ```
-
-This command will:
-- Iterate through existing Pool Orders.
-- Enrich the `domains` column with full details (prefixes, inbox counts) fetched from the associated Pool.
-- Ensure compatibility with the new frontend and backend logic.
 

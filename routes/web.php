@@ -234,6 +234,18 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('pools/import/data', [PoolController::class, 'importData'])->name('pools.import.data');
         Route::get('pools/import-data/{id}', [PoolController::class, 'importDataById'])->name('pools.import-data');
         Route::post('pools/capacity-check', [PoolController::class, 'capacityCheck'])->name('pools.capacity-check');
+        Route::post('pools/{pool}/change-provider', [PoolController::class, 'changeProvider'])->name('pools.change-provider');
+
+        // SMTP Providers routes (for Select2 dropdown)
+        Route::get('smtp-providers', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'index'])->name('smtp-providers.index');
+        Route::post('smtp-providers', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'store'])->name('smtp-providers.store');
+        Route::get('smtp-providers/all', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'all'])->name('smtp-providers.all');
+        Route::put('smtp-providers/{smtpProvider}', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'update'])->name('smtp-providers.update');
+        Route::delete('smtp-providers/{smtpProvider}', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'destroy'])->name('smtp-providers.destroy');
+        // SMTP Providers admin page routes
+        Route::get('smtp-providers/page', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'indexView'])->name('smtp-providers.page');
+        Route::get('smtp-providers/data', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'dataTable'])->name('smtp-providers.data');
+        Route::get('smtp-providers/{smtpProvider}/show', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'show'])->name('smtp-providers.show');
 
         // Pool Panels routes
         Route::get('/pool-panels/next-id', [App\Http\Controllers\PoolPanelController::class, 'getNextId'])->name('pool-panels.next-id');

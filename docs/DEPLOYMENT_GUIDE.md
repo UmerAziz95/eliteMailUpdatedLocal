@@ -571,4 +571,4 @@ OPTIMIZE TABLE order_emails;
 
 ---
 
-*Continue to [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for complete API reference.*
+*Continue to [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for webhook and endpoint reference.*
