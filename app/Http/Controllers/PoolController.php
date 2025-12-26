@@ -1377,6 +1377,62 @@ class PoolController extends Controller
     }
 
     /**
+     * Change SMTP provider for a pool
+     */
+    public function changeProvider(Request $request, Pool $pool)
+    {
+        $validator = Validator::make($request->all(), [
+            'smtp_provider_id' => 'required|exists:smtp_providers,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $oldProviderId = $pool->smtp_provider_id;
+            $newProviderId = $request->input('smtp_provider_id');
+
+            // Get provider names for the message
+            $oldProviderName = $pool->smtpProvider ? $pool->smtpProvider->name : 'None';
+            $newProvider = \App\Models\SmtpProvider::find($newProviderId);
+            $newProviderName = $newProvider ? $newProvider->name : 'Unknown';
+
+            if ($oldProviderId == $newProviderId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pool already uses this SMTP provider.'
+                ], 400);
+            }
+
+            $pool->update([
+                'smtp_provider_id' => $newProviderId,
+                'smtp_provider_url' => $newProvider ? $newProvider->url : null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "SMTP provider changed from '{$oldProviderName}' to '{$newProviderName}'",
+                'data' => [
+                    'pool_id' => $pool->id,
+                    'old_provider' => $oldProviderName,
+                    'new_provider' => $newProviderName
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change SMTP provider',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Change order provider type (Google or Microsoft 365)
      */
     public function changeProviderType(Request $request, $poolId)

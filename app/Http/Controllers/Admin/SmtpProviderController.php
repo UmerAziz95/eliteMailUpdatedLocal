@@ -197,7 +197,10 @@ class SmtpProviderController extends Controller
             }
         }
 
-        return view('admin.smtp_providers.show', compact('smtpProvider', 'totalEmails'));
+        // Get all unarchived providers for the dropdown
+        $allProviders = SmtpProvider::where('is_active', true)->orderBy('name')->get();
+
+        return view('admin.smtp_providers.show', compact('smtpProvider', 'totalEmails', 'allProviders'));
     }
 
     /**

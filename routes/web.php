@@ -234,6 +234,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('pools/import/data', [PoolController::class, 'importData'])->name('pools.import.data');
         Route::get('pools/import-data/{id}', [PoolController::class, 'importDataById'])->name('pools.import-data');
         Route::post('pools/capacity-check', [PoolController::class, 'capacityCheck'])->name('pools.capacity-check');
+        Route::post('pools/{pool}/change-provider', [PoolController::class, 'changeProvider'])->name('pools.change-provider');
 
         // SMTP Providers routes (for Select2 dropdown)
         Route::get('smtp-providers', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'index'])->name('smtp-providers.index');

@@ -228,6 +228,10 @@
                                                 <div>{{ $pool->created_at->format('M d, Y') }}</div>
                                             </div>
                                             <div class="col-md-3 text-end">
+                                                <button class="btn btn-sm btn-outline-warning me-2"
+                                                    onclick="openChangeProviderModal({{ $pool->id }}, '{{ addslashes($pool->user->name ?? 'Pool #' . $pool->id) }}')">
+                                                    <i class="fa-solid fa-exchange-alt me-1"></i>Change Provider
+                                                </button>
                                                 <a href="{{ route('admin.pools.edit', $pool->id) }}"
                                                     class="btn btn-sm btn-outline-primary">
                                                     <i class="fa-solid fa-edit me-1"></i>Edit Pool
@@ -290,4 +294,118 @@
             </div>
         @endif
     </section>
+
+    <!-- Change Provider Modal -->
+    <div class="modal fade" id="changeProviderModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fa-solid fa-exchange-alt me-2"></i>Change SMTP Provider</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="change_pool_id">
+                    <p class="mb-3">Change SMTP provider for: <strong id="change_pool_name"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label">Current Provider</label>
+                        <input type="text" class="form-control" value="{{ $smtpProvider->name }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Provider <span class="text-danger">*</span></label>
+                        <select class="form-select" id="new_provider_id" required>
+                            <option value="">Select a provider...</option>
+                            @foreach($allProviders as $provider)
+                                @if($provider->id !== $smtpProvider->id)
+                                    <option value="{{ $provider->id }}">{{ $provider->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="changeProvider()">
+                        <i class="fa-solid fa-exchange-alt me-1"></i>Change Provider
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
+
+@push('scripts')
+    <script>
+        function openChangeProviderModal(poolId, poolName) {
+            $('#change_pool_id').val(poolId);
+            $('#change_pool_name').text(poolName);
+            $('#new_provider_id').val('');
+            $('#changeProviderModal').modal('show');
+        }
+
+        function changeProvider() {
+            const poolId = $('#change_pool_id').val();
+            const newProviderId = $('#new_provider_id').val();
+
+            if (!newProviderId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Select Provider',
+                    text: 'Please select a new SMTP provider.'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Change Provider?',
+                text: 'Are you sure you want to change the SMTP provider for this pool?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, change it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `{{ url('admin/pools') }}/${poolId}/change-provider`,
+                        type: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        data: JSON.stringify({
+                            smtp_provider_id: newProviderId
+                        }),
+                        success: function (data) {
+                            if (data.success) {
+                                $('#changeProviderModal').modal('hide');
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Provider Changed!',
+                                    text: data.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: data.message || 'Failed to change provider'
+                                });
+                            }
+                        },
+                        error: function (xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'An error occurred. Please try again.'
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+@endpush
