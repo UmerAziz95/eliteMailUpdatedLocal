@@ -81,7 +81,9 @@ class SmtpProviderController extends Controller
      */
     public function all()
     {
-        $providers = SmtpProvider::orderBy('name')->get();
+        $providers = SmtpProvider::with('pools')
+            ->orderBy('name')
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -196,6 +198,62 @@ class SmtpProviderController extends Controller
         }
 
         return view('admin.smtp_providers.show', compact('smtpProvider', 'totalEmails'));
+    }
+
+    /**
+     * Get SMTP providers data for DataTable AJAX
+     */
+    public function dataTable(Request $request)
+    {
+        $query = SmtpProvider::query()
+            ->withCount('pools')
+            ->orderBy('name');
+
+        return datatables()->of($query)
+            ->addIndexColumn()
+            ->addColumn('status_badge', function ($provider) {
+                $badgeClass = $provider->is_active ? 'bg-success' : 'bg-secondary';
+                $statusText = $provider->is_active ? 'Active' : 'Inactive';
+                return '<span class="badge ' . $badgeClass . '">' . $statusText . '</span>';
+            })
+            ->addColumn('url_display', function ($provider) {
+                if ($provider->url) {
+                    return '<a href="' . e($provider->url) . '" target="_blank" class="text-info text-decoration-none">' . e($provider->url) . '</a>';
+                }
+                return '<span class="text-muted">-</span>';
+            })
+            ->addColumn('total_emails', function ($provider) {
+                $totalEmails = 0;
+                foreach ($provider->pools as $pool) {
+                    if ($pool->smtp_accounts_data && isset($pool->smtp_accounts_data['accounts'])) {
+                        $totalEmails += count($pool->smtp_accounts_data['accounts']);
+                    }
+                }
+                return '<span class="badge bg-info">' . $totalEmails . '</span>';
+            })
+            ->addColumn('pools_count_badge', function ($provider) {
+                return '<span class="badge bg-primary">' . $provider->pools_count . '</span>';
+            })
+            ->addColumn('actions', function ($provider) {
+                $viewUrl = route('admin.smtp-providers.show', $provider->id);
+                $poolsCount = $provider->pools_count;
+
+                return '
+                    <div class="d-flex gap-2">
+                        <a href="' . $viewUrl . '" class="btn btn-sm btn-outline-info" title="View Details">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-warning" onclick="editProvider(' . $provider->id . ', \'' . e($provider->name) . '\', \'' . e($provider->url ?? '') . '\', ' . ($provider->is_active ? 'true' : 'false') . ')" title="Edit">
+                            <i class="fa-solid fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteProvider(' . $provider->id . ', ' . $poolsCount . ')" title="Delete" ' . ($poolsCount > 0 ? 'disabled' : '') . '>
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                ';
+            })
+            ->rawColumns(['status_badge', 'url_display', 'total_emails', 'pools_count_badge', 'actions'])
+            ->make(true);
     }
 }
 

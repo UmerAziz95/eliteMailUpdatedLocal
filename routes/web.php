@@ -243,6 +243,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::delete('smtp-providers/{smtpProvider}', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'destroy'])->name('smtp-providers.destroy');
         // SMTP Providers admin page routes
         Route::get('smtp-providers/page', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'indexView'])->name('smtp-providers.page');
+        Route::get('smtp-providers/data', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'dataTable'])->name('smtp-providers.data');
         Route::get('smtp-providers/{smtpProvider}/show', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'show'])->name('smtp-providers.show');
 
         // Pool Panels routes
