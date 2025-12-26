@@ -202,37 +202,37 @@
         }
 
         /* 
-                                        .prefix-variant-section .card:hover {
-                                            border-color: #667eea;
-                                            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
-                                            transform: translateY(-2px);
-                                        } */
+                                                .prefix-variant-section .card:hover {
+                                                    border-color: #667eea;
+                                                    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+                                                    transform: translateY(-2px);
+                                                } */
 
         /* .prefix-variant-section h6 {
-                                            color: #667eea;
-                                            font-weight: 600;
-                                            margin-bottom: 1rem;
-                                            padding-bottom: 0.5rem;
-                                            border-bottom: 1px solid #404040;
-                                        } */
+                                                    color: #667eea;
+                                                    font-weight: 600;
+                                                    margin-bottom: 1rem;
+                                                    padding-bottom: 0.5rem;
+                                                    border-bottom: 1px solid #404040;
+                                                } */
 
         /* .prefix-variant-section .form-control {
-                                            background-color: #1e1e1e !important;
-                                            border-color: #555;
-                                            transition: border-color 0.3s ease;
-                                        }
+                                                    background-color: #1e1e1e !important;
+                                                    border-color: #555;
+                                                    transition: border-color 0.3s ease;
+                                                }
 
-                                        .prefix-variant-section .form-control:focus {
-                                            border-color: #667eea;
-                                            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
-                                        }
+                                                .prefix-variant-section .form-control:focus {
+                                                    border-color: #667eea;
+                                                    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+                                                }
 
-                                        .prefix-variant-section .note {
-                                            font-size: 0.875em;
-                                            color: #6c757d;
-                                            margin-top: 0.25rem;
-                                            margin-bottom: 0;
-                                        } */
+                                                .prefix-variant-section .note {
+                                                    font-size: 0.875em;
+                                                    color: #6c757d;
+                                                    margin-top: 0.25rem;
+                                                    margin-bottom: 0;
+                                                } */
     </style>
 @endpush
 @section('content')
@@ -297,9 +297,9 @@
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="mb-0">Domains & hosting platform</h5>
                         <!-- <button type="button" class="m-btn py-1 px-3 rounded-2 border-0 import-btn" id="orderImportBtn">
-                                                        <i class="fa-solid fa-file-import"></i>
-                                                        Import Order
-                                                    </button> -->
+                                                                <i class="fa-solid fa-file-import"></i>
+                                                                Import Order
+                                                            </button> -->
                     </div>
 
                     {{-- <div class="domain-forwarding mb-3">
@@ -341,10 +341,10 @@
                     </div>
 
                     <!-- <div id="other-platform-section" class="mb-3" style="display: none;">
-                                                    <label for="other_platform">Please specify your hosting other platform *</label>
-                                                    <input type="text" id="other_platform" name="other_platform" class="form-control">
-                                                    <div class="invalid-feedback" id="other-platform-error"></div>
-                                                </div> -->
+                                                            <label for="other_platform">Please specify your hosting other platform *</label>
+                                                            <input type="text" id="other_platform" name="other_platform" class="form-control">
+                                                            <div class="invalid-feedback" id="other-platform-error"></div>
+                                                        </div> -->
 
                     <div class="platform" id="platform-fields-container">
                         <!-- Dynamic platform fields will be inserted here -->
@@ -499,10 +499,13 @@
                                     </div>
 
                                     <!-- Hidden field to store parsed SMTP accounts data -->
-                                    <input type="hidden" id="smtp_accounts_data" name="smtp_accounts_data" value="">
+                                    <input type="hidden" id="smtp_accounts_data" name="smtp_accounts_data"
+                                        value="{{ isset($pool) && $pool->smtp_accounts_data ? json_encode($pool->smtp_accounts_data) : '' }}">
                                     <!-- Hidden fields to store raw CSV file -->
-                                    <input type="hidden" id="smtp_csv_content" name="smtp_csv_file" value="">
-                                    <input type="hidden" id="smtp_csv_filename_input" name="smtp_csv_filename" value="">
+                                    <input type="hidden" id="smtp_csv_content" name="smtp_csv_file"
+                                        value="{{ isset($pool) ? ($pool->smtp_csv_file ?? '') : '' }}">
+                                    <input type="hidden" id="smtp_csv_filename_input" name="smtp_csv_filename"
+                                        value="{{ isset($pool) ? ($pool->smtp_csv_filename ?? '') : '' }}">
                                 </div>
                             </div>
                         </div>
@@ -592,8 +595,8 @@
                                     <label>Remaining Inboxes</label>
 
                                     <div class="progress position-relative" style="height: 25px;
-                                                                background: linear-gradient(135deg, #f5f5f5, #eaeaea);
-                                                                border-radius: 6px;">
+                                                                        background: linear-gradient(135deg, #f5f5f5, #eaeaea);
+                                                                        border-radius: 6px;">
 
                                         <div class="progress-bar" role="progressbar" id="remaining-inboxes-bar"
                                             style="width: 0%; background: linear-gradient(45deg, #28a745, #20c997); border-radius: 6px;">
@@ -649,13 +652,13 @@
                             </div>
 
                             <!-- <div class="col-md-6">
-                                                        <label>Persona Password</label>
-                                                        <div class="password-wrapper">
-                                                            <input type="password" id="persona_password" name="persona_password" class="form-control" value="{{ isset($pool) ? $pool->persona_password : '' }}" required>
-                                                            <div class="invalid-feedback" id="persona_password-error"></div>
-                                                            <i class="fa-regular fa-eye password-toggle"></i>
-                                                        </div>
-                                                    </div> -->
+                                                                <label>Persona Password</label>
+                                                                <div class="password-wrapper">
+                                                                    <input type="password" id="persona_password" name="persona_password" class="form-control" value="{{ isset($pool) ? $pool->persona_password : '' }}" required>
+                                                                    <div class="invalid-feedback" id="persona_password-error"></div>
+                                                                    <i class="fa-regular fa-eye password-toggle"></i>
+                                                                </div>
+                                                            </div> -->
 
                             <div class="col-md-6 profile-picture" style="display: none;">
                                 <label>Profile Picture Link</label>
@@ -705,9 +708,11 @@
                             </div>
 
                         </div>
+                        <!-- End of Standard Pool Fields -->
                     </div>
-                    <!-- End of Standard Pool Fields -->
+                    <!-- End of Cold Email Platform Row -->
 
+                    <!-- Common Form Sections (visible in both standard and SMTP modes) -->
                     <div class="row">
                         <!-- Purchase Date -->
                         <div id="purchase-date-section" class="col-md-6 mb-3">
@@ -764,7 +769,8 @@
                                             $originalPrice = $pool->price * $totalInboxes;
                                         @endphp
                                         <h6><span class="theme-text">Original Price:</span> ${{ number_format($originalPrice, 2) }} ({{
-                            $totalInboxes }} x ${{ number_format($pool->price, 2) }} <small>/{{ $pool->duration }})</small>
+                            $totalInboxes }} x ${{ number_format($pool->price, 2) }}
+                                            <small>/{{ $pool->duration }})</small>
                                         </h6>
                                         <h6><span class="theme-text">Discount:</span> 0%</h6>
                                         <h6><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }} <small>/{{
@@ -777,7 +783,7 @@
                         @endif
                     </div>
 
-                    <div class="d-flex gap-2">
+                    <div id="submit-section" class="d-flex gap-2">
                         <button type="submit" class="m-btn py-1 px-3 rounded-2 border-0 purchase-btn">
 
                             @if(isset($pool) && $pool->status === 'rejected')
@@ -789,777 +795,776 @@
                         </button>
                     </div>
                 </div>
-                </div>
-            </section>
-        </form>
+                </section>
+                </form>
 
-        <!-- Order Import Modal -->
-        <div class="modal fade" id="orderImportModal" tabindex="-1" aria-labelledby="orderImportModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog modal-xl">
-                <div class="modal-content order-import-modal">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="orderImportModalLabel">
-                            <div class="d-flex align-items-center">
-                                <div class="modal-icon-wrapper me-3">
-                                    <i class="fa-solid fa-file-import"></i>
+                <!-- Order Import Modal -->
+                <div class="modal fade" id="orderImportModal" tabindex="-1" aria-labelledby="orderImportModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content order-import-modal">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="orderImportModalLabel">
+                                    <div class="d-flex align-items-center">
+                                        <div class="modal-icon-wrapper me-3">
+                                            <i class="fa-solid fa-file-import"></i>
+                                        </div>
+                                        <div>
+                                            <span class="modal-title-main">Import Order Data</span>
+                                            <small class="modal-subtitle d-block">Select an existing order to populate form
+                                                data</small>
+                                        </div>
+                                    </div>
+                                </h5>
+                                <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+                                    <i class="fa-solid fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="import-description">
+                                    <div class="d-flex align-items-start">
+                                        <div class="info-icon me-3">
+                                            <i class="fa-solid fa-info-circle"></i>
+                                        </div>
+                                        <div>
+                                            <p class="mb-2"><strong>How it works:</strong></p>
+                                            <ul class="import-steps">
+                                                <li>Browse your existing orders in the table below</li>
+                                                <li>Click "Import" on any order to copy its data</li>
+                                                <li>All form fields will be automatically populated</li>
+                                                <li>Review and modify the imported data as needed</li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span class="modal-title-main">Import Order Data</span>
-                                    <small class="modal-subtitle d-block">Select an existing order to populate form
-                                        data</small>
+
+                                <div class="table-container">
+                                    <div class="table-responsive">
+                                        <table id="ordersImportTable" class="table import-table w-100" style="width:100%">
+                                            <thead>
+                                                <tr>
+                                                    <th><i class="fa-solid fa-hashtag me-1"></i>Order ID</th>
+                                                    <th><i class="fa-solid fa-file-lines me-1"></i>Plan</th>
+                                                    <th><i class="fa-solid fa-envelope me-1"></i>Total Inboxes</th>
+                                                    <th><i class="fa-solid fa-signal me-1"></i>Status</th>
+                                                    <th><i class="fa-solid fa-calendar me-1"></i>Created Date</th>
+                                                    <th><i class="fa-solid fa-cogs me-1"></i>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
-                        </h5>
-                        <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
-                            <i class="fa-solid fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="import-description">
-                            <div class="d-flex align-items-start">
-                                <div class="info-icon me-3">
-                                    <i class="fa-solid fa-info-circle"></i>
-                                </div>
-                                <div>
-                                    <p class="mb-2"><strong>How it works:</strong></p>
-                                    <ul class="import-steps">
-                                        <li>Browse your existing orders in the table below</li>
-                                        <li>Click "Import" on any order to copy its data</li>
-                                        <li>All form fields will be automatically populated</li>
-                                        <li>Review and modify the imported data as needed</li>
-                                    </ul>
-                                </div>
-                            </div>
+                            <!-- <div class="modal-footer"> 
+                                                                <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                                                                    <i class="fa-solid fa-times me-2"></i>
+                                                                    Cancel
+                                                                </button>
+                                                            </div> -->
                         </div>
-
-                        <div class="table-container">
-                            <div class="table-responsive">
-                                <table id="ordersImportTable" class="table import-table w-100" style="width:100%">
-                                    <thead>
-                                        <tr>
-                                            <th><i class="fa-solid fa-hashtag me-1"></i>Order ID</th>
-                                            <th><i class="fa-solid fa-file-lines me-1"></i>Plan</th>
-                                            <th><i class="fa-solid fa-envelope me-1"></i>Total Inboxes</th>
-                                            <th><i class="fa-solid fa-signal me-1"></i>Status</th>
-                                            <th><i class="fa-solid fa-calendar me-1"></i>Created Date</th>
-                                            <th><i class="fa-solid fa-cogs me-1"></i>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
                     </div>
-                    <!-- <div class="modal-footer"> 
-                                                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
-                                                            <i class="fa-solid fa-times me-2"></i>
-                                                            Cancel
-                                                        </button>
-                                                    </div> -->
                 </div>
-            </div>
-        </div>
-
-        <style>
-            /* Modal Animation and Styling */
-            .order-import-modal {
-                background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-                border: 2px solid #444;
-                border-radius: 15px;
-                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
-                overflow: hidden;
-                animation: modalSlideIn 0.4s ease-out;
-            }
-
-            @keyframes modalSlideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(-50px) scale(0.9);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: translateY(0) scale(1);
-                }
-            }
-
-            /* Modal Header */
-            .order-import-modal .modal-header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-bottom: none;
-                padding: 20px 30px;
-                position: relative;
-                overflow: hidden;
-            }
-
-            .order-import-modal .modal-header::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
-                pointer-events: none;
-            }
-
-            .modal-icon-wrapper {
-                background: rgba(255, 255, 255, 0.2);
-                width: 50px;
-                height: 50px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                animation: iconPulse 2s infinite;
-            }
-
-            @keyframes iconPulse {
-
-                0%,
-                100% {
-                    transform: scale(1);
-                }
-
-                50% {
-                    transform: scale(1.1);
-                }
-            }
-
-            .modal-icon-wrapper i {
-                font-size: 20px;
-                color: white;
-            }
-
-            .modal-title-main {
-                color: white;
-                font-size: 1.4rem;
-                font-weight: 600;
-                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            }
-
-            .modal-subtitle {
-                color: rgba(255, 255, 255, 0.8);
-                font-size: 0.85rem;
-                margin-top: 2px;
-            }
-
-            .btn-close-custom {
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-                color: white;
-            }
-
-            .btn-close-custom:hover {
-                background: rgba(255, 255, 255, 0.2);
-                transform: rotate(90deg);
-            }
-
-            /* Modal Body */
-            .order-import-modal .modal-body {
-                padding: 30px;
-                background: #1e1e1e;
-            }
-
-            .import-description {
-                background: linear-gradient(135deg, #2d4a7c 0%, #3d5a8c 100%);
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 25px;
-                border: 1px solid #4a6fa5;
-                position: relative;
-                overflow: hidden;
-            }
-
-            .import-description::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
-                pointer-events: none;
-            }
-
-            .info-icon {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-            }
-
-            .info-icon i {
-                color: white;
-                font-size: 16px;
-            }
-
-            .import-description p {
-                color: #e0e6ed;
-                margin-bottom: 0.5rem;
-            }
-
-            .import-steps {
-                color: #b8c5d1;
-                padding-left: 1.2rem;
-                margin: 0;
-            }
-
-            .import-steps li {
-                margin-bottom: 0.4rem;
-                position: relative;
-            }
-
-            .import-steps li::marker {
-                color: #667eea;
-            }
-
-            /* Table Container */
-            .table-container {
-                background: #252525;
-                border-radius: 12px;
-                /* padding: 20px;
-                                            border: 1px solid #404040; */
-                box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
-            }
-
-            /* Enhanced responsive table wrapper for horizontal scrolling */
-            .table-responsive {
-                border-radius: 8px;
-                overflow-x: auto;
-                overflow-y: visible;
-                -webkit-overflow-scrolling: touch;
-                border: 1px solid #404040;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-                min-height: 200px;
-                background: #252525;
-            }
-
-            /* Custom scrollbar for horizontal scrolling */
-            .table-responsive::-webkit-scrollbar {
-                height: 12px;
-            }
-
-            .table-responsive::-webkit-scrollbar-track {
-                background: #1a1a1a;
-                border-radius: 6px;
-            }
-
-            .table-responsive::-webkit-scrollbar-thumb {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 6px;
-                border: 2px solid #1a1a1a;
-            }
-
-            .table-responsive::-webkit-scrollbar-thumb:hover {
-                background: linear-gradient(135deg, #5a6fd8 0%, #6b4a8a 100%);
-            }
-
-            /* Firefox scrollbar styling */
-            .table-responsive {
-                scrollbar-width: thin;
-                scrollbar-color: #667eea #1a1a1a;
-            }
-
-            /* Table content styling for better horizontal scrolling */
-            .import-table {
-                min-width: 800px;
-                /* Ensure minimum width to trigger horizontal scrolling */
-                white-space: nowrap;
-                /* Prevent text wrapping in cells */
-            }
-
-            .import-table th,
-            .import-table td {
-                min-width: 120px;
-                /* Set minimum column width */
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-
-            /* Specific column width adjustments */
-            .import-table th:first-child,
-            .import-table td:first-child {
-                min-width: 80px;
-                /* Order ID column */
-            }
-
-            .import-table th:nth-child(2),
-            .import-table td:nth-child(2) {
-                min-width: 150px;
-                /* Plan column */
-            }
-
-            .import-table th:nth-child(6),
-            .import-table td:nth-child(6) {
-                min-width: 120px;
-                /* Action column */
-            }
-
-            /* Scroll indicators for better UX */
-            .scroll-indicators {
-                position: relative;
-                height: 0;
-                pointer-events: none;
-            }
-
-            .scroll-indicator-left,
-            .scroll-indicator-right {
-                position: absolute;
-                top: 50%;
-                transform: translateY(-50%);
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                width: 30px;
-                height: 30px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                opacity: 0;
-                transition: opacity 0.3s ease;
-                pointer-events: auto;
-                z-index: 10;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            }
-
-            .scroll-indicator-left {
-                left: 10px;
-            }
-
-            .scroll-indicator-right {
-                right: 10px;
-            }
-
-            .scroll-indicator-left.visible,
-            .scroll-indicator-right.visible {
-                opacity: 0.8;
-            }
-
-            .scroll-indicator-left:hover,
-            .scroll-indicator-right:hover {
-                opacity: 1;
-                background: linear-gradient(135deg, #5a6fd8 0%, #6b4a8a 100%);
-            }
-
-            /* Table Styling */
-            .import-table {
-                margin: 0;
-            }
-
-            .import-table thead th {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border: none;
-                padding: 15px 12px;
-                font-weight: 600;
-                text-transform: uppercase;
-                font-size: 0.85rem;
-                letter-spacing: 0.5px;
-                position: relative;
-            }
-
-            .import-table thead th:first-child {
-                border-top-left-radius: 8px;
-            }
-
-            .import-table thead th:last-child {
-                border-top-right-radius: 8px;
-            }
-
-            .import-table tbody tr {
-                background: #2a2a2a;
-                border-bottom: 1px solid #3a3a3a;
-                transition: all 0.3s ease;
-            }
-
-            .import-table tbody tr:hover {
-                background: linear-gradient(135deg, #3a3a3a 0%, #4a4a4a 100%);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            }
-
-            .import-table tbody td {
-                padding: 15px 12px;
-                color: #e0e0e0;
-                border: none;
-                vertical-align: middle;
-            }
-
-            /* Import Button */
-            .import-order-btn {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border: none;
-                color: white;
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-size: 0.85rem;
-                font-weight: 500;
-                transition: all 0.3s ease;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-
-            .import-order-btn:hover {
-                background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-                color: white;
-            }
-
-            .import-order-btn:active {
-                transform: translateY(0);
-            }
-
-            /* Modal Footer */
-            .order-import-modal .modal-footer {
-                background: #252525;
-                border-top: 1px solid #404040;
-                padding: 20px 30px;
-            }
-
-            .btn-cancel {
-                background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-                border: none;
-                color: white;
-                padding: 10px 20px;
-                border-radius: 6px;
-                font-weight: 500;
-                transition: all 0.3s ease;
-            }
-
-            .btn-cancel:hover {
-                background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
-                color: white;
-            }
-
-            /* Status Badges Enhancement */
-            .import-table .badge {
-                padding: 6px 12px;
-                border-radius: 20px;
-                font-size: 0.75rem;
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-
-            /* Loading Animation for AJAX tables */
-            .table-loading {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-                color: white !important;
-                border-radius: 8px !important;
-                border: none !important;
-                padding: 20px !important;
-                font-weight: 500 !important;
-                text-align: center;
-            }
-
-            /* Responsive Design */
-            @media (max-width: 768px) {
-                .order-import-modal .modal-header {
-                    padding: 15px 20px;
-                }
-
-                .modal-title-main {
-                    font-size: 1.2rem;
-                }
-
-                .order-import-modal .modal-body {
-                    padding: 20px;
-                }
-
-                .import-description {
-                    padding: 15px;
-                }
-
-                .table-container {
-                    /* padding: 15px; */
-                }
-
-                /* Enhanced mobile horizontal scrolling */
-                .table-responsive {
-                    margin: 0 -15px;
-                    /* Extend to modal edges on mobile */
-                    border-radius: 0;
-                    border-left: none;
-                    border-right: none;
-                }
-
-                .import-table {
-                    min-width: 900px;
-                    /* Increased minimum width for mobile */
-                }
-
-                /* Make scrollbar more prominent on mobile */
-                .table-responsive::-webkit-scrollbar {
-                    height: 16px;
-                }
-
-                .table-responsive::-webkit-scrollbar-thumb {
-                    border: 3px solid #1a1a1a;
-                }
-
-                /* Mobile-specific column adjustments */
-                .import-table th,
-                .import-table td {
-                    min-width: 140px;
-                    padding: 12px 8px;
-                    font-size: 0.9rem;
-                }
-
-                /* Add scroll hint for mobile users */
-                .table-container::after {
-                    content: "← Swipe to see more →";
-                    display: block;
-                    text-align: center;
-                    color: #667eea;
-                    font-size: 0.8rem;
-                    margin-top: 10px;
-                    font-style: italic;
-                }
-            }
-
-            @media (max-width: 480px) {
-                .import-table {
-                    min-width: 1000px;
-                    /* Even wider on very small screens */
-                }
-
-                .import-table th,
-                .import-table td {
-                    min-width: 160px;
-                    padding: 10px 6px;
-                    font-size: 0.85rem;
-                }
-
-                .order-import-modal .modal-body {
-                    padding: 15px;
-                }
-            }
-
-            /* Animation for table rows */
-            .import-table tbody tr {
-                animation: tableRowSlideIn 0.5s ease-out forwards;
-                opacity: 0;
-            }
-
-            @keyframes tableRowSlideIn {
-                from {
-                    opacity: 0;
-                    transform: translateX(-20px);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-            }
-
-            /* Stagger animation for multiple rows */
-            .import-table tbody tr:nth-child(1) {
-                animation-delay: 0.1s;
-            }
-
-            .import-table tbody tr:nth-child(2) {
-                animation-delay: 0.2s;
-            }
-
-            .import-table tbody tr:nth-child(3) {
-                animation-delay: 0.3s;
-            }
-
-            .import-table tbody tr:nth-child(4) {
-                animation-delay: 0.4s;
-            }
-
-            .import-table tbody tr:nth-child(5) {
-                animation-delay: 0.5s;
-            }
-
-            /* Select2 Dark Theme Styles for SMTP Provider */
-            .select2-container--default .select2-selection--single {
-                background-color: var(--secondary-color, #1a1a2e) !important;
-                border: 1px solid var(--border-color, #3d3d5c) !important;
-                border-radius: 4px !important;
-                height: 38px !important;
-                color: #fff !important;
-            }
-
-            .select2-container--default .select2-selection--single .select2-selection__rendered {
-                color: #fff !important;
-                line-height: 36px !important;
-                padding-left: 12px !important;
-                padding-right: 40px !important;
-                font-size: 0.9rem !important;
-            }
-
-            .select2-container--default .select2-selection--single .select2-selection__placeholder {
-                color: rgba(255, 255, 255, 0.6) !important;
-            }
-
-            .select2-container--default .select2-selection--single .select2-selection__arrow {
-                height: 36px !important;
-                right: 8px !important;
-            }
-
-            .select2-container--default .select2-selection--single .select2-selection__arrow b {
-                border-color: #fff transparent transparent transparent !important;
-            }
-
-            .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
-                border-color: transparent transparent #fff transparent !important;
-            }
-
-            /* Clear button (x) styling */
-            .select2-container--default .select2-selection--single .select2-selection__clear {
-                color: rgba(255, 255, 255, 0.6) !important;
-                font-size: 18px !important;
-                font-weight: normal !important;
-                margin-right: 5px !important;
-                position: absolute !important;
-                right: 25px !important;
-                top: 50% !important;
-                transform: translateY(-50%) !important;
-                cursor: pointer !important;
-                line-height: 1 !important;
-                padding: 0 5px !important;
-            }
-
-            .select2-container--default .select2-selection--single .select2-selection__clear:hover {
-                color: #ff6b6b !important;
-            }
-
-            .select2-dropdown {
-                background-color: var(--secondary-color, #1a1a2e) !important;
-                border: 1px solid var(--border-color, #3d3d5c) !important;
-                border-radius: 4px !important;
-            }
-
-            .select2-container--default .select2-search--dropdown .select2-search__field {
-                background-color: var(--primary-color, #0f0f23) !important;
-                border: 1px solid var(--border-color, #3d3d5c) !important;
-                color: #fff !important;
-                border-radius: 4px !important;
-                padding: 8px 12px !important;
-            }
-
-            .select2-container--default .select2-search--dropdown .select2-search__field::placeholder {
-                color: rgba(255, 255, 255, 0.5) !important;
-            }
-
-            .select2-container--default .select2-results__option {
-                padding: 10px 12px !important;
-                color: #fff !important;
-                background-color: var(--secondary-color, #1a1a2e) !important;
-            }
-
-            .select2-container--default .select2-results__option--highlighted[aria-selected] {
-                background-color: var(--second-primary, #4a3aff) !important;
-                color: #fff !important;
-            }
-
-            .select2-container--default .select2-results__option[aria-selected="true"] {
-                background-color: rgba(74, 58, 255, 0.3) !important;
-            }
-
-            .select2-container--default .select2-results__option--disabled {
-                color: rgba(255, 255, 255, 0.4) !important;
-            }
-
-            .select2-results__message {
-                color: rgba(255, 255, 255, 0.6) !important;
-            }
-
-            /* Create new option styling */
-            .select2-container--default .select2-results__option .text-success {
-                color: #28a745 !important;
-            }
-
-            /* CSV Preview Table Dark Theme Styling */
-            #smtp-csv-table {
-                color: #fff !important;
-            }
-
-            #smtp-csv-table thead th {
-                color: rgba(255, 255, 255, 0.85) !important;
-                font-weight: 600 !important;
-                text-transform: uppercase !important;
-                font-size: 0.75rem !important;
-                letter-spacing: 0.5px !important;
-                border-bottom: 1px solid var(--border-color, #3d3d5c) !important;
-            }
-
-            #smtp-csv-table tbody tr {
-                border-bottom: 1px solid var(--border-color, #3d3d5c) !important;
-                background-color: transparent !important;
-            }
-
-            #smtp-csv-table tbody tr:hover {
-                background-color: rgba(74, 58, 255, 0.1) !important;
-            }
-
-            #smtp-csv-table tbody td {
-                color: rgba(255, 255, 255, 0.9) !important;
-                vertical-align: middle !important;
-                padding: 0.5rem !important;
-            }
-
-            /* Code elements in CSV preview - use proper white text on dark */
-            #smtp-csv-table code {
-                color: #7dd3fc !important;
-                /* Light cyan for code in dark theme */
-                background-color: rgba(0, 0, 0, 0.3) !important;
-                padding: 2px 6px !important;
-                border-radius: 3px !important;
-                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
-                font-size: 0.85rem !important;
-            }
-
-            /* Badge styling in table */
-            #smtp-csv-table .badge {
-                font-weight: 500 !important;
-            }
-
-            /* Custom cell styling for CSV preview to match theme */
-            .smtp-email-cell {
-                color: #ff6b9d !important;
-                /* Pink/magenta for emails - matches theme accent */
-                font-family: inherit !important;
-            }
-
-            .smtp-domain-badge {
-                background-color: var(--second-primary, #4a3aff) !important;
-                color: #fff !important;
-                font-weight: 500 !important;
-            }
-
-            .smtp-password-cell {
-                color: rgba(255, 255, 255, 0.6) !important;
-                /* Muted white for passwords */
-                font-family: inherit !important;
-            }
-
-            .smtp-data-cell {
-                color: rgba(255, 255, 255, 0.9) !important;
-                font-family: inherit !important;
-            }
-        </style>
+
+                <style>
+                    /* Modal Animation and Styling */
+                    .order-import-modal {
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+                        border: 2px solid #444;
+                        border-radius: 15px;
+                        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+                        overflow: hidden;
+                        animation: modalSlideIn 0.4s ease-out;
+                    }
+
+                    @keyframes modalSlideIn {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-50px) scale(0.9);
+                        }
+
+                        to {
+                            opacity: 1;
+                            transform: translateY(0) scale(1);
+                        }
+                    }
+
+                    /* Modal Header */
+                    .order-import-modal .modal-header {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        border-bottom: none;
+                        padding: 20px 30px;
+                        position: relative;
+                        overflow: hidden;
+                    }
+
+                    .order-import-modal .modal-header::before {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+                        pointer-events: none;
+                    }
+
+                    .modal-icon-wrapper {
+                        background: rgba(255, 255, 255, 0.2);
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        animation: iconPulse 2s infinite;
+                    }
+
+                    @keyframes iconPulse {
+
+                        0%,
+                        100% {
+                            transform: scale(1);
+                        }
+
+                        50% {
+                            transform: scale(1.1);
+                        }
+                    }
+
+                    .modal-icon-wrapper i {
+                        font-size: 20px;
+                        color: white;
+                    }
+
+                    .modal-title-main {
+                        color: white;
+                        font-size: 1.4rem;
+                        font-weight: 600;
+                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+                    }
+
+                    .modal-subtitle {
+                        color: rgba(255, 255, 255, 0.8);
+                        font-size: 0.85rem;
+                        margin-top: 2px;
+                    }
+
+                    .btn-close-custom {
+                        background: rgba(255, 255, 255, 0.1);
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        border-radius: 50%;
+                        width: 40px;
+                        height: 40px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: all 0.3s ease;
+                        color: white;
+                    }
+
+                    .btn-close-custom:hover {
+                        background: rgba(255, 255, 255, 0.2);
+                        transform: rotate(90deg);
+                    }
+
+                    /* Modal Body */
+                    .order-import-modal .modal-body {
+                        padding: 30px;
+                        background: #1e1e1e;
+                    }
+
+                    .import-description {
+                        background: linear-gradient(135deg, #2d4a7c 0%, #3d5a8c 100%);
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin-bottom: 25px;
+                        border: 1px solid #4a6fa5;
+                        position: relative;
+                        overflow: hidden;
+                    }
+
+                    .import-description::before {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+                        pointer-events: none;
+                    }
+
+                    .info-icon {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-shrink: 0;
+                    }
+
+                    .info-icon i {
+                        color: white;
+                        font-size: 16px;
+                    }
+
+                    .import-description p {
+                        color: #e0e6ed;
+                        margin-bottom: 0.5rem;
+                    }
+
+                    .import-steps {
+                        color: #b8c5d1;
+                        padding-left: 1.2rem;
+                        margin: 0;
+                    }
+
+                    .import-steps li {
+                        margin-bottom: 0.4rem;
+                        position: relative;
+                    }
+
+                    .import-steps li::marker {
+                        color: #667eea;
+                    }
+
+                    /* Table Container */
+                    .table-container {
+                        background: #252525;
+                        border-radius: 12px;
+                        /* padding: 20px;
+                                                    border: 1px solid #404040; */
+                        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+                    }
+
+                    /* Enhanced responsive table wrapper for horizontal scrolling */
+                    .table-responsive {
+                        border-radius: 8px;
+                        overflow-x: auto;
+                        overflow-y: visible;
+                        -webkit-overflow-scrolling: touch;
+                        border: 1px solid #404040;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                        min-height: 200px;
+                        background: #252525;
+                    }
+
+                    /* Custom scrollbar for horizontal scrolling */
+                    .table-responsive::-webkit-scrollbar {
+                        height: 12px;
+                    }
+
+                    .table-responsive::-webkit-scrollbar-track {
+                        background: #1a1a1a;
+                        border-radius: 6px;
+                    }
+
+                    .table-responsive::-webkit-scrollbar-thumb {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        border-radius: 6px;
+                        border: 2px solid #1a1a1a;
+                    }
+
+                    .table-responsive::-webkit-scrollbar-thumb:hover {
+                        background: linear-gradient(135deg, #5a6fd8 0%, #6b4a8a 100%);
+                    }
+
+                    /* Firefox scrollbar styling */
+                    .table-responsive {
+                        scrollbar-width: thin;
+                        scrollbar-color: #667eea #1a1a1a;
+                    }
+
+                    /* Table content styling for better horizontal scrolling */
+                    .import-table {
+                        min-width: 800px;
+                        /* Ensure minimum width to trigger horizontal scrolling */
+                        white-space: nowrap;
+                        /* Prevent text wrapping in cells */
+                    }
+
+                    .import-table th,
+                    .import-table td {
+                        min-width: 120px;
+                        /* Set minimum column width */
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+
+                    /* Specific column width adjustments */
+                    .import-table th:first-child,
+                    .import-table td:first-child {
+                        min-width: 80px;
+                        /* Order ID column */
+                    }
+
+                    .import-table th:nth-child(2),
+                    .import-table td:nth-child(2) {
+                        min-width: 150px;
+                        /* Plan column */
+                    }
+
+                    .import-table th:nth-child(6),
+                    .import-table td:nth-child(6) {
+                        min-width: 120px;
+                        /* Action column */
+                    }
+
+                    /* Scroll indicators for better UX */
+                    .scroll-indicators {
+                        position: relative;
+                        height: 0;
+                        pointer-events: none;
+                    }
+
+                    .scroll-indicator-left,
+                    .scroll-indicator-right {
+                        position: absolute;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        width: 30px;
+                        height: 30px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        opacity: 0;
+                        transition: opacity 0.3s ease;
+                        pointer-events: auto;
+                        z-index: 10;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                    }
+
+                    .scroll-indicator-left {
+                        left: 10px;
+                    }
+
+                    .scroll-indicator-right {
+                        right: 10px;
+                    }
+
+                    .scroll-indicator-left.visible,
+                    .scroll-indicator-right.visible {
+                        opacity: 0.8;
+                    }
+
+                    .scroll-indicator-left:hover,
+                    .scroll-indicator-right:hover {
+                        opacity: 1;
+                        background: linear-gradient(135deg, #5a6fd8 0%, #6b4a8a 100%);
+                    }
+
+                    /* Table Styling */
+                    .import-table {
+                        margin: 0;
+                    }
+
+                    .import-table thead th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        border: none;
+                        padding: 15px 12px;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        font-size: 0.85rem;
+                        letter-spacing: 0.5px;
+                        position: relative;
+                    }
+
+                    .import-table thead th:first-child {
+                        border-top-left-radius: 8px;
+                    }
+
+                    .import-table thead th:last-child {
+                        border-top-right-radius: 8px;
+                    }
+
+                    .import-table tbody tr {
+                        background: #2a2a2a;
+                        border-bottom: 1px solid #3a3a3a;
+                        transition: all 0.3s ease;
+                    }
+
+                    .import-table tbody tr:hover {
+                        background: linear-gradient(135deg, #3a3a3a 0%, #4a4a4a 100%);
+                        transform: translateY(-1px);
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+                    }
+
+                    .import-table tbody td {
+                        padding: 15px 12px;
+                        color: #e0e0e0;
+                        border: none;
+                        vertical-align: middle;
+                    }
+
+                    /* Import Button */
+                    .import-order-btn {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        border: none;
+                        color: white;
+                        padding: 8px 16px;
+                        border-radius: 6px;
+                        font-size: 0.85rem;
+                        font-weight: 500;
+                        transition: all 0.3s ease;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+
+                    .import-order-btn:hover {
+                        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+                        color: white;
+                    }
+
+                    .import-order-btn:active {
+                        transform: translateY(0);
+                    }
+
+                    /* Modal Footer */
+                    .order-import-modal .modal-footer {
+                        background: #252525;
+                        border-top: 1px solid #404040;
+                        padding: 20px 30px;
+                    }
+
+                    .btn-cancel {
+                        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+                        border: none;
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 6px;
+                        font-weight: 500;
+                        transition: all 0.3s ease;
+                    }
+
+                    .btn-cancel:hover {
+                        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+                        transform: translateY(-1px);
+                        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+                        color: white;
+                    }
+
+                    /* Status Badges Enhancement */
+                    .import-table .badge {
+                        padding: 6px 12px;
+                        border-radius: 20px;
+                        font-size: 0.75rem;
+                        font-weight: 500;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+
+                    /* Loading Animation for AJAX tables */
+                    .table-loading {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                        color: white !important;
+                        border-radius: 8px !important;
+                        border: none !important;
+                        padding: 20px !important;
+                        font-weight: 500 !important;
+                        text-align: center;
+                    }
+
+                    /* Responsive Design */
+                    @media (max-width: 768px) {
+                        .order-import-modal .modal-header {
+                            padding: 15px 20px;
+                        }
+
+                        .modal-title-main {
+                            font-size: 1.2rem;
+                        }
+
+                        .order-import-modal .modal-body {
+                            padding: 20px;
+                        }
+
+                        .import-description {
+                            padding: 15px;
+                        }
+
+                        .table-container {
+                            /* padding: 15px; */
+                        }
+
+                        /* Enhanced mobile horizontal scrolling */
+                        .table-responsive {
+                            margin: 0 -15px;
+                            /* Extend to modal edges on mobile */
+                            border-radius: 0;
+                            border-left: none;
+                            border-right: none;
+                        }
+
+                        .import-table {
+                            min-width: 900px;
+                            /* Increased minimum width for mobile */
+                        }
+
+                        /* Make scrollbar more prominent on mobile */
+                        .table-responsive::-webkit-scrollbar {
+                            height: 16px;
+                        }
+
+                        .table-responsive::-webkit-scrollbar-thumb {
+                            border: 3px solid #1a1a1a;
+                        }
+
+                        /* Mobile-specific column adjustments */
+                        .import-table th,
+                        .import-table td {
+                            min-width: 140px;
+                            padding: 12px 8px;
+                            font-size: 0.9rem;
+                        }
+
+                        /* Add scroll hint for mobile users */
+                        .table-container::after {
+                            content: "← Swipe to see more →";
+                            display: block;
+                            text-align: center;
+                            color: #667eea;
+                            font-size: 0.8rem;
+                            margin-top: 10px;
+                            font-style: italic;
+                        }
+                    }
+
+                    @media (max-width: 480px) {
+                        .import-table {
+                            min-width: 1000px;
+                            /* Even wider on very small screens */
+                        }
+
+                        .import-table th,
+                        .import-table td {
+                            min-width: 160px;
+                            padding: 10px 6px;
+                            font-size: 0.85rem;
+                        }
+
+                        .order-import-modal .modal-body {
+                            padding: 15px;
+                        }
+                    }
+
+                    /* Animation for table rows */
+                    .import-table tbody tr {
+                        animation: tableRowSlideIn 0.5s ease-out forwards;
+                        opacity: 0;
+                    }
+
+                    @keyframes tableRowSlideIn {
+                        from {
+                            opacity: 0;
+                            transform: translateX(-20px);
+                        }
+
+                        to {
+                            opacity: 1;
+                            transform: translateX(0);
+                        }
+                    }
+
+                    /* Stagger animation for multiple rows */
+                    .import-table tbody tr:nth-child(1) {
+                        animation-delay: 0.1s;
+                    }
+
+                    .import-table tbody tr:nth-child(2) {
+                        animation-delay: 0.2s;
+                    }
+
+                    .import-table tbody tr:nth-child(3) {
+                        animation-delay: 0.3s;
+                    }
+
+                    .import-table tbody tr:nth-child(4) {
+                        animation-delay: 0.4s;
+                    }
+
+                    .import-table tbody tr:nth-child(5) {
+                        animation-delay: 0.5s;
+                    }
+
+                    /* Select2 Dark Theme Styles for SMTP Provider */
+                    .select2-container--default .select2-selection--single {
+                        background-color: var(--secondary-color, #1a1a2e) !important;
+                        border: 1px solid var(--border-color, #3d3d5c) !important;
+                        border-radius: 4px !important;
+                        height: 38px !important;
+                        color: #fff !important;
+                    }
+
+                    .select2-container--default .select2-selection--single .select2-selection__rendered {
+                        color: #fff !important;
+                        line-height: 36px !important;
+                        padding-left: 12px !important;
+                        padding-right: 40px !important;
+                        font-size: 0.9rem !important;
+                    }
+
+                    .select2-container--default .select2-selection--single .select2-selection__placeholder {
+                        color: rgba(255, 255, 255, 0.6) !important;
+                    }
+
+                    .select2-container--default .select2-selection--single .select2-selection__arrow {
+                        height: 36px !important;
+                        right: 8px !important;
+                    }
+
+                    .select2-container--default .select2-selection--single .select2-selection__arrow b {
+                        border-color: #fff transparent transparent transparent !important;
+                    }
+
+                    .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+                        border-color: transparent transparent #fff transparent !important;
+                    }
+
+                    /* Clear button (x) styling */
+                    .select2-container--default .select2-selection--single .select2-selection__clear {
+                        color: rgba(255, 255, 255, 0.6) !important;
+                        font-size: 18px !important;
+                        font-weight: normal !important;
+                        margin-right: 5px !important;
+                        position: absolute !important;
+                        right: 25px !important;
+                        top: 50% !important;
+                        transform: translateY(-50%) !important;
+                        cursor: pointer !important;
+                        line-height: 1 !important;
+                        padding: 0 5px !important;
+                    }
+
+                    .select2-container--default .select2-selection--single .select2-selection__clear:hover {
+                        color: #ff6b6b !important;
+                    }
+
+                    .select2-dropdown {
+                        background-color: var(--secondary-color, #1a1a2e) !important;
+                        border: 1px solid var(--border-color, #3d3d5c) !important;
+                        border-radius: 4px !important;
+                    }
+
+                    .select2-container--default .select2-search--dropdown .select2-search__field {
+                        background-color: var(--primary-color, #0f0f23) !important;
+                        border: 1px solid var(--border-color, #3d3d5c) !important;
+                        color: #fff !important;
+                        border-radius: 4px !important;
+                        padding: 8px 12px !important;
+                    }
+
+                    .select2-container--default .select2-search--dropdown .select2-search__field::placeholder {
+                        color: rgba(255, 255, 255, 0.5) !important;
+                    }
+
+                    .select2-container--default .select2-results__option {
+                        padding: 10px 12px !important;
+                        color: #fff !important;
+                        background-color: var(--secondary-color, #1a1a2e) !important;
+                    }
+
+                    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+                        background-color: var(--second-primary, #4a3aff) !important;
+                        color: #fff !important;
+                    }
+
+                    .select2-container--default .select2-results__option[aria-selected="true"] {
+                        background-color: rgba(74, 58, 255, 0.3) !important;
+                    }
+
+                    .select2-container--default .select2-results__option--disabled {
+                        color: rgba(255, 255, 255, 0.4) !important;
+                    }
+
+                    .select2-results__message {
+                        color: rgba(255, 255, 255, 0.6) !important;
+                    }
+
+                    /* Create new option styling */
+                    .select2-container--default .select2-results__option .text-success {
+                        color: #28a745 !important;
+                    }
+
+                    /* CSV Preview Table Dark Theme Styling */
+                    #smtp-csv-table {
+                        color: #fff !important;
+                    }
+
+                    #smtp-csv-table thead th {
+                        color: rgba(255, 255, 255, 0.85) !important;
+                        font-weight: 600 !important;
+                        text-transform: uppercase !important;
+                        font-size: 0.75rem !important;
+                        letter-spacing: 0.5px !important;
+                        border-bottom: 1px solid var(--border-color, #3d3d5c) !important;
+                    }
+
+                    #smtp-csv-table tbody tr {
+                        border-bottom: 1px solid var(--border-color, #3d3d5c) !important;
+                        background-color: transparent !important;
+                    }
+
+                    #smtp-csv-table tbody tr:hover {
+                        background-color: rgba(74, 58, 255, 0.1) !important;
+                    }
+
+                    #smtp-csv-table tbody td {
+                        color: rgba(255, 255, 255, 0.9) !important;
+                        vertical-align: middle !important;
+                        padding: 0.5rem !important;
+                    }
+
+                    /* Code elements in CSV preview - use proper white text on dark */
+                    #smtp-csv-table code {
+                        color: #7dd3fc !important;
+                        /* Light cyan for code in dark theme */
+                        background-color: rgba(0, 0, 0, 0.3) !important;
+                        padding: 2px 6px !important;
+                        border-radius: 3px !important;
+                        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+                        font-size: 0.85rem !important;
+                    }
+
+                    /* Badge styling in table */
+                    #smtp-csv-table .badge {
+                        font-weight: 500 !important;
+                    }
+
+                    /* Custom cell styling for CSV preview to match theme */
+                    .smtp-email-cell {
+                        color: #ff6b9d !important;
+                        /* Pink/magenta for emails - matches theme accent */
+                        font-family: inherit !important;
+                    }
+
+                    .smtp-domain-badge {
+                        background-color: var(--second-primary, #4a3aff) !important;
+                        color: #fff !important;
+                        font-weight: 500 !important;
+                    }
+
+                    .smtp-password-cell {
+                        color: rgba(255, 255, 255, 0.6) !important;
+                        /* Muted white for passwords */
+                        font-family: inherit !important;
+                    }
+
+                    .smtp-data-cell {
+                        color: rgba(255, 255, 255, 0.9) !important;
+                        font-family: inherit !important;
+                    }
+                </style>
 
 @endsection
     @push('scripts')
@@ -4461,6 +4466,10 @@
                                 // Hide panel assignment section (SMTP doesn't need panel assignment)
                                 $('#panel-assignment-section').slideUp(300);
 
+                                // Ensure common sections remain visible
+                                $('#submit-section').show();
+                                $('#purchase-date-section').closest('.row').show();
+                                $('#additional-assets-section').show();
 
                                 // Make SMTP fields required
                                 $('#smtp_provider_id').attr('required', true);
@@ -4476,6 +4485,10 @@
                                 // Show panel assignment section
                                 $('#panel-assignment-section').slideDown(300);
 
+                                // Ensure common sections remain visible
+                                $('#submit-section').show();
+                                $('#purchase-date-section').closest('.row').show();
+                                $('#additional-assets-section').show();
 
                                 // Remove required from SMTP fields
                                 $('#smtp_provider_id').attr('required', false);
@@ -4491,6 +4504,58 @@
                         // Initialize SMTP mode on page load
                         if ($('#smtp_mode_toggle').is(':checked')) {
                             toggleSmtpMode(true);
+
+                            // Load existing SMTP accounts data if editing a pool
+                            @if(isset($pool) && $pool->smtp_accounts_data)
+                                try {
+                                    const existingSmtpData = @json($pool->smtp_accounts_data);
+                                    if (existingSmtpData && existingSmtpData.accounts && existingSmtpData.accounts.length > 0) {
+                                        // Display existing data in preview
+                                        loadExistingSmtpPreview(existingSmtpData);
+                                    }
+                                } catch (e) {
+                                    console.error('Error loading existing SMTP data:', e);
+                                }
+                            @endif
+                        }
+
+                        // Function to load existing SMTP accounts data in preview
+                        function loadExistingSmtpPreview(smtpData) {
+                            const accounts = smtpData.accounts || [];
+                            if (accounts.length === 0) return;
+
+                            // Build domains object from accounts
+                            const domains = {};
+                            const prefixes = new Set();
+
+                            accounts.forEach(account => {
+                                const domain = account.domain || '';
+                                const prefix = account.prefix || '';
+
+                                if (domain) {
+                                    if (!domains[domain]) {
+                                        domains[domain] = { count: 0, prefixes: new Set() };
+                                    }
+                                    domains[domain].count++;
+                                    if (prefix) {
+                                        domains[domain].prefixes.add(prefix);
+                                        prefixes.add(prefix);
+                                    }
+                                }
+                            });
+
+                            // Update preview using existing function
+                            updateSmtpCsvPreview(accounts, domains, prefixes);
+
+                            // Store data in hidden field (it should already be there from the form, but ensure it's set)
+                            $('#smtp_accounts_data').val(JSON.stringify(smtpData));
+
+                            // Update domain fields
+                            if (Object.keys(domains).length > 0) {
+                                $('#domains').val(Object.keys(domains).join('\n'));
+                                $('#total_inboxes').val(accounts.length);
+                                $('#inboxes_per_domain').val(Math.max(...Object.values(domains).map(d => d.count)));
+                            }
                         }
 
                         // CSV File Upload Handler
