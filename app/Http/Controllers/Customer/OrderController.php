@@ -1046,6 +1046,7 @@ class OrderController extends Controller
                     \App\Models\OrderAutomation::create([
                         'order_id' => $order->id,
                         'provider_type' => $plan->provider_type,
+                        'action_type' => 'domain',
                         'job_uuid' => $mailinJobUuid,
                         'status' => 'pending',
                         'response_data' => $mailinJobResponse ?? null,

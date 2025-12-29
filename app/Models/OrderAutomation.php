@@ -14,6 +14,7 @@ class OrderAutomation extends Model
     protected $fillable = [
         'order_id',
         'provider_type',
+        'action_type',
         'job_uuid',
         'status',
         'response_data',

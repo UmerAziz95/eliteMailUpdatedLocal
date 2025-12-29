@@ -260,4 +260,136 @@ class MailinAiService
 
         return $response;
     }
+
+    /**
+     * Create mailboxes (async)
+     * POST /mailboxes
+     * 
+     * @param array $mailboxes Array of mailbox data: [['username' => 'user@domain.com', 'name' => 'User', 'password' => 'pass123'], ...]
+     * @return array Response with uuid if successful
+     * @throws \Exception
+     */
+    public function createMailboxes(array $mailboxes)
+    {
+        try {
+            Log::channel('mailin-ai')->info('Creating mailboxes via Mailin.ai API', [
+                'action' => 'create_mailboxes',
+                'mailbox_count' => count($mailboxes),
+            ]);
+
+            $response = $this->makeRequest(
+                'POST',
+                '/mailboxes',
+                ['mailboxes' => $mailboxes]
+            );
+
+            $statusCode = $response->status();
+            $responseBody = $response->json();
+
+            // Expect 210 Accepted for async operations
+            if ($statusCode === 210 || $response->successful()) {
+                if (isset($responseBody['uuid'])) {
+                    Log::channel('mailin-ai')->info('Mailin.ai mailbox creation request successful', [
+                        'action' => 'create_mailboxes',
+                        'job_uuid' => $responseBody['uuid'],
+                        'mailbox_count' => count($mailboxes),
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'uuid' => $responseBody['uuid'],
+                        'message' => $responseBody['message'] ?? 'Mailbox creation job started',
+                        'response' => $responseBody,
+                    ];
+                } else {
+                    Log::channel('mailin-ai')->warning('Mailin.ai mailbox creation response missing UUID', [
+                        'action' => 'create_mailboxes',
+                        'status_code' => $statusCode,
+                        'response' => $responseBody,
+                    ]);
+
+                    throw new \Exception('Mailin.ai mailbox creation response missing UUID');
+                }
+            } else {
+                $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
+                
+                Log::channel('mailin-ai')->error('Mailin.ai mailbox creation failed', [
+                    'action' => 'create_mailboxes',
+                    'status_code' => $statusCode,
+                    'error' => $errorMessage,
+                    'response' => $responseBody,
+                ]);
+
+                throw new \Exception('Failed to create mailboxes via Mailin.ai: ' . $errorMessage);
+            }
+
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Mailin.ai mailbox creation exception', [
+                'action' => 'create_mailboxes',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get mailbox job status
+     * GET /mailboxes/status/{job_id}
+     * 
+     * @param string $jobId The job UUID from createMailboxes response
+     * @return array Job status information
+     * @throws \Exception
+     */
+    public function getMailboxJobStatus(string $jobId)
+    {
+        try {
+            Log::channel('mailin-ai')->info('Checking mailbox job status', [
+                'action' => 'get_mailbox_job_status',
+                'job_id' => $jobId,
+            ]);
+
+            $response = $this->makeRequest(
+                'GET',
+                '/mailboxes/status/' . $jobId,
+                []
+            );
+
+            $statusCode = $response->status();
+            $responseBody = $response->json();
+
+            if ($response->successful()) {
+                Log::channel('mailin-ai')->info('Mailbox job status retrieved', [
+                    'action' => 'get_mailbox_job_status',
+                    'job_id' => $jobId,
+                    'status_code' => $statusCode,
+                ]);
+
+                return [
+                    'success' => true,
+                    'status' => $responseBody['status'] ?? 'unknown',
+                    'data' => $responseBody,
+                ];
+            } else {
+                $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
+                
+                Log::channel('mailin-ai')->error('Failed to get mailbox job status', [
+                    'action' => 'get_mailbox_job_status',
+                    'job_id' => $jobId,
+                    'status_code' => $statusCode,
+                    'error' => $errorMessage,
+                ]);
+
+                throw new \Exception('Failed to get mailbox job status: ' . $errorMessage);
+            }
+
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Mailbox job status check exception', [
+                'action' => 'get_mailbox_job_status',
+                'job_id' => $jobId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
 }
