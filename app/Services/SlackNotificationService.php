@@ -2719,6 +2719,95 @@ class SlackNotificationService
     }
 
     /**
+     * Send domain transfer task notification to Slack
+     *
+     * @param int $orderId
+     * @param array $transferredDomains Array of ['domain' => string, 'name_servers' => array, 'transfer_id' => int]
+     * @param \App\Models\Order $order
+     * @return bool
+     */
+    public static function sendDomainTransferTaskNotification($orderId, $transferredDomains, $order)
+    {
+        try {
+            // Build domains list with nameservers
+            $domainsList = '';
+            foreach ($transferredDomains as $index => $domainData) {
+                $nameServersList = !empty($domainData['name_servers']) 
+                    ? implode(', ', $domainData['name_servers']) 
+                    : 'N/A';
+                $domainsList .= ($index + 1) . ". *{$domainData['domain']}*\n";
+                $domainsList .= "   Nameservers: {$nameServersList}\n";
+                $domainsList .= "   Status: Pending\n\n";
+            }
+
+            $customer = $order->user;
+            $planName = $order->plan ? $order->plan->name : 'N/A';
+
+            $message = [
+                'text' => "🔄 *Domain Transfer Task Created*",
+                'attachments' => [
+                    [
+                        'color' => '#FFA500', // Orange color for pending tasks
+                        'title' => "Order #{$orderId} - Domain Transfer Required",
+                        'fields' => [
+                            [
+                                'title' => 'Order ID',
+                                'value' => "#{$orderId}",
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Customer',
+                                'value' => $customer ? "{$customer->name} ({$customer->email})" : 'N/A',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Plan',
+                                'value' => $planName,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Domains to Transfer',
+                                'value' => count($transferredDomains),
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Domain Details',
+                                'value' => trim($domainsList),
+                                'short' => false
+                            ]
+                        ],
+                        'footer' => config('app.name', 'ProjectInbox') . ' - Domain Transfer System',
+                        'ts' => time()
+                    ]
+                ]
+            ];
+
+            $result = self::send('inbox-setup', $message);
+            
+            if ($result) {
+                Log::channel('slack_notifications')->info('Domain transfer task notification sent successfully', [
+                    'order_id' => $orderId,
+                    'domains_count' => count($transferredDomains),
+                ]);
+            } else {
+                Log::channel('slack_notifications')->warning('Failed to send domain transfer task notification', [
+                    'order_id' => $orderId,
+                ]);
+            }
+            
+            return $result;
+            
+        } catch (\Exception $e) {
+            Log::channel('slack_notifications')->error('Error sending domain transfer task notification', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Get available notification types
      *
      * @return array

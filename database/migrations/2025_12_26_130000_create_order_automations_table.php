@@ -19,11 +19,13 @@ return new class extends Migration
             $table->string('status')->default('pending'); // pending, processing, completed, failed
             $table->text('response_data')->nullable(); // Store full API response for debugging
             $table->text('error_message')->nullable();
+            $table->string('action_type')->default('domain');
             $table->timestamps();
             
             $table->index('order_id');
             $table->index('job_uuid');
             $table->index('status');
+            $table->index('action_type');
         });
     }
 

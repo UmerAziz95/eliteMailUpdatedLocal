@@ -313,19 +313,113 @@ class MailinAiService
             } else {
                 $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
                 
+                // Check if error is about domain not being registered
+                $domainNotRegistered = false;
+                $unregisteredDomains = [];
+                
+                if (isset($responseBody['errors']) && is_array($responseBody['errors'])) {
+                    foreach ($responseBody['errors'] as $field => $messages) {
+                        if (is_array($messages)) {
+                            foreach ($messages as $message) {
+                                if (preg_match("/domain '([^']+)' is not registered/i", $message, $matches)) {
+                                    $domainNotRegistered = true;
+                                    $unregisteredDomains[] = $matches[1];
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Also check main error message
+                if (preg_match("/domain '([^']+)' is not registered/i", $errorMessage, $matches)) {
+                    $domainNotRegistered = true;
+                    $unregisteredDomains[] = $matches[1];
+                }
+                
                 Log::channel('mailin-ai')->error('Mailin.ai mailbox creation failed', [
                     'action' => 'create_mailboxes',
                     'status_code' => $statusCode,
                     'error' => $errorMessage,
                     'response' => $responseBody,
+                    'domain_not_registered' => $domainNotRegistered,
+                    'unregistered_domains' => $unregisteredDomains,
                 ]);
 
+                // If domain not registered, include domains in error message for easier parsing
+                if ($domainNotRegistered) {
+                    $domainsList = implode(', ', array_unique($unregisteredDomains));
+                    throw new \Exception('Failed to create mailboxes via Mailin.ai: Domain not registered. Domains: ' . $domainsList . '. Error: ' . $errorMessage);
+                }
+                
                 throw new \Exception('Failed to create mailboxes via Mailin.ai: ' . $errorMessage);
             }
 
         } catch (\Exception $e) {
             Log::channel('mailin-ai')->error('Mailin.ai mailbox creation exception', [
                 'action' => 'create_mailboxes',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Transfer domain to Mailin.ai
+     * POST /domains/transfer
+     * 
+     * @param string $domainName The domain name to transfer
+     * @return array Response with message and name_servers if successful
+     * @throws \Exception
+     */
+    public function transferDomain(string $domainName)
+    {
+        try {
+            Log::channel('mailin-ai')->info('Transferring domain via Mailin.ai API', [
+                'action' => 'transfer_domain',
+                'domain_name' => $domainName,
+            ]);
+
+            $response = $this->makeRequest(
+                'POST',
+                '/domains/transfer',
+                ['domain_name' => $domainName]
+            );
+
+            $statusCode = $response->status();
+            $responseBody = $response->json();
+
+            if ($response->successful()) {
+                Log::channel('mailin-ai')->info('Mailin.ai domain transfer request successful', [
+                    'action' => 'transfer_domain',
+                    'domain_name' => $domainName,
+                    'status_code' => $statusCode,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => $responseBody['message'] ?? 'Domain transfer process started',
+                    'name_servers' => $responseBody['name_servers'] ?? [],
+                    'response' => $responseBody,
+                ];
+            } else {
+                $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
+                
+                Log::channel('mailin-ai')->error('Mailin.ai domain transfer failed', [
+                    'action' => 'transfer_domain',
+                    'domain_name' => $domainName,
+                    'status_code' => $statusCode,
+                    'error' => $errorMessage,
+                    'response' => $responseBody,
+                ]);
+
+                throw new \Exception('Failed to transfer domain via Mailin.ai: ' . $errorMessage);
+            }
+
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Mailin.ai domain transfer exception', [
+                'action' => 'transfer_domain',
+                'domain_name' => $domainName,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

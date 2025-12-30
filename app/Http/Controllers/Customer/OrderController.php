@@ -607,137 +607,37 @@ class OrderController extends Controller
             // Get requested plan to check provider_type
             $plan = Plan::findOrFail($request->plan_id);
             
-            // Mailin.ai Domain Purchase Automation
-            // Only process if automation is enabled and provider_type is 'Private SMTP'
-            $mailinJobUuid = null;
-            $mailinJobResponse = null;
+            // Prepare data for Mailin.ai mailbox creation job (if needed)
+            $shouldDispatchMailboxJob = false;
+            $mailboxJobData = null;
             
             if (config('mailin_ai.automation_enabled') === true && $plan->provider_type === 'Private SMTP') {
-                try {
-                    Log::channel('mailin-ai')->info('Starting Mailin.ai domain purchase automation', [
-                        'action' => 'domain_purchase',
-                        'plan_id' => $plan->id,
-                        'provider_type' => $plan->provider_type,
-                    ]);
-                    
-                    // Extract domains from request
-                    $domainNames = array_map(
-                        'trim',
-                        array_filter(preg_split('/[\r\n,]+/', $request->domains))
-                    );
-                    
-                    if (empty($domainNames)) {
-                        Log::channel('mailin-ai')->warning('No domains found in request for Mailin.ai automation');
-                    } else {
-                        Log::channel('mailin-ai')->info('Extracted domains for Mailin.ai purchase', [
-                            'action' => 'domain_purchase',
-                            'domains' => $domainNames,
-                            'domain_count' => count($domainNames),
-                        ]);
-                        
-                        // Initialize Mailin.ai service
-                        $mailinService = new \App\Services\MailinAiService();
-                        
-                        // Authenticate (token is cached internally)
-                        $token = $mailinService->authenticate();
-                        if (!$token) {
-                            Log::channel('mailin-ai')->error('Failed to authenticate with Mailin.ai for domain purchase');
-                            throw new \Exception('Failed to authenticate with Mailin.ai. Please try again later.');
-                        }
-                        
-                        // Call Mailin.ai API to purchase domains
-                        $response = $mailinService->makeRequest(
-                            'POST',
-                            '/domains/buy-multiple',
-                            ['domain_names' => $domainNames]
-                        );
-                        
-                        if (!$response || !$response->successful()) {
-                            $responseBody = $response ? $response->json() : null;
-                            $statusCode = $response ? $response->status() : 0;
-                            
-                            Log::channel('mailin-ai')->error('Mailin.ai domain purchase API call failed', [
-                                'action' => 'domain_purchase',
-                                'status_code' => $statusCode,
-                                'response' => $responseBody,
-                                'domains' => $domainNames,
-                            ]);
-                            
-                            // Check if domains are unavailable
-                            if ($responseBody && isset($responseBody['unavailable']) && is_array($responseBody['unavailable'])) {
-                                return response()->json([
-                                    'success' => false,
-                                    'message' => 'Some domains are unavailable.',
-                                    'errors' => [
-                                        'domains' => array_map(
-                                            fn ($d) => "Domain is unavailable: {$d}",
-                                            $responseBody['unavailable']
-                                        )
-                                    ]
-                                ], 422);
-                            }
-                            
-                            throw new \Exception('Failed to purchase domains via Mailin.ai. Please try again later.');
-                        }
-                        
-                        $responseBody = $response->json();
-                        
-                        // Check for unavailable domains in successful response
-                        if (isset($responseBody['unavailable']) && is_array($responseBody['unavailable']) && !empty($responseBody['unavailable'])) {
-                            Log::channel('mailin-ai')->warning('Some domains are unavailable', [
-                                'action' => 'domain_purchase',
-                                'unavailable_domains' => $responseBody['unavailable'],
-                            ]);
-                            
-                            return response()->json([
-                                'success' => false,
-                                'message' => 'Some domains are unavailable.',
-                                'errors' => [
-                                    'domains' => array_map(
-                                        fn ($d) => "Domain is unavailable: {$d}",
-                                        $responseBody['unavailable']
-                                    )
-                                ]
-                            ], 422);
-                        }
-                        
-                        // Check for success response with UUID
-                        if (isset($responseBody['uuid']) && isset($responseBody['message'])) {
-                            Log::channel('mailin-ai')->info('Mailin.ai domain purchase request successful', [
-                                'action' => 'domain_purchase',
-                                'job_uuid' => $responseBody['uuid'],
-                                'message' => $responseBody['message'],
-                                'domains' => $domainNames,
-                            ]);
-                            
-                            // Store job UUID - will be saved to order_automations after order creation
-                            $mailinJobUuid = $responseBody['uuid'];
-                            $mailinJobResponse = $responseBody;
-
-                            $status = 'in-progress'; // Default status for new orders
-
-                        } else {
-                            Log::channel('mailin-ai')->warning('Mailin.ai domain purchase response missing UUID', [
-                                'action' => 'domain_purchase',
-                                'response' => $responseBody,
-                            ]);
-                            $mailinJobUuid = null;
-                            $mailinJobResponse = $responseBody;
-                        }
+                // Extract domains from request for mailbox job
+                $mailboxDomainNames = array_map(
+                    'trim',
+                    array_filter(preg_split('/[\r\n,]+/', $request->domains))
+                );
+                
+                // Extract prefix variants for mailbox job
+                $mailboxPrefixVariants = [];
+                $inboxesPerDomainForJob = (int) $request->inboxes_per_domain;
+                for ($i = 1; $i <= $inboxesPerDomainForJob; $i++) {
+                    $prefixKey = "prefix_variant_{$i}";
+                    if (!empty($request->prefix_variants[$prefixKey])) {
+                        $mailboxPrefixVariants[] = trim($request->prefix_variants[$prefixKey]);
                     }
-                } catch (\Exception $e) {
-                    Log::channel('mailin-ai')->error('Mailin.ai domain purchase exception', [
-                        'action' => 'domain_purchase',
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                    ]);
-                    
-                    // Re-throw validation-style errors, otherwise throw generic error
-                    if ($e instanceof \Illuminate\Http\Client\RequestException) {
-                        throw new \Exception('Failed to communicate with Mailin.ai. Please try again later.');
-                    }
-                    throw $e;
                 }
+                
+                if (!empty($mailboxDomainNames) && !empty($mailboxPrefixVariants)) {
+                    $shouldDispatchMailboxJob = true;
+                    $mailboxJobData = [
+                        'domains' => $mailboxDomainNames,
+                        'prefix_variants' => $mailboxPrefixVariants,
+                        'user_id' => $request->user_id,
+                        'provider_type' => $plan->provider_type,
+                    ];
+                }
+                $status = 'in-progress';
             }
 
             // Additional validation for prefix variants based on inboxes_per_domain
@@ -867,7 +767,8 @@ class OrderController extends Controller
                     'status_manage_by_admin' => $status,
                 ]);
 
-                if($order->assigned_to && $status != 'draft') {
+                // Don't override 'completed' status (from successful mailbox creation)
+                if($order->assigned_to && $status != 'draft' && $status != 'completed') {
                     $order->update([
                         'status_manage_by_admin' => 'in-progress',
                     ]);
@@ -1040,32 +941,31 @@ class OrderController extends Controller
                 }
             }
             
-            // Save order automation record if domain purchase was successful
-            if (isset($mailinJobUuid) && $mailinJobUuid && isset($order) && $order) {
+            // Dispatch mailbox creation job if needed (after order is created/updated)
+            if ($shouldDispatchMailboxJob && isset($order) && $order) {
                 try {
-                    \App\Models\OrderAutomation::create([
-                        'order_id' => $order->id,
-                        'provider_type' => $plan->provider_type,
-                        'action_type' => 'domain',
-                        'job_uuid' => $mailinJobUuid,
-                        'status' => 'pending',
-                        'response_data' => $mailinJobResponse ?? null,
-                    ]);
-
+                    \App\Jobs\MailinAi\CreateMailboxesOnOrderJob::dispatch(
+                        $order->id,
+                        $mailboxJobData['domains'],
+                        $mailboxJobData['prefix_variants'],
+                        $mailboxJobData['user_id'],
+                        $mailboxJobData['provider_type']
+                    );
                     
-                    Log::channel('mailin-ai')->info('Order automation record created', [
-                        'action' => 'save_order_automation',
+
+                    Log::channel('mailin-ai')->info('Mailbox creation job dispatched', [
+                        'action' => 'dispatch_mailbox_job',
                         'order_id' => $order->id,
-                        'job_uuid' => $mailinJobUuid,
+                        'domain_count' => count($mailboxJobData['domains']),
+                        'prefix_count' => count($mailboxJobData['prefix_variants']),
                     ]);
                 } catch (\Exception $e) {
-                    Log::channel('mailin-ai')->error('Failed to save order automation record', [
-                        'action' => 'save_order_automation',
+                    Log::channel('mailin-ai')->error('Failed to dispatch mailbox creation job', [
+                        'action' => 'dispatch_mailbox_job',
                         'order_id' => isset($order) ? $order->id : null,
-                        'job_uuid' => $mailinJobUuid,
                         'error' => $e->getMessage(),
                     ]);
-                    // Don't fail the request if automation record save fails
+                    // Don't fail the request if job dispatch fails
                 }
             }
             
@@ -2051,5 +1951,6 @@ class OrderController extends Controller
             ]);
         }
     }
+    
 }
 
