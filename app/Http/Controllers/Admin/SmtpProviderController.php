@@ -81,7 +81,10 @@ class SmtpProviderController extends Controller
      */
     public function all()
     {
-        $providers = SmtpProvider::with('pools')
+        $providers = SmtpProvider::with(['pools' => function ($query) {
+            // Load pools with necessary columns for email calculation
+            $query->select('id', 'smtp_provider_id', 'domains', 'prefix_variants', 'prefix_variants_details', 'smtp_accounts_data');
+        }])
             ->orderBy('name')
             ->get();
 
@@ -147,15 +150,19 @@ class SmtpProviderController extends Controller
     public function indexView()
     {
         $providers = SmtpProvider::withCount('pools')
+            ->with(['pools' => function ($query) {
+                // Load pools with necessary columns for email calculation
+                $query->select('id', 'smtp_provider_id', 'domains', 'prefix_variants', 'prefix_variants_details', 'smtp_accounts_data');
+            }])
             ->orderBy('name')
             ->get()
             ->map(function ($provider) {
                 // Count total email accounts across all pools
+                // Supports both smtp_accounts_data and domains+prefix_variants
                 $totalEmails = 0;
                 foreach ($provider->pools as $pool) {
-                    if ($pool->smtp_accounts_data && isset($pool->smtp_accounts_data['accounts'])) {
-                        $totalEmails += count($pool->smtp_accounts_data['accounts']);
-                    }
+                    $accounts = $this->extractAccountsFromPool($pool);
+                    $totalEmails += count($accounts);
                 }
                 $provider->total_emails = $totalEmails;
                 return $provider;
@@ -181,7 +188,7 @@ class SmtpProviderController extends Controller
      */
     public function show(SmtpProvider $smtpProvider)
     {
-        // Load pools with their smtp_accounts_data
+        // Load pools with their data (domains, prefix_variants, smtp_accounts_data)
         $smtpProvider->load([
             'pools' => function ($query) {
                 $query->orderBy('created_at', 'desc');
@@ -189,18 +196,140 @@ class SmtpProviderController extends Controller
             'pools.user'
         ]);
 
-        // Count total emails
+        // Count total emails and process pool data
+        // Also prepare accounts for each pool to pass to view
         $totalEmails = 0;
+        $uniqueDomains = [];
+        $poolAccountsMap = []; // Map pool_id => accounts array
+        
         foreach ($smtpProvider->pools as $pool) {
-            if ($pool->smtp_accounts_data && isset($pool->smtp_accounts_data['accounts'])) {
-                $totalEmails += count($pool->smtp_accounts_data['accounts']);
+            // Process each pool to extract accounts (from smtp_accounts_data OR domains+prefix_variants)
+            $accounts = $this->extractAccountsFromPool($pool);
+            $poolAccountsMap[$pool->id] = $accounts;
+            
+            if (!empty($accounts)) {
+                $totalEmails += count($accounts);
+                
+                // Extract unique domains
+                foreach ($accounts as $account) {
+                    if (isset($account['domain'])) {
+                        $uniqueDomains[$account['domain']] = true;
+                    }
+                }
             }
         }
 
-        // Get all unarchived providers for the dropdown
+        // Get all SMTP providers for provider type change modal and dropdown
         $allProviders = SmtpProvider::where('is_active', true)->orderBy('name')->get();
 
-        return view('admin.smtp_providers.show', compact('smtpProvider', 'totalEmails', 'allProviders'));
+        return view('admin.smtp_providers.show', compact('smtpProvider', 'totalEmails', 'allProviders', 'uniqueDomains', 'poolAccountsMap'));
+    }
+
+    /**
+     * Extract accounts from pool - supports both smtp_accounts_data and domains+prefix_variants
+     */
+    private function extractAccountsFromPool($pool)
+    {
+        $accounts = [];
+
+        // First, try to get from smtp_accounts_data (for pools created directly as SMTP)
+        if ($pool->smtp_accounts_data) {
+            $smtpData = $pool->smtp_accounts_data;
+            
+            // Check if data is compressed
+            if (isset($smtpData['_compressed']) && $smtpData['_compressed'] === true && isset($smtpData['_data'])) {
+                // Decompress the data
+                try {
+                    $compressedData = base64_decode($smtpData['_data']);
+                    $decompressedJson = gzuncompress($compressedData);
+                    if ($decompressedJson !== false) {
+                        $smtpData = json_decode($decompressedJson, true);
+                        if ($smtpData === null) {
+                            \Log::error('Failed to decode decompressed JSON for pool', ['pool_id' => $pool->id]);
+                            $smtpData = null;
+                        }
+                    } else {
+                        \Log::error('Failed to decompress smtp_accounts_data for pool', ['pool_id' => $pool->id]);
+                        $smtpData = null;
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Exception while decompressing smtp_accounts_data', [
+                        'pool_id' => $pool->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    $smtpData = null;
+                }
+            }
+            
+            // If we have accounts after decompression, return them
+            if ($smtpData && isset($smtpData['accounts'])) {
+                return $smtpData['accounts'];
+            }
+        }
+
+        // Fallback: Extract from domains + prefix_variants (for migrated pools)
+        if ($pool->domains && is_array($pool->domains) && $pool->prefix_variants && is_array($pool->prefix_variants)) {
+            $prefixVariants = $pool->prefix_variants;
+            $prefixVariantsDetails = $pool->prefix_variants_details ?? [];
+            
+            foreach ($pool->domains as $domain) {
+                $domainName = $domain['name'] ?? $domain['domain_name'] ?? null;
+                if (!$domainName) {
+                    continue;
+                }
+
+                // Check if domain has prefix_statuses (new format)
+                if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                    foreach ($domain['prefix_statuses'] as $prefixKey => $prefixData) {
+                        // Get prefix value from prefix_variants
+                        $prefixNumber = (int) preg_replace('/\D/', '', $prefixKey);
+                        $prefixValue = $prefixVariants[$prefixKey] ?? $prefixVariants["prefix_variant_{$prefixNumber}"] ?? null;
+                        
+                        if ($prefixValue) {
+                            // Get details from prefix_variants_details
+                            $prefixDetails = $prefixVariantsDetails[$prefixKey] ?? $prefixVariantsDetails["prefix_variant_{$prefixNumber}"] ?? [];
+                            
+                            // Generate email
+                            $email = $prefixValue . '@' . $domainName;
+                            
+                            // Generate password (use existing logic or default)
+                            $password = $prefixDetails['password'] ?? $pool->email_persona_password ?? $pool->persona_password ?? '123';
+                            
+                            $accounts[] = [
+                                'email' => $email,
+                                'domain' => $domainName,
+                                'prefix' => $prefixValue,
+                                'password' => $password,
+                                'first_name' => $prefixDetails['first_name'] ?? $pool->first_name ?? '',
+                                'last_name' => $prefixDetails['last_name'] ?? $pool->last_name ?? ''
+                            ];
+                        }
+                    }
+                } else {
+                    // Fallback: Use all prefix variants for this domain (old format)
+                    foreach ($prefixVariants as $prefixKey => $prefixValue) {
+                        if ($prefixValue) {
+                            $prefixNumber = (int) preg_replace('/\D/', '', $prefixKey);
+                            $prefixDetails = $prefixVariantsDetails[$prefixKey] ?? $prefixVariantsDetails["prefix_variant_{$prefixNumber}"] ?? [];
+                            
+                            $email = $prefixValue . '@' . $domainName;
+                            $password = $prefixDetails['password'] ?? $pool->email_persona_password ?? $pool->persona_password ?? '123';
+                            
+                            $accounts[] = [
+                                'email' => $email,
+                                'domain' => $domainName,
+                                'prefix' => $prefixValue,
+                                'password' => $password,
+                                'first_name' => $prefixDetails['first_name'] ?? $pool->first_name ?? '',
+                                'last_name' => $prefixDetails['last_name'] ?? $pool->last_name ?? ''
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        return $accounts;
     }
 
     /**
@@ -227,10 +356,17 @@ class SmtpProviderController extends Controller
             })
             ->addColumn('total_emails', function ($provider) {
                 $totalEmails = 0;
+                // Load pools if not already loaded with necessary columns
+                if (!$provider->relationLoaded('pools')) {
+                    $provider->load(['pools' => function ($query) {
+                        $query->select('id', 'smtp_provider_id', 'domains', 'prefix_variants', 'prefix_variants_details', 'smtp_accounts_data');
+                    }]);
+                }
+                
+                // Use the same extraction method as indexView
                 foreach ($provider->pools as $pool) {
-                    if ($pool->smtp_accounts_data && isset($pool->smtp_accounts_data['accounts'])) {
-                        $totalEmails += count($pool->smtp_accounts_data['accounts']);
-                    }
+                    $accounts = $this->extractAccountsFromPool($pool);
+                    $totalEmails += count($accounts);
                 }
                 return '<span class="badge bg-info">' . $totalEmails . '</span>';
             })

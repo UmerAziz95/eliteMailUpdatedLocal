@@ -119,7 +119,10 @@ class PoolPanelController extends Controller
             }
         }
 
-        return view('admin.pool_panels.index');
+        // Get SMTP providers for provider type change modal
+        $smtpProviders = \App\Models\SmtpProvider::where('is_active', true)->orderBy('name')->get();
+        
+        return view('admin.pool_panels.index', compact('smtpProviders'));
     }
 
     /**

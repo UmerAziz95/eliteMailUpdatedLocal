@@ -729,7 +729,17 @@
                                 </div>
                             </div>
 
-
+                            <!-- Provider Type Dropdown -->
+                            <div class="col-md-12 mb-3">
+                                <label for="provider_type{{ $poolPlan->id }}" class="form-label">Provider Type</label>
+                                <select class="form-control" id="provider_type{{ $poolPlan->id }}" name="provider_type">
+                                    <option value="">-- Select Provider Type --</option>
+                                    <option value="Google" {{ ($poolPlan->provider_type ?? ($defaultProviderType ?? 'Google')) === 'Google' ? 'selected' : '' }}>Google</option>
+                                    <option value="Microsoft 365" {{ ($poolPlan->provider_type ?? ($defaultProviderType ?? 'Google')) === 'Microsoft 365' ? 'selected' : '' }}>Microsoft 365</option>
+                                    <option value="Private SMTP" {{ ($poolPlan->provider_type ?? ($defaultProviderType ?? 'Google')) === 'Private SMTP' ? 'selected' : '' }}>Private SMTP</option>
+                                </select>
+                                <small class="opacity-50">Default: {{ $defaultProviderType ?? 'Google' }} (from Configuration). Change if needed.</small>
+                            </div>
 
                             <label for="description{{ $poolPlan->id }}" class="required-field">Description:</label>
                             <textarea class="form-control mb-3" id="description{{ $poolPlan->id }}" name="description"
@@ -907,6 +917,18 @@
                         </div>
 
                         <input type="hidden" id="currency_code" name="currency_code" value="USD">
+
+                        <!-- Provider Type Dropdown -->
+                        <div class="col-md-12 mb-3">
+                            <label for="provider_type" class="form-label">Provider Type</label>
+                            <select class="form-control" id="provider_type" name="provider_type">
+                                <option value="">-- Select Provider Type --</option>
+                                <option value="Google" {{ ($defaultProviderType ?? 'Google') === 'Google' ? 'selected' : '' }}>Google</option>
+                                <option value="Microsoft 365" {{ ($defaultProviderType ?? 'Google') === 'Microsoft 365' ? 'selected' : '' }}>Microsoft 365</option>
+                                <option value="Private SMTP" {{ ($defaultProviderType ?? 'Google') === 'Private SMTP' ? 'selected' : '' }}>Private SMTP</option>
+                            </select>
+                            <small class="opacity-50">Default: {{ $defaultProviderType ?? 'Google' }} (from Configuration). Change if needed.</small>
+                        </div>
 
                         <label for="description" class="required-field">Description:</label>
                         <textarea class="form-control mb-3" id="description" name="description" rows="3" required></textarea>

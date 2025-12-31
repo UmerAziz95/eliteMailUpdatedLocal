@@ -521,8 +521,38 @@
                 if (p.pools) {
                     totalPools += p.pools.length;
                     p.pools.forEach(pool => {
+                        // First try smtp_accounts_data (for pools created directly as SMTP)
                         if (pool.smtp_accounts_data && pool.smtp_accounts_data.accounts) {
                             totalEmails += pool.smtp_accounts_data.accounts.length;
+                        } 
+                        // Fallback: Extract from domains + prefix_variants (for migrated pools)
+                        else if (pool.domains && Array.isArray(pool.domains) && pool.prefix_variants && typeof pool.prefix_variants === 'object') {
+                            const prefixVariants = pool.prefix_variants;
+                            const prefixVariantsDetails = pool.prefix_variants_details || {};
+                            
+                            pool.domains.forEach(domain => {
+                                const domainName = domain.name || domain.domain_name;
+                                if (!domainName) return;
+                                
+                                // Check if domain has prefix_statuses (new format)
+                                if (domain.prefix_statuses && typeof domain.prefix_statuses === 'object') {
+                                    Object.keys(domain.prefix_statuses).forEach(prefixKey => {
+                                        const prefixNumber = parseInt(prefixKey.replace(/\D/g, '')) || 1;
+                                        const prefixValue = prefixVariants[prefixKey] || prefixVariants[`prefix_variant_${prefixNumber}`];
+                                        if (prefixValue) {
+                                            totalEmails++;
+                                        }
+                                    });
+                                } else {
+                                    // Fallback: Use all prefix variants for this domain (old format)
+                                    Object.keys(prefixVariants).forEach(prefixKey => {
+                                        const prefixValue = prefixVariants[prefixKey];
+                                        if (prefixValue) {
+                                            totalEmails++;
+                                        }
+                                    });
+                                }
+                            });
                         }
                     });
                 }
@@ -575,8 +605,38 @@
                 let emailsCount = 0;
                 if (provider.pools) {
                     provider.pools.forEach(pool => {
+                        // First try smtp_accounts_data (for pools created directly as SMTP)
                         if (pool.smtp_accounts_data && pool.smtp_accounts_data.accounts) {
                             emailsCount += pool.smtp_accounts_data.accounts.length;
+                        } 
+                        // Fallback: Extract from domains + prefix_variants (for migrated pools)
+                        else if (pool.domains && Array.isArray(pool.domains) && pool.prefix_variants && typeof pool.prefix_variants === 'object') {
+                            const prefixVariants = pool.prefix_variants;
+                            const prefixVariantsDetails = pool.prefix_variants_details || {};
+                            
+                            pool.domains.forEach(domain => {
+                                const domainName = domain.name || domain.domain_name;
+                                if (!domainName) return;
+                                
+                                // Check if domain has prefix_statuses (new format)
+                                if (domain.prefix_statuses && typeof domain.prefix_statuses === 'object') {
+                                    Object.keys(domain.prefix_statuses).forEach(prefixKey => {
+                                        const prefixNumber = parseInt(prefixKey.replace(/\D/g, '')) || 1;
+                                        const prefixValue = prefixVariants[prefixKey] || prefixVariants[`prefix_variant_${prefixNumber}`];
+                                        if (prefixValue) {
+                                            emailsCount++;
+                                        }
+                                    });
+                                } else {
+                                    // Fallback: Use all prefix variants for this domain (old format)
+                                    Object.keys(prefixVariants).forEach(prefixKey => {
+                                        const prefixValue = prefixVariants[prefixKey];
+                                        if (prefixValue) {
+                                            emailsCount++;
+                                        }
+                                    });
+                                }
+                            });
                         }
                     });
                 }

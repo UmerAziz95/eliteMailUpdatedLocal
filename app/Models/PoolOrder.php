@@ -70,6 +70,7 @@ class PoolOrder extends Model
         'currency',
         'status',
         'status_manage_by_admin',
+        'provider_type',
         'assigned_to',
         'assigned_at',
         'domains',

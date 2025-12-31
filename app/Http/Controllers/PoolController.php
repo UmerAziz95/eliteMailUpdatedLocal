@@ -383,6 +383,11 @@ class PoolController extends Controller
                         'unique_domains' => $smtpData['unique_domains'] ?? 0
                     ]);
 
+                    // Store large data separately (will be updated after pool creation)
+                    $smtpAccountsData = $smtpData;
+                    $smtpCsvFile = $request->smtp_csv_file ?? null;
+                    $smtpCsvFilename = $request->smtp_csv_filename ?? null;
+
                     // Build domains array from SMTP accounts
                     $domainsFromCsv = [];
                     $domainPrefixes = [];
@@ -430,14 +435,15 @@ class PoolController extends Controller
                     $data['total_inboxes'] = count($smtpData['accounts']);
                     $data['inboxes_per_domain'] = $smtpData['max_per_domain'] ?? 1;
 
-                    // Store SMTP-specific data
+                    // Store SMTP-specific data (but NOT large JSON fields yet)
                     $data['smtp_provider_url'] = $request->smtp_provider_url;
                     $data['provider_type'] = 'SMTP';
-                    $data['smtp_accounts_data'] = $smtpData; // Store full CSV accounts data with all credentials
+                    // DO NOT store smtp_accounts_data and smtp_csv_file here - issue in big file (also not used anywhere)
+                    // $data['smtp_accounts_data'] = $smtpData; // Store full CSV accounts data with all credentials
 
-                    // Store raw CSV file content and filename
-                    $data['smtp_csv_file'] = $request->smtp_csv_file ?? null;
-                    $data['smtp_csv_filename'] = $request->smtp_csv_filename ?? null;
+                    // // Store raw CSV file content and filename
+                    // $data['smtp_csv_file'] = $request->smtp_csv_file ?? null;
+                    // $data['smtp_csv_filename'] = $request->smtp_csv_filename ?? null;
 
                     // Store prefix_variants in standard format: {"prefix_variant_1": "bob", "prefix_variant_2": "eva", ...}
                     $allPrefixes = [];
@@ -550,7 +556,123 @@ class PoolController extends Controller
                 $data['status'] = 'pending';
             }
 
+            // Create pool WITHOUT large JSON fields first to avoid MySQL timeout
+            // Remove large fields from $data before creation
+            unset($data['smtp_accounts_data'], $data['smtp_csv_file']);
+            
             $pool = Pool::create($data);
+            
+            // Now update the pool with large CSV data using batch storage
+            // Store CSV and JSON separately so one failure doesn't affect the other
+            if ($isSmtpMode && ($smtpAccountsData !== null || $smtpCsvFile !== null)) {
+                $accountsCount = $smtpAccountsData ? count($smtpAccountsData['accounts']) : 0;
+                $csvFileSize = $smtpCsvFile ? strlen($smtpCsvFile) : 0;
+                $csvFileSizeMB = round($csvFileSize / 1024 / 1024, 2);
+                
+                \Log::info('Updating SMTP Pool with large data (batch storage)', [
+                    'pool_id' => $pool->id,
+                    'accounts_count' => $accountsCount,
+                    'csv_file_size_bytes' => $csvFileSize,
+                    'csv_file_size_mb' => $csvFileSizeMB
+                ]);
+                
+                // Store smtp_csv_filename first (small field)
+                if ($smtpCsvFilename !== null) {
+                    DB::table('pools')
+                        ->where('id', $pool->id)
+                        ->update(['smtp_csv_filename' => $smtpCsvFilename]);
+                }
+                
+                // ============================================
+                // STORE CSV FILE (REQUIRED - uses batch storage)
+                // ============================================
+                if ($smtpCsvFile !== null) {
+                    try {
+                        // Store smtp_csv_file in small batches (200KB chunks)
+                        $this->storeLargeTextInBatches($pool->id, 'smtp_csv_file', $smtpCsvFile, $csvFileSizeMB);
+                        
+                        \Log::info('SMTP Pool CSV file stored successfully (batch storage)', [
+                            'pool_id' => $pool->id,
+                            'size_mb' => $csvFileSizeMB
+                        ]);
+                    } catch (\Exception $csvError) {
+                        \Log::error('Failed to store CSV file for SMTP Pool', [
+                            'pool_id' => $pool->id,
+                            'size_mb' => $csvFileSizeMB,
+                            'error' => $csvError->getMessage()
+                        ]);
+                        
+                        // CSV is critical for SMTP pools - delete pool if CSV storage fails
+                        try {
+                            $pool->delete();
+                        } catch (\Exception $deleteError) {
+                            \Log::error('Failed to delete pool after CSV storage failure', [
+                                'pool_id' => $pool->id,
+                                'error' => $deleteError->getMessage()
+                            ]);
+                        }
+                        
+                        throw new \Exception('Failed to store CSV file: ' . $csvError->getMessage() . '. Pool creation rolled back.');
+                    }
+                }
+                
+                // ============================================
+                // STORE JSON DATA (OPTIONAL - try but don't fail pool creation)
+                // ============================================
+                if ($smtpAccountsData !== null) {
+                    try {
+                        $jsonData = json_encode($smtpAccountsData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        $jsonSize = strlen($jsonData);
+                        $jsonSizeMB = round($jsonSize / 1024 / 1024, 2);
+                        
+                        \Log::info('SMTP Pool JSON data sizes', [
+                            'pool_id' => $pool->id,
+                            'smtp_accounts_data_size_mb' => $jsonSizeMB,
+                            'csv_file_size_mb' => $csvFileSizeMB
+                        ]);
+                        
+                        // Try to store JSON directly first (works for smaller files)
+                        try {
+                            DB::table('pools')
+                                ->where('id', $pool->id)
+                                ->update(['smtp_accounts_data' => $jsonData]);
+                            
+                            \Log::info('SMTP Pool smtp_accounts_data updated (direct update)', [
+                                'pool_id' => $pool->id,
+                                'size_mb' => $jsonSizeMB
+                            ]);
+                        } catch (\Exception $jsonError) {
+                            // If direct update fails, use batch storage
+                            \Log::warning('Direct JSON update failed, trying batch storage', [
+                                'pool_id' => $pool->id,
+                                'size_mb' => $jsonSizeMB,
+                                'error' => $jsonError->getMessage()
+                            ]);
+                            
+                            // Use batch storage for large JSON data
+                            $this->storeLargeTextInBatches($pool->id, 'smtp_accounts_data', $jsonData, $jsonSizeMB);
+                            
+                            \Log::info('SMTP Pool smtp_accounts_data updated (batch storage)', [
+                                'pool_id' => $pool->id,
+                                'size_mb' => $jsonSizeMB
+                            ]);
+                        }
+                    } catch (\Exception $jsonError) {
+                        // JSON storage failed - log warning but don't fail pool creation
+                        // CSV file is the primary data source, JSON is just for convenience
+                        \Log::warning('Failed to store JSON data for SMTP Pool (non-critical)', [
+                            'pool_id' => $pool->id,
+                            'error' => $jsonError->getMessage(),
+                            'note' => 'Pool will continue with CSV file only. JSON can be regenerated from CSV if needed.'
+                        ]);
+                        
+                        // Don't throw - allow pool creation to succeed with CSV only
+                    }
+                }
+                
+                // Refresh the pool model to get updated data
+                $pool->refresh();
+            }
 
             // Skip panel assignment for SMTP pools (SMTP doesn't use panel assignment)
             if (!$isSmtpMode) {
@@ -1441,8 +1563,9 @@ class PoolController extends Controller
         try {
             // Validate the request
             $validator = Validator::make($request->all(), [
-                'provider_type' => 'required|in:Google,Microsoft 365',
-                'reason' => 'nullable|string|max:500'
+                'provider_type' => 'required|in:Google,Microsoft 365,SMTP',
+                'reason' => 'nullable|string|max:500',
+                'smtp_provider_id' => 'required_if:provider_type,SMTP|nullable|exists:smtp_providers,id'
             ]);
 
             if ($validator->fails()) {
@@ -1456,6 +1579,7 @@ class PoolController extends Controller
             $adminId = Auth::id();
             $newProviderType = $request->input('provider_type');
             $reason = $request->input('reason');
+            $smtpProviderId = $request->input('smtp_provider_id');
 
             // Find the pool
             $pool = Pool::with(['poolPanelSplits'])->findOrFail($poolId);
@@ -1467,6 +1591,18 @@ class PoolController extends Controller
                     'message' => 'Pool already has the selected provider type.'
                 ], 400);
             }
+
+            // Handle SMTP migration (from Google/365 to SMTP)
+            if ($newProviderType === 'SMTP') {
+                return $this->migrateToSmtp($pool, $smtpProviderId, $adminId, $reason);
+            }
+
+            // Handle migration from SMTP to Google/365
+            if ($oldProviderType === 'SMTP' && in_array($newProviderType, ['Google', 'Microsoft 365'])) {
+                return $this->migrateFromSmtp($pool, $newProviderType, $adminId, $reason);
+            }
+
+            // Handle Google ↔ Microsoft 365 migration (existing logic)
             // Validate capacity
             $capacityService = app(PoolSplitCapacityService::class);
             $capacityCheck = $capacityService->validateProviderCapacity($pool, $newProviderType);
@@ -1558,5 +1694,361 @@ class PoolController extends Controller
                 'message' => 'Failed to change provider type: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Migrate pool from Google/365 to SMTP
+     */
+    private function migrateToSmtp($pool, $smtpProviderId, $adminId, $reason)
+    {
+        try {
+            if (!$smtpProviderId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'SMTP provider is required when migrating to SMTP.'
+                ], 422);
+            }
+
+            $smtpProvider = \App\Models\SmtpProvider::findOrFail($smtpProviderId);
+            $oldProviderType = $pool->provider_type;
+
+            $splitResetService = app(PoolSplitResetService::class);
+
+            // Perform the change in a transaction
+            $splitCleanup = DB::transaction(function () use ($pool, $smtpProvider, $splitResetService, $adminId, $reason) {
+                // Clear existing splits first (restore panel capacity)
+                $cleanupResult = $splitResetService->resetOrderSplits($pool, $adminId, $reason, false);
+
+                // Update provider type and SMTP provider
+                $pool->provider_type = 'SMTP';
+                $pool->smtp_provider_id = $smtpProvider->id;
+                $pool->smtp_provider_url = $smtpProvider->url;
+                
+                // Update status - SMTP pools don't need panel assignment
+                $pool->status = 'completed';
+                $pool->status_manage_by_admin = 'available';
+                $pool->is_splitting = 0;
+                
+                $pool->save();
+
+                return $cleanupResult;
+            });
+
+            // Log the activity
+            ActivityLogService::log(
+                'admin_pool_provider_type_updated',
+                "Admin changed pool provider type from '{$oldProviderType}' to 'SMTP' (Provider: {$smtpProvider->name})" . ($reason ? " with reason: {$reason}" : ""),
+                $pool,
+                [
+                    'pool_id' => $pool->id,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => 'SMTP',
+                    'smtp_provider_id' => $smtpProvider->id,
+                    'smtp_provider_name' => $smtpProvider->name,
+                    'reason' => $reason,
+                    'split_cleanup' => $splitCleanup,
+                    'changed_by' => $adminId,
+                    'changed_by_type' => 'admin'
+                ],
+                $adminId
+            );
+
+            // Create notification for customer if applicable
+            if ($pool->user_id) {
+                Notification::create([
+                    'user_id' => $pool->user_id,
+                    'type' => 'pool_provider_type_change',
+                    'title' => 'Pool Provider Type Updated',
+                    'message' => "Your pool #{$pool->id} provider type has been changed to SMTP ({$smtpProvider->name})",
+                    'data' => [
+                        'pool_id' => $pool->id,
+                        'old_provider_type' => $oldProviderType,
+                        'new_provider_type' => 'SMTP',
+                        'smtp_provider_name' => $smtpProvider->name,
+                        'reason' => $reason,
+                        'split_cleanup' => $splitCleanup
+                    ]
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Provider type successfully changed from '{$oldProviderType}' to 'SMTP' ({$smtpProvider->name}). Panel splits removed and capacity restored.",
+                'data' => [
+                    'pool_id' => $pool->id,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => 'SMTP',
+                    'smtp_provider_id' => $smtpProvider->id,
+                    'smtp_provider_name' => $smtpProvider->name,
+                    'reason' => $reason,
+                    'split_cleanup' => $splitCleanup
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error in migrateToSmtp for pool {$pool->id}: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to migrate to SMTP: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Migrate pool from SMTP to Google/365
+     */
+    private function migrateFromSmtp($pool, $newProviderType, $adminId, $reason)
+    {
+        try {
+            $oldProviderType = $pool->provider_type;
+
+            // Validate capacity
+            $capacityService = app(PoolSplitCapacityService::class);
+            $capacityCheck = $capacityService->validateProviderCapacity($pool, $newProviderType);
+
+            if (!$capacityCheck['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $capacityCheck['message'] ?? 'Insufficient capacity for provider change.',
+                    'data' => $capacityCheck['data'] ?? []
+                ], 422);
+            }
+
+            // Perform the change in a transaction
+            DB::transaction(function () use ($pool, $newProviderType) {
+                // Update provider type
+                $pool->provider_type = $newProviderType;
+                // Clear SMTP provider references
+                $pool->smtp_provider_id = null;
+                $pool->smtp_provider_url = null;
+                $pool->save();
+            });
+
+            $pool->update(['status' => 'pending', 'is_splitting' => 0]);
+            
+            // Call capacity check command to assign to panels with splitting
+            \Artisan::call('pool:assigned-panel', [
+                '--provider' => $newProviderType
+            ]);
+
+            // Log the activity
+            ActivityLogService::log(
+                'admin_pool_provider_type_updated',
+                "Admin changed pool provider type from 'SMTP' to '{$newProviderType}'" . ($reason ? " with reason: {$reason}" : ""),
+                $pool,
+                [
+                    'pool_id' => $pool->id,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => $newProviderType,
+                    'reason' => $reason,
+                    'changed_by' => $adminId,
+                    'changed_by_type' => 'admin'
+                ],
+                $adminId
+            );
+
+            // Create notification for customer if applicable
+            if ($pool->user_id) {
+                Notification::create([
+                    'user_id' => $pool->user_id,
+                    'type' => 'pool_provider_type_change',
+                    'title' => 'Pool Provider Type Updated',
+                    'message' => "Your pool #{$pool->id} provider type has been changed to {$newProviderType}",
+                    'data' => [
+                        'pool_id' => $pool->id,
+                        'old_provider_type' => $oldProviderType,
+                        'new_provider_type' => $newProviderType,
+                        'reason' => $reason
+                    ]
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Provider type successfully changed from 'SMTP' to '{$newProviderType}'. Pool will be assigned to panels with splitting.",
+                'data' => [
+                    'pool_id' => $pool->id,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => $newProviderType,
+                    'reason' => $reason
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error in migrateFromSmtp for pool {$pool->id}: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to migrate from SMTP: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store large text data in batches to avoid MySQL packet size limits
+     * Uses compression and direct updates with smaller packet sizes
+     * 
+     * @param int $poolId
+     * @param string $fieldName
+     * @param string $textData
+     * @param float $sizeMB
+     * @return void
+     */
+    /**
+     * Stores large text content in a database column in batches using CONCAT.
+     * This helps bypass max_allowed_packet limits for very large strings.
+     * Data is stored without compression, using smaller batch sizes.
+     *
+     * @param int $poolId The pool ID
+     * @param string $fieldName The column name (must be LONGTEXT or similar)
+     * @param string $textData The text content to store (uncompressed)
+     * @param float $sizeMB The size in MB (for logging purposes)
+     * @throws \Exception If the update fails
+     */
+    private function storeLargeTextInBatches($poolId, $fieldName, $textData, $sizeMB)
+    {
+        $dataSize = strlen($textData);
+        $dataSizeMB = round($dataSize / 1024 / 1024, 2);
+        
+        // Check if this is a JSON column (JSON columns can't use CONCAT)
+        $isJsonColumn = ($fieldName === 'smtp_accounts_data');
+        
+        \Log::info('Storing large text data (uncompressed, batched)', [
+            'pool_id' => $poolId,
+            'field' => $fieldName,
+            'size_mb' => $dataSizeMB,
+            'original_size_mb' => $sizeMB,
+            'is_json_column' => $isJsonColumn
+        ]);
+        
+        // Try direct update first (works for smaller files)
+        try {
+            DB::table('pools')
+                ->where('id', $poolId)
+                ->update([$fieldName => $textData]);
+            
+            \Log::info('Large text stored successfully (direct update)', [
+                'pool_id' => $poolId,
+                'field' => $fieldName,
+                'size_mb' => $dataSizeMB
+            ]);
+            return;
+        } catch (\Exception $e) {
+            // If direct update fails, use appropriate approach based on column type
+            \Log::warning('Direct update failed, trying alternative approach', [
+                'pool_id' => $poolId,
+                'field' => $fieldName,
+                'error' => $e->getMessage(),
+                'is_json_column' => $isJsonColumn
+            ]);
+        }
+        
+        // For JSON columns, use raw SQL statement (JSON columns can't use CONCAT)
+        if ($isJsonColumn) {
+            try {
+                // Validate JSON before storing
+                $decoded = json_decode($textData, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new \Exception('Invalid JSON data: ' . json_last_error_msg());
+                }
+                
+                \Log::info('Attempting to store large JSON column using raw SQL', [
+                    'pool_id' => $poolId,
+                    'size_mb' => $dataSizeMB
+                ]);
+                
+                // Use raw SQL statement - MySQL JSON columns will validate JSON automatically
+                // Raw SQL might work better than query builder for very large JSON
+                DB::statement(
+                    "UPDATE pools SET {$fieldName} = ? WHERE id = ?",
+                    [$textData, $poolId]
+                );
+                
+                \Log::info('Large JSON stored successfully (using raw SQL)', [
+                    'pool_id' => $poolId,
+                    'field' => $fieldName,
+                    'size_mb' => $dataSizeMB
+                ]);
+                return;
+                
+            } catch (\Exception $jsonError) {
+                \Log::error('Failed to store JSON column', [
+                    'pool_id' => $poolId,
+                    'field' => $fieldName,
+                    'size_mb' => $dataSizeMB,
+                    'error' => $jsonError->getMessage()
+                ]);
+                
+                // Provide a more helpful error message
+                if (strpos($jsonError->getMessage(), 'max_allowed_packet') !== false || 
+                    strpos($jsonError->getMessage(), 'packet') !== false) {
+                    throw new \Exception(
+                        "JSON data is too large ({$dataSizeMB} MB). " .
+                        "Please contact your database administrator to increase the 'max_allowed_packet' setting, " .
+                        "or consider splitting the data into smaller chunks."
+                    );
+                }
+                
+                throw new \Exception("Failed to store JSON data: " . $jsonError->getMessage());
+            }
+        }
+        
+        // For text columns (like smtp_csv_file), use chunked CONCAT approach
+        // Chunk size: 200KB per batch (smaller chunks to avoid MySQL packet size limits)
+        $chunkSize = 200 * 1024; // 200KB
+        $chunks = str_split($textData, $chunkSize);
+        $totalChunks = count($chunks);
+        
+        \Log::info('Starting chunked storage for text column', [
+            'pool_id' => $poolId,
+            'field' => $fieldName,
+            'total_chunks' => $totalChunks,
+            'chunk_size_kb' => round($chunkSize / 1024, 2),
+            'total_size_mb' => $dataSizeMB
+        ]);
+        
+        // Clear field first (use NULL for text columns, not empty string)
+        DB::table('pools')
+            ->where('id', $poolId)
+            ->update([$fieldName => null]);
+        
+        // Build incrementally using CONCAT
+        foreach ($chunks as $index => $chunk) {
+            try {
+                if ($index === 0) {
+                    // First chunk: direct update
+                    DB::table('pools')
+                        ->where('id', $poolId)
+                        ->update([$fieldName => $chunk]);
+                } else {
+                    // Subsequent chunks: CONCAT with existing
+                    DB::statement(
+                        "UPDATE pools SET {$fieldName} = CONCAT(COALESCE({$fieldName}, ''), ?) WHERE id = ?",
+                        [$chunk, $poolId]
+                    );
+                }
+                
+                \Log::debug('Chunk update progress', [
+                    'pool_id' => $poolId,
+                    'field' => $fieldName,
+                    'chunk' => ($index + 1) . '/' . $totalChunks,
+                    'progress_percent' => round((($index + 1) / $totalChunks) * 100, 2)
+                ]);
+            } catch (\Exception $chunkError) {
+                \Log::error('Chunk update failed', [
+                    'pool_id' => $poolId,
+                    'field' => $fieldName,
+                    'chunk' => ($index + 1) . '/' . $totalChunks,
+                    'error' => $chunkError->getMessage()
+                ]);
+                throw new \Exception("Failed to store chunk " . ($index + 1) . " of {$totalChunks}: " . $chunkError->getMessage());
+            }
+        }
+        
+        \Log::info('Large text stored successfully (chunked update)', [
+            'pool_id' => $poolId,
+            'field' => $fieldName,
+            'total_chunks' => $totalChunks,
+            'final_size_mb' => $dataSizeMB
+        ]);
     }
 }
