@@ -47,35 +47,101 @@ class PoolDomainController extends Controller
             $isSmtpProvider = ($providerType === 'SMTP' || $providerType === 'Private SMTP');
 
             // Build columns array to match frontend expectations
-            // Frontend expects: checkbox (handled client-side), pool_id, created_by, status, email_account (computed), smtp_provider_url (if SMTP), end_date
+            // Frontend expects: DT_RowIndex, customer_name, customer_email, pool_id, pool_order_id, domain_name, 
+            // prefix_display, status_badge, usage_badge, pool_order_status_badge, per_inbox, prefixes_formatted, actions
             $dataTable = DataTables::of($allData)
+                ->addIndexColumn() // Adds DT_RowIndex
+                ->addColumn('customer_name', function ($row) {
+                    return $row['customer_name'] ?? 'Unknown';
+                })
+                ->addColumn('customer_email', function ($row) {
+                    return $row['customer_email'] ?? 'N/A';
+                })
                 ->addColumn('pool_id', function ($row) {
                     return $row['pool_id'] ?? null;
                 })
-                ->addColumn('created_by', function ($row) {
-                    return $row['created_by'] ?? 'N/A';
-                })
-                ->addColumn('status', function ($row) {
-                    return $row['status'] ?? 'unknown';
-                })
-                ->addColumn('prefix_value', function ($row) {
-                    return $row['prefix_value'] ?? null;
-                })
-                ->addColumn('domain_name', function ($row) {
-                    return $row['domain_name'] ?? null;
-                })
-                ->addColumn('end_date', function ($row) {
-                    return $row['end_date'] ?? null;
-                })
-                ->addColumn('prefix_key', function ($row) {
-                    return $row['prefix_key'] ?? null;
+                ->addColumn('pool_order_id', function ($row) {
+                    return $row['pool_order_id'] ?? null;
                 })
                 ->addColumn('domain_id', function ($row) {
                     return $row['domain_id'] ?? null;
                 })
-                ->addColumn('pool_order_id', function ($row) {
-                    return $row['pool_order_id'] ?? null;
-                });
+                ->addColumn('domain_name', function ($row) {
+                    return $row['domain_name'] ?? null;
+                })
+                ->addColumn('prefix_display', function ($row) {
+                    // Display which prefix variant this row represents
+                    $prefixValue = $row['prefix_value'] ?? null;
+                    if ($prefixValue) {
+                        return '<span class="badge bg-info">' . htmlspecialchars($prefixValue) . '</span>';
+                    }
+                    return '<span class="badge bg-secondary">All Prefixes</span>';
+                })
+                ->addColumn('status_badge', function ($row) {
+                    return get_domain_status_badge($row['status'] ?? 'unknown', true);
+                })
+                ->addColumn('usage_badge', function ($row) {
+                    $isUsed = $row['is_used'] ?? false;
+                    if ($isUsed) {
+                        return '<span class="badge bg-warning">Used</span>';
+                    } else {
+                        return '<span class="badge bg-light text-dark">Available</span>';
+                    }
+                })
+                ->addColumn('pool_order_status_badge', function ($row) {
+                    $status = $row['pool_order_status'] ?? 'no_order';
+                    if ($status === 'no_order') {
+                        return '<span class="badge bg-light text-dark">No Order</span>';
+                    }
+                    
+                    $colorMap = [
+                        'completed' => 'success',
+                        'pending' => 'warning',
+                        'in-progress' => 'info',
+                        'cancelled' => 'danger',
+                        'failed' => 'danger',
+                        'unknown' => 'secondary',
+                    ];
+                    $color = $colorMap[$status] ?? 'secondary';
+                    return '<span class="badge bg-' . $color . '">' . ucfirst(str_replace('-', ' ', $status)) . '</span>';
+                })
+                ->addColumn('per_inbox', function ($row) {
+                    return $row['per_inbox'] ?? 1;
+                })
+                ->addColumn('prefixes_formatted', function ($row) {
+                    if (!empty($row['prefix_value']) && !empty($row['domain_name'])) {
+                        // If it's a specific prefix row, show that prefix entity
+                        if (strpos($row['prefix_value'], '@') !== false) {
+                            return $row['prefix_value'];
+                        }
+                        return $row['prefix_value'] . '@' . $row['domain_name'];
+                    }
+                    return $this->poolDomainService->formatPrefixes($row['prefixes'] ?? [], $row['domain_name'] ?? '');
+                })
+                ->addColumn('actions', function ($row) {
+                    $poolId = $row['pool_id'] ?? '';
+                    $poolOrderId = $row['pool_order_id'] ?? '';
+                    $domainId = $row['domain_id'] ?? '';
+                    $domainName = addslashes($row['domain_name'] ?? '');
+                    $status = $row['status'] ?? 'available';
+                    $prefixKey = $row['prefix_key'] ?? '';
+                    
+                    return '
+                        <div class="dropdown">
+                            <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0)" 
+                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\', \'' . $prefixKey . '\', \'' . addslashes($row['prefix_value'] ?? '') . '\')">
+                                        <i class="fa-solid fa-edit me-1"></i>Edit Domain
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>';
+                })
+                ->rawColumns(['prefix_display', 'status_badge', 'pool_order_status_badge', 'usage_badge', 'actions']);
 
             // Add SMTP provider URL column only for SMTP provider type
             // Return raw URL - frontend will handle HTML rendering
@@ -90,8 +156,7 @@ class PoolDomainController extends Controller
                 });
             }
 
-            return $dataTable
-                ->make(true);
+            return $dataTable->make(true);
         }
 
         return view('admin.pool_domains.index');

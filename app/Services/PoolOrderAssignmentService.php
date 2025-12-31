@@ -25,89 +25,156 @@ class PoolOrderAssignmentService
         try {
             DB::beginTransaction();
 
-            // 1. Get all active panels with their splits
-            // We need to find ONE panel that has enough available inboxes
+            // Get provider type from pool order or Configuration
+            $providerType = $poolOrder->provider_type 
+                ?: Configuration::get('PROVIDER_TYPE', 'Google');
             
-            // Filter by Provider Type from Configuration
-            $providerType = Configuration::get('PROVIDER_TYPE');
+            // Check if this is SMTP order (skip panel logic)
+            $isSmtpOrder = in_array($providerType, ['SMTP', 'Private SMTP']);
             
-            $query = PoolPanel::with(['poolPanelSplits'])
-                ->where('is_active', 1);
-            
-            if ($providerType) {
-                // Assuming PoolPanel has 'provider_type' column as per earlier investigation/Panel model logic
-                // If PoolPanel table structure mirrors Panel or if concept is shared.
-                // Re-verifying PoolPanel model structure from Step 62: it HAS 'provider_type'.
-                $query->where('provider_type', $providerType);
-                Log::info("Filtering panels by provider_type: {$providerType}");
-            }
-
-            $panels = $query->get();
-
-            $selectedPanel = null;
             $candidateInboxes = []; // Will hold array of ['pool_id' => x, 'domain_id' => y, 'prefix_key' => z, 'email' => ...]
             $neededQuantity = $poolOrder->quantity;
 
-            foreach ($panels as $panel) {
-                Log::info("Checking Panel #{$panel->id} ({$panel->title})");
+            if ($isSmtpOrder) {
+                // SMTP: Query pools directly (no panels)
+                Log::info("SMTP order detected - querying pools directly (no panel check)");
                 
-                $panelAvailableInboxes = [];
+                $pools = Pool::where('provider_type', 'SMTP')
+                    ->whereNotNull('domains')
+                    ->whereNotNull('purchase_date')
+                    ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()')
+                    ->get();
                 
-                foreach ($panel->poolPanelSplits as $split) {
-                    $pool = Pool::find($split->pool_id);
-                    if (!$pool || empty($pool->domains)) {
-                        continue;
+                foreach ($pools as $pool) {
+                    if (count($candidateInboxes) >= $neededQuantity) {
+                        break;
                     }
-
-                    $poolDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
-                    $splitDomainIds = $split->domains; // Array of domain IDs in this split
                     
-                    if (!is_array($splitDomainIds)) {
+                    $poolDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+                    
+                    if (!is_array($poolDomains)) {
                         continue;
                     }
-
-                    // Iterate through pool domains to find ones that are in this split
+                    
                     foreach ($poolDomains as $domainIndex => $domain) {
-                        $domainId = $domain['id'] ?? null;
+                        if (count($candidateInboxes) >= $neededQuantity) {
+                            break 2;
+                        }
                         
-                        // Check if this domain is part of the split
-                        if ($domainId && in_array($domainId, $splitDomainIds)) {
-                            // Now check specific prefix availability
-                            $prefixStatuses = $domain['prefix_statuses'] ?? [];
-                            $domainName = $domain['name'] ?? 'unknown';
+                        $domainId = $domain['id'] ?? null;
+                        $domainName = $domain['name'] ?? 'unknown';
+                        $prefixStatuses = $domain['prefix_statuses'] ?? [];
+                        
+                        foreach ($prefixStatuses as $prefixKey => $statusData) {
+                            if (count($candidateInboxes) >= $neededQuantity) {
+                                break 3;
+                            }
                             
-                            foreach ($prefixStatuses as $prefixKey => $statusData) {
-                                if (isset($statusData['status']) && $statusData['status'] === 'available') {
-                                    $panelAvailableInboxes[] = [
-                                        'pool_id' => $pool->id,
-                                        'domain_id' => $domainId,
-                                        'domain_index' => $domainIndex, // Needed to update the specific index in pool
-                                        'domain_name' => $domainName,
-                                        'prefix_key' => $prefixKey,
-                                        'email' => $this->generateEmail($prefixKey, $domainName, $pool),
-                                        // Store other metadata if needed
-                                    ];
-                                }
+                            if (isset($statusData['status']) && $statusData['status'] === 'available') {
+                                $candidateInboxes[] = [
+                                    'pool_id' => $pool->id,
+                                    'domain_id' => $domainId,
+                                    'domain_index' => $domainIndex,
+                                    'domain_name' => $domainName,
+                                    'prefix_key' => $prefixKey,
+                                    'email' => $this->generateEmail($prefixKey, $domainName, $pool),
+                                ];
                             }
                         }
                     }
                 }
-
-                Log::info("Panel #{$panel->id} has " . count($panelAvailableInboxes) . " available inboxes.");
-
-                if (count($panelAvailableInboxes) >= $neededQuantity) {
-                    $selectedPanel = $panel;
-                    $candidateInboxes = array_slice($panelAvailableInboxes, 0, $neededQuantity);
-                    Log::info("Found suitable Panel #{$panel->id}");
-                    break; // Found our winner
+                
+                if (count($candidateInboxes) < $neededQuantity) {
+                    Log::warning("Not enough SMTP inboxes available for PoolOrder #{$poolOrder->id}. Found: " . count($candidateInboxes) . ", Required: {$neededQuantity}");
+                    SlackNotificationService::sendAssignmentFailedNotification($poolOrder, "Only " . count($candidateInboxes) . " SMTP inboxes available (Required: {$neededQuantity})");
+                    DB::rollBack();
+                    return ['success' => false, 'message' => "Only " . count($candidateInboxes) . " SMTP inboxes available (Required: {$neededQuantity})"];
                 }
-            }
+                
+                // Take exactly needed quantity
+                $candidateInboxes = array_slice($candidateInboxes, 0, $neededQuantity);
+                
+            } else {
+                // Google/365: Use existing panel logic
+                // 1. Get all active panels with their splits
+                // We need to find ONE panel that has enough available inboxes
+                
+                $query = PoolPanel::with(['poolPanelSplits'])
+                    ->where('is_active', 1);
+                
+                if ($providerType) {
+                // Assuming PoolPanel has 'provider_type' column as per earlier investigation/Panel model logic
+                // If PoolPanel table structure mirrors Panel or if concept is shared.
+                // Re-verifying PoolPanel model structure from Step 62: it HAS 'provider_type'.
+                    $query->where('provider_type', $providerType);
+                    Log::info("Filtering panels by provider_type: {$providerType}");
+                }
 
-            if (!$selectedPanel) {
-                Log::warning("No single panel found with enough capacity for PoolOrder #{$poolOrder->id}");
-                SlackNotificationService::sendAssignmentFailedNotification($poolOrder, "No single panel has enough available inboxes (Required: {$neededQuantity})");
-                DB::rollBack();
-                return ['success' => false, 'message' => 'No available panel found with sufficient capacity.'];
+                $panels = $query->get();
+
+                $selectedPanel = null;
+
+                foreach ($panels as $panel) {
+                    Log::info("Checking Panel #{$panel->id} ({$panel->title})");
+                    
+                    $panelAvailableInboxes = [];
+                    
+                    foreach ($panel->poolPanelSplits as $split) {
+                        $pool = Pool::find($split->pool_id);
+                        if (!$pool || empty($pool->domains)) {
+                            continue;
+                        }
+
+                        $poolDomains = is_string($pool->domains) ? json_decode($pool->domains, true) : $pool->domains;
+                        $splitDomainIds = $split->domains; // Array of domain IDs in this split
+                        
+                        if (!is_array($splitDomainIds)) {
+                            continue;
+                        }
+
+                        // Iterate through pool domains to find ones that are in this split
+                        foreach ($poolDomains as $domainIndex => $domain) {
+                            $domainId = $domain['id'] ?? null;
+                            
+                            // Check if this domain is part of the split
+                            if ($domainId && in_array($domainId, $splitDomainIds)) {
+                                // Now check specific prefix availability
+                                $prefixStatuses = $domain['prefix_statuses'] ?? [];
+                                $domainName = $domain['name'] ?? 'unknown';
+                                
+                                foreach ($prefixStatuses as $prefixKey => $statusData) {
+                                    if (isset($statusData['status']) && $statusData['status'] === 'available') {
+                                        $panelAvailableInboxes[] = [
+                                            'pool_id' => $pool->id,
+                                            'domain_id' => $domainId,
+                                            'domain_index' => $domainIndex, // Needed to update the specific index in pool
+                                            'domain_name' => $domainName,
+                                            'prefix_key' => $prefixKey,
+                                            'email' => $this->generateEmail($prefixKey, $domainName, $pool),
+                                            // Store other metadata if needed
+                                        ];
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Log::info("Panel #{$panel->id} has " . count($panelAvailableInboxes) . " available inboxes.");
+
+                    if (count($panelAvailableInboxes) >= $neededQuantity) {
+                        $selectedPanel = $panel;
+                        $candidateInboxes = array_slice($panelAvailableInboxes, 0, $neededQuantity);
+                        Log::info("Found suitable Panel #{$panel->id}");
+                        break; // Found our winner
+                    }
+                }
+
+                if (!$selectedPanel) {
+                    Log::warning("No single panel found with enough capacity for PoolOrder #{$poolOrder->id}");
+                    SlackNotificationService::sendAssignmentFailedNotification($poolOrder, "No single panel has enough available inboxes (Required: {$neededQuantity})");
+                    DB::rollBack();
+                    return ['success' => false, 'message' => 'No available panel found with sufficient capacity.'];
+                }
             }
 
             // 2. Perform Assignment
