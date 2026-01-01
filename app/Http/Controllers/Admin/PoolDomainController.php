@@ -313,7 +313,7 @@ class PoolDomainController extends Controller
                         // Use JSON_SET to update only this specific domain - avoids max_allowed_packet issues
                         $domainJson = json_encode($updatedDomain, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                         \DB::statement(
-                            "UPDATE pools SET domains = JSON_SET(domains, ?, JSON_COMPACT(?)), updated_at = NOW() WHERE id = ?",
+                            "UPDATE pools SET domains = JSON_SET(domains, ?, CAST(? AS JSON)), updated_at = NOW() WHERE id = ?",
                             ["\$[{$domainIndex}]", $domainJson, $pool->id]
                         );
                         $message = 'Pool domain updated successfully';
@@ -379,7 +379,7 @@ class PoolDomainController extends Controller
                         // Use JSON_SET to update only this specific domain - avoids max_allowed_packet issues
                         $domainJson = json_encode($updatedDomain, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                         \DB::statement(
-                            "UPDATE pool_orders SET domains = JSON_SET(domains, ?, JSON_COMPACT(?)), updated_at = NOW() WHERE id = ?",
+                            "UPDATE pool_orders SET domains = JSON_SET(domains, ?, CAST(? AS JSON)), updated_at = NOW() WHERE id = ?",
                             ["\$[{$domainIndex}]", $domainJson, $poolOrder->id]
                         );
                         $message = $message ? 'Domain updated in both Pool and Pool Order' : 'Pool Order domain updated successfully';
