@@ -198,7 +198,7 @@ class PoolPlanController extends Controller
 
         // Get provider_type from pool plan, or fallback to Configuration table, default to 'Google'
         // $providerType = $poolPlan->provider_type ?: \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
-        $providerType = Configuration::get('PROVIDER_TYPE', 'Google');
+        $providerType = \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
         // Create new pool order
         $poolOrder = PoolOrder::create([
             'user_id' => $user->id,
