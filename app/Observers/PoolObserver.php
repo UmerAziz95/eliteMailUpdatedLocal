@@ -118,8 +118,18 @@ class PoolObserver
         // Handle any domain ID updates during pool updates if necessary
         // This could be useful for handling domain additions/modifications
 
+        // Check if provider_type changed
+        $oldProviderType = $pool->getOriginal('provider_type');
+        $newProviderType = $pool->provider_type;
+        $providerTypeChanged = $oldProviderType !== $newProviderType;
+
         // Clear related caches when pool is updated
-        $this->clearRelatedCaches($pool);
+        // Pass old and new provider types if provider type changed
+        if ($providerTypeChanged) {
+            $this->clearRelatedCaches($pool, $oldProviderType, $newProviderType);
+        } else {
+            $this->clearRelatedCaches($pool);
+        }
     }
 
     /**
@@ -133,9 +143,13 @@ class PoolObserver
 
     /**
      * Clear related caches when pool changes
+     * 
+     * @param Pool $pool
+     * @param string|null $oldProviderType Old provider type (if provider type changed)
+     * @param string|null $newProviderType New provider type (if provider type changed)
      */
-    private function clearRelatedCaches(Pool $pool): void
+    private function clearRelatedCaches(Pool $pool, ?string $oldProviderType = null, ?string $newProviderType = null): void
     {
-        $this->poolDomainService->clearRelatedCache($pool->id, $pool->user_id);
+        $this->poolDomainService->clearRelatedCache($pool->id, $pool->user_id, $oldProviderType, $newProviderType);
     }
 }

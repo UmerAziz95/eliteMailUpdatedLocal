@@ -681,7 +681,20 @@
                             <option value="">-- Select Provider Type --</option>
                             <option value="Google">Google</option>
                             <option value="Microsoft 365">Microsoft 365</option>
+                            <option value="SMTP">SMTP</option>
                         </select>
+                    </div>
+                    <!-- SMTP Provider Selection (shown only when SMTP is selected) -->
+                    <div class="mb-3" id="smtpProviderSelection" style="display: none;">
+                        <label for="smtpProviderId" class="form-label">Select SMTP Provider <span class="text-danger">*</span></label>
+                        <select class="form-select" id="smtpProviderId" style="width: 100%;">
+                            <option value="">-- Select SMTP Provider --</option>
+                            @foreach($smtpProviders ?? [] as $provider)
+                                <option value="{{ $provider->id }}">{{ $provider->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="invalid-feedback" id="smtpProviderId-error"></div>
+                        <p class="note mb-0 mt-1">(Required when migrating to SMTP Provider)</p>
                     </div>
                     <div class="mb-3 d-none">
                         <label for="providerChangeReason" class="form-label">Reason for Change (Optional)</label>
@@ -3177,7 +3190,15 @@
             if (currentBadge) {
                 if (currentProviderType) {
                     currentBadge.textContent = currentProviderType;
-                    currentBadge.className = 'badge ' + (currentProviderType === 'Google' ? 'bg-danger' : 'bg-primary');
+                    if (currentProviderType === 'Google') {
+                        currentBadge.className = 'badge bg-danger';
+                    } else if (currentProviderType === 'Microsoft 365') {
+                        currentBadge.className = 'badge bg-primary';
+                    } else if (currentProviderType === 'SMTP') {
+                        currentBadge.className = 'badge bg-warning text-dark';
+                    } else {
+                        currentBadge.className = 'badge bg-secondary';
+                    }
                 } else {
                     currentBadge.textContent = 'Not Set';
                     currentBadge.className = 'badge bg-secondary';
@@ -3187,9 +3208,13 @@
             // Reset form
             const providerSelect = document.getElementById('newProviderType');
             const reasonField = document.getElementById('providerChangeReason');
+            const smtpProviderSelect = document.getElementById('smtpProviderId');
+            const smtpProviderContainer = document.getElementById('smtpProviderSelection');
 
             if (providerSelect) providerSelect.value = '';
             if (reasonField) reasonField.value = '';
+            if (smtpProviderSelect) smtpProviderSelect.value = '';
+            if (smtpProviderContainer) smtpProviderContainer.style.display = 'none';
 
             // Store pool ID in modal for later use
             modalEl.setAttribute('data-pool-id', poolId);
@@ -3210,11 +3235,13 @@
             const poolId = modal.getAttribute('data-pool-id');
             const providerSelect = document.getElementById('newProviderType');
             const reasonField = document.getElementById('providerChangeReason');
+            const smtpProviderSelect = document.getElementById('smtpProviderId');
 
             if (!providerSelect || !poolId) return;
 
             const newProviderType = providerSelect.value;
             const reason = reasonField ? reasonField.value : '';
+            const smtpProviderId = smtpProviderSelect ? smtpProviderSelect.value : null;
 
             if (!newProviderType) {
                 Swal.fire({
@@ -3223,6 +3250,20 @@
                     icon: 'warning',
                     confirmButtonColor: '#ffc107'
                 });
+                return;
+            }
+
+            // Validate SMTP provider if SMTP is selected
+            if (newProviderType === 'SMTP' && !smtpProviderId) {
+                Swal.fire({
+                    title: 'SMTP Provider Required',
+                    text: 'Please select an SMTP provider when migrating to SMTP.',
+                    icon: 'warning',
+                    confirmButtonColor: '#ffc107'
+                });
+                if (smtpProviderSelect) {
+                    smtpProviderSelect.classList.add('is-invalid');
+                }
                 return;
             }
 
@@ -3249,7 +3290,8 @@
                     },
                     body: JSON.stringify({
                         provider_type: newProviderType,
-                        reason: reason
+                        reason: reason,
+                        smtp_provider_id: smtpProviderId
                     })
                 });
 
@@ -3307,6 +3349,31 @@
             const confirmBtn = document.getElementById('confirmProviderTypeChange');
             if (confirmBtn) {
                 confirmBtn.addEventListener('click', updatePoolProviderType);
+            }
+
+            // Handle provider type change to show/hide SMTP provider selection
+            const providerSelect = document.getElementById('newProviderType');
+            const smtpContainer = document.getElementById('smtpProviderSelection');
+            const smtpSelect = document.getElementById('smtpProviderId');
+            
+            if (providerSelect && smtpContainer && smtpSelect) {
+                // Use event delegation on the modal
+                const modal = document.getElementById('changeProviderTypeModal');
+                if (modal) {
+                    modal.addEventListener('change', function(e) {
+                        if (e.target && e.target.id === 'newProviderType') {
+                            if (e.target.value === 'SMTP') {
+                                smtpContainer.style.display = 'block';
+                                smtpSelect.required = true;
+                            } else {
+                                smtpContainer.style.display = 'none';
+                                smtpSelect.required = false;
+                                smtpSelect.value = '';
+                                smtpSelect.classList.remove('is-invalid');
+                            }
+                        }
+                    });
+                }
             }
 
             // Refresh capacity alert on initial page load to sync with API values

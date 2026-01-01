@@ -64,9 +64,12 @@ class PoolDomainService
             $poolQuery = Pool::with([
                 'user' => function ($query) {
                     $query->select('id', 'name', 'email');
+                },
+                'smtpProvider' => function ($query) {
+                    $query->select('id', 'name', 'url');
                 }
             ])
-                ->select('id', 'user_id', 'domains', 'prefix_variants', 'provider_type')
+                ->select('id', 'user_id', 'domains', 'prefix_variants', 'provider_type', 'smtp_provider_id', 'smtp_provider_url')
                 ->whereNotNull('domains')
                 ->whereNotNull('purchase_date')
                 ->whereRaw('DATE_ADD(purchase_date, INTERVAL 356 DAY) >= CURDATE()');
@@ -244,6 +247,16 @@ class PoolDomainService
                         $status = 'in-progress';
                     }
 
+                    // Get SMTP provider URL if available
+                    $smtpProviderUrl = null;
+                    if ($pool->provider_type === 'SMTP' || $pool->provider_type === 'Private SMTP') {
+                        if ($pool->smtpProvider && $pool->smtpProvider->url) {
+                            $smtpProviderUrl = $pool->smtpProvider->url;
+                        } elseif ($pool->smtp_provider_url) {
+                            $smtpProviderUrl = $pool->smtp_provider_url;
+                        }
+                    }
+
                     $results[] = [
                         'customer_name' => $customer ? $customer->name : 'Unknown',
                         'customer_email' => $customer ? $customer->email : 'unknown@example.com',
@@ -265,6 +278,7 @@ class PoolDomainService
                         'is_used' => (bool) ($domain['is_used'] ?? false),
                         'created_by' => $pool->user ? $pool->user->name : 'Unknown',
                         'provider_type' => $pool->provider_type ?? null,
+                        'smtp_provider_url' => $smtpProviderUrl,
                     ];
                 }
             } else {
@@ -283,6 +297,16 @@ class PoolDomainService
                     $perInbox = (int) ($domain['available_inboxes'] ?? 0);
                     $poolOrderStatus = 'no_order';
                     $poolOrderAdminStatus = 'no_order';
+                }
+
+                // Get SMTP provider URL if available
+                $smtpProviderUrl = null;
+                if ($pool->provider_type === 'SMTP' || $pool->provider_type === 'Private SMTP') {
+                    if ($pool->smtpProvider && $pool->smtpProvider->url) {
+                        $smtpProviderUrl = $pool->smtpProvider->url;
+                    } elseif ($pool->smtp_provider_url) {
+                        $smtpProviderUrl = $pool->smtp_provider_url;
+                    }
                 }
 
                 // Show single row with domain-level status
@@ -306,6 +330,7 @@ class PoolDomainService
                     'is_used' => (bool) ($domain['is_used'] ?? false),
                     'created_by' => $pool->user ? $pool->user->name : 'Unknown',
                     'provider_type' => $pool->provider_type ?? null,
+                    'smtp_provider_url' => $smtpProviderUrl,
                 ];
             }
         }
@@ -399,11 +424,18 @@ class PoolDomainService
 
     /**
      * Clear cache when pool or pool order is updated
+     * Also clears provider-specific caches to handle provider type changes
      */
-    public function clearRelatedCache($poolId = null, $userId = null)
+    public function clearRelatedCache($poolId = null, $userId = null, $oldProviderType = null, $newProviderType = null)
     {
         // Clear general cache
         Cache::forget('pool_domains');
+
+        // Clear provider-specific caches (always clear all to handle provider type changes)
+        // When provider type changes, we need to clear both old and new provider caches
+        Cache::forget('pool_domains_provider_Google');
+        Cache::forget('pool_domains_provider_Microsoft 365');
+        Cache::forget('pool_domains_provider_SMTP');
 
         // Clear user-specific cache if provided
         if ($userId) {
@@ -413,6 +445,17 @@ class PoolDomainService
         // Clear pool-specific cache if provided  
         if ($poolId) {
             Cache::forget("pool_domains_pool_{$poolId}");
+        }
+
+        // Clear provider-specific combination caches if provider types are provided
+        if ($oldProviderType) {
+            $oldProviderCacheKey = $this->buildCacheKey($userId, $poolId, $oldProviderType);
+            Cache::forget($oldProviderCacheKey);
+        }
+
+        if ($newProviderType) {
+            $newProviderCacheKey = $this->buildCacheKey($userId, $poolId, $newProviderType);
+            Cache::forget($newProviderCacheKey);
         }
     }
 

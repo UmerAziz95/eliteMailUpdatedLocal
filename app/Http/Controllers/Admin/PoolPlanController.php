@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Feature;
 use App\Models\PoolPlan;
+use App\Models\Configuration;
 use Illuminate\Http\Request;
 
 class PoolPlanController extends Controller
@@ -13,7 +14,8 @@ class PoolPlanController extends Controller
     {
         $poolPlans = PoolPlan::where('is_active', 1)->get();
         $features = Feature::where('is_active', true)->get();
-        return view('admin.pool-pricing.pool-pricing', compact('poolPlans', 'features'));
+        $defaultProviderType = Configuration::get('PROVIDER_TYPE', 'Google');
+        return view('admin.pool-pricing.pool-pricing', compact('poolPlans', 'features', 'defaultProviderType'));
     }
 
     public function store(Request $request)
@@ -29,7 +31,8 @@ class PoolPlanController extends Controller
                 'feature_ids' => 'nullable|array',
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
-                'currency_code' => 'nullable|string|size:3'
+                'currency_code' => 'nullable|string|size:3',
+                'provider_type' => 'nullable|string|in:Google,Microsoft 365,Private SMTP'
             ]);
 
             // Set default currency code if not provided
@@ -76,6 +79,10 @@ class PoolPlanController extends Controller
                 throw new \Exception($chargeBeePlan['message']);
             }
 
+            // Get provider_type from request, or fallback to Configuration table, default to 'Google'
+            $providerType = $request->input('provider_type') 
+                ?: \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
+
             // Local Pool Plan Creation (with ChargeBee integration)
             $poolPlan = PoolPlan::create([
                 'name' => $request->name,
@@ -87,7 +94,8 @@ class PoolPlanController extends Controller
                 'currency_code' => $currencyCode,
                 'chargebee_plan_id' => $chargeBeePlan['data']['price_id'],
                 'is_chargebee_synced' => true,
-                'is_active' => true
+                'is_active' => true,
+                'provider_type' => $providerType
             ]);
 
             // Attach Features (if any)
@@ -140,7 +148,8 @@ class PoolPlanController extends Controller
                 'feature_ids' => 'nullable|array',
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
-                'currency_code' => 'nullable|string|size:3'
+                'currency_code' => 'nullable|string|size:3',
+                'provider_type' => 'nullable|string|in:Google,Microsoft 365,Private SMTP'
             ]);
 
             // Set default currency code if not provided
@@ -165,6 +174,10 @@ class PoolPlanController extends Controller
                 }
             }
 
+            // Get provider_type from request, or fallback to Configuration table, default to 'Google'
+            $providerType = $request->input('provider_type') 
+                ?: \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
+
             // --- Local Pool Plan Update ---
             $poolPlan->update([
                 'name' => $request->name,
@@ -173,7 +186,8 @@ class PoolPlanController extends Controller
                 'description' => $request->description,
                 'pricing_model' => $pricingModel,
                 'billing_cycle' => $billingCycle,
-                'currency_code' => $currencyCode
+                'currency_code' => $currencyCode,
+                'provider_type' => $providerType
             ]);
 
             // Sync features

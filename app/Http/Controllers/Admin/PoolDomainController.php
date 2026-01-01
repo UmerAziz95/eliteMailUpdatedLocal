@@ -42,43 +42,43 @@ class PoolDomainController extends Controller
                 $allData = array_values($allData); // Reset array keys
             }
 
-            return DataTables::of($allData)
-                ->addIndexColumn()
-                ->addColumn('prefix_display', function ($row) {
-                    $prefixValue = $row['prefix_value'] ?? null;
-                    $prefixNumber = $row['prefix_number'] ?? null;
-                    if ($prefixValue) {
-                        return '<span class="badge bg-info">Prefix ' . $prefixNumber . ': ' . htmlspecialchars($prefixValue) . '</span>';
-                    }
-                    return '<span class="badge bg-secondary">N/A</span>';
+            // Get provider type from request to conditionally add SMTP provider URL column
+            $providerType = $request->get('provider_type');
+            $isSmtpProvider = ($providerType === 'SMTP' || $providerType === 'Private SMTP');
+
+            // Build columns array to match frontend expectations
+            // Frontend expects: DT_RowIndex, customer_name, customer_email, pool_id, pool_order_id, domain_name, 
+            // prefix_display, status_badge, usage_badge, pool_order_status_badge, per_inbox, prefixes_formatted, actions
+            $dataTable = DataTables::of($allData)
+                ->addIndexColumn() // Adds DT_RowIndex
+                ->addColumn('customer_name', function ($row) {
+                    return $row['customer_name'] ?? 'Unknown';
                 })
-                ->addColumn('prefixes_formatted', function ($row) {
-                    if (!empty($row['prefix_value']) && !empty($row['domain_name'])) {
-                        // If it's a specific prefix row, show that prefix entity
-                        if (strpos($row['prefix_value'], '@') !== false) {
-                            return $row['prefix_value'];
-                        }
-                        return $row['prefix_value'] . '@' . $row['domain_name'];
+                ->addColumn('customer_email', function ($row) {
+                    return $row['customer_email'] ?? 'N/A';
+                })
+                ->addColumn('pool_id', function ($row) {
+                    return $row['pool_id'] ?? null;
+                })
+                ->addColumn('pool_order_id', function ($row) {
+                    return $row['pool_order_id'] ?? null;
+                })
+                ->addColumn('domain_id', function ($row) {
+                    return $row['domain_id'] ?? null;
+                })
+                ->addColumn('domain_name', function ($row) {
+                    return $row['domain_name'] ?? null;
+                })
+                ->addColumn('prefix_display', function ($row) {
+                    // Display which prefix variant this row represents
+                    $prefixValue = $row['prefix_value'] ?? null;
+                    if ($prefixValue) {
+                        return '<span class="badge bg-info">' . htmlspecialchars($prefixValue) . '</span>';
                     }
-                    return $this->poolDomainService->formatPrefixes($row['prefixes'], $row['domain_name']);
+                    return '<span class="badge bg-secondary">All Prefixes</span>';
                 })
                 ->addColumn('status_badge', function ($row) {
-                    return get_domain_status_badge($row['status'], true);
-                })
-                ->addColumn('pool_order_status_badge', function ($row) {
-                    if ($row['pool_order_status'] === 'no_order') {
-                        return '<span class="badge bg-light text-dark">No Order</span>';
-                    }
-
-                    $colorMap = [
-                        'completed' => 'success',
-                        'pending' => 'warning',
-                        'cancelled' => 'danger',
-                        'failed' => 'danger',
-                        'unknown' => 'secondary',
-                    ];
-                    $color = $colorMap[$row['pool_order_status']] ?? 'secondary';
-                    return '<span class="badge bg-' . $color . '">' . ucfirst($row['pool_order_status']) . '</span>';
+                    return get_domain_status_badge($row['status'] ?? 'unknown', true);
                 })
                 ->addColumn('usage_badge', function ($row) {
                     $isUsed = $row['is_used'] ?? false;
@@ -88,15 +88,44 @@ class PoolDomainController extends Controller
                         return '<span class="badge bg-light text-dark">Available</span>';
                     }
                 })
+                ->addColumn('pool_order_status_badge', function ($row) {
+                    $status = $row['pool_order_status'] ?? 'no_order';
+                    if ($status === 'no_order') {
+                        return '<span class="badge bg-light text-dark">No Order</span>';
+                    }
+                    
+                    $colorMap = [
+                        'completed' => 'success',
+                        'pending' => 'warning',
+                        'in-progress' => 'info',
+                        'cancelled' => 'danger',
+                        'failed' => 'danger',
+                        'unknown' => 'secondary',
+                    ];
+                    $color = $colorMap[$status] ?? 'secondary';
+                    return '<span class="badge bg-' . $color . '">' . ucfirst(str_replace('-', ' ', $status)) . '</span>';
+                })
+                ->addColumn('per_inbox', function ($row) {
+                    return $row['per_inbox'] ?? 1;
+                })
+                ->addColumn('prefixes_formatted', function ($row) {
+                    if (!empty($row['prefix_value']) && !empty($row['domain_name'])) {
+                        // If it's a specific prefix row, show that prefix entity
+                        if (strpos($row['prefix_value'], '@') !== false) {
+                            return $row['prefix_value'];
+                        }
+                        return $row['prefix_value'] . '@' . $row['domain_name'];
+                    }
+                    return $this->poolDomainService->formatPrefixes($row['prefixes'] ?? [], $row['domain_name'] ?? '');
+                })
                 ->addColumn('actions', function ($row) {
                     $poolId = $row['pool_id'] ?? '';
                     $poolOrderId = $row['pool_order_id'] ?? '';
                     $domainId = $row['domain_id'] ?? '';
                     $domainName = addslashes($row['domain_name'] ?? '');
                     $status = $row['status'] ?? 'available';
-                    $endDate = addslashes($row['end_date'] ?? '');
-                    $prefixKey = addslashes($row['prefix_key'] ?? '');
-
+                    $prefixKey = $row['prefix_key'] ?? '';
+                    
                     return '
                         <div class="dropdown">
                             <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -105,15 +134,29 @@ class PoolDomainController extends Controller
                             <ul class="dropdown-menu">
                                 <li>
                                     <a class="dropdown-item" href="javascript:void(0)" 
-                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\', \'' . $endDate . '\', \'' . $prefixKey . '\', \'' . addslashes($row['prefix_value'] ?? '') . '\')">
-                                        <i class="fa-solid fa-edit me-1"></i>Edit Status
+                                       onclick="editDomain(\'' . $poolId . '\', \'' . $poolOrderId . '\', \'' . $domainId . '\', \'' . $domainName . '\', \'' . $status . '\', \'' . $prefixKey . '\', \'' . addslashes($row['prefix_value'] ?? '') . '\')">
+                                        <i class="fa-solid fa-edit me-1"></i>Edit Domain
                                     </a>
                                 </li>
                             </ul>
                         </div>';
                 })
-                ->rawColumns(['prefix_display', 'status_badge', 'pool_order_status_badge', 'usage_badge', 'actions'])
-                ->make(true);
+                ->rawColumns(['prefix_display', 'status_badge', 'pool_order_status_badge', 'usage_badge', 'actions']);
+
+            // Add SMTP provider URL column only for SMTP provider type
+            // Return raw URL - frontend will handle HTML rendering
+            if ($isSmtpProvider) {
+                $dataTable->addColumn('smtp_provider_url', function ($row) {
+                    $url = $row['smtp_provider_url'] ?? null;
+                    // Return raw URL string (not HTML) - frontend will render it
+                    if ($url && is_string($url) && trim($url) !== '') {
+                        return trim($url);
+                    }
+                    return null;
+                });
+            }
+
+            return $dataTable->make(true);
         }
 
         return view('admin.pool_domains.index');
@@ -546,6 +589,117 @@ class PoolDomainController extends Controller
         }
 
         return view('admin.pool_domains.index');
+    }
+
+    /**
+     * Get email account counts by status for each provider type
+     */
+    public function getEmailCounts(Request $request)
+    {
+        try {
+            $providerType = $request->get('provider_type');
+            
+            // Get all pool domains data for the provider type (handles domains + prefix_variants)
+            $allData = $this->poolDomainService->getPoolDomainsData(true, null, null, $providerType);
+            
+            // Count by status
+            $counts = [
+                'warming' => 0,
+                'available' => 0,
+                'used' => 0,
+                'total' => 0
+            ];
+            
+            foreach ($allData as $item) {
+                $status = $item['status'] ?? 'unknown';
+                $counts['total']++;
+                
+                if ($status === 'warming') {
+                    $counts['warming']++;
+                } elseif ($status === 'available') {
+                    $counts['available']++;
+                } elseif ($status === 'used' || $status === 'in-progress') {
+                    $counts['used']++;
+                }
+            }
+            
+            // For SMTP provider type, also check pools with only smtp_accounts_data (no domains column)
+            if ($providerType === 'SMTP') {
+                $smtpPools = \App\Models\Pool::where('provider_type', 'SMTP')
+                    ->whereNotNull('smtp_accounts_data')
+                    ->where(function($query) {
+                        $query->whereNull('domains')
+                            ->orWhere('domains', '[]')
+                            ->orWhere('domains', '');
+                    })
+                    ->get();
+                
+                foreach ($smtpPools as $pool) {
+                    $smtpData = $pool->smtp_accounts_data;
+                    
+                    // Handle decompression if needed
+                    if ($smtpData && isset($smtpData['_compressed']) && $smtpData['_compressed'] === true && isset($smtpData['_data'])) {
+                        try {
+                            $compressedData = base64_decode($smtpData['_data']);
+                            $decompressedJson = gzuncompress($compressedData);
+                            if ($decompressedJson !== false) {
+                                $smtpData = json_decode($decompressedJson, true);
+                                if ($smtpData === null) {
+                                    \Log::error('Failed to decode decompressed JSON for pool in getEmailCounts', ['pool_id' => $pool->id]);
+                                    continue;
+                                }
+                            } else {
+                                \Log::error('Failed to decompress smtp_accounts_data for pool in getEmailCounts', ['pool_id' => $pool->id]);
+                                continue;
+                            }
+                        } catch (\Exception $e) {
+                            \Log::error('Exception while decompressing smtp_accounts_data in getEmailCounts', [
+                                'pool_id' => $pool->id,
+                                'error' => $e->getMessage()
+                            ]);
+                            continue;
+                        }
+                    }
+                    
+                    if ($smtpData && isset($smtpData['accounts'])) {
+                        $accounts = $smtpData['accounts'];
+                        $counts['total'] += count($accounts);
+                        
+                        // Count by status if available in account data
+                        foreach ($accounts as $account) {
+                            $accountStatus = $account['status'] ?? 'available';
+                            if ($accountStatus === 'warming') {
+                                $counts['warming']++;
+                            } elseif ($accountStatus === 'available') {
+                                $counts['available']++;
+                            } elseif ($accountStatus === 'used' || $accountStatus === 'in-progress') {
+                                $counts['used']++;
+                            } else {
+                                // Default to available if status not specified
+                                $counts['available']++;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting email counts: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get email counts',
+                'counts' => [
+                    'warming' => 0,
+                    'available' => 0,
+                    'used' => 0,
+                    'total' => 0
+                ]
+            ], 500);
+        }
     }
 
     /**

@@ -196,6 +196,10 @@ class PoolPlanController extends Controller
             $quantity = env('PLAN_FLAT_QUANTITY', 99);
         }
 
+        // Get provider_type from pool plan, or fallback to Configuration table, default to 'Google'
+        $providerType = $poolPlan->provider_type 
+            ?: \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
+
         // Create new pool order
         $poolOrder = PoolOrder::create([
             'user_id' => $user->id,
@@ -208,6 +212,7 @@ class PoolPlanController extends Controller
             'currency' => $invoice->currencyCode,
             'status' => 'completed',
             'status_manage_by_admin' => 'draft', // Default status - first time save as draft
+            'provider_type' => $providerType,
             'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
             'meta' => json_encode([
                 'subscription_data' => [

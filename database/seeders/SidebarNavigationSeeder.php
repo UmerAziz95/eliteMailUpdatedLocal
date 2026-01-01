@@ -273,7 +273,16 @@ class SidebarNavigationSeeder extends Seeder
                 "route" => "admin.team_leader.dashboard",
                 "permission" => "Team Leader Dashboard",
                 'sub_menu' => []
-            ]
+            ],
+            // smtp providers
+            [
+                'name' => 'Smtp Providers',
+                'icon' => 'ti ti-circle fs-5',
+                'route' => 'admin.smtp-providers.page',
+                'permission' => 'Smtp Providers',
+                'sub_menu' => [],
+                'order' => 26
+            ],
 
         ];
 

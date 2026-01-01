@@ -287,6 +287,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
 
         // Admin Pool Domains listing
         Route::get('pool-domains', [\App\Http\Controllers\Admin\PoolDomainController::class, 'index'])->name('pool-domains.index');
+        Route::get('pool-domains/email-counts', [\App\Http\Controllers\Admin\PoolDomainController::class, 'getEmailCounts'])->name('pool-domains.email-counts');
         Route::get('pool-domains/test', [\App\Http\Controllers\Admin\PoolDomainController::class, 'test'])->name('pool-domains.test');
         Route::post('pool-domains/refresh-cache', [\App\Http\Controllers\Admin\PoolDomainController::class, 'refreshCache'])->name('pool-domains.refresh-cache');
         Route::post('pool-domains/update', [\App\Http\Controllers\Admin\PoolDomainController::class, 'update'])->name('pool-domains.update');

@@ -190,18 +190,21 @@
                             <button class="nav-link active" id="google-warming-tab" data-bs-toggle="tab"
                                 data-bs-target="#google-warming-pane" type="button" role="tab">
                                 <i class="fa fa-fire me-1 text-warning"></i>Warming
+                                <span class="badge bg-warning text-dark ms-2" id="google-warming-badge">0</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="google-available-tab" data-bs-toggle="tab"
                                 data-bs-target="#google-available-pane" type="button" role="tab">
                                 <i class="fa fa-check-circle me-1 text-success"></i>Available
+                                <span class="badge bg-success ms-2" id="google-available-badge">0</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="google-used-tab" data-bs-toggle="tab"
                                 data-bs-target="#google-used-pane" type="button" role="tab">
                                 <i class="fa fa-lock me-1 text-danger"></i>Used
+                                <span class="badge bg-danger ms-2" id="google-used-badge">0</span>
                             </button>
                         </li>
                     </ul>
@@ -280,18 +283,21 @@
                             <button class="nav-link active" id="ms365-warming-tab" data-bs-toggle="tab"
                                 data-bs-target="#ms365-warming-pane" type="button" role="tab">
                                 <i class="fa fa-fire me-1 text-warning"></i>Warming
+                                <span class="badge bg-warning text-dark ms-2" id="ms365-warming-badge">0</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="ms365-available-tab" data-bs-toggle="tab"
                                 data-bs-target="#ms365-available-pane" type="button" role="tab">
                                 <i class="fa fa-check-circle me-1 text-success"></i>Available
+                                <span class="badge bg-success ms-2" id="ms365-available-badge">0</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="ms365-used-tab" data-bs-toggle="tab" data-bs-target="#ms365-used-pane"
                                 type="button" role="tab">
                                 <i class="fa fa-lock me-1 text-danger"></i>Used
+                                <span class="badge bg-danger ms-2" id="ms365-used-badge">0</span>
                             </button>
                         </li>
                     </ul>
@@ -370,18 +376,21 @@
                             <button class="nav-link active" id="smtp-warming-tab" data-bs-toggle="tab"
                                 data-bs-target="#smtp-warming-pane" type="button" role="tab">
                                 <i class="fa fa-fire me-1 text-warning"></i>Warming
+                                <span class="badge bg-warning text-dark ms-2" id="smtp-warming-badge">0</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="smtp-available-tab" data-bs-toggle="tab"
                                 data-bs-target="#smtp-available-pane" type="button" role="tab">
                                 <i class="fa fa-check-circle me-1 text-success"></i>Available
+                                <span class="badge bg-success ms-2" id="smtp-available-badge">0</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="smtp-used-tab" data-bs-toggle="tab"
                                 data-bs-target="#smtp-used-pane" type="button" role="tab">
                                 <i class="fa fa-lock me-1 text-danger"></i>Used
+                                <span class="badge bg-danger ms-2" id="smtp-used-badge">0</span>
                             </button>
                         </li>
                     </ul>
@@ -399,6 +408,7 @@
                                                 <th>Created By</th>
                                                 <th>Status</th>
                                                 <th>Email Account</th>
+                                                <th>Provider URL</th>
                                                 <th>Expiry Date</th>
                                             </tr>
                                         </thead>
@@ -419,6 +429,7 @@
                                                 <th>Created By</th>
                                                 <th>Status</th>
                                                 <th>Email Account</th>
+                                                <th>Provider URL</th>
                                                 <th>Expiry Date</th>
                                             </tr>
                                         </thead>
@@ -439,6 +450,7 @@
                                                 <th>Created By</th>
                                                 <th>Status</th>
                                                 <th>Email Account</th>
+                                                <th>Provider URL</th>
                                                 <th>Expiry Date</th>
                                             </tr>
                                         </thead>
@@ -583,7 +595,7 @@
                             d.status_filter = config.status;
                         }
                     },
-                    columns: getTableColumns(),
+                    columns: getTableColumns(config.provider),
                     order: [[1, 'desc']],
                     pageLength: 25,
                     lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
@@ -617,10 +629,51 @@
                     });
                 }, 10);
             });
+
+            // Load email counts for all providers
+            loadEmailCounts('Google');
+            loadEmailCounts('Microsoft 365');
+            loadEmailCounts('SMTP');
         });
 
-        function getTableColumns() {
-            return [
+        /**
+         * Load email counts for a specific provider type
+         */
+        function loadEmailCounts(providerType) {
+            $.ajax({
+                url: "{{ route('admin.pool-domains.email-counts') }}",
+                type: 'GET',
+                data: {
+                    provider_type: providerType
+                },
+                success: function(response) {
+                    if (response.success && response.counts) {
+                        const counts = response.counts;
+                        
+                        // Update badge counts on tabs
+                        if (providerType === 'Google') {
+                            $('#google-warming-badge').text(counts.warming || 0);
+                            $('#google-available-badge').text(counts.available || 0);
+                            $('#google-used-badge').text(counts.used || 0);
+                        } else if (providerType === 'Microsoft 365') {
+                            $('#ms365-warming-badge').text(counts.warming || 0);
+                            $('#ms365-available-badge').text(counts.available || 0);
+                            $('#ms365-used-badge').text(counts.used || 0);
+                        } else if (providerType === 'SMTP') {
+                            $('#smtp-warming-badge').text(counts.warming || 0);
+                            $('#smtp-available-badge').text(counts.available || 0);
+                            $('#smtp-used-badge').text(counts.used || 0);
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error loading email counts for ' + providerType + ':', xhr);
+                }
+            });
+        }
+
+        function getTableColumns(providerType) {
+            const columns = [
                 {
                     data: null,
                     orderable: false,
@@ -702,27 +755,68 @@
                                                                 </div>
                                                             `;
                     }
-                },
-                {
-                    data: 'end_date',
-                    name: 'end_date',
-                    render: function (data, type, row) {
-                        if (!data) return '-';
+                }
+            ];
 
-                        const date = new Date(data).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                        });
-                        return `
+            // Add SMTP Provider URL column ONLY for SMTP provider type
+            if (providerType === 'SMTP' || providerType === 'Private SMTP') {
+                columns.push({
+                    data: 'smtp_provider_url',
+                    name: 'smtp_provider_url',
+                    orderable: false,
+                    searchable: false,
+                    defaultContent: '-',
+                    render: function (data, type, row) {
+                        // Backend returns raw URL string, frontend renders HTML
+                        const url = data || row.smtp_provider_url || null;
+                        
+                        // Check if URL exists and is not empty
+                        if (url && typeof url === 'string' && url.trim() !== '') {
+                            const cleanUrl = url.trim();
+                            return `
+                                <a href="${escapeHtml(cleanUrl)}" target="_blank" class="text-info text-decoration-none">
+                                    <i class="fa fa-external-link me-1"></i>${escapeHtml(cleanUrl)}
+                                </a>
+                            `;
+                        }
+                        return '<span class="text-muted">-</span>';
+                    }
+                });
+            }
+
+            columns.push({
+                data: 'end_date',
+                name: 'end_date',
+                render: function (data, type, row) {
+                    if (!data) return '-';
+
+                    const date = new Date(data).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                    return `
                                                                 <div class="d-flex gap-1 align-items-center opacity-75">
                                                                     <i class="ti ti-calendar-month fs-6"></i>
                                                                     <span>${date}</span>
                                                                 </div>
                                                             `;
-                    }
                 }
-            ];
+            });
+
+            return columns;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
         }
 
         function deletePool(poolId) {
