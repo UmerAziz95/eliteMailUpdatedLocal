@@ -164,10 +164,10 @@ return [
         ],
 
         'mailin-ai' => [
-            'driver' => 'daily',
+            'driver' => 'single',
             'path' => storage_path('logs/mailin-ai.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'days' => 14,
+            // 'days' => 14,
             'replace_placeholders' => true,
         ],
     ],
