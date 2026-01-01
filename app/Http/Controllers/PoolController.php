@@ -374,137 +374,118 @@ class PoolController extends Controller
             $data = $request->all();
 
             // Handle SMTP mode: process smtp_accounts_data
-            // Initialize CSV file variables (will be stored after pool creation)
-            $smtpCsvFile = null;
-            $smtpCsvFilename = null;
-            $smtpAccountsData = null; // Will not be stored in database
-            
-            if ($isSmtpMode) {
-                // Capture CSV file and filename (these will be stored)
-                $smtpCsvFile = $request->smtp_csv_file ?? null;
-                $smtpCsvFilename = $request->smtp_csv_filename ?? null;
-                
-                // Process smtp_accounts_data only for building domains structure (not stored in DB)
-                if ($request->has('smtp_accounts_data')) {
-                    try {
-                        $smtpData = json_decode($request->smtp_accounts_data, true);
+            if ($isSmtpMode && $request->has('smtp_accounts_data')) {
+                $smtpData = json_decode($request->smtp_accounts_data, true);
 
-                        if ($smtpData && isset($smtpData['accounts'])) {
-                            \Log::info('Creating SMTP Pool - Processing SMTP accounts data', [
-                                'total_accounts' => count($smtpData['accounts']),
-                                'unique_domains' => $smtpData['unique_domains'] ?? 0
-                            ]);
+                if ($smtpData && isset($smtpData['accounts'])) {
+                    \Log::info('Creating SMTP Pool - Processing SMTP accounts data', [
+                        'total_accounts' => count($smtpData['accounts']),
+                        'unique_domains' => $smtpData['unique_domains'] ?? 0
+                    ]);
 
-                            // Store data temporarily for building domains (NOT stored in database)
-                            $smtpAccountsData = $smtpData;
+                    // Store large data separately (will be updated after pool creation)
+                    $smtpAccountsData = $smtpData;
+                    $smtpCsvFile = $request->smtp_csv_file ?? null;
+                    $smtpCsvFilename = $request->smtp_csv_filename ?? null;
 
-                            // Build domains array from SMTP accounts
-                            $domainsFromCsv = [];
-                            $domainPrefixes = [];
-                            $warmingDates = $this->getDomainWarmingDates();
+                    // Build domains array from SMTP accounts
+                    $domainsFromCsv = [];
+                    $domainPrefixes = [];
+                    $warmingDates = $this->getDomainWarmingDates();
 
-                            // Group accounts by domain
-                            foreach ($smtpData['accounts'] as $account) {
-                                $domain = $account['domain'] ?? '';
-                                $prefix = $account['prefix'] ?? '';
+                    // Group accounts by domain
+                    foreach ($smtpData['accounts'] as $account) {
+                        $domain = $account['domain'] ?? '';
+                        $prefix = $account['prefix'] ?? '';
 
-                                if (!isset($domainPrefixes[$domain])) {
-                                    $domainPrefixes[$domain] = [];
-                                }
-                                if (!in_array($prefix, $domainPrefixes[$domain])) {
-                                    $domainPrefixes[$domain][] = $prefix;
-                                }
-                            }
-
-                            // Build domains array with prefix_statuses
-                            $sequence = 1;
-                            foreach ($domainPrefixes as $domainName => $prefixes) {
-                                $prefixStatuses = [];
-                                $prefixIndex = 1;
-
-                                foreach ($prefixes as $prefix) {
-                                    $prefixKey = "prefix_variant_{$prefixIndex}";
-                                    $prefixStatuses[$prefixKey] = [
-                                        'status' => 'warming',
-                                        'start_date' => $warmingDates['start_date'],
-                                        'end_date' => $warmingDates['end_date'],
-                                        'prefix_value' => $prefix  // Store actual prefix value from CSV
-                                    ];
-                                    $prefixIndex++;
-                                }
-
-                                $domainsFromCsv[] = [
-                                    'id' => 'new_' . $sequence++,  // Use 'new_' prefix to match standard pool format
-                                    'name' => $domainName,
-                                    'is_used' => false,
-                                    'prefix_statuses' => $prefixStatuses
-                                ];
-                            }
-
-                            $data['domains'] = $domainsFromCsv;
-                            $data['total_inboxes'] = count($smtpData['accounts']);
-                            $data['inboxes_per_domain'] = $smtpData['max_per_domain'] ?? 1;
-
-                            // Store SMTP-specific data (but NOT large JSON fields yet)
-                            $data['smtp_provider_url'] = $request->smtp_provider_url;
-                            $data['provider_type'] = 'SMTP';
-                            // DO NOT store smtp_accounts_data and smtp_csv_file here - issue in big file (also not used anywhere)
-                            // $data['smtp_accounts_data'] = $smtpData; // Store full CSV accounts data with all credentials
-
-                            // // Store raw CSV file content and filename
-                            // $data['smtp_csv_file'] = $request->smtp_csv_file ?? null;
-                            // $data['smtp_csv_filename'] = $request->smtp_csv_filename ?? null;
-
-                            // Store prefix_variants in standard format: {"prefix_variant_1": "bob", "prefix_variant_2": "eva", ...}
-                            $allPrefixes = [];
-                            foreach ($smtpData['accounts'] as $account) {
-                                if (!empty($account['prefix']) && !in_array($account['prefix'], $allPrefixes)) {
-                                    $allPrefixes[] = $account['prefix'];
-                                }
-                            }
-                            // Build prefix_variants as JSON object with keys prefix_variant_1, prefix_variant_2, etc.
-                            $prefixVariants = [];
-                            foreach (array_slice($allPrefixes, 0, 3) as $index => $prefix) {
-                                $prefixVariants['prefix_variant_' . ($index + 1)] = $prefix;
-                            }
-                            $data['prefix_variants'] = $prefixVariants;
-
-                            // Store prefix_variants_details in standard format
-                            $prefixDetails = [];
-                            $usedPrefixes = [];
-                            foreach ($smtpData['accounts'] as $account) {
-                                $prefix = $account['prefix'] ?? '';
-                                if (!empty($prefix) && !in_array($prefix, $usedPrefixes) && count($prefixDetails) < 3) {
-                                    $prefixKey = 'prefix_variant_' . (count($prefixDetails) + 1);
-                                    $prefixDetails[$prefixKey] = [
-                                        'first_name' => $account['first_name'] ?? null,
-                                        'last_name' => $account['last_name'] ?? null,
-                                        'profile_link' => null,
-                                        'password' => $account['password'] ?? null
-                                    ];
-                                    $usedPrefixes[] = $prefix;
-                                }
-                            }
-                            $data['prefix_variants_details'] = $prefixDetails;
-
-                            // Set SMTP pool specific status fields
-                            $data['is_splitting'] = 1;
-                            $data['status'] = 'completed';
-                            $data['status_manage_by_admin'] = 'available';
-
-                            \Log::info('SMTP Pool - Domains built from CSV', [
-                                'domains_count' => count($domainsFromCsv),
-                                'total_inboxes' => $data['total_inboxes']
-                            ]);
+                        if (!isset($domainPrefixes[$domain])) {
+                            $domainPrefixes[$domain] = [];
                         }
-                    } catch (\Exception $e) {
-                        \Log::warning('Failed to parse smtp_accounts_data (non-critical - CSV file will be stored)', [
-                            'error' => $e->getMessage(),
-                            'note' => 'Pool will be created with CSV file only. Domains can be built from CSV if needed.'
-                        ]);
-                        // Continue with pool creation even if JSON parsing fails
-                        // CSV file will still be stored
+                        if (!in_array($prefix, $domainPrefixes[$domain])) {
+                            $domainPrefixes[$domain][] = $prefix;
+                        }
                     }
+
+                    // Build domains array with prefix_statuses
+                    $sequence = 1;
+                    foreach ($domainPrefixes as $domainName => $prefixes) {
+                        $prefixStatuses = [];
+                        $prefixIndex = 1;
+
+                        foreach ($prefixes as $prefix) {
+                            $prefixKey = "prefix_variant_{$prefixIndex}";
+                            $prefixStatuses[$prefixKey] = [
+                                'status' => 'warming',
+                                'start_date' => $warmingDates['start_date'],
+                                'end_date' => $warmingDates['end_date'],
+                                'prefix_value' => $prefix  // Store actual prefix value from CSV
+                            ];
+                            $prefixIndex++;
+                        }
+
+                        $domainsFromCsv[] = [
+                            'id' => 'new_' . $sequence++,  // Use 'new_' prefix to match standard pool format
+                            'name' => $domainName,
+                            'is_used' => false,
+                            'prefix_statuses' => $prefixStatuses
+                        ];
+                    }
+
+                    $data['domains'] = $domainsFromCsv;
+                    $data['total_inboxes'] = count($smtpData['accounts']);
+                    $data['inboxes_per_domain'] = $smtpData['max_per_domain'] ?? 1;
+
+                    // Store SMTP-specific data (but NOT large JSON fields yet)
+                    $data['smtp_provider_url'] = $request->smtp_provider_url;
+                    $data['provider_type'] = 'SMTP';
+                    // DO NOT store smtp_accounts_data and smtp_csv_file here - issue in big file (also not used anywhere)
+                    // $data['smtp_accounts_data'] = $smtpData; // Store full CSV accounts data with all credentials
+
+                    // // Store raw CSV file content and filename
+                    // $data['smtp_csv_file'] = $request->smtp_csv_file ?? null;
+                    // $data['smtp_csv_filename'] = $request->smtp_csv_filename ?? null;
+
+                    // Store prefix_variants in standard format: {"prefix_variant_1": "bob", "prefix_variant_2": "eva", ...}
+                    $allPrefixes = [];
+                    foreach ($smtpData['accounts'] as $account) {
+                        if (!empty($account['prefix']) && !in_array($account['prefix'], $allPrefixes)) {
+                            $allPrefixes[] = $account['prefix'];
+                        }
+                    }
+                    // Build prefix_variants as JSON object with keys prefix_variant_1, prefix_variant_2, etc.
+                    $prefixVariants = [];
+                    foreach (array_slice($allPrefixes, 0, 3) as $index => $prefix) {
+                        $prefixVariants['prefix_variant_' . ($index + 1)] = $prefix;
+                    }
+                    $data['prefix_variants'] = $prefixVariants;
+
+                    // Store prefix_variants_details in standard format
+                    $prefixDetails = [];
+                    $usedPrefixes = [];
+                    foreach ($smtpData['accounts'] as $account) {
+                        $prefix = $account['prefix'] ?? '';
+                        if (!empty($prefix) && !in_array($prefix, $usedPrefixes) && count($prefixDetails) < 3) {
+                            $prefixKey = 'prefix_variant_' . (count($prefixDetails) + 1);
+                            $prefixDetails[$prefixKey] = [
+                                'first_name' => $account['first_name'] ?? null,
+                                'last_name' => $account['last_name'] ?? null,
+                                'profile_link' => null,
+                                'password' => $account['password'] ?? null
+                            ];
+                            $usedPrefixes[] = $prefix;
+                        }
+                    }
+                    $data['prefix_variants_details'] = $prefixDetails;
+
+                    // Set SMTP pool specific status fields
+                    $data['is_splitting'] = 1;
+                    $data['status'] = 'completed';
+                    $data['status_manage_by_admin'] = 'available';
+
+                    \Log::info('SMTP Pool - Domains built from CSV', [
+                        'domains_count' => count($domainsFromCsv),
+                        'total_inboxes' => $data['total_inboxes']
+                    ]);
                 }
             }
             // Handle standard domains JSON conversion and ensure unique id, is_used, prefix_statuses
@@ -581,40 +562,25 @@ class PoolController extends Controller
             
             $pool = Pool::create($data);
             
-            // Now update the pool with CSV file data using batch storage
-            // NOTE: smtp_accounts_data is NOT stored to avoid large data issues
-            // Only smtp_csv_file and smtp_csv_filename are stored
-            if ($isSmtpMode && ($smtpCsvFile !== null || $smtpCsvFilename !== null)) {
+            // Now update the pool with large CSV data using batch storage
+            // Store CSV and JSON separately so one failure doesn't affect the other
+            if ($isSmtpMode && ($smtpAccountsData !== null || $smtpCsvFile !== null)) {
+                $accountsCount = $smtpAccountsData ? count($smtpAccountsData['accounts']) : 0;
                 $csvFileSize = $smtpCsvFile ? strlen($smtpCsvFile) : 0;
                 $csvFileSizeMB = round($csvFileSize / 1024 / 1024, 2);
                 
-                \Log::info('Updating SMTP Pool with CSV file data (batch storage)', [
+                \Log::info('Updating SMTP Pool with large data (batch storage)', [
                     'pool_id' => $pool->id,
+                    'accounts_count' => $accountsCount,
                     'csv_file_size_bytes' => $csvFileSize,
-                    'csv_file_size_mb' => $csvFileSizeMB,
-                    'csv_filename' => $smtpCsvFilename,
-                    'note' => 'smtp_accounts_data is NOT stored to avoid large data issues'
+                    'csv_file_size_mb' => $csvFileSizeMB
                 ]);
                 
                 // Store smtp_csv_filename first (small field)
                 if ($smtpCsvFilename !== null) {
-                    try {
-                        DB::table('pools')
-                            ->where('id', $pool->id)
-                            ->update(['smtp_csv_filename' => $smtpCsvFilename]);
-                        
-                        \Log::info('SMTP Pool CSV filename stored successfully', [
-                            'pool_id' => $pool->id,
-                            'filename' => $smtpCsvFilename
-                        ]);
-                    } catch (\Exception $filenameError) {
-                        \Log::error('Failed to store CSV filename for SMTP Pool', [
-                            'pool_id' => $pool->id,
-                            'filename' => $smtpCsvFilename,
-                            'error' => $filenameError->getMessage()
-                        ]);
-                        // Don't fail pool creation if filename storage fails
-                    }
+                    DB::table('pools')
+                        ->where('id', $pool->id)
+                        ->update(['smtp_csv_filename' => $smtpCsvFilename]);
                 }
                 
                 // ============================================
@@ -651,16 +617,58 @@ class PoolController extends Controller
                 }
                 
                 // ============================================
-                // DO NOT STORE smtp_accounts_data (commented out to avoid large data issues)
-                // CSV file is the primary data source
+                // STORE JSON DATA (OPTIONAL - try but don't fail pool creation)
                 // ============================================
-                // if ($smtpAccountsData !== null) {
-                //     // JSON storage disabled - CSV file is sufficient
-                //     \Log::info('SMTP Pool - Skipping smtp_accounts_data storage (disabled to avoid large data issues)', [
-                //         'pool_id' => $pool->id,
-                //         'note' => 'CSV file is the primary data source. JSON can be regenerated from CSV if needed.'
-                //     ]);
-                // }
+                if ($smtpAccountsData !== null) {
+                    try {
+                        $jsonData = json_encode($smtpAccountsData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        $jsonSize = strlen($jsonData);
+                        $jsonSizeMB = round($jsonSize / 1024 / 1024, 2);
+                        
+                        \Log::info('SMTP Pool JSON data sizes', [
+                            'pool_id' => $pool->id,
+                            'smtp_accounts_data_size_mb' => $jsonSizeMB,
+                            'csv_file_size_mb' => $csvFileSizeMB
+                        ]);
+                        
+                        // Try to store JSON directly first (works for smaller files)
+                        try {
+                            DB::table('pools')
+                                ->where('id', $pool->id)
+                                ->update(['smtp_accounts_data' => $jsonData]);
+                            
+                            \Log::info('SMTP Pool smtp_accounts_data updated (direct update)', [
+                                'pool_id' => $pool->id,
+                                'size_mb' => $jsonSizeMB
+                            ]);
+                        } catch (\Exception $jsonError) {
+                            // If direct update fails, use batch storage
+                            \Log::warning('Direct JSON update failed, trying batch storage', [
+                                'pool_id' => $pool->id,
+                                'size_mb' => $jsonSizeMB,
+                                'error' => $jsonError->getMessage()
+                            ]);
+                            
+                            // Use batch storage for large JSON data
+                            $this->storeLargeTextInBatches($pool->id, 'smtp_accounts_data', $jsonData, $jsonSizeMB);
+                            
+                            \Log::info('SMTP Pool smtp_accounts_data updated (batch storage)', [
+                                'pool_id' => $pool->id,
+                                'size_mb' => $jsonSizeMB
+                            ]);
+                        }
+                    } catch (\Exception $jsonError) {
+                        // JSON storage failed - log warning but don't fail pool creation
+                        // CSV file is the primary data source, JSON is just for convenience
+                        \Log::warning('Failed to store JSON data for SMTP Pool (non-critical)', [
+                            'pool_id' => $pool->id,
+                            'error' => $jsonError->getMessage(),
+                            'note' => 'Pool will continue with CSV file only. JSON can be regenerated from CSV if needed.'
+                        ]);
+                        
+                        // Don't throw - allow pool creation to succeed with CSV only
+                    }
+                }
                 
                 // Refresh the pool model to get updated data
                 $pool->refresh();
