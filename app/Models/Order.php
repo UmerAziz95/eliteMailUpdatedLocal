@@ -204,5 +204,24 @@ class Order extends Model
         return $this->hasMany(DomainHealthCheck::class);
     }
     
+    /**
+     * Get platform credentials for this order.
+     */
+    public function platformCredentials()
+    {
+        return $this->hasMany(PlatformCredential::class);
+    }
+
+    /**
+     * Get platform credential for a specific platform type.
+     *
+     * @param string $platformType
+     * @return PlatformCredential|null
+     */
+    public function getPlatformCredential(string $platformType)
+    {
+        return $this->platformCredentials()->where('platform_type', $platformType)->first();
+    }
+    
 
 }

@@ -245,12 +245,28 @@
                 <label for="hosting">Domain hosting platform *</label>
                 <select id="hosting" name="hosting_platform" class="form-control" required>
                     @foreach($hostingPlatforms as $platform)
+                    @php
+                        $isSelected = false;
+                        $existingHostingPlatform = optional(optional($order)->reorderInfo)->count() > 0 
+                            ? optional($order->reorderInfo->first())->hosting_platform 
+                            : null;
+                        
+                        // Check if already selected in reorderInfo
+                        if ($existingHostingPlatform === $platform->value) {
+                            $isSelected = true;
+                        }
+                        // Default to Spaceship if provider_type is Private SMTP and no existing selection
+                        elseif (empty($existingHostingPlatform) && 
+                                $platform->value === 'spaceship' && 
+                                isset($order) && 
+                                $order->provider_type === 'Private SMTP') {
+                            $isSelected = true;
+                        }
+                    @endphp
                     <option value="{{ $platform->value }}" data-fields='@json($platform->fields)'
                         data-requires-tutorial="{{ $platform->requires_tutorial }}"
                         data-tutorial-link="{{ $platform->tutorial_link }}"
-                        data-import-note="{{ $platform->import_note ?? '' }}" {{ (optional(optional($order)->
-                        reorderInfo)->count() > 0 && $order->reorderInfo->first()->hosting_platform ===
-                        $platform->value) ? ' selected' : '' }}>
+                        data-import-note="{{ $platform->import_note ?? '' }}" {{ $isSelected ? ' selected' : '' }}>
                         {{ $platform->name }}
                     </option>
                     @endforeach
@@ -278,6 +294,32 @@
 
             <div class="platform" id="platform-fields-container">
                 <!-- Dynamic platform fields will be inserted here -->
+            </div>
+
+            {{-- Spaceship API Fields (shown only when Spaceship is selected) --}}
+            <div id="spaceship-api-fields" class="mb-3" style="display: none;">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="spaceship_api_key">Spaceship API Key *</label>
+                        <input type="text" id="spaceship_api_key" name="spaceship_api_key" 
+                            class="form-control" 
+                            value="{{ isset($order) && $order->getPlatformCredential('spaceship') ? $order->getPlatformCredential('spaceship')->getCredential('api_key', '') : '' }}"
+                            placeholder="Enter Spaceship API Key">
+                        <div class="invalid-feedback" id="spaceship_api_key-error"></div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="spaceship_api_secret_key">Spaceship API Secret Key *</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="spaceship_api_secret_key" name="spaceship_api_secret_key" 
+                                class="form-control" 
+                                value="{{ isset($order) && $order->getPlatformCredential('spaceship') ? $order->getPlatformCredential('spaceship')->getCredential('api_secret_key', '') : '' }}"
+                                placeholder="Enter Spaceship API Secret Key">
+                            <i class="fa-regular fa-eye password-toggle"></i>
+                        </div>
+                        <div class="invalid-feedback" id="spaceship_api_secret_key-error"></div>
+                    </div>
+                </div>
             </div>
 
             
@@ -2302,14 +2344,48 @@ $(document).ready(function() {
         const fieldsData = selectedOption.data('fields');
         const requiresTutorial = selectedOption.data('requires-tutorial');
         const tutorialLink = selectedOption.data('tutorial-link');
+        const importNote = selectedOption.data('import-note');
         const platformValue = selectedOption.val();
         
         const container = $('#platform-fields-container');
+        const spaceshipFields = $('#spaceship-api-fields');
         container.empty();
+        
+        // Show/hide Spaceship API fields based on selection
+        if (platformValue === 'spaceship') {
+            if (spaceshipFields.length) {
+                spaceshipFields.css('display', 'block');
+            }
+            // Make API key fields required
+            $('#spaceship_api_key, #spaceship_api_secret_key').prop('required', true);
+        } else {
+            if (spaceshipFields.length) {
+                spaceshipFields.css('display', 'none');
+            }
+            // Remove required attribute
+            $('#spaceship_api_key, #spaceship_api_secret_key').prop('required', false);
+        }
         
         if (fieldsData) {
             // Get existing values from the order if available
-            const existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
+            let existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
+            
+            // Get existing values from platform_credentials for Spaceship
+            const spaceshipCredential = @json(isset($order) && $order->getPlatformCredential('spaceship') ? $order->getPlatformCredential('spaceship')->credentials : null);
+            
+            // For Spaceship, also check platform_credentials for login/password
+            if (platformValue === 'spaceship' && spaceshipCredential) {
+                // Merge platform_credentials values into existingValues for login/password
+                if (!existingValues) {
+                    existingValues = {};
+                }
+                if (spaceshipCredential.platform_login) {
+                    existingValues.platform_login = spaceshipCredential.platform_login;
+                }
+                if (spaceshipCredential.platform_password) {
+                    existingValues.platform_password = spaceshipCredential.platform_password;
+                }
+            }
             
             // Use the new paired field generation
             container.append(generatePairedFields(fieldsData, existingValues));
@@ -2328,10 +2404,7 @@ $(document).ready(function() {
             $('#other_platform').removeClass('is-invalid');
             $('#other-platform-error').text('');
         }
-
         // Handle tutorial section visibility
-        const importNote = selectedOption.data('import-note');
-        
         if (requiresTutorial && tutorialLink) {
             $('#tutorial_section').show();
             $('.tutorial-link').attr('href', tutorialLink);
@@ -2381,7 +2454,18 @@ $(document).ready(function() {
     initializePasswordToggles();
 
     // Handle platform changes
-    $('#hosting').on('change', updatePlatformFields);
+    $('#hosting').on('change', function() {
+        updatePlatformFields();
+    });
+    
+    // Trigger update on page load to show Spaceship fields if selected by default
+    const initialPlatform = $('#hosting').val();
+    if (initialPlatform === 'spaceship') {
+        // Small delay to ensure DOM is ready
+        setTimeout(function() {
+            updatePlatformFields();
+        }, 100);
+    }
 
         // Handle sending platform changes
         function updateSendingPlatformFields() {
@@ -2591,6 +2675,56 @@ $(document).ready(function() {
                 firstErrorField = accessTutorial;
             }
         }
+        
+        // Validate Spaceship API fields if Spaceship is selected
+        const hostingPlatform = $('#hosting').val();
+        if (hostingPlatform === 'spaceship') {
+            const apiKey = $('#spaceship_api_key').val()?.trim();
+            const apiSecretKey = $('#spaceship_api_secret_key').val()?.trim();
+            const platformLogin = $('#platform_login').val()?.trim();
+            const platformPassword = $('#platform_password').val()?.trim();
+
+            $('#spaceship_api_key, #spaceship_api_secret_key, #platform_login, #platform_password').removeClass('is-invalid');
+            $('#spaceship_api_key-error, #spaceship_api_secret_key-error, #platform_login-error, #platform_password-error').text('');
+
+            if (!apiKey) {
+                isValid = false;
+                $('#spaceship_api_key').addClass('is-invalid');
+                $('#spaceship_api_key-error').text('Spaceship API Key is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#spaceship_api_key');
+                }
+            }
+
+            if (!apiSecretKey) {
+                isValid = false;
+                $('#spaceship_api_secret_key').addClass('is-invalid');
+                $('#spaceship_api_secret_key-error').text('Spaceship API Secret Key is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#spaceship_api_secret_key');
+                }
+            }
+
+            // Validate existing Spaceship fields (login and password)
+            if (!platformLogin) {
+                isValid = false;
+                $('#platform_login').addClass('is-invalid');
+                $('#platform_login-error').text('Domain Hosting Platform - Login is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#platform_login');
+                }
+            }
+
+            if (!platformPassword) {
+                isValid = false;
+                $('#platform_password').addClass('is-invalid');
+                $('#platform_password-error').text('Domain Hosting Platform - Password is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#platform_password');
+                }
+            }
+        }
+        
         // Validate dynamic prefix variant fields
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         for (let i = 1; i <= inboxesPerDomain; i++) {

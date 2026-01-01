@@ -486,4 +486,157 @@ class MailinAiService
             throw $e;
         }
     }
+
+    /**
+     * Check domain status via Mailin.ai API
+     * GET /public/domains?name={domain_name} (authenticated)
+     * 
+     * @param string $domainName Domain name to check
+     * @return array Domain status information
+     * @throws \Exception
+     */
+    public function checkDomainStatus(string $domainName)
+    {
+        try {
+            Log::channel('mailin-ai')->info('Checking domain status via Mailin.ai API', [
+                'action' => 'check_domain_status',
+                'domain_name' => $domainName,
+            ]);
+
+            // Use makeRequest() for consistent authentication handling
+            // Base URL is https://api.mailin.ai/api/v1/public
+            // Endpoint /domains supports filtering by name parameter
+            $response = $this->makeRequest(
+                'GET',
+                '/domains',
+                ['name' => $domainName]
+            );
+
+            $statusCode = $response->status();
+            $responseBody = $response->json();
+
+            // The API returns paginated results, get the first domain if available
+            $domainData = null;
+            if ($response->successful()) {
+                if (isset($responseBody['data']) && is_array($responseBody['data']) && count($responseBody['data']) > 0) {
+                    // API returns filtered results in data array
+                    $domainData = $responseBody['data'][0];
+                } elseif (isset($responseBody['name']) && strtolower($responseBody['name']) === strtolower($domainName)) {
+                    // Sometimes API returns single domain object directly
+                    $domainData = $responseBody;
+                }
+            }
+
+            if ($domainData) {
+                // Convert status "1" to "active" for consistency
+                $status = $domainData['status'] ?? null;
+                if ($status === '1' || $status === 1) {
+                    $status = 'active';
+                }
+
+                // Convert name_server_status "1" to "active"
+                $nameServerStatus = $domainData['name_server_status'] ?? null;
+                if ($nameServerStatus === '1' || $nameServerStatus === 1) {
+                    $nameServerStatus = 'active';
+                }
+
+                // Handle name_servers (can be string or array)
+                $nameServers = $domainData['name_servers'] ?? null;
+                if (is_string($nameServers)) {
+                    $nameServers = array_map('trim', explode(',', $nameServers));
+                } elseif (!is_array($nameServers)) {
+                    $nameServers = [];
+                }
+
+                Log::channel('mailin-ai')->info('Domain status retrieved successfully', [
+                    'action' => 'check_domain_status',
+                    'domain_name' => $domainName,
+                    'status' => $status,
+                    'name_server_status' => $nameServerStatus,
+                    'name_servers' => $nameServers,
+                ]);
+
+                return [
+                    'success' => true,
+                    'domain_name' => $domainName,
+                    'status' => $status,
+                    'name_server_status' => $nameServerStatus,
+                    'name_servers' => $nameServers,
+                    'data' => $domainData,
+                ];
+            } else {
+                // Domain not found in API response
+                $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
+                
+                // 404 means domain not found in Mailin.ai system yet (normal for newly transferred domains)
+                if ($statusCode === 404) {
+                    Log::channel('mailin-ai')->info('Domain not found in Mailin.ai system yet (may still be transferring)', [
+                        'action' => 'check_domain_status',
+                        'domain_name' => $domainName,
+                        'status_code' => $statusCode,
+                        'message' => 'Domain may still be in transfer process',
+                    ]);
+
+                    return [
+                        'success' => false,
+                        'domain_name' => $domainName,
+                        'status' => null,
+                        'name_server_status' => null,
+                        'name_servers' => [],
+                        'message' => 'Domain not found in Mailin.ai system yet',
+                        'not_found' => true,
+                    ];
+                }
+                
+                Log::channel('mailin-ai')->warning('Domain not found in API response', [
+                    'action' => 'check_domain_status',
+                    'domain_name' => $domainName,
+                    'status_code' => $statusCode,
+                    'response' => $responseBody,
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => 'Domain not found',
+                    'domain_name' => $domainName,
+                    'not_found' => true,
+                ];
+            }
+
+        } catch (\Exception $e) {
+            // Check if it's a network/connection error
+            $errorMessage = $e->getMessage();
+            $isNetworkError = str_contains($errorMessage, 'Could not resolve host') 
+                || str_contains($errorMessage, 'cURL error 6')
+                || str_contains($errorMessage, 'Connection timed out')
+                || str_contains($errorMessage, 'Network is unreachable');
+            
+            if ($isNetworkError) {
+                // Network/DNS errors - log but don't fail completely
+                Log::channel('mailin-ai')->warning('Network error checking domain status (will retry later)', [
+                    'action' => 'check_domain_status',
+                    'domain_name' => $domainName,
+                    'error' => $errorMessage,
+                ]);
+                
+                return [
+                    'success' => false,
+                    'domain_name' => $domainName,
+                    'status' => null,
+                    'name_server_status' => null,
+                    'name_servers' => [],
+                    'message' => 'Network error - will retry later',
+                    'network_error' => true,
+                ];
+            }
+            
+            // For other exceptions, log and throw
+            Log::channel('mailin-ai')->error('Domain status check exception', [
+                'action' => 'check_domain_status',
+                'domain_name' => $domainName,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
 }

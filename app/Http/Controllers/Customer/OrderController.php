@@ -113,7 +113,7 @@ class OrderController extends Controller
     // edit
     public function edit($id)
     {
-        $order = Order::with(['plan', 'reorderInfo'])->findOrFail($id);
+        $order = Order::with(['plan', 'reorderInfo', 'platformCredentials'])->findOrFail($id);
         
         // Check if order status allows editing
         $allowedStatuses = ['draft', 'reject'];
@@ -180,7 +180,7 @@ class OrderController extends Controller
     }
     public function reorder(Request $request, $order_id)
     {
-        $order = Order::with(['plan', 'reorderInfo'])->findOrFail($order_id);
+        $order = Order::with(['plan', 'reorderInfo', 'platformCredentials'])->findOrFail($order_id);
         $plan = $order->plan;
         $hostingPlatforms = HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
@@ -546,6 +546,8 @@ class OrderController extends Controller
                 'platform_login' => 'nullable|string|max:255',
                 'platform_password' => 'nullable|string|min:3',
                 'backup_codes' => 'required_if:hosting_platform,namecheap|string',
+                'spaceship_api_key' => 'required_if:hosting_platform,spaceship|nullable|string|max:255',
+                'spaceship_api_secret_key' => 'required_if:hosting_platform,spaceship|nullable|string|max:255',
                 'domains' => [
                     'required',
                     'string',
@@ -611,7 +613,7 @@ class OrderController extends Controller
             $shouldDispatchMailboxJob = false;
             $mailboxJobData = null;
             
-            if (config('mailin_ai.automation_enabled') === true && $plan->provider_type === 'Private SMTP') {
+            if (config('mailin_ai.automation_enabled') === true && $plan->provider_type === 'Private SMTP' && $request->hosting_platform == 'spaceship') {
                 // Extract domains from request for mailbox job
                 $mailboxDomainNames = array_map(
                     'trim',
@@ -756,16 +758,47 @@ class OrderController extends Controller
                 // "currentInboxes" => "3332" "max_inboxes" => "5000"
                 $currentInboxes = $request->current_inboxes ?? 0;
                 $maxInboxes = $request->max_inboxes ?? 0;
-                $order = Order::with('reorderInfo')->findOrFail($request->order_id);
+                $order = Order::with(['reorderInfo', 'platformCredentials'])->findOrFail($request->order_id);
                 // Set status based on whether total_inboxes equals calculated total from request domains
                 // $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
                 // $status = ($currentInboxes == $maxInboxes) ? 'pending' : 'draft';
             
                 
                 // Update order status
+                // Update order status
                 $order->update([
                     'status_manage_by_admin' => $status,
                 ]);
+                
+                // Save or update platform credentials if Spaceship is selected
+                if ($request->hosting_platform === 'spaceship') {
+                    // Validate that all required fields are present
+                    if (!empty($request->spaceship_api_key) && 
+                        !empty($request->spaceship_api_secret_key) &&
+                        !empty($request->platform_login) &&
+                        !empty($request->platform_password)) {
+                        
+                        \App\Models\PlatformCredential::updateOrCreate(
+                            [
+                                'order_id' => $order->id,
+                                'platform_type' => 'spaceship',
+                            ],
+                            [
+                                'credentials' => [
+                                    'api_key' => $request->spaceship_api_key,
+                                    'api_secret_key' => $request->spaceship_api_secret_key,
+                                    'platform_login' => $request->platform_login,
+                                    'platform_password' => $request->platform_password,
+                                ],
+                            ]
+                        );
+                    }
+                } else {
+                    // Delete Spaceship credentials if platform is changed
+                    \App\Models\PlatformCredential::where('order_id', $order->id)
+                        ->where('platform_type', 'spaceship')
+                        ->delete();
+                }
 
                 // Don't override 'completed' status (from successful mailbox creation)
                 if($order->assigned_to && $status != 'draft' && $status != 'completed') {

@@ -128,6 +128,13 @@ class Kernel extends ConsoleKernel
                         ->withoutOverlapping()
                         ->runInBackground()
                         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
+                // Check domain transfer status every 5 minutes
+                $schedule->command('domain:check-transfer-status')
+                        ->everyFiveMinutes()
+                        ->withoutOverlapping()
+                        ->runInBackground()
+                        ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
         }
                 
 

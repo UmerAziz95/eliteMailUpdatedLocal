@@ -8,8 +8,8 @@ use App\Models\OrderEmail;
 use App\Models\Notification;
 use App\Models\DomainTransfer;
 use App\Services\MailinAiService;
+use App\Services\SpaceshipService;
 use App\Services\ActivityLogService;
-use App\Services\SlackNotificationService;
 use App\Mail\OrderStatusChangeMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -59,8 +59,8 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'order_id' => $this->orderId,
             ]);
 
-            // Load order
-            $order = Order::with('plan')->find($this->orderId);
+            // Load order with required relationships
+            $order = Order::with(['plan', 'reorderInfo', 'platformCredentials'])->find($this->orderId);
 
             if (!$order) {
                 Log::channel('mailin-ai')->error('Order not found for mailbox creation', [
@@ -116,11 +116,14 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                         'password' => $password,
                     ];
                     
-                    // Store for OrderEmail creation
+                    // Store for OrderEmail creation with domain information
                     $mailboxData[] = [
+                        'order_id' => $this->orderId,
                         'username' => $username,
                         'name' => $name,
                         'password' => $password,
+                        'domain' => $domain,
+                        'prefix' => $prefix,
                     ];
 
                     $mailboxIndex++;
@@ -251,29 +254,42 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 ]);
 
                 // Create OrderEmail records so customers can view/export their mailbox credentials
+                // Save mailboxes to database immediately after successful API creation
                 try {
                     // Delete any existing OrderEmail records for this order (in case of re-run)
                     OrderEmail::where('order_id', $this->orderId)->delete();
                     
-                    // Create OrderEmail records for each mailbox
+                    // Create OrderEmail records for each mailbox with order_id
+                    $savedCount = 0;
                     foreach ($mailboxData as $mailbox) {
-                        OrderEmail::create([
-                            'order_id' => $this->orderId,
-                            'user_id' => $order->user_id,
-                            'order_split_id' => null, // No panels/splits for automated orders
-                            'contractor_id' => null, // Automated, no contractor
-                            'name' => $mailbox['name'],
-                            'last_name' => null,
-                            'email' => $mailbox['username'],
-                            'password' => $mailbox['password'],
-                            'profile_picture' => null,
-                        ]);
+                        try {
+                            OrderEmail::create([
+                                'order_id' => $this->orderId, // Ensure order_id is saved
+                                'user_id' => $order->user_id,
+                                'order_split_id' => null, // No panels/splits for automated orders
+                                'contractor_id' => null, // Automated, no contractor
+                                'name' => $mailbox['name'],
+                                'last_name' => null,
+                                'email' => $mailbox['username'],
+                                'password' => $mailbox['password'],
+                                'profile_picture' => null,
+                            ]);
+                            $savedCount++;
+                        } catch (\Exception $e) {
+                            Log::channel('mailin-ai')->error('Failed to save individual mailbox to database', [
+                                'action' => 'create_mailboxes_on_order',
+                                'order_id' => $this->orderId,
+                                'mailbox' => $mailbox['username'],
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
                     
-                    Log::channel('mailin-ai')->info('OrderEmail records created for customer access', [
+                    Log::channel('mailin-ai')->info('OrderEmail records created and saved to database', [
                         'action' => 'create_mailboxes_on_order',
                         'order_id' => $this->orderId,
-                        'email_count' => count($mailboxData),
+                        'total_mailboxes' => count($mailboxData),
+                        'saved_count' => $savedCount,
                     ]);
                     
                     // Create notification for customer about email accounts being created (same as manual process)
@@ -478,7 +494,23 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
         try {
             // Use provided domains or fallback to all domains
             $domains = $domainsToTransfer ?? $this->domains;
-            $transferredDomains = [];
+            
+            // Get hosting platform from order
+            $hostingPlatform = null;
+            $spaceshipCredential = null;
+            if ($order->reorderInfo && $order->reorderInfo->count() > 0) {
+                $hostingPlatform = $order->reorderInfo->first()->hosting_platform;
+                // Get Spaceship credentials if platform is Spaceship
+                if ($hostingPlatform === 'spaceship') {
+                    $spaceshipCredential = $order->getPlatformCredential('spaceship');
+                    Log::channel('mailin-ai')->info('Spaceship platform detected, checking credentials', [
+                        'action' => 'handle_domain_transfer',
+                        'order_id' => $this->orderId,
+                        'hosting_platform' => $hostingPlatform,
+                        'has_credentials' => $spaceshipCredential ? true : false,
+                    ]);
+                }
+            }
             
             // Log total domains to transfer
             Log::channel('mailin-ai')->info('Starting domain transfer process', [
@@ -486,7 +518,28 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'order_id' => $this->orderId,
                 'total_domains' => count($domains),
                 'domains' => $domains,
+                'hosting_platform' => $hostingPlatform,
+                'has_reorder_info' => $order->reorderInfo && $order->reorderInfo->count() > 0,
             ]);
+            
+            // Initialize Spaceship service if needed
+            $spaceshipService = null;
+            if ($hostingPlatform === 'spaceship' && $spaceshipCredential) {
+                $spaceshipService = new SpaceshipService();
+                Log::channel('mailin-ai')->info('SpaceshipService initialized for nameserver updates', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                ]);
+            } else {
+                $reason = ($hostingPlatform !== 'spaceship') ? 'Platform is not Spaceship' : 'Credentials not found';
+                Log::channel('mailin-ai')->info('SpaceshipService not initialized', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                    'hosting_platform' => $hostingPlatform,
+                    'has_credential' => $spaceshipCredential ? true : false,
+                    'reason' => $reason,
+                ]);
+            }
             
             // Transfer each domain
             foreach ($domains as $index => $domain) {
@@ -502,27 +555,176 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                     $transferResult = $mailinService->transferDomain($domain);
                     
                     if ($transferResult['success']) {
-                        // Save domain transfer record
-                        $domainTransfer = DomainTransfer::create([
+                        $nameServers = $transferResult['name_servers'] ?? [];
+                        
+                        // Log the raw name_servers value to debug
+                        Log::channel('mailin-ai')->info('Raw name_servers from transfer result', [
+                            'action' => 'handle_domain_transfer',
                             'order_id' => $this->orderId,
-                            'domain_name' => $domain,
-                            'name_servers' => $transferResult['name_servers'] ?? [],
-                            'status' => 'pending',
-                            'response_data' => $transferResult['response'] ?? null,
+                            'domain' => $domain,
+                            'name_servers_raw' => $nameServers,
+                            'name_servers_type' => gettype($nameServers),
+                            'is_array' => is_array($nameServers),
                         ]);
                         
-                        $transferredDomains[] = [
+                        // Ensure nameServers is an array for JSON storage
+                        if (!is_array($nameServers)) {
+                            // If it's a string, convert to array
+                            if (is_string($nameServers)) {
+                                $nameServers = array_filter(array_map('trim', explode(',', $nameServers)));
+                                $nameServers = array_values($nameServers); // Re-index array
+                            } else {
+                                $nameServers = [];
+                            }
+                        }
+                        
+                        // Ensure it's a proper array (not associative with numeric keys)
+                        $nameServers = array_values($nameServers);
+                        
+                        // Final validation: ensure name_servers is a proper array
+                        $nameServersForDb = is_array($nameServers) ? array_values($nameServers) : [];
+                        // Filter out any empty values
+                        $nameServersForDb = array_values(array_filter($nameServersForDb, function($ns) {
+                            return !empty($ns) && is_string($ns);
+                        }));
+                        
+                        Log::channel('mailin-ai')->info('Processed name_servers for database', [
+                            'action' => 'handle_domain_transfer',
+                            'order_id' => $this->orderId,
                             'domain' => $domain,
-                            'name_servers' => $transferResult['name_servers'] ?? [],
-                            'transfer_id' => $domainTransfer->id,
-                        ];
+                            'name_servers' => $nameServersForDb,
+                            'name_servers_type' => gettype($nameServersForDb),
+                            'is_array' => is_array($nameServersForDb),
+                            'json_preview' => json_encode($nameServersForDb),
+                        ]);
+                        
+                        // Save domain transfer record with domain name and nameservers
+                        try {
+                            $domainTransfer = DomainTransfer::create([
+                                'order_id' => $this->orderId,
+                                'domain_name' => $domain,
+                                'name_servers' => $nameServersForDb, // Store as array (will be cast to JSON)
+                                'status' => 'pending',
+                                'response_data' => $transferResult['response'] ?? null,
+                            ]);
+                            
+                            Log::channel('mailin-ai')->info('Domain transfer record created successfully', [
+                                'action' => 'handle_domain_transfer',
+                                'order_id' => $this->orderId,
+                                'domain' => $domain,
+                                'domain_transfer_id' => $domainTransfer->id,
+                            ]);
+                        } catch (\Exception $dbException) {
+                            Log::channel('mailin-ai')->error('Failed to create domain transfer record', [
+                                'action' => 'handle_domain_transfer',
+                                'order_id' => $this->orderId,
+                                'domain' => $domain,
+                                'name_servers' => $nameServers,
+                                'name_servers_type' => gettype($nameServers),
+                                'error' => $dbException->getMessage(),
+                                'sql' => $dbException->getTrace()[0]['args'][0] ?? 'N/A',
+                            ]);
+                            throw $dbException;
+                        }
                         
                         Log::channel('mailin-ai')->info('Domain transfer initiated successfully', [
                             'action' => 'handle_domain_transfer',
                             'order_id' => $this->orderId,
                             'domain' => $domain,
-                            'name_servers' => $transferResult['name_servers'] ?? [],
+                            'name_servers' => $nameServers,
                         ]);
+                        
+                        // Update nameservers in Spaceship if hosting platform is Spaceship
+                        Log::channel('mailin-ai')->info('Checking if Spaceship nameserver update is needed', [
+                            'action' => 'handle_domain_transfer',
+                            'order_id' => $this->orderId,
+                            'domain' => $domain,
+                            'hosting_platform' => $hostingPlatform,
+                            'has_spaceship_service' => $spaceshipService ? true : false,
+                            'has_credential' => $spaceshipCredential ? true : false,
+                            'has_nameservers' => !empty($nameServers),
+                            'nameservers' => $nameServers,
+                        ]);
+                        
+                        if ($hostingPlatform === 'spaceship' && $spaceshipService && $spaceshipCredential && !empty($nameServers)) {
+                            try {
+                                $apiKey = $spaceshipCredential->getCredential('api_key');
+                                $apiSecretKey = $spaceshipCredential->getCredential('api_secret_key');
+                                
+                                Log::channel('mailin-ai')->info('Attempting to update Spaceship nameservers', [
+                                    'action' => 'handle_domain_transfer',
+                                    'order_id' => $this->orderId,
+                                    'domain' => $domain,
+                                    'has_api_key' => !empty($apiKey),
+                                    'has_api_secret' => !empty($apiSecretKey),
+                                ]);
+                                
+                                if ($apiKey && $apiSecretKey) {
+                                    // Ensure nameServers is an array
+                                    $nameServersArray = is_array($nameServers) ? $nameServers : explode(',', $nameServers);
+                                    $nameServersArray = array_map('trim', $nameServersArray);
+                                    
+                                    Log::channel('mailin-ai')->info('Calling SpaceshipService.updateNameservers', [
+                                        'action' => 'handle_domain_transfer',
+                                        'order_id' => $this->orderId,
+                                        'domain' => $domain,
+                                        'name_servers' => $nameServersArray,
+                                    ]);
+                                    
+                                    $spaceshipResult = $spaceshipService->updateNameservers(
+                                        $domain,
+                                        $nameServersArray,
+                                        $apiKey,
+                                        $apiSecretKey
+                                    );
+                                    
+                                    if ($spaceshipResult['success']) {
+                                        Log::channel('mailin-ai')->info('Spaceship nameservers updated successfully', [
+                                            'action' => 'handle_domain_transfer',
+                                            'order_id' => $this->orderId,
+                                            'domain' => $domain,
+                                            'name_servers' => $nameServersArray,
+                                        ]);
+                                    }
+                                } else {
+                                    Log::channel('mailin-ai')->warning('Spaceship API credentials missing, skipping nameserver update', [
+                                        'action' => 'handle_domain_transfer',
+                                        'order_id' => $this->orderId,
+                                        'domain' => $domain,
+                                        'has_api_key' => !empty($apiKey),
+                                        'has_api_secret' => !empty($apiSecretKey),
+                                    ]);
+                                }
+                            } catch (\Exception $spaceshipException) {
+                                // Log error but don't fail the transfer
+                                Log::channel('mailin-ai')->error('Failed to update Spaceship nameservers', [
+                                    'action' => 'handle_domain_transfer',
+                                    'order_id' => $this->orderId,
+                                    'domain' => $domain,
+                                    'error' => $spaceshipException->getMessage(),
+                                    'trace' => $spaceshipException->getTraceAsString(),
+                                ]);
+                            }
+                        } else {
+                            // Determine reason for skipping
+                            $skipReason = 'Unknown';
+                            if ($hostingPlatform !== 'spaceship') {
+                                $skipReason = 'Platform is not Spaceship';
+                            } elseif (!$spaceshipService) {
+                                $skipReason = 'SpaceshipService not initialized';
+                            } elseif (!$spaceshipCredential) {
+                                $skipReason = 'Credentials not found';
+                            } elseif (empty($nameServers)) {
+                                $skipReason = 'Nameservers are empty';
+                            }
+                            
+                            Log::channel('mailin-ai')->info('Skipping Spaceship nameserver update', [
+                                'action' => 'handle_domain_transfer',
+                                'order_id' => $this->orderId,
+                                'domain' => $domain,
+                                'reason' => $skipReason,
+                            ]);
+                        }
                     }
                 } catch (\Exception $transferException) {
                     Log::channel('mailin-ai')->error('Failed to transfer domain', [
@@ -552,8 +754,14 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             }
             
             // Log transfer summary
-            $successCount = count($transferredDomains);
-            $failedCount = count($domains) - $successCount;
+            $successCount = DomainTransfer::where('order_id', $this->orderId)
+                ->where('status', 'pending')
+                ->whereIn('domain_name', $domains)
+                ->count();
+            $failedCount = DomainTransfer::where('order_id', $this->orderId)
+                ->where('status', 'failed')
+                ->whereIn('domain_name', $domains)
+                ->count();
             
             Log::channel('mailin-ai')->info('Domain transfer process completed', [
                 'action' => 'handle_domain_transfer',
@@ -563,34 +771,8 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'failed_transfers' => $failedCount,
             ]);
             
-            // Send Slack notification for domain transfer tasks (only if at least one succeeded)
-            if (!empty($transferredDomains)) {
-                try {
-                    SlackNotificationService::sendDomainTransferTaskNotification(
-                        $this->orderId,
-                        $transferredDomains,
-                        $order
-                    );
-                    
-                    Log::channel('mailin-ai')->info('Slack notification sent for domain transfer tasks', [
-                        'action' => 'handle_domain_transfer',
-                        'order_id' => $this->orderId,
-                        'domains_count' => count($transferredDomains),
-                    ]);
-                } catch (\Exception $e) {
-                    Log::channel('mailin-ai')->warning('Failed to send Slack notification for domain transfer', [
-                        'action' => 'handle_domain_transfer',
-                        'order_id' => $this->orderId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            } else {
-                Log::channel('mailin-ai')->warning('No successful domain transfers to notify', [
-                    'action' => 'handle_domain_transfer',
-                    'order_id' => $this->orderId,
-                    'total_domains' => count($domains),
-                ]);
-            }
+            // No admin notifications - domain status will be checked by cron job
+            // Once status is active, mailboxes will be created automatically
             
         } catch (\Exception $e) {
             Log::channel('mailin-ai')->error('Error in handleDomainTransfer', [

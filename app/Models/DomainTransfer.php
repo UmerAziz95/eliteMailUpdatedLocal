@@ -16,12 +16,14 @@ class DomainTransfer extends Model
         'domain_name',
         'name_servers',
         'status',
+        'domain_status',
+        'name_server_status',
         'error_message',
         'response_data',
     ];
 
     protected $casts = [
-        'name_servers' => 'array',
+        'name_servers' => 'array', // Store as JSON array
         'response_data' => 'array',
     ];
 
