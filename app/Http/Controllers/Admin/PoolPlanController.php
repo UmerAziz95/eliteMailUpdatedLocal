@@ -142,10 +142,10 @@ class PoolPlanController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255',
                 'price' => 'required|numeric|min:0',
-                'duration' => 'required|string',
+                'duration' => 'nullable|string',
                 'description' => 'required|string',
-                'pricing_model' => 'required|string|in:per_unit,flat_fee',
-                'billing_cycle' => 'required|string',
+                'pricing_model' => 'nullable|string|in:per_unit,flat_fee',
+                'billing_cycle' => 'nullable|string',
                 'feature_ids' => 'nullable|array',
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
@@ -156,9 +156,10 @@ class PoolPlanController extends Controller
             // Set default currency code if not provided
             $currencyCode = $request->currency_code ?? 'USD';
             
-            // Get pricing model and billing cycle from request
-            $pricingModel = $request->pricing_model;
-            $billingCycle = $request->billing_cycle;
+            // Get pricing model and billing cycle from request, or use existing values from database
+            $pricingModel = $request->pricing_model ?? $poolPlan->pricing_model;
+            $billingCycle = $request->billing_cycle ?? $poolPlan->billing_cycle;
+            $duration = $request->duration ?? $poolPlan->duration;
 
             // ChargeBee Pool Plan Update (if synced)
             if ($poolPlan->is_chargebee_synced && $poolPlan->chargebee_plan_id) {
@@ -184,7 +185,7 @@ class PoolPlanController extends Controller
             $poolPlan->update([
                 'name' => $request->name,
                 'price' => $request->price,
-                'duration' => $request->duration,
+                'duration' => $duration,
                 'description' => $request->description,
                 'pricing_model' => $pricingModel,
                 'billing_cycle' => $billingCycle,
