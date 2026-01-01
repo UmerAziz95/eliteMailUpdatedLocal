@@ -245,9 +245,9 @@ class MigrateDomainsToPrefixStatuses extends Command
                         $migratedJson = json_encode($migratedDomain, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                         
                         // Update single domain at specific index using JSON_SET
-                        // Use JSON_COMPACT for MariaDB compatibility (CAST AS JSON is MySQL-only)
+                        // Use CAST(? AS JSON) for MySQL compatibility (JSON_COMPACT is MariaDB-only)
                         DB::statement(
-                            "UPDATE pools SET domains = JSON_SET(domains, ?, JSON_COMPACT(?)) WHERE id = ?",
+                            "UPDATE pools SET domains = JSON_SET(domains, ?, CAST(? AS JSON)) WHERE id = ?",
                             ["\$[{$index}]", $migratedJson, $poolId]
                         );
                     }
