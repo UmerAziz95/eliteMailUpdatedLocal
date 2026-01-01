@@ -97,6 +97,184 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'prefix_count' => count($this->prefixVariants),
             ]);
 
+            // Initialize Mailin.ai service
+            $mailinService = new MailinAiService();
+
+            // Authenticate (token is cached internally)
+            $token = $mailinService->authenticate();
+            if (!$token) {
+                Log::channel('mailin-ai')->error('Failed to authenticate with Mailin.ai for mailbox creation', [
+                    'action' => 'create_mailboxes_on_order',
+                    'order_id' => $this->orderId,
+                ]);
+                throw new \Exception('Failed to authenticate with Mailin.ai. Please try again later.');
+            }
+
+            // First, check which domains are already registered/active in Mailin.ai
+            $registeredDomains = [];
+            $unregisteredDomains = [];
+            
+            Log::channel('mailin-ai')->info('Checking domain registration status before mailbox creation', [
+                'action' => 'create_mailboxes_on_order',
+                'order_id' => $this->orderId,
+                'domains_to_check' => $this->domains,
+            ]);
+            
+            foreach ($this->domains as $domain) {
+                try {
+                    $statusResult = $mailinService->checkDomainStatus($domain);
+                    if ($statusResult['success'] && isset($statusResult['status']) && $statusResult['status'] === 'active') {
+                        $registeredDomains[] = $domain;
+                        Log::channel('mailin-ai')->info('Domain is registered and active', [
+                            'action' => 'create_mailboxes_on_order',
+                            'order_id' => $this->orderId,
+                            'domain' => $domain,
+                        ]);
+                    } else {
+                        $unregisteredDomains[] = $domain;
+                        Log::channel('mailin-ai')->info('Domain is not registered or not active', [
+                            'action' => 'create_mailboxes_on_order',
+                            'order_id' => $this->orderId,
+                            'domain' => $domain,
+                            'status' => $statusResult['status'] ?? 'not_found',
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    // If check fails, assume domain needs transfer
+                    $unregisteredDomains[] = $domain;
+                    Log::channel('mailin-ai')->warning('Failed to check domain status, will require transfer', [
+                        'action' => 'create_mailboxes_on_order',
+                        'order_id' => $this->orderId,
+                        'domain' => $domain,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+            
+            Log::channel('mailin-ai')->info('Domain registration check completed', [
+                'action' => 'create_mailboxes_on_order',
+                'order_id' => $this->orderId,
+                'registered_domains' => $registeredDomains,
+                'unregistered_domains' => $unregisteredDomains,
+            ]);
+            
+            // If there are unregistered domains, initiate transfer for them
+            if (!empty($unregisteredDomains)) {
+                Log::channel('mailin-ai')->info('Unregistered domains found, initiating transfer process', [
+                    'action' => 'create_mailboxes_on_order',
+                    'order_id' => $this->orderId,
+                    'unregistered_domains' => $unregisteredDomains,
+                    'registered_domains' => $registeredDomains,
+                ]);
+                
+                // Ensure order status is in-progress (not completed)
+                $oldStatus = $order->status_manage_by_admin;
+                if ($oldStatus !== 'in-progress') {
+                    $order->update([
+                        'status_manage_by_admin' => 'in-progress',
+                    ]);
+                    
+                    // Log the status change
+                    try {
+                        ActivityLogService::log(
+                            'mailin_ai_order_status_in_progress',
+                            "Order #{$order->id} status set to in-progress - domain transfer required",
+                            $order,
+                            [
+                                'order_id' => $order->id,
+                                'old_status' => $oldStatus,
+                                'new_status' => 'in-progress',
+                                'provider_type' => $this->providerType,
+                                'reason' => 'Domain transfer required before mailbox creation',
+                            ]
+                        );
+                    } catch (\Exception $e) {
+                        Log::channel('mailin-ai')->warning('Failed to create activity log for status change', [
+                            'action' => 'create_mailboxes_on_order',
+                            'order_id' => $this->orderId,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+                
+                // Transfer unregistered domains
+                $this->handleDomainTransfer($order, $mailinService, $unregisteredDomains);
+            }
+            
+            // Create mailboxes for registered domains immediately (if any)
+            if (!empty($registeredDomains)) {
+                Log::channel('mailin-ai')->info('Creating mailboxes for registered domains', [
+                    'action' => 'create_mailboxes_on_order',
+                    'order_id' => $this->orderId,
+                    'registered_domains' => $registeredDomains,
+                ]);
+                
+                // Generate mailboxes only for registered domains
+                $mailboxes = [];
+                $mailboxData = []; // Store mailbox data for OrderEmail creation
+                $mailboxIndex = 0;
+
+                foreach ($registeredDomains as $domain) {
+                    foreach ($this->prefixVariants as $prefix) {
+                        $username = $prefix . '@' . $domain;
+                        $name = $prefix; // Use prefix as name
+                        
+                        // Generate password
+                        $password = $this->generatePassword($this->userId, $mailboxIndex);
+
+                        $mailboxes[] = [
+                            'username' => $username,
+                            'name' => $name,
+                            'password' => $password,
+                        ];
+                        
+                        // Store for OrderEmail creation with domain information
+                        $mailboxData[] = [
+                            'order_id' => $this->orderId,
+                            'username' => $username,
+                            'name' => $name,
+                            'password' => $password,
+                            'domain' => $domain,
+                            'prefix' => $prefix,
+                        ];
+
+                        $mailboxIndex++;
+                    }
+                }
+                
+                if (!empty($mailboxes)) {
+                    // Call Mailin.ai API to create mailboxes for registered domains
+                    try {
+                        $result = $mailinService->createMailboxes($mailboxes);
+                        
+                        // If successful, save mailboxes but don't complete order yet if unregistered domains exist
+                        if ($result['success'] && isset($result['uuid'])) {
+                            $this->saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, false); // false = don't complete order yet
+                        }
+                    } catch (\Exception $e) {
+                        Log::channel('mailin-ai')->error('Failed to create mailboxes for registered domains', [
+                            'action' => 'create_mailboxes_on_order',
+                            'order_id' => $this->orderId,
+                            'registered_domains' => $registeredDomains,
+                            'error' => $e->getMessage(),
+                        ]);
+                        // Don't throw - we've already initiated transfer for unregistered domains
+                        // Registered domain mailboxes can be retried later
+                    }
+                }
+            }
+            
+            // If we have unregistered domains, return early (transfer is in progress)
+            if (!empty($unregisteredDomains)) {
+                Log::channel('mailin-ai')->info('Domain transfer initiated, waiting for domains to become active', [
+                    'action' => 'create_mailboxes_on_order',
+                    'order_id' => $this->orderId,
+                    'unregistered_domains' => $unregisteredDomains,
+                ]);
+                return; // Exit early - will retry when domains become active
+            }
+            
+            // If all domains are registered, proceed with normal mailbox creation for all domains
             // Generate mailboxes: for each domain × each prefix variant
             $mailboxes = [];
             $mailboxData = []; // Store mailbox data for OrderEmail creation
@@ -138,310 +316,18 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 return;
             }
 
-            Log::channel('mailin-ai')->info('Generated mailbox list', [
+            Log::channel('mailin-ai')->info('Generated mailbox list for all domains', [
                 'action' => 'create_mailboxes_on_order',
                 'order_id' => $this->orderId,
                 'mailbox_count' => count($mailboxes),
             ]);
 
-            // Initialize Mailin.ai service
-            $mailinService = new MailinAiService();
-
-            // Authenticate (token is cached internally)
-            $token = $mailinService->authenticate();
-            if (!$token) {
-                Log::channel('mailin-ai')->error('Failed to authenticate with Mailin.ai for mailbox creation', [
-                    'action' => 'create_mailboxes_on_order',
-                    'order_id' => $this->orderId,
-                ]);
-                throw new \Exception('Failed to authenticate with Mailin.ai. Please try again later.');
-            }
-
             // Call Mailin.ai API to create mailboxes
-            try {
-                $result = $mailinService->createMailboxes($mailboxes);
-            } catch (\Exception $e) {
-                // Check if error is about domain not being registered
-                $errorMessage = $e->getMessage();
-                $unregisteredDomains = [];
-                
-                // Check for "Domain not registered" pattern in error message
-                // Pattern: "Domain not registered. Domains: domain1.com, domain2.com. Error: ..."
-                // Use non-greedy match to capture everything between "Domains: " and ". Error:"
-                if (preg_match('/Domains: (.+?)\. Error:/i', $errorMessage, $matches)) {
-                    // Extract domains from the formatted error message
-                    $domainsString = trim($matches[1]);
-                    // Split by comma and trim each domain, filter out empty values
-                    $unregisteredDomains = array_filter(
-                        array_map('trim', explode(',', $domainsString)),
-                        function($domain) {
-                            return !empty($domain);
-                        }
-                    );
-                    $unregisteredDomains = array_values($unregisteredDomains); // Re-index array
-                } else {
-                    // Fallback: try to extract from original error message format
-                    // Pattern: "domain 'domain.com' is not registered" (can appear multiple times)
-                    $domainNotRegisteredPattern = "/domain '([^']+)' is not registered/i";
-                    if (preg_match_all($domainNotRegisteredPattern, $errorMessage, $matches)) {
-                        // preg_match_all returns all matches, remove duplicates
-                        $unregisteredDomains = array_unique($matches[1]);
-                        $unregisteredDomains = array_values($unregisteredDomains); // Re-index array
-                    }
-                }
-                
-                if (!empty($unregisteredDomains)) {
-                    // Domain not registered - initiate transfer for unregistered domains
-                    Log::channel('mailin-ai')->info('Domain not registered, initiating transfer process', [
-                        'action' => 'create_mailboxes_on_order',
-                        'order_id' => $this->orderId,
-                        'unregistered_domains' => $unregisteredDomains,
-                        'all_domains' => $this->domains,
-                    ]);
-                    
-                    // Ensure order status is in-progress (not completed)
-                    $oldStatus = $order->status_manage_by_admin;
-                    if ($oldStatus !== 'in-progress') {
-                        $order->update([
-                            'status_manage_by_admin' => 'in-progress',
-                        ]);
-                        
-                        // Log the status change
-                        try {
-                            ActivityLogService::log(
-                                'mailin_ai_order_status_in_progress',
-                                "Order #{$order->id} status set to in-progress - domain transfer required",
-                                $order,
-                                [
-                                    'order_id' => $order->id,
-                                    'old_status' => $oldStatus,
-                                    'new_status' => 'in-progress',
-                                    'provider_type' => $this->providerType,
-                                    'reason' => 'Domain transfer required before mailbox creation',
-                                ]
-                            );
-                        } catch (\Exception $e) {
-                            Log::channel('mailin-ai')->warning('Failed to create activity log for status change', [
-                                'action' => 'create_mailboxes_on_order',
-                                'order_id' => $this->orderId,
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
-                    }
-                    
-                    // Transfer only unregistered domains, or all domains if we can't determine
-                    $domainsToTransfer = !empty($unregisteredDomains) ? $unregisteredDomains : $this->domains;
-                    $this->handleDomainTransfer($order, $mailinService, $domainsToTransfer);
-                    
-                    // Don't throw - we've handled it by initiating transfer
-                    // Order status remains in-progress
-                    return;
-                }
-                
-                // Re-throw if it's a different error
-                throw $e;
-            }
+            $result = $mailinService->createMailboxes($mailboxes);
 
             if ($result['success'] && isset($result['uuid'])) {
-                // Save OrderAutomation record
-                OrderAutomation::create([
-                    'order_id' => $this->orderId,
-                    'provider_type' => $this->providerType,
-                    'action_type' => 'mailbox',
-                    'job_uuid' => $result['uuid'],
-                    'status' => 'pending',
-                    'response_data' => $result['response'] ?? null,
-                ]);
-
-                // Create OrderEmail records so customers can view/export their mailbox credentials
-                // Save mailboxes to database immediately after successful API creation
-                try {
-                    // Delete any existing OrderEmail records for this order (in case of re-run)
-                    OrderEmail::where('order_id', $this->orderId)->delete();
-                    
-                    // Create OrderEmail records for each mailbox with order_id
-                    $savedCount = 0;
-                    foreach ($mailboxData as $mailbox) {
-                        try {
-                            OrderEmail::create([
-                                'order_id' => $this->orderId, // Ensure order_id is saved
-                                'user_id' => $order->user_id,
-                                'order_split_id' => null, // No panels/splits for automated orders
-                                'contractor_id' => null, // Automated, no contractor
-                                'name' => $mailbox['name'],
-                                'last_name' => null,
-                                'email' => $mailbox['username'],
-                                'password' => $mailbox['password'],
-                                'profile_picture' => null,
-                            ]);
-                            $savedCount++;
-                        } catch (\Exception $e) {
-                            Log::channel('mailin-ai')->error('Failed to save individual mailbox to database', [
-                                'action' => 'create_mailboxes_on_order',
-                                'order_id' => $this->orderId,
-                                'mailbox' => $mailbox['username'],
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
-                    }
-                    
-                    Log::channel('mailin-ai')->info('OrderEmail records created and saved to database', [
-                        'action' => 'create_mailboxes_on_order',
-                        'order_id' => $this->orderId,
-                        'total_mailboxes' => count($mailboxData),
-                        'saved_count' => $savedCount,
-                    ]);
-                    
-                    // Create notification for customer about email accounts being created (same as manual process)
-                    try {
-                        Notification::create([
-                            'user_id' => $order->user_id,
-                            'type' => 'email_created',
-                            'title' => 'New Email Accounts Created',
-                            'message' => 'New email accounts have been automatically created for your order #' . $this->orderId . ' ',
-                            'data' => [
-                                'order_id' => $this->orderId,
-                                'email_count' => count($mailboxData),
-                                'created_by' => 'automation',
-                            ]
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::channel('mailin-ai')->warning('Failed to create email_created notification', [
-                            'action' => 'create_mailboxes_on_order',
-                            'order_id' => $this->orderId,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                } catch (\Exception $e) {
-                    Log::channel('mailin-ai')->warning('Failed to create OrderEmail records', [
-                        'action' => 'create_mailboxes_on_order',
-                        'order_id' => $this->orderId,
-                        'error' => $e->getMessage(),
-                    ]);
-                    // Don't fail the job if OrderEmail creation fails
-                }
-
-                // Update order status to completed with all required fields
-                $oldStatus = $order->status_manage_by_admin;
-                $mailboxCount = count($mailboxes);
-                $jobUuid = $result['uuid'];
-                
-                DB::transaction(function () use ($order, $oldStatus, $mailboxCount, $jobUuid) {
-                    // Update order with all fields that are set in manual completion
-                    $order->update([
-                        'status_manage_by_admin' => 'completed',
-                        'completed_at' => now(), // Set completion timestamp
-                        'provider_type' => $this->providerType, // Ensure provider_type is set
-                    ]);
-                    
-                    // Update order_automations status to completed
-                    try {
-                        OrderAutomation::where('order_id', $this->orderId)
-                            ->where('action_type', 'mailbox')
-                            ->update([
-                                'status' => 'completed',
-                            ]);
-                    } catch (\Exception $e) {
-                        Log::channel('mailin-ai')->warning('Failed to update order_automations status to completed', [
-                            'action' => 'create_mailboxes_on_order',
-                            'order_id' => $this->orderId,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                    
-                    // Create activity log (same as manual process)
-                    try {
-                        ActivityLogService::log(
-                            'mailin_ai_order_completed',
-                            "Order #{$order->id} automatically completed  mailbox creation",
-                            $order,
-                            [
-                                'order_id' => $order->id,
-                                'old_status' => $oldStatus,
-                                'new_status' => 'completed',
-                                'provider_type' => $this->providerType,
-                                'job_uuid' => $jobUuid,
-                                'mailbox_count' => $mailboxCount,
-                                'completed_by' => 'system',
-                                'completed_by_type' => 'automation'
-                            ]
-                        );
-                    } catch (\Exception $e) {
-                        Log::channel('mailin-ai')->warning('Failed to create activity log for order completion', [
-                            'action' => 'create_mailboxes_on_order',
-                            'order_id' => $this->orderId,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                    
-                    // Create notification for customer (same as manual process)
-                    try {
-                        Notification::create([
-                            'user_id' => $order->user_id,
-                            'type' => 'order_status_change',
-                            'title' => 'Order Completed',
-                            'message' => "Your order #{$order->id} has been automatically completed  mailbox creation",
-                            'data' => [
-                                'order_id' => $order->id,
-                                'old_status' => $oldStatus,
-                                'new_status' => 'completed',
-                                'provider_type' => $this->providerType,
-                                'completed_by' => 'automation',
-                                'mailbox_count' => $mailboxCount,
-                            ]
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::channel('mailin-ai')->warning('Failed to create notification for order completion', [
-                            'action' => 'create_mailboxes_on_order',
-                            'order_id' => $this->orderId,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                });
-                
-                // Send email notifications (same as manual process)
-                try {
-                    $order->refresh(); // Refresh to get updated order
-                    $user = $order->user;
-                    
-                    if ($user) {
-                        // Send email to customer
-                        try {
-                            Mail::to($user->email)
-                                ->queue(new OrderStatusChangeMail(
-                                    $order,
-                                    $user,
-                                    $oldStatus,
-                                    'completed',
-                                    'Automatically completed mailbox creation',
-                                    false
-                                ));
-                        } catch (\Exception $e) {
-                            Log::channel('email-failures')->error('Failed to send order completion email to customer', [
-                                'exception' => $e->getMessage(),
-                                'order_id' => $order->id,
-                                'user_id' => $user->id,
-                                'user_email' => $user->email,
-                                'timestamp' => now()->toDateTimeString(),
-                                'context' => 'CreateMailboxesOnOrderJob'
-                            ]);
-                        }
-                    }
-                } catch (\Exception $e) {
-                    Log::channel('mailin-ai')->warning('Failed to send email notifications for order completion', [
-                        'action' => 'create_mailboxes_on_order',
-                        'order_id' => $this->orderId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-
-                Log::channel('mailin-ai')->info('Mailbox creation successful and order status updated', [
-                    'action' => 'create_mailboxes_on_order',
-                    'order_id' => $this->orderId,
-                    'job_uuid' => $result['uuid'],
-                    'mailbox_count' => count($mailboxes),
-                    'order_status' => 'completed',
-                ]);
+                // Save mailboxes and complete order (all domains are registered)
+                $this->saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, true); // true = complete order
             } else {
                 throw new \Exception('Mailbox creation failed: ' . ($result['message'] ?? 'Unknown error'));
             }
@@ -780,6 +666,210 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'order_id' => $this->orderId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * Save mailboxes to database and optionally complete the order
+     * 
+     * @param Order $order
+     * @param array $result API result from createMailboxes
+     * @param array $mailboxData Array of mailbox data for OrderEmail creation
+     * @param array $mailboxes Array of mailboxes sent to API
+     * @param bool $completeOrder Whether to mark order as completed
+     * @return void
+     */
+    private function saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $completeOrder = true)
+    {
+        // Save OrderAutomation record
+        OrderAutomation::create([
+            'order_id' => $this->orderId,
+            'provider_type' => $this->providerType,
+            'action_type' => 'mailbox',
+            'job_uuid' => $result['uuid'],
+            'status' => 'pending',
+            'response_data' => $result['response'] ?? null,
+        ]);
+
+        // Create OrderEmail records - don't delete existing ones (may be adding for additional domains)
+        try {
+            $savedCount = 0;
+            foreach ($mailboxData as $mailbox) {
+                try {
+                    // Check if mailbox already exists (by email)
+                    $existing = OrderEmail::where('order_id', $this->orderId)
+                        ->where('email', $mailbox['username'])
+                        ->first();
+                    
+                    if (!$existing) {
+                        OrderEmail::create([
+                            'order_id' => $this->orderId,
+                            'user_id' => $order->user_id,
+                            'order_split_id' => null,
+                            'contractor_id' => null,
+                            'name' => $mailbox['name'],
+                            'last_name' => null,
+                            'email' => $mailbox['username'],
+                            'password' => $mailbox['password'],
+                            'profile_picture' => null,
+                        ]);
+                        $savedCount++;
+                    }
+                } catch (\Exception $e) {
+                    Log::channel('mailin-ai')->error('Failed to save individual mailbox to database', [
+                        'action' => 'create_mailboxes_on_order',
+                        'order_id' => $this->orderId,
+                        'mailbox' => $mailbox['username'],
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+            
+            Log::channel('mailin-ai')->info('OrderEmail records created and saved to database', [
+                'action' => 'create_mailboxes_on_order',
+                'order_id' => $this->orderId,
+                'total_mailboxes' => count($mailboxData),
+                'saved_count' => $savedCount,
+            ]);
+            
+            // Create notification
+            try {
+                Notification::create([
+                    'user_id' => $order->user_id,
+                    'type' => 'email_created',
+                    'title' => 'New Email Accounts Created',
+                    'message' => 'New email accounts have been automatically created for your order #' . $this->orderId,
+                    'data' => [
+                        'order_id' => $this->orderId,
+                        'email_count' => $savedCount,
+                        'created_by' => 'automation',
+                    ]
+                ]);
+            } catch (\Exception $e) {
+                Log::channel('mailin-ai')->warning('Failed to create email_created notification', [
+                    'action' => 'create_mailboxes_on_order',
+                    'order_id' => $this->orderId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->warning('Failed to create OrderEmail records', [
+                'action' => 'create_mailboxes_on_order',
+                'order_id' => $this->orderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // Only complete order if all domains have mailboxes (or if explicitly requested)
+        if ($completeOrder) {
+            $oldStatus = $order->status_manage_by_admin;
+            $mailboxCount = count($mailboxes);
+            $jobUuid = $result['uuid'];
+            
+            DB::transaction(function () use ($order, $oldStatus, $mailboxCount, $jobUuid) {
+                $order->update([
+                    'status_manage_by_admin' => 'completed',
+                    'completed_at' => now(),
+                    'provider_type' => $this->providerType,
+                ]);
+                
+                try {
+                    OrderAutomation::where('order_id', $this->orderId)
+                        ->where('action_type', 'mailbox')
+                        ->update(['status' => 'completed']);
+                } catch (\Exception $e) {
+                    Log::channel('mailin-ai')->warning('Failed to update order_automations status', [
+                        'action' => 'create_mailboxes_on_order',
+                        'order_id' => $this->orderId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+                
+                try {
+                    ActivityLogService::log(
+                        'mailin_ai_order_completed',
+                        "Order #{$order->id} automatically completed mailbox creation",
+                        $order,
+                        [
+                            'order_id' => $order->id,
+                            'old_status' => $oldStatus,
+                            'new_status' => 'completed',
+                            'provider_type' => $this->providerType,
+                            'job_uuid' => $jobUuid,
+                            'mailbox_count' => $mailboxCount,
+                            'completed_by' => 'system',
+                            'completed_by_type' => 'automation'
+                        ]
+                    );
+                } catch (\Exception $e) {
+                    Log::channel('mailin-ai')->warning('Failed to create activity log', [
+                        'action' => 'create_mailboxes_on_order',
+                        'order_id' => $this->orderId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+                
+                try {
+                    Notification::create([
+                        'user_id' => $order->user_id,
+                        'type' => 'order_status_change',
+                        'title' => 'Order Completed',
+                        'message' => "Your order #{$order->id} has been automatically completed - mailbox creation",
+                        'data' => [
+                            'order_id' => $order->id,
+                            'old_status' => $oldStatus,
+                            'new_status' => 'completed',
+                            'provider_type' => $this->providerType,
+                            'completed_by' => 'automation',
+                            'mailbox_count' => $mailboxCount,
+                        ]
+                    ]);
+                } catch (\Exception $e) {
+                    Log::channel('mailin-ai')->warning('Failed to create notification', [
+                        'action' => 'create_mailboxes_on_order',
+                        'order_id' => $this->orderId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+                
+                try {
+                    $order->refresh();
+                    $user = $order->user;
+                    if ($user) {
+                        Mail::to($user->email)
+                            ->queue(new OrderStatusChangeMail(
+                                $order,
+                                $user,
+                                $oldStatus,
+                                'completed',
+                                'Automatically completed mailbox creation',
+                                false
+                            ));
+                    }
+                } catch (\Exception $e) {
+                    Log::channel('email-failures')->error('Failed to send order completion email', [
+                        'exception' => $e->getMessage(),
+                        'order_id' => $order->id,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'CreateMailboxesOnOrderJob'
+                    ]);
+                }
+            });
+            
+            Log::channel('mailin-ai')->info('Mailbox creation successful and order completed', [
+                'action' => 'create_mailboxes_on_order',
+                'order_id' => $this->orderId,
+                'job_uuid' => $result['uuid'],
+                'mailbox_count' => count($mailboxes),
+                'order_status' => 'completed',
+            ]);
+        } else {
+            Log::channel('mailin-ai')->info('Mailboxes created for registered domains, waiting for domain transfers', [
+                'action' => 'create_mailboxes_on_order',
+                'order_id' => $this->orderId,
+                'mailbox_count' => count($mailboxes),
+                'order_status' => 'in-progress',
             ]);
         }
     }
