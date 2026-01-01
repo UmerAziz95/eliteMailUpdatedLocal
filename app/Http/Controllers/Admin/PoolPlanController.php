@@ -79,9 +79,10 @@ class PoolPlanController extends Controller
                 throw new \Exception($chargeBeePlan['message']);
             }
 
-            // Get provider_type from request, or fallback to Configuration table, default to 'Google'
-            $providerType = $request->input('provider_type') 
-                ?: \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
+            // Get provider_type from Configuration table only (not from pool plan)
+            // $providerType = $request->input('provider_type') 
+            //     ?: \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
+            $providerType = \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
 
             // Local Pool Plan Creation (with ChargeBee integration)
             $poolPlan = PoolPlan::create([
@@ -174,9 +175,10 @@ class PoolPlanController extends Controller
                 }
             }
 
-            // Get provider_type from request, or fallback to Configuration table, default to 'Google'
-            $providerType = $request->input('provider_type') 
-                ?: \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
+            // Get provider_type from Configuration table only (not from pool plan)
+            // $providerType = $request->input('provider_type') 
+            //     ?: \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
+            $providerType = \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
 
             // --- Local Pool Plan Update ---
             $poolPlan->update([
