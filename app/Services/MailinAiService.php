@@ -272,9 +272,28 @@ class MailinAiService
     public function createMailboxes(array $mailboxes)
     {
         try {
+            // Validate mailboxes array
+            if (empty($mailboxes)) {
+                throw new \Exception('Mailboxes array is empty');
+            }
+
+            // Validate each mailbox structure - username is required (domain is embedded in username)
+            foreach ($mailboxes as $index => $mailbox) {
+                if (!isset($mailbox['username'])) {
+                    throw new \Exception("Mailbox at index {$index} is missing required field: username");
+                }
+            }
+
             Log::channel('mailin-ai')->info('Creating mailboxes via Mailin.ai API', [
                 'action' => 'create_mailboxes',
                 'mailbox_count' => count($mailboxes),
+                'mailboxes' => array_map(function($mb) {
+                    return [
+                        'username' => $mb['username'] ?? 'missing',
+                        'name' => $mb['name'] ?? 'missing',
+                        'has_password' => isset($mb['password']),
+                    ];
+                }, $mailboxes),
             ]);
 
             $response = $this->makeRequest(
@@ -285,6 +304,25 @@ class MailinAiService
 
             $statusCode = $response->status();
             $responseBody = $response->json();
+            $rawBody = $response->body();
+
+            // Log raw response for debugging
+            Log::channel('mailin-ai')->debug('Mailin.ai mailbox creation raw response', [
+                'action' => 'create_mailboxes',
+                'status_code' => $statusCode,
+                'raw_body' => $rawBody,
+                'json_body' => $responseBody,
+            ]);
+
+            // Handle null response body (invalid JSON or empty response)
+            if ($responseBody === null && !empty($rawBody)) {
+                Log::channel('mailin-ai')->error('Mailin.ai mailbox creation returned invalid JSON', [
+                    'action' => 'create_mailboxes',
+                    'status_code' => $statusCode,
+                    'raw_body' => $rawBody,
+                ]);
+                throw new \Exception('Mailin.ai API returned invalid JSON response. Status: ' . $statusCode . '. Body: ' . substr($rawBody, 0, 500));
+            }
 
             // Expect 210 Accepted for async operations
             if ($statusCode === 210 || $response->successful()) {
@@ -306,12 +344,46 @@ class MailinAiService
                         'action' => 'create_mailboxes',
                         'status_code' => $statusCode,
                         'response' => $responseBody,
+                        'raw_body' => $rawBody,
                     ]);
 
-                    throw new \Exception('Mailin.ai mailbox creation response missing UUID');
+                    throw new \Exception('Mailin.ai mailbox creation response missing UUID. Status: ' . $statusCode . '. Response: ' . json_encode($responseBody));
                 }
             } else {
-                $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
+                // Build comprehensive error message
+                $errorMessage = 'Unknown error';
+                if (is_array($responseBody)) {
+                    // First try to get error from message or error fields
+                    $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? $errorMessage;
+                    
+                    // Check for nested error messages in data
+                    if (isset($responseBody['data']) && is_array($responseBody['data'])) {
+                        if (isset($responseBody['data']['message'])) {
+                            $errorMessage = $responseBody['data']['message'];
+                        }
+                    }
+                    
+                    // Extract error messages from errors array (Laravel validation format)
+                    if (isset($responseBody['errors']) && is_array($responseBody['errors'])) {
+                        $errorMessages = [];
+                        foreach ($responseBody['errors'] as $field => $messages) {
+                            if (is_array($messages)) {
+                                foreach ($messages as $message) {
+                                    $errorMessages[] = $message;
+                                }
+                            } elseif (is_string($messages)) {
+                                $errorMessages[] = $messages;
+                            }
+                        }
+                        if (!empty($errorMessages)) {
+                            $errorMessage = implode('. ', $errorMessages);
+                        }
+                    }
+                } elseif (!empty($rawBody)) {
+                    $errorMessage = 'HTTP ' . $statusCode . ': ' . substr($rawBody, 0, 200);
+                } else {
+                    $errorMessage = 'HTTP ' . $statusCode . ' with empty response body';
+                }
                 
                 // Check if error is about domain not being registered
                 $domainNotRegistered = false;
@@ -325,6 +397,11 @@ class MailinAiService
                                     $domainNotRegistered = true;
                                     $unregisteredDomains[] = $matches[1];
                                 }
+                            }
+                        } elseif (is_string($messages)) {
+                            if (preg_match("/domain '([^']+)' is not registered/i", $messages, $matches)) {
+                                $domainNotRegistered = true;
+                                $unregisteredDomains[] = $matches[1];
                             }
                         }
                     }
@@ -341,8 +418,13 @@ class MailinAiService
                     'status_code' => $statusCode,
                     'error' => $errorMessage,
                     'response' => $responseBody,
+                    'raw_body' => $rawBody,
                     'domain_not_registered' => $domainNotRegistered,
                     'unregistered_domains' => $unregisteredDomains,
+                    'mailbox_count' => count($mailboxes),
+                    'mailbox_usernames' => array_map(function($mb) {
+                        return $mb['username'] ?? 'unknown';
+                    }, $mailboxes),
                 ]);
 
                 // If domain not registered, include domains in error message for easier parsing
@@ -354,12 +436,32 @@ class MailinAiService
                 throw new \Exception('Failed to create mailboxes via Mailin.ai: ' . $errorMessage);
             }
 
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            // Handle HTTP client exceptions (network errors, timeouts, etc.)
+            $errorMessage = 'Network error: ' . $e->getMessage();
+            if ($e->response) {
+                $errorMessage .= '. Status: ' . $e->response->status() . '. Body: ' . substr($e->response->body(), 0, 500);
+            }
+            
+            Log::channel('mailin-ai')->error('Mailin.ai mailbox creation HTTP exception', [
+                'action' => 'create_mailboxes',
+                'error' => $errorMessage,
+                'exception_type' => get_class($e),
+                'response_status' => $e->response ? $e->response->status() : null,
+                'response_body' => $e->response ? $e->response->body() : null,
+            ]);
+
+            throw new \Exception('Failed to create mailboxes via Mailin.ai: ' . $errorMessage, 0, $e);
         } catch (\Exception $e) {
             Log::channel('mailin-ai')->error('Mailin.ai mailbox creation exception', [
                 'action' => 'create_mailboxes',
                 'error' => $e->getMessage(),
+                'exception_type' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             throw $e;
         }
     }
@@ -640,3 +742,4 @@ class MailinAiService
         }
     }
 }
+

@@ -17,6 +17,8 @@ class OrderEmail extends Model
         'email',
         'password',
         'profile_picture',
+        'mailin_mailbox_id',
+        'mailin_domain_id',
     ];
 
     public function order()
