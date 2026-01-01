@@ -165,7 +165,7 @@ return [
 
         'mailin-ai' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/mailin-ai/mailin-ai.log'),
+            'path' => storage_path('logs/mailin-ai.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => 14,
             'replace_placeholders' => true,
