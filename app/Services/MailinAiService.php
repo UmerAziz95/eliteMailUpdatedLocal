@@ -590,6 +590,89 @@ class MailinAiService
     }
 
     /**
+     * Delete a mailbox from Mailin.ai
+     * DELETE /mailboxes/{mailbox_id}
+     * 
+     * @param int $mailboxId The Mailin.ai mailbox ID to delete
+     * @return array Response with success status
+     * @throws \Exception
+     */
+    public function deleteMailbox(int $mailboxId)
+    {
+        try {
+            Log::channel('mailin-ai')->info('Deleting mailbox via Mailin.ai API', [
+                'action' => 'delete_mailbox',
+                'mailbox_id' => $mailboxId,
+            ]);
+
+            $response = $this->makeRequest(
+                'DELETE',
+                '/mailboxes/' . $mailboxId,
+                []
+            );
+
+            $statusCode = $response->status();
+            $responseBody = $response->json();
+
+            if ($response->successful()) {
+                Log::channel('mailin-ai')->info('Mailin.ai mailbox deleted successfully', [
+                    'action' => 'delete_mailbox',
+                    'mailbox_id' => $mailboxId,
+                    'status_code' => $statusCode,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => $responseBody['message'] ?? 'Mailbox deleted successfully',
+                    'response' => $responseBody,
+                ];
+            } else {
+                $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
+                
+                Log::channel('mailin-ai')->error('Failed to delete mailbox from Mailin.ai', [
+                    'action' => 'delete_mailbox',
+                    'mailbox_id' => $mailboxId,
+                    'status_code' => $statusCode,
+                    'error' => $errorMessage,
+                    'response' => $responseBody,
+                ]);
+
+                throw new \Exception('Failed to delete mailbox from Mailin.ai: ' . $errorMessage);
+            }
+
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            // Handle HTTP client exceptions (network errors, timeouts, etc.)
+            $errorMessage = 'Network error: ' . $e->getMessage();
+            if ($e->response) {
+                $errorMessage .= '. Status: ' . $e->response->status() . '. Body: ' . substr($e->response->body(), 0, 500);
+            }
+            
+            Log::channel('mailin-ai')->error('Mailin.ai mailbox deletion HTTP exception', [
+                'action' => 'delete_mailbox',
+                'mailbox_id' => $mailboxId,
+                'error' => $errorMessage,
+                'exception_type' => get_class($e),
+                'response_status' => $e->response ? $e->response->status() : null,
+                'response_body' => $e->response ? $e->response->body() : null,
+            ]);
+
+            throw new \Exception('Failed to delete mailbox from Mailin.ai: ' . $errorMessage, 0, $e);
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Mailin.ai mailbox deletion exception', [
+                'action' => 'delete_mailbox',
+                'mailbox_id' => $mailboxId,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
      * Check domain status via Mailin.ai API
      * GET /public/domains?name={domain_name} (authenticated)
      * 
