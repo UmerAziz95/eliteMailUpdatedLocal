@@ -26,8 +26,8 @@ class PoolOrderAssignmentService
             DB::beginTransaction();
 
             // Get provider type from pool order or Configuration
-            $providerType = $poolOrder->provider_type 
-                ?: Configuration::get('PROVIDER_TYPE', 'Google');
+            // $providerType = $poolOrder->provider_type ?: Configuration::get('PROVIDER_TYPE', 'Google');
+            $providerType = \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
             
             // Check if this is SMTP order (skip panel logic)
             $isSmtpOrder = in_array($providerType, ['SMTP', 'Private SMTP']);

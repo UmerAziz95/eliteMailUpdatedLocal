@@ -80,6 +80,18 @@
         color: #28a745 !important;
         transform: scale(1.1) !important;
     }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
 </style>
 @endpush
 
@@ -1335,7 +1347,7 @@
 
         if (tasksList.length === 0 && !append) {
             container.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
+                <div class="empty-state text-center" style="grid-column: 1 / -1;">
                     <i class="fas fa-exchange-alt" style="font-size: 4rem; opacity: 0.5;"></i>
                     <h5>No Pool Panel Reassignment Tasks Found</h5>
                     <p>There are no pool panel reassignment tasks to display.</p>
