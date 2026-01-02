@@ -7,8 +7,10 @@ use App\Models\Order;
 use App\Models\OrderPanel;
 use App\Models\User;
 use App\Models\DomainRemovalTask;
+use App\Models\OrderEmail;
 use App\Mail\SubscriptionCancellationMail;
 use App\Services\ActivityLogService;
+use App\Services\MailinAiService;
 use Illuminate\Support\Facades\Mail;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -105,6 +107,19 @@ class OrderCancelledService
                         'status_manage_by_admin' => 'cancelled',
                     ]);
                     Log::info("Updated order record to cancelled: Order ID {$order->id}, User ID {$user_id}");
+                    
+                    // Delete mailboxes from Mailin.ai immediately only for Force Cancel
+                    // For EOBC, mailboxes should remain active until subscription end date
+                    if ($force_cancel) {
+                        $this->deleteOrderMailboxes($order);
+                    } else {
+                        Log::info("Skipping immediate mailbox deletion for EOBC cancellation - mailboxes will remain active until subscription end date", [
+                            'action' => 'cancel_subscription',
+                            'order_id' => $order->id,
+                            'subscription_id' => $subscription->id,
+                            'end_date' => $endDate->toDateString(),
+                        ]);
+                    }
                 }
 
                 ActivityLogService::log(
@@ -124,8 +139,13 @@ class OrderCancelledService
                     $hasSplits = OrderPanel::where('order_id', $order->id)->exists();
                 }
                 
-                // Only create domain removal task if splits are found
-                if ($hasSplits) {
+                // Check if Mailin.ai automation is enabled and provider type is Private SMTP
+                $automationEnabled = config('mailin_ai.automation_enabled', false);
+                $providerType = $order ? $order->provider_type : null;
+                $shouldSkipDomainRemovalTask = $automationEnabled && $providerType === 'Private SMTP';
+                
+                // Only create domain removal task if splits are found AND automation conditions are not met
+                if ($hasSplits && !$shouldSkipDomainRemovalTask) {
                     // Add entry to domain removal queue table
                     // Queue date is set to 72 hours after subscription end date for normal cancel
                     // For force cancel, queue starts immediately (now)
@@ -143,6 +163,14 @@ class OrderCancelledService
                         'reason' => $reason,
                         'assigned_to' => null, // Assuming no specific user assigned yet
                         'status' => 'pending'
+                    ]);
+                } elseif ($hasSplits && $shouldSkipDomainRemovalTask) {
+                    Log::info("Skipping domain removal task creation - Mailin.ai automation enabled for Private SMTP order", [
+                        'action' => 'cancel_subscription',
+                        'order_id' => $order ? $order->id : null,
+                        'subscription_id' => $subscription->id,
+                        'automation_enabled' => $automationEnabled,
+                        'provider_type' => $providerType,
                     ]);
                 }
 
@@ -327,6 +355,134 @@ class OrderCancelledService
                 'success' => false,
                 'message' => 'Failed to reactivate subscription: ' . $e->getMessage(),
             ];
+        }
+    }
+
+    /**
+     * Delete all mailboxes for an order from Mailin.ai
+     * Only executes if MAILIN_AI_AUTOMATION_ENABLED is true and provider_type is "Private SMTP"
+     * 
+     * @param Order $order The order to delete mailboxes for
+     * @return void
+     */
+    public function deleteOrderMailboxes(Order $order)
+    {
+        try {
+            // Check if Mailin.ai automation is enabled and provider type is Private SMTP
+            $automationEnabled = config('mailin_ai.automation_enabled', false);
+            $providerType = $order->provider_type;
+            
+            if (!$automationEnabled || $providerType !== 'Private SMTP') {
+                Log::info("Skipping Mailin.ai mailbox deletion - conditions not met", [
+                    'action' => 'delete_order_mailboxes',
+                    'order_id' => $order->id,
+                    'automation_enabled' => $automationEnabled,
+                    'provider_type' => $providerType,
+                ]);
+                return;
+            }
+
+            // Get all OrderEmail records for this order that have Mailin.ai mailbox IDs
+            $orderEmails = OrderEmail::where('order_id', $order->id)
+                ->whereNotNull('mailin_mailbox_id')
+                ->get();
+
+            if ($orderEmails->isEmpty()) {
+                Log::info("No Mailin.ai mailboxes found to delete for order", [
+                    'action' => 'delete_order_mailboxes',
+                    'order_id' => $order->id,
+                ]);
+                return;
+            }
+
+            Log::info("Deleting Mailin.ai mailboxes for cancelled order", [
+                'action' => 'delete_order_mailboxes',
+                'order_id' => $order->id,
+                'mailbox_count' => $orderEmails->count(),
+            ]);
+
+            $mailinService = new MailinAiService();
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($orderEmails as $orderEmail) {
+                try {
+                    $result = $mailinService->deleteMailbox($orderEmail->mailin_mailbox_id);
+                    
+                    if ($result['success']) {
+                        $deletedCount++;
+                        
+                        // Delete the OrderEmail record from database after successful deletion from Mailin.ai
+                        $orderEmail->delete();
+                        
+                        Log::channel('mailin-ai')->info('Mailbox deleted successfully from Mailin.ai and database during order cancellation', [
+                            'action' => 'delete_order_mailboxes',
+                            'order_id' => $order->id,
+                            'order_email_id' => $orderEmail->id,
+                            'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
+                            'email' => $orderEmail->email,
+                        ]);
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Mailbox ID {$orderEmail->mailin_mailbox_id}: " . ($result['message'] ?? 'Unknown error');
+                        
+                        Log::channel('mailin-ai')->warning('Mailbox deletion from Mailin.ai failed, keeping OrderEmail record', [
+                            'action' => 'delete_order_mailboxes',
+                            'order_id' => $order->id,
+                            'order_email_id' => $orderEmail->id,
+                            'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
+                            'email' => $orderEmail->email,
+                            'error' => $result['message'] ?? 'Unknown error',
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Mailbox ID {$orderEmail->mailin_mailbox_id}: " . $e->getMessage();
+                    
+                    Log::channel('mailin-ai')->error('Failed to delete mailbox during order cancellation', [
+                        'action' => 'delete_order_mailboxes',
+                        'order_id' => $order->id,
+                        'order_email_id' => $orderEmail->id,
+                        'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
+                        'email' => $orderEmail->email,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            Log::info("Mailin.ai mailbox deletion completed for cancelled order", [
+                'action' => 'delete_order_mailboxes',
+                'order_id' => $order->id,
+                'total_mailboxes' => $orderEmails->count(),
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors,
+            ]);
+
+            // Log activity for mailbox deletion
+            if ($deletedCount > 0) {
+                ActivityLogService::log(
+                    'order-mailboxes-deleted',
+                    "Deleted {$deletedCount} Mailin.ai mailbox(es) for cancelled order",
+                    $order,
+                    [
+                        'order_id' => $order->id,
+                        'deleted_count' => $deletedCount,
+                        'failed_count' => $failedCount,
+                        'errors' => $errors,
+                    ]
+                );
+            }
+
+        } catch (\Exception $e) {
+            // Don't fail the entire cancellation if mailbox deletion fails
+            Log::error('Error deleting Mailin.ai mailboxes during order cancellation', [
+                'action' => 'delete_order_mailboxes',
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
     }
 }

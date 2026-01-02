@@ -793,13 +793,7 @@ class OrderController extends Controller
                             ]
                         );
                     }
-                } else {
-                    // Delete Spaceship credentials if platform is changed
-                    \App\Models\PlatformCredential::where('order_id', $order->id)
-                        ->where('platform_type', 'spaceship')
-                        ->delete();
                 }
-
                 // Don't override 'completed' status (from successful mailbox creation)
                 if($order->assigned_to && $status != 'draft' && $status != 'completed') {
                     $order->update([
