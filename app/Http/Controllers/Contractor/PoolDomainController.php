@@ -550,8 +550,9 @@ class PoolDomainController extends Controller
                 })
                 ->addColumn('actions', function ($row) {
                     return $this->poolOrderService->getActionsDropdown($row, [
-                        'showAssignToMe' => true,
-                        'routePrefix' => 'contractor'
+                        'showAssignToMe' => $row->status_manage_by_admin !== 'draft' && $row->hasDomains(),
+                        'routePrefix' => 'contractor',
+                        'hideIfEmpty' => true, // Hide dropdown/ellipsis in in-queue tab when no actions
                     ]);
                 })
                 ->rawColumns(['status_badge', 'actions'])
@@ -639,6 +640,14 @@ class PoolDomainController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'This order is already assigned to ' . ($poolOrder->assignedTo->name ?? 'another user')
+                ], 400);
+            }
+
+            // Check if order has domains assigned - restrict assignment if no domains
+            if (!$poolOrder->hasDomains()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot assign order: No inboxes have been assigned to this order yet. The system will automatically retry assignment when inboxes become available. Please wait for the automatic retry process.'
                 ], 400);
             }
 

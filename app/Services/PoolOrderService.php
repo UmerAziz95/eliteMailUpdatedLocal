@@ -210,6 +210,7 @@ class PoolOrderService
         $showAssignToMe = $options['showAssignToMe'] ?? false;
         $showChangeStatus = $options['showChangeStatus'] ?? false;
         $routePrefix = $options['routePrefix'] ?? 'admin'; // Default to admin for backward compatibility
+        $hideIfEmpty = $options['hideIfEmpty'] ?? false; // Only hide dropdown if explicitly requested (for in-queue tab)
 
         // Show N/A for draft orders
         $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
@@ -220,14 +221,20 @@ class PoolOrderService
         $orderId = $poolOrder->id;
         $viewRoute = route($routePrefix . '.pool-orders.view', $poolOrder->id);
 
-        $html = '
-            <div class="dropdown">
-                <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                </button>
-                <ul class="dropdown-menu">';
+        // Track if any menu items are added
+        $hasMenuItems = false;
+        $html = '';
 
         if ($showView && $poolOrder->assigned_to) {
+            if (!$hasMenuItems) {
+                $html = '
+                    <div class="dropdown">
+                        <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu">';
+                $hasMenuItems = true;
+            }
             $html .= '
                     <li>
                         <a class="dropdown-item" href="' . $viewRoute . '">
@@ -259,7 +266,21 @@ class PoolOrderService
 
         $currentStatus = $poolOrder->status_manage_by_admin ?? $poolOrder->status;
 
+        // Only show "Assign to Me" if:
+        // 1. showAssignToMe flag is true (controller already checks hasDomains() before setting this)
+        // 2. Order is not already assigned
+        // 3. Status is not 'draft'
+        // Note: hasDomains() check is done in controller, not here, to avoid affecting other tabs
         if ($showAssignToMe && !$poolOrder->assigned_to && $currentStatus !== 'draft') {
+            if (!$hasMenuItems) {
+                $html = '
+                    <div class="dropdown">
+                        <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu">';
+                $hasMenuItems = true;
+            }
             $html .= '
                     <li>
                         <a class="dropdown-item text-success" href="javascript:void(0)" 
@@ -285,6 +306,15 @@ class PoolOrderService
                 }
 
                 if ($hasValidStatusOptions) {
+                    if (!$hasMenuItems) {
+                        $html = '
+                            <div class="dropdown">
+                                <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">';
+                        $hasMenuItems = true;
+                    }
                     $hasDomainsStr = $hasDomains ? 'true' : 'false';
                     $html .= '
                         <li>
@@ -298,6 +328,15 @@ class PoolOrderService
         }
 
         if ($showViewDomains) {
+            if (!$hasMenuItems) {
+                $html = '
+                    <div class="dropdown">
+                        <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu">';
+                $hasMenuItems = true;
+            }
             $html .= '
                     <li>
                         <a class="dropdown-item" href="javascript:void(0)" 
@@ -308,6 +347,15 @@ class PoolOrderService
         }
 
         if ($showCancel && in_array($poolOrder->status, ['pending', 'in_progress'])) {
+            if (!$hasMenuItems) {
+                $html = '
+                    <div class="dropdown">
+                        <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu">';
+                $hasMenuItems = true;
+            }
             $html .= '
                     <li>
                         <a class="dropdown-item text-danger" href="javascript:void(0)" 
@@ -319,6 +367,15 @@ class PoolOrderService
 
         // Add "Locked Out of Instantly" option for non-cancelled orders
         if (!$poolOrder->locked_out_of_instantly && $poolOrder->status !== 'cancelled' && $poolOrder->assigned_to != null) {
+            if (!$hasMenuItems) {
+                $html = '
+                    <div class="dropdown">
+                        <button class="bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu">';
+                $hasMenuItems = true;
+            }
             $html .= '
                     <li>
                         <a class="dropdown-item text-warning" href="javascript:void(0)" 
@@ -328,11 +385,22 @@ class PoolOrderService
                     </li>';
         }
 
-        $html .= '
+        // Only return dropdown HTML if there are menu items
+        if ($hasMenuItems) {
+            $html .= '
                 </ul>
             </div>';
+            return $html;
+        }
 
-        return $html;
+        // Only hide dropdown/ellipsis if hideIfEmpty flag is set (for in-queue tab only)
+        // Other tabs should show "N/A" or empty string based on existing logic
+        if ($hideIfEmpty) {
+            return ''; // Hide dropdown and ellipsis for in-queue tab when no actions
+        }
+
+        // For other tabs, return "N/A" if no actions (maintains existing behavior)
+        return '<span class="">N/A</span>';
     }
 
     /**
