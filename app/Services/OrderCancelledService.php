@@ -108,8 +108,18 @@ class OrderCancelledService
                     ]);
                     Log::info("Updated order record to cancelled: Order ID {$order->id}, User ID {$user_id}");
                     
-                    // Delete mailboxes from Mailin.ai if conditions are met
-                    $this->deleteOrderMailboxes($order);
+                    // Delete mailboxes from Mailin.ai immediately only for Force Cancel
+                    // For EOBC, mailboxes should remain active until subscription end date
+                    if ($force_cancel) {
+                        $this->deleteOrderMailboxes($order);
+                    } else {
+                        Log::info("Skipping immediate mailbox deletion for EOBC cancellation - mailboxes will remain active until subscription end date", [
+                            'action' => 'cancel_subscription',
+                            'order_id' => $order->id,
+                            'subscription_id' => $subscription->id,
+                            'end_date' => $endDate->toDateString(),
+                        ]);
+                    }
                 }
 
                 ActivityLogService::log(
@@ -355,7 +365,7 @@ class OrderCancelledService
      * @param Order $order The order to delete mailboxes for
      * @return void
      */
-    private function deleteOrderMailboxes(Order $order)
+    public function deleteOrderMailboxes(Order $order)
     {
         try {
             // Check if Mailin.ai automation is enabled and provider type is Private SMTP

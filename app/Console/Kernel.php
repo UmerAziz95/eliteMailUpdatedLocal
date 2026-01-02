@@ -135,6 +135,13 @@ class Kernel extends ConsoleKernel
                         ->withoutOverlapping()
                         ->runInBackground()
                         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
+                // Delete expired mailboxes for EOBC cancelled subscriptions every hour
+                $schedule->command('mailboxes:delete-expired')
+                        ->hourly()
+                        ->withoutOverlapping()
+                        ->runInBackground()
+                        ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
         }
                 
 
