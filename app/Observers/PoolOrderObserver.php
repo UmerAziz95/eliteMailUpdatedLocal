@@ -77,6 +77,20 @@ class PoolOrderObserver
             // $this->createMigrationTask($poolOrder, 'configuration', $poolOrder->getOriginal('status_manage_by_admin'));
         }
 
+        // Check if status_manage_by_admin changed to 'completed'
+        if (
+            $poolOrder->isDirty('status_manage_by_admin') &&
+            $poolOrder->status_manage_by_admin === 'completed'
+        ) {
+            Log::info('PoolOrder status changed to completed, sending Slack notification', [
+                'pool_order_id' => $poolOrder->id,
+                'previous_status' => $poolOrder->getOriginal('status_manage_by_admin'),
+                'new_status' => $poolOrder->status_manage_by_admin
+            ]);
+
+            $this->sendCompletionNotification($poolOrder);
+        }
+
         // Check if status or status_manage_by_admin changed to 'cancelled'
         if (
             ($poolOrder->isDirty('status') && $poolOrder->status === 'cancelled') ||
@@ -248,6 +262,142 @@ class PoolOrderObserver
         } catch (\Exception $e) {
             // Non-critical, just log the error
             Log::error('Exception sending Slack notification for pool order', [
+                'error' => $e->getMessage(),
+                'pool_order_id' => $poolOrder->id,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Send Slack notification for pool order completion
+     * 
+     * @param \App\Models\PoolOrder $poolOrder
+     * @return void
+     */
+    private function sendCompletionNotification(PoolOrder $poolOrder): void
+    {
+        try {
+            $user = $poolOrder->user;
+
+            if (!$user) {
+                Log::warning('User not found for completed pool order', [
+                    'pool_order_id' => $poolOrder->id
+                ]);
+                return;
+            }
+
+            // Prepare domain list
+            $domainsList = 'N/A';
+            if ($poolOrder->domains && is_array($poolOrder->domains) && count($poolOrder->domains) > 0) {
+                $domainNames = array_map(function ($domain) {
+                    return $domain['domain_name'] ?? 'Unknown';
+                }, array_slice($poolOrder->domains, 0, 5)); // Show first 5 domains
+
+                $domainsList = implode(', ', $domainNames);
+
+                if (count($poolOrder->domains) > 5) {
+                    $remaining = count($poolOrder->domains) - 5;
+                    $domainsList .= " (and {$remaining} more)";
+                }
+            }
+
+            $assignedToName = $poolOrder->assignedTo ? $poolOrder->assignedTo->name : 'Unassigned';
+            $completedAt = $poolOrder->completed_at ? $poolOrder->completed_at->format('Y-m-d H:i:s') : now()->format('Y-m-d H:i:s');
+            
+            $message = [
+                'text' => '✅ *Pool Order Completed*',
+                'attachments' => [
+                    [
+                        'color' => '#28a745',
+                        'fields' => [
+                            [
+                                'title' => 'Order ID',
+                                'value' => '#' . $poolOrder->id,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Status',
+                                'value' => '✅ Completed',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Customer Name',
+                                'value' => $user->name,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Assigned To',
+                                'value' => $assignedToName,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Plan',
+                                'value' => $poolOrder->poolPlan->name ?? 'N/A',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Quantity',
+                                'value' => $poolOrder->quantity . ' inboxes',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Amount',
+                                'value' => '$' . number_format($poolOrder->amount, 2),
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Domains Selected',
+                                'value' => $poolOrder->selected_domains_count ?? 0,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Total Inboxes',
+                                'value' => $poolOrder->total_inboxes ?? 0,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Completed At',
+                                'value' => $completedAt,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Order Duration',
+                                'value' => $poolOrder->created_at->diffForHumans($poolOrder->completed_at ?? now(), true),
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Domains',
+                                'value' => $domainsList,
+                                'short' => false
+                            ]
+                        ],
+                        'footer' => config('app.name', 'ProjectInbox') . ' - Pool Order Completed',
+                        'ts' => time()
+                    ]
+                ]
+            ];
+
+            // Send to Slack
+            $result = SlackNotificationService::send('trial-orders', $message);
+
+            if ($result) {
+                Log::info('Slack completion notification sent successfully', [
+                    'pool_order_id' => $poolOrder->id,
+                    'domains_count' => $poolOrder->selected_domains_count,
+                    'total_inboxes' => $poolOrder->total_inboxes
+                ]);
+            } else {
+                Log::warning('Slack completion notification failed to send', [
+                    'pool_order_id' => $poolOrder->id
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            // Non-critical, just log the error
+            Log::error('Exception sending Slack completion notification', [
                 'error' => $e->getMessage(),
                 'pool_order_id' => $poolOrder->id,
                 'file' => $e->getFile(),
