@@ -17,8 +17,19 @@ class OrderEmail extends Model
         'email',
         'password',
         'profile_picture',
+        'provider_type',
+        'provisioned_at',
+        'mailin_status',
         'mailin_mailbox_id',
         'mailin_domain_id',
+        'is_migrated_to_mailin',
+        'mailin_ai_inbox_id',
+        'domain',
+    ];
+
+    protected $casts = [
+        'provisioned_at' => 'datetime',
+        'is_migrated_to_mailin' => 'boolean',
     ];
 
     public function order()
