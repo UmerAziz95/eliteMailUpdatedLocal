@@ -405,17 +405,95 @@ class PoolOrderService
 
     /**
      * Download domains with prefixes as CSV
+     * For SMTP pools: Uses Instantly format with all IMAP/SMTP fields from smtp_accounts_data
+     * For Google/365 pools: Uses Google Workspace format
      *
      * @param int $poolOrderId
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
-
     public function downloadDomainsCsv($poolOrderId)
     {
         $poolOrder = PoolOrder::findOrFail($poolOrderId);
 
         if (!$poolOrder->hasDomains()) {
             throw new \Exception('No domains available for this pool order.');
+        }
+
+        $domains = $poolOrder->domains;
+        
+        // Check if this is an SMTP pool order and collect accounts data
+        $isSmtpOrder = false;
+        $smtpAccountsMap = []; // Map email => account data for SMTP pools
+        $poolIds = [];
+        
+        // Collect all unique pool IDs from assigned domains
+        foreach ($domains as $domainEntry) {
+            $poolId = $domainEntry['pool_id'] ?? null;
+            if ($poolId && !in_array($poolId, $poolIds)) {
+                $poolIds[] = $poolId;
+            }
+        }
+        
+        // Check if any pool is SMTP type and load accounts data
+        if (!empty($poolIds)) {
+            $pools = \App\Models\Pool::whereIn('id', $poolIds)->get();
+            
+            foreach ($pools as $pool) {
+                if ($pool->provider_type === 'SMTP' && $pool->smtp_accounts_data) {
+                    $isSmtpOrder = true;
+                    
+                    // Get smtp_accounts_data - handle both structures
+                    $smtpData = $pool->smtp_accounts_data;
+                    
+                    // Handle compressed data
+                    if (isset($smtpData['_compressed']) && $smtpData['_compressed'] === true && isset($smtpData['_data'])) {
+                        try {
+                            $compressedData = base64_decode($smtpData['_data']);
+                            $decompressedJson = gzuncompress($compressedData);
+                            if ($decompressedJson !== false) {
+                                $smtpData = json_decode($decompressedJson, true);
+                            }
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to decompress smtp_accounts_data', [
+                                'pool_id' => $pool->id,
+                                'error' => $e->getMessage()
+                            ]);
+                            $smtpData = null;
+                        }
+                    }
+                    
+                    // Extract accounts array - handle both structures
+                    $accounts = [];
+                    if (is_array($smtpData)) {
+                        // Check if it's nested under 'accounts' key
+                        if (isset($smtpData['accounts']) && is_array($smtpData['accounts'])) {
+                            $accounts = $smtpData['accounts'];
+                        } elseif (!empty($smtpData) && isset($smtpData[0])) {
+                            // Check if first element has 'email' key (direct array of account objects)
+                            if (isset($smtpData[0]['email'])) {
+                                $accounts = $smtpData;
+                            }
+                        }
+                    }
+                    
+                    // Build email => account map for quick lookup (case-insensitive)
+                    foreach ($accounts as $account) {
+                        $email = $account['email'] ?? '';
+                        if ($email) {
+                            $emailLower = strtolower(trim($email));
+                            // Store with lowercase key for matching, but keep original account data
+                            $smtpAccountsMap[$emailLower] = $account;
+                        }
+                    }
+                    
+                    \Log::info('SMTP accounts loaded for pool order CSV', [
+                        'pool_id' => $pool->id,
+                        'pool_order_id' => $poolOrder->id,
+                        'accounts_count' => count($accounts),
+                        'mapped_emails_count' => count($smtpAccountsMap)
+                    ]);
+                }
+            }
         }
 
         $filename = 'pool_order_' . $poolOrder->id . '_domains_' . date('Y-m-d_His') . '.csv';
@@ -425,19 +503,17 @@ class PoolOrderService
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function () use ($poolOrder) {
+        $callback = function () use ($poolOrder, $domains, $isSmtpOrder, $smtpAccountsMap) {
             $file = fopen('php://output', 'w');
 
-            // Add CSV headers matching Google Workspace format
-            fputcsv($file, ['First Name', 'Last Name', 'Email Address', 'Password', 'Org Unit Path [Required]']);
+            if ($isSmtpOrder) {
+                // Use separate function for SMTP CSV generation
+                $this->generateSmtpCsv($file, $domains, $smtpAccountsMap, $poolOrder->id);
+            } else {
+                // Google Workspace format for Google/365 pools (existing logic)
+                fputcsv($file, ['First Name', 'Last Name', 'Email Address', 'Password', 'Org Unit Path [Required]']);
 
-
-            $domains = $poolOrder->domains;
-
-            // Collect all unique pool IDs to eager load if possible (though we do it in loop for now)
-            // Or just rely on caching if getPoolAttribute supports it.
-
-            foreach ($domains as $domainEntry) {
+                foreach ($domains as $domainEntry) {
                 // Determine Pool ID and Domain Name
                 $poolId = $domainEntry['pool_id'] ?? null;
                 $domainName = $domainEntry['domain_name'] ?? 'Unknown';
@@ -553,12 +629,180 @@ class PoolOrderService
                     ]);
                     $counter++;
                 }
+                }
             }
 
             fclose($file);
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Generate CSV in Instantly format for SMTP pool orders
+     * Collects all emails from all domains and matches with smtp_accounts_data
+     *
+     * @param resource $file File handle for CSV output
+     * @param array $domains Array of domain entries from pool order
+     * @param array $smtpAccountsMap Map of email (lowercase) => account data
+     * @param int $poolOrderId Pool order ID for logging
+     * @return void
+     */
+    private function generateSmtpCsv($file, $domains, $smtpAccountsMap, $poolOrderId)
+    {
+        // Instantly CSV format headers
+        fputcsv($file, [
+            'Email',
+            'First Name',
+            'Last Name',
+            'IMAP Username',
+            'IMAP Password',
+            'IMAP Host',
+            'IMAP Port',
+            'SMTP Username',
+            'SMTP Password',
+            'SMTP Host',
+            'SMTP Port',
+            'Daily Limit',
+            'Warmup Enabled',
+            'Warmup Limit',
+            'Warmup Increment'
+        ]);
+
+        // Collect all assigned email addresses from ALL domains in the pool order
+        $assignedEmails = [];
+        $domainCount = 0;
+        
+        foreach ($domains as $domainEntry) {
+            $domainCount++;
+            $domainName = $domainEntry['domain_name'] ?? 'Unknown';
+            
+            // Get assigned emails from selected_prefixes
+            if (!empty($domainEntry['selected_prefixes'])) {
+                $selected = $domainEntry['selected_prefixes'];
+                
+                // Handle both string (JSON) and array formats
+                if (is_string($selected)) {
+                    $selected = json_decode($selected, true);
+                }
+                
+                // selected_prefixes can be an object/associative array like:
+                // {"prefix_variant_1": {"email": "henry@domain.com"}, "prefix_variant_2": {"email": "james@domain.com"}}
+                if (is_array($selected) && !empty($selected)) {
+                    $emailsInDomain = 0;
+                    foreach ($selected as $key => $data) {
+                        // $data should be an array with 'email' key
+                        if (is_array($data) && isset($data['email'])) {
+                            $email = $data['email'];
+                            if (!empty(trim($email))) {
+                                $emailLower = strtolower(trim($email));
+                                $assignedEmails[] = $emailLower;
+                                $emailsInDomain++;
+                            }
+                        }
+                    }
+                    
+                    \Log::debug('Collected emails from domain for SMTP CSV', [
+                        'pool_order_id' => $poolOrderId,
+                        'domain_name' => $domainName,
+                        'domain_index' => $domainCount,
+                        'emails_count' => $emailsInDomain,
+                        'total_emails_so_far' => count($assignedEmails)
+                    ]);
+                } else {
+                    \Log::warning('selected_prefixes is not a valid array for domain', [
+                        'pool_order_id' => $poolOrderId,
+                        'domain_name' => $domainName,
+                        'domain_index' => $domainCount,
+                        'selected_type' => gettype($selected),
+                        'selected_value' => is_string($selected) ? substr($selected, 0, 100) : $selected
+                    ]);
+                }
+            } else {
+                \Log::debug('No selected_prefixes found for domain', [
+                    'pool_order_id' => $poolOrderId,
+                    'domain_name' => $domainName,
+                    'domain_index' => $domainCount
+                ]);
+            }
+        }
+        
+        // Remove duplicates while preserving order
+        $assignedEmails = array_values(array_unique($assignedEmails));
+
+        \Log::info('All assigned emails collected for SMTP pool order CSV', [
+            'pool_order_id' => $poolOrderId,
+            'total_domains' => $domainCount,
+            'assigned_emails_count' => count($assignedEmails),
+            'smtp_accounts_map_count' => count($smtpAccountsMap),
+            'sample_assigned_emails' => array_slice($assignedEmails, 0, 10), // First 10 for debugging
+            'sample_map_keys' => array_slice(array_keys($smtpAccountsMap), 0, 10) // First 10 keys from map
+        ]);
+        
+        // Check how many emails will match
+        $matchedCount = 0;
+        $unmatchedEmails = [];
+        foreach ($assignedEmails as $email) {
+            if (isset($smtpAccountsMap[$email])) {
+                $matchedCount++;
+            } else {
+                $unmatchedEmails[] = $email;
+            }
+        }
+        
+        \Log::info('Email matching summary for SMTP CSV', [
+            'pool_order_id' => $poolOrderId,
+            'total_assigned_emails' => count($assignedEmails),
+            'matched_emails' => $matchedCount,
+            'unmatched_emails' => count($unmatchedEmails),
+            'sample_unmatched' => array_slice($unmatchedEmails, 0, 5)
+        ]);
+
+                // Write rows for each assigned email using data from smtp_accounts_data
+                $rowsWritten = 0;
+                $rowsSkipped = 0;
+        
+        foreach ($assignedEmails as $email) {
+            // Email is already lowercase from collection, map uses lowercase keys
+            $account = $smtpAccountsMap[$email] ?? null;
+            
+            if ($account) {
+                // Use data from stored CSV account - match exact field names from database
+                fputcsv($file, [
+                    $account['email'] ?? $email,
+                    $account['first_name'] ?? '',
+                    $account['last_name'] ?? '',
+                    $account['imap_username'] ?? $account['email'] ?? $email,
+                    $account['imap_password'] ?? $account['password'] ?? '',
+                    $account['imap_host'] ?? '',
+                    $account['imap_port'] ?? '',
+                    $account['smtp_username'] ?? $account['email'] ?? $email,
+                    $account['smtp_password'] ?? $account['password'] ?? '',
+                    $account['smtp_host'] ?? '',
+                    $account['smtp_port'] ?? '',
+                    $account['daily_limit'] ?? '',
+                    $account['warmup_enabled'] ?? 'TRUE',
+                    $account['warmup_limit'] ?? '10',
+                    $account['warmup_increment'] ?? '1'
+                ]);
+                $rowsWritten++;
+            } else {
+                // Fallback: if account not found in map, log warning and skip
+                \Log::warning('SMTP account not found in smtp_accounts_data for pool order', [
+                    'email' => $email,
+                    'pool_order_id' => $poolOrderId,
+                    'available_emails_count' => count($smtpAccountsMap)
+                ]);
+                $rowsSkipped++;
+            }
+        }
+        
+        \Log::info('SMTP CSV generation completed', [
+            'pool_order_id' => $poolOrderId,
+            'rows_written' => $rowsWritten,
+            'rows_skipped' => $rowsSkipped,
+            'total_emails' => count($assignedEmails)
+        ]);
     }
 
     /**
