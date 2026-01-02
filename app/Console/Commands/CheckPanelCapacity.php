@@ -216,13 +216,28 @@ class CheckPanelCapacity extends Command
         foreach ($pendingOrders as $order) {
             $totalProcessed++;            
             
+            // Get the actual Order model to check provider type
+            $orderModel = Order::find($order->order_id);
+            
+            // Skip Private SMTP orders (they don't use panel assignment)
+            if ($orderModel && $orderModel->provider_type === 'Private SMTP') {
+                $this->info("   ⏭️  Skipping Order ID {$order->order_id} - Private SMTP (uses Mailin.ai automation)");
+                Log::info("Skipping panel assignment for Private SMTP order", [
+                    'order_id' => $order->order_id,
+                    'provider_type' => $orderModel->provider_type
+                ]);
+                continue;
+            }
+            
             // Get order-specific available space
             $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
             // dd($orderSpecificSpace, $order->total_inboxes, $order->inboxes_per_domain, $this->PANEL_CAPACITY, $this->MAX_SPLIT_CAPACITY);
             if ($order->total_inboxes <= $orderSpecificSpace) {
                 try {
-                    // Get the actual Order model for panel split creation
-                    $orderModel = Order::find($order->order_id);
+                    // Get the actual Order model for panel split creation (if not already fetched)
+                    if (!$orderModel) {
+                        $orderModel = Order::find($order->order_id);
+                    }
                     
                     if ($orderModel) {
                         // Create panel splits before updating status
@@ -275,6 +290,11 @@ class CheckPanelCapacity extends Command
                     $remainingTotalInboxes += $order->total_inboxes;
                 }
             } else {
+                // Skip Private SMTP orders from insufficient space tracking (they don't use panel assignment)
+                if ($orderModel && $orderModel->provider_type === 'Private SMTP') {
+                    continue;
+                }
+                
                 $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
                 $this->warn("   ⚠ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Insufficient space");
                 $this->warn("     Order-specific available space: {$orderSpecificSpace}");
@@ -452,6 +472,15 @@ class CheckPanelCapacity extends Command
     private function pannelCreationAndOrderSplitOnPannels($order)
     {
         try {
+            // Skip panel assignment if order uses Mailin.ai automation (Private SMTP)
+            if ($order->provider_type === 'Private SMTP') {
+                Log::info("Skipping panel assignment for automated order #{$order->id}", [
+                    'order_id' => $order->id,
+                    'provider_type' => $order->provider_type
+                ]);
+                return;
+            }
+            
             // Wrap everything in a database transaction for consistency
             DB::beginTransaction();
             

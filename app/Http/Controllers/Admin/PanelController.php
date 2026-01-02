@@ -1015,10 +1015,13 @@ class PanelController extends Controller
             $panelCapacity = $this->getProviderCapacity($providerType);
             $maxSplitCapacity = $this->getProviderMaxSplitCapacity($providerType);
 
-            // Get pending orders that require panel capacity
+            // Get pending orders that require panel capacity (exclude Private SMTP orders)
             $pendingOrders = OrderTracking::where('status', 'pending')
                 ->whereNotNull('total_inboxes')
                 ->where('total_inboxes', '>', 0)
+                ->join('orders', 'order_tracking.order_id', '=', 'orders.id')
+                ->where('orders.provider_type', '!=', 'Private SMTP')
+                ->select('order_tracking.*')
                 ->get();
             
             $insufficientSpaceOrders = [];
