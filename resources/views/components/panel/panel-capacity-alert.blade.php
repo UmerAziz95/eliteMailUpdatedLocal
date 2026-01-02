@@ -14,9 +14,9 @@
         : \App\Models\Configuration::get('GOOGLE_MAX_SPLIT_CAPACITY', env('GOOGLE_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358))));
 
     // Build alert data on initial render (exclude Private SMTP orders)
-    $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')
-        ->whereNotNull('total_inboxes')
-        ->where('total_inboxes', '>', 0)
+    $pendingOrders = \App\Models\OrderTracking::where('order_tracking.status', 'pending')
+        ->whereNotNull('order_tracking.total_inboxes')
+        ->where('order_tracking.total_inboxes', '>', 0)
         ->join('orders', 'order_tracking.order_id', '=', 'orders.id')
         ->where('orders.provider_type', '!=', 'Private SMTP')
         ->select('order_tracking.*')

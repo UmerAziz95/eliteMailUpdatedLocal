@@ -228,9 +228,9 @@
         <!-- Panel Capacity Alert -->
         @php
             // Get panel capacity alert data using the same logic as the AJAX endpoint (exclude Private SMTP orders)
-            $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')
-                ->whereNotNull('total_inboxes')
-                ->where('total_inboxes', '>', 0)
+            $pendingOrders = \App\Models\OrderTracking::where('order_tracking.status', 'pending')
+                ->whereNotNull('order_tracking.total_inboxes')
+                ->where('order_tracking.total_inboxes', '>', 0)
                 ->join('orders', 'order_tracking.order_id', '=', 'orders.id')
                 ->where('orders.provider_type', '!=', 'Private SMTP')
                 ->select('order_tracking.*')
