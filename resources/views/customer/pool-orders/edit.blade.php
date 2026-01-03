@@ -989,13 +989,13 @@
                                             <div class="form-check text-start mb-2">
                                                 <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmNoWarmupChanges">
                                                 <label class="form-check-label small text-light" for="confirmNoWarmupChanges">
-                                                    I confirm that I will not activate warm-up on any email accounts, nor will I alter any of the existing settings. All the settings inside the Instantly account will be managed exclusively by Start Your AI Agency.
+                                                    I confirm that I will not activate warm-up on any email accounts.
                                                 </label>
                                             </div>
                                             <div class="form-check text-start mb-2">
                                                 <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmInstantlyAccess">
                                                 <label class="form-check-label small text-light" for="confirmInstantlyAccess">
-                                                    I confirm that the login credentials provided are accurate. Incorrect details will result in delays.
+                                                    I confirm that the login credentials to the Instantly account I am providing are accurate. Incorrect details will result in delays.
                                                 </label>
                                             </div>
                                             <div class="form-check text-start mb-2">
@@ -1008,7 +1008,7 @@
                                                 <input class="form-check-input save-requirement-checkbox" type="checkbox" id="confirmLoginAccuracy">
                                                 <label class="form-check-label small text-light" for="confirmLoginAccuracy">
                                                     I confirm that I will not change the Instantly account password. Changing the password will incur a $500 penalty, as it prevents us from removing the rented email accounts from your Instantly workspace once the one-week rental period has ended. This would require full deactivation and replacement of all mailboxes, including complete set-up and warm-up from scratch. This discounted service is only possible due to our shared-domain infrastructure and the ability to maintain inboxes in a warm, active state for the next user.
-                                                    <span class="text-warning fw-semibold">Incorrect details will cause delays.</span>
+                                                    {{-- <span class="text-warning fw-semibold">Incorrect details will cause delays.</span> --}}
                                                 </label>
                                             </div>
                                         </div>
