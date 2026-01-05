@@ -118,6 +118,15 @@ class PoolDomainController extends Controller
                     }
                     return $this->poolDomainService->formatPrefixes($row['prefixes'] ?? [], $row['domain_name'] ?? '');
                 })
+                ->addColumn('email_account', function ($row) {
+                    // Return the email_account field for DataTables search
+                    // This matches the format used in frontend: prefix@domain
+                    return $row['email_account'] ?? '';
+                })
+                ->addColumn('days_remaining', function ($row) {
+                    // Return days_remaining for warming status
+                    return $row['days_remaining'] ?? null;
+                })
                 ->addColumn('actions', function ($row) {
                     $poolId = $row['pool_id'] ?? '';
                     $poolOrderId = $row['pool_order_id'] ?? '';

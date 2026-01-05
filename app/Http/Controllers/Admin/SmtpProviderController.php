@@ -99,11 +99,18 @@ class SmtpProviderController extends Controller
      */
     public function update(Request $request, SmtpProvider $smtpProvider)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
+        // Build validation rules - name is only required if it's being updated
+        $rules = [
             'url' => 'nullable|url|max:255',
             'is_active' => 'boolean',
-        ]);
+        ];
+
+        // Only require name if it's present in the request (being updated)
+        if ($request->has('name')) {
+            $rules['name'] = 'required|string|max:255';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return response()->json([
@@ -112,7 +119,19 @@ class SmtpProviderController extends Controller
             ], 422);
         }
 
-        $smtpProvider->update($request->only(['name', 'url', 'is_active']));
+        // Prepare update data - only include fields that are present
+        $updateData = [];
+        if ($request->has('name')) {
+            $updateData['name'] = $request->name;
+        }
+        if ($request->has('url')) {
+            $updateData['url'] = $request->url;
+        }
+        if ($request->has('is_active')) {
+            $updateData['is_active'] = $request->is_active;
+        }
+
+        $smtpProvider->update($updateData);
 
         return response()->json([
             'success' => true,

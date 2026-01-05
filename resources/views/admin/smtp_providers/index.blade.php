@@ -825,10 +825,34 @@
                             }
                         },
                         error: function(xhr) {
+                            let errorMessage = 'An error occurred. Please try again.';
+                            
+                            // Try to extract error message from response
+                            if (xhr.responseJSON) {
+                                if (xhr.responseJSON.message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                } else if (xhr.responseJSON.errors) {
+                                    // Handle validation errors
+                                    const firstError = Object.values(xhr.responseJSON.errors)[0];
+                                    if (Array.isArray(firstError) && firstError.length > 0) {
+                                        errorMessage = firstError[0];
+                                    }
+                                }
+                            } else if (xhr.responseText) {
+                                try {
+                                    const response = JSON.parse(xhr.responseText);
+                                    if (response.message) {
+                                        errorMessage = response.message;
+                                    }
+                                } catch (e) {
+                                    // If parsing fails, use default message
+                                }
+                            }
+                            
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
-                                text: 'An error occurred. Please try again.'
+                                text: errorMessage
                             });
                         }
                     });
@@ -885,10 +909,34 @@
                     }
                 },
                 error: function(xhr) {
+                    let errorMessage = 'An error occurred. Please try again.';
+                    
+                    // Try to extract error message from response
+                    if (xhr.responseJSON) {
+                        if (xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else if (xhr.responseJSON.errors) {
+                            // Handle validation errors
+                            const firstError = Object.values(xhr.responseJSON.errors)[0];
+                            if (Array.isArray(firstError) && firstError.length > 0) {
+                                errorMessage = firstError[0];
+                            }
+                        }
+                    } else if (xhr.responseText) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response.message) {
+                                errorMessage = response.message;
+                            }
+                        } catch (e) {
+                            // If parsing fails, use default message
+                        }
+                    }
+                    
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: 'An error occurred. Please try again.'
+                        text: errorMessage
                     });
                 }
             });

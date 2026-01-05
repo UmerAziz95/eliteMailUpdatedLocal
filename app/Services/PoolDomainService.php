@@ -257,6 +257,41 @@ class PoolDomainService
                         }
                     }
 
+                    // Construct email address (same format as frontend: prefix@domain)
+                    $emailAccount = $prefixValue && $domainName ? $prefixValue . '@' . $domainName : '';
+
+                    // Calculate days_remaining when end_date exists (for warming status display)
+                    $daysRemaining = null;
+                    if (isset($prefixData['end_date']) && !empty($prefixData['end_date'])) {
+                        try {
+                            $endDateStr = $prefixData['end_date'];
+                            // Handle different date formats
+                            if (is_string($endDateStr)) {
+                                // Try Y-m-d format first (most common)
+                                try {
+                                    $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $endDateStr);
+                                } catch (\Exception $e) {
+                                    // Fallback to Carbon parse for other formats
+                                    $endDate = \Carbon\Carbon::parse($endDateStr);
+                                }
+                            } else {
+                                $endDate = \Carbon\Carbon::parse($endDateStr);
+                            }
+                            $today = \Carbon\Carbon::today();
+                            $daysRemaining = $today->diffInDays($endDate, false); // false allows negative values
+                        } catch (\Exception $e) {
+                            \Log::warning('Failed to calculate days_remaining', [
+                                'end_date' => $prefixData['end_date'] ?? null,
+                                'status' => $status,
+                                'pool_id' => $pool->id,
+                                'domain_id' => $domainId,
+                                'prefix_key' => $prefixKey,
+                                'error' => $e->getMessage()
+                            ]);
+                            $daysRemaining = null;
+                        }
+                    }
+
                     $results[] = [
                         'customer_name' => $customer ? $customer->name : 'Unknown',
                         'customer_email' => $customer ? $customer->email : 'unknown@example.com',
@@ -271,6 +306,7 @@ class PoolDomainService
                         'status' => $status,
                         'start_date' => $prefixData['start_date'] ?? null,
                         'end_date' => $prefixData['end_date'] ?? null,
+                        'days_remaining' => $daysRemaining, // Days remaining for warming status
                         'prefixes' => $poolPrefixes,
                         'per_inbox' => $perInbox,
                         'pool_order_status' => $poolOrderStatus,
@@ -279,6 +315,7 @@ class PoolDomainService
                         'created_by' => $pool->user ? $pool->user->name : 'Unknown',
                         'provider_type' => $pool->provider_type ?? null,
                         'smtp_provider_url' => $smtpProviderUrl,
+                        'email_account' => $emailAccount, // Add email_account field for DataTables search
                     ];
                 }
             } else {
@@ -309,6 +346,42 @@ class PoolDomainService
                     }
                 }
 
+                // Construct email address for old format (use first prefix if available)
+                $firstPrefix = !empty($poolPrefixes) ? reset($poolPrefixes) : '';
+                $emailAccount = $firstPrefix && $domainName ? $firstPrefix . '@' . $domainName : '';
+
+                // Calculate days_remaining when end_date exists (old format, for warming status display)
+                $status = $domain['status'] ?? 'unknown';
+                $daysRemaining = null;
+                if (isset($domain['end_date']) && !empty($domain['end_date'])) {
+                    try {
+                        $endDateStr = $domain['end_date'];
+                        // Handle different date formats
+                        if (is_string($endDateStr)) {
+                            // Try Y-m-d format first (most common)
+                            try {
+                                $endDate = \Carbon\Carbon::createFromFormat('Y-m-d', $endDateStr);
+                            } catch (\Exception $e) {
+                                // Fallback to Carbon parse for other formats
+                                $endDate = \Carbon\Carbon::parse($endDateStr);
+                            }
+                        } else {
+                            $endDate = \Carbon\Carbon::parse($endDateStr);
+                        }
+                        $today = \Carbon\Carbon::today();
+                        $daysRemaining = $today->diffInDays($endDate, false); // false allows negative values
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to calculate days_remaining (old format)', [
+                            'end_date' => $domain['end_date'] ?? null,
+                            'status' => $status,
+                            'pool_id' => $pool->id,
+                            'domain_id' => $domainId,
+                            'error' => $e->getMessage()
+                        ]);
+                        $daysRemaining = null;
+                    }
+                }
+
                 // Show single row with domain-level status
                 $results[] = [
                     'customer_name' => $customer ? $customer->name : 'Unknown',
@@ -323,6 +396,7 @@ class PoolDomainService
                     'status' => $domain['status'] ?? 'unknown',
                     'start_date' => $domain['start_date'] ?? null,
                     'end_date' => $domain['end_date'] ?? null,
+                    'days_remaining' => $daysRemaining, // Days remaining for warming status
                     'prefixes' => $poolPrefixes,
                     'per_inbox' => $perInbox,
                     'pool_order_status' => $poolOrderStatus,
@@ -331,6 +405,7 @@ class PoolDomainService
                     'created_by' => $pool->user ? $pool->user->name : 'Unknown',
                     'provider_type' => $pool->provider_type ?? null,
                     'smtp_provider_url' => $smtpProviderUrl,
+                    'email_account' => $emailAccount, // Add email_account field for DataTables search
                 ];
             }
         }
@@ -636,13 +711,17 @@ class PoolDomainService
                     $customerName = $customer ? $customer->name : 'Unknown';
                     $customerEmail = $customer ? $customer->email : 'unknown@example.com';
 
-                    // Check if any field matches the search term
+                    // Construct email address for search (same format as frontend: prefix@domain)
+                    $emailAccount = $prefixValue && $domainName ? $prefixValue . '@' . $domainName : '';
+
+                    // Check if any field matches the search term (including constructed email)
                     $matchesSearch = stripos($customerName, $searchTerm) !== false ||
                         stripos($customerEmail, $searchTerm) !== false ||
                         stripos($domainName, $searchTerm) !== false ||
                         stripos($domainId, $searchTerm) !== false ||
                         stripos($status, $searchTerm) !== false ||
                         stripos($prefixValue, $searchTerm) !== false ||
+                        stripos($emailAccount, $searchTerm) !== false ||
                         stripos((string) $pool->id, $searchTerm) !== false;
 
                     if (!$matchesSearch) {
@@ -669,6 +748,7 @@ class PoolDomainService
                         'is_used' => (bool) ($domain['is_used'] ?? false),
                         'created_by' => $pool->user ? $pool->user->name : 'Unknown',
                         'provider_type' => $pool->provider_type ?? null,
+                        'email_account' => $emailAccount, // Add email_account field for DataTables search
                     ];
                 }
             } else {
@@ -694,11 +774,16 @@ class PoolDomainService
 
                 $status = $domain['status'] ?? 'unknown';
 
+                // Construct email address for old format (use first prefix if available)
+                $firstPrefix = !empty($poolPrefixes) ? reset($poolPrefixes) : '';
+                $emailAccount = $firstPrefix && $domainName ? $firstPrefix . '@' . $domainName : '';
+
                 $matchesSearch = stripos($customerName, $searchTerm) !== false ||
                     stripos($customerEmail, $searchTerm) !== false ||
                     stripos($domainName, $searchTerm) !== false ||
                     stripos($domainId, $searchTerm) !== false ||
                     stripos($status, $searchTerm) !== false ||
+                    stripos($emailAccount, $searchTerm) !== false ||
                     stripos((string) $pool->id, $searchTerm) !== false;
 
                 if (!$matchesSearch) {
@@ -723,6 +808,7 @@ class PoolDomainService
                     'pool_order_status' => $poolOrderStatus,
                     'pool_order_admin_status' => $poolOrderAdminStatus,
                     'is_used' => (bool) ($domain['is_used'] ?? false),
+                    'email_account' => $emailAccount, // Add email_account field for DataTables search
                     'created_by' => $pool->user ? $pool->user->name : 'Unknown',
                     'provider_type' => $pool->provider_type ?? null,
                 ];
