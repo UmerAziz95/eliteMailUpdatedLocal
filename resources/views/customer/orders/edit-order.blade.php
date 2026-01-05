@@ -355,7 +355,7 @@
                         <li>Enable Namecheap API Access</li>
                         <li>Add the following server IP to <strong>Whitelisted IPs</strong>: 
                             <code id="namecheap-server-ip" class="user-select-all" style="background-color: #fff; color: #d63384; padding: 2px 6px; border-radius: 3px;">144.172.95.185</code>
-                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="copyNamecheapIP()" title="Copy IP address">
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="copyNamecheapIP(event)" title="Copy IP address">
                                 <i class="fa-regular fa-copy me-1"></i>Copy IP
                             </button>
                         </li>
@@ -3355,28 +3355,6 @@ $(document).ready(function() {
         // Small delay to handle paste operations
         setTimeout(countDomains, 100);
     });
-    
-    // Copy Namecheap IP address to clipboard
-    function copyNamecheapIP() {
-        const ipAddress = '144.172.95.185';
-        navigator.clipboard.writeText(ipAddress).then(function() {
-            // Show success feedback
-            const button = event.target.closest('button');
-            const originalHTML = button.innerHTML;
-            button.innerHTML = '<i class="fa-solid fa-check me-1"></i>Copied!';
-            button.classList.remove('btn-outline-secondary');
-            button.classList.add('btn-success');
-            
-            setTimeout(function() {
-                button.innerHTML = originalHTML;
-                button.classList.remove('btn-success');
-                button.classList.add('btn-outline-secondary');
-            }, 2000);
-        }).catch(function(err) {
-            console.error('Failed to copy IP address:', err);
-            alert('Failed to copy IP address. Please copy manually: ' + ipAddress);
-        });
-    }
 
     // Initial domain count on page load - with delay to ensure DOM is fully loaded
     setTimeout(() => {
@@ -3396,6 +3374,33 @@ $(document).ready(function() {
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
 });
+
+// Copy Namecheap IP address to clipboard - Global function
+function copyNamecheapIP(event) {
+    const ipAddress = '144.172.95.185';
+    const button = event ? event.target.closest('button') : null;
+    const originalHTML = button ? button.innerHTML : '';
+    
+    navigator.clipboard.writeText(ipAddress).then(function() {
+        // Show success feedback
+        if (button) {
+            button.innerHTML = '<i class="fa-solid fa-check me-1"></i>Copied!';
+            button.classList.remove('btn-outline-secondary');
+            button.classList.add('btn-success');
+            
+            setTimeout(function() {
+                button.innerHTML = originalHTML;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-secondary');
+            }, 2000);
+        } else {
+            alert('IP address copied to clipboard: ' + ipAddress);
+        }
+    }).catch(function(err) {
+        console.error('Failed to copy IP address:', err);
+        alert('Failed to copy IP address. Please copy manually: ' + ipAddress);
+    });
+}
 </script>
 
 
