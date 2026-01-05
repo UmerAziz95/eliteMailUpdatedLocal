@@ -297,10 +297,10 @@
                     <span class="detail-label">New Status:</span>
                     <span class="detail-value">{{ ucfirst($newStatus) }}</span>
                 </div>
-                @if($newStatus == 'rejected' && isset($reason))
+                @if(($newStatus == 'rejected' || $newStatus == 'draft') && isset($reason))
                 <div class="detail-row">
                     <span class="detail-label">Reason:</span>
-                    <span class="detail-value">{{ $reason }}</span>
+                    <span class="detail-value" style="white-space: pre-line;">{{ $reason }}</span>
                 </div>
                 @endif
             </div>

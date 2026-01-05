@@ -127,8 +127,16 @@ class OrderController extends Controller
             ->orderBy('sort_order')
             ->get();
         $sendingPlatforms = \App\Models\SendingPlatform::get();
+        
+        // Get domain transfer errors for display
+        $domainTransferErrors = \App\Models\DomainTransfer::where('order_id', $order->id)
+            ->where('status', 'pending')
+            ->where('name_server_status', 'failed')
+            ->whereNotNull('error_message')
+            ->get();
+        
         // dd($hostingPlatforms);
-        return view('customer.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
+        return view('customer.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order', 'domainTransferErrors'));
     }
     // neworder
     public function newOrder(Request $request, $id = 1)
@@ -548,6 +556,20 @@ class OrderController extends Controller
                 'backup_codes' => 'required_if:hosting_platform,namecheap|string',
                 'spaceship_api_key' => 'required_if:hosting_platform,spaceship|nullable|string|max:255',
                 'spaceship_api_secret_key' => 'required_if:hosting_platform,spaceship|nullable|string|max:255',
+                'namecheap_api_key' => 'required_if:hosting_platform,namecheap|nullable|string|max:255',
+                'namecheap_ip_whitelisted' => [
+                    'nullable',
+                    'required_if:hosting_platform,namecheap',
+                    function ($attribute, $value, $fail) use ($request) {
+                        if ($request->hosting_platform === 'namecheap' && !$value) {
+                            $fail('This is required');
+                        }
+                        if ($request->hosting_platform === 'namecheap' && $value && !in_array($value, ['1', 1, 'yes', 'on', 'true', true])) {
+                            $fail('This is required');
+                        }
+                    },
+                ],
+                // Note: platform_login is already validated and will be used as ApiUser and UserName
                 'domains' => [
                     'required',
                     'string',
@@ -613,7 +635,7 @@ class OrderController extends Controller
             $shouldDispatchMailboxJob = false;
             $mailboxJobData = null;
             
-            if (config('mailin_ai.automation_enabled') === true && $plan->provider_type === 'Private SMTP' && $request->hosting_platform == 'spaceship') {
+            if (config('mailin_ai.automation_enabled') === true && $plan->provider_type === 'Private SMTP' && ($request->hosting_platform == 'spaceship' || $request->hosting_platform == 'namecheap')) {
                 // Extract domains from request for mailbox job
                 $mailboxDomainNames = array_map(
                     'trim',
@@ -789,6 +811,28 @@ class OrderController extends Controller
                                     'api_secret_key' => $request->spaceship_api_secret_key,
                                     'platform_login' => $request->platform_login,
                                     'platform_password' => $request->platform_password,
+                                ],
+                            ]
+                        );
+                    }
+                }
+                
+                // Save or update platform credentials if Namecheap is selected
+                if ($request->hosting_platform === 'namecheap') {
+                    // Validate that all required fields are present
+                    // Use platform_login (username) for both ApiUser and UserName
+                    if (!empty($request->platform_login) && 
+                        !empty($request->namecheap_api_key)) {
+                        
+                        \App\Models\PlatformCredential::updateOrCreate(
+                            [
+                                'order_id' => $order->id,
+                                'platform_type' => 'namecheap',
+                            ],
+                            [
+                                'credentials' => [
+                                    'api_user' => $request->platform_login, // Username used for both ApiUser and UserName
+                                    'api_key' => $request->namecheap_api_key,
                                 ],
                             ]
                         );

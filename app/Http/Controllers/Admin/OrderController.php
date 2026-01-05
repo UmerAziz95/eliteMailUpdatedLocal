@@ -209,7 +209,14 @@ class OrderController extends Controller
             ->get();
         $sendingPlatforms = \App\Models\SendingPlatform::get();
         
-        return view('admin.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
+        // Get domain transfer errors for display
+        $domainTransferErrors = \App\Models\DomainTransfer::where('order_id', $order->id)
+            ->where('status', 'pending')
+            ->where('name_server_status', 'failed')
+            ->whereNotNull('error_message')
+            ->get();
+        
+        return view('admin.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order', 'domainTransferErrors'));
     }
 
     public function getOrders(Request $request)

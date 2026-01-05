@@ -208,6 +208,27 @@
         </div>
     </div>
 @endif
+
+{{-- Display Domain Transfer Errors --}}
+@if(isset($domainTransferErrors) && $domainTransferErrors->count() > 0)
+    <div class="alert alert-danger mb-4 mt-2" role="alert" style="background-color: #f8d7da; border-color: #f5c2c7; color: #842029;">
+        <h6 class="alert-heading" style="color: #842029;">
+            <i class="fa-solid fa-exclamation-triangle me-2"></i>
+            Order Processing Failed - Nameserver Update Errors
+        </h6>
+        <p class="mb-2" style="color: #842029;"><strong>Your order could not be processed due to nameserver update failures. Please review the errors below and resubmit:</strong></p>
+        <ul class="mb-0" style="color: #842029;">
+            @foreach($domainTransferErrors as $error)
+                <li>
+                    <strong>{{ $error->domain_name }}:</strong> {{ $error->error_message }}
+                </li>
+            @endforeach
+        </ul>
+        <hr style="border-color: #f5c2c7;">
+        <p class="mb-0" style="color: #842029;"><small>After fixing the issues (e.g., updating API credentials, whitelisting IP address), please resubmit the order. The system will retry the nameserver updates and continue processing.</small></p>
+    </div>
+@endif
+
 <form id="editOrderForm" novalidate>
     @csrf
     <input type="hidden" name="user_id" value="{{ auth()->id() }}">
@@ -317,6 +338,52 @@
                             <i class="fa-regular fa-eye password-toggle"></i>
                         </div>
                         <div class="invalid-feedback" id="spaceship_api_secret_key-error"></div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Namecheap API Fields (shown only when Namecheap is selected) --}}
+            <div id="namecheap-api-fields" class="mb-3" style="display: none;">
+                {{-- Whitelist Instruction Alert --}}
+                <div class="alert alert-info mb-3" style="background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460;">
+                    <h6 class="alert-heading" style="color: #0c5460;"><i class="fa-solid fa-info-circle me-2"></i>Namecheap API Whitelist Required</h6>
+                    <p class="mb-2" style="color: #0c5460;">To update domain nameservers via the Namecheap API, we require the API key from the customer. Additionally, the customer must whitelist our server's public IP to allow API access.</p>
+                    <p class="mb-2" style="color: #0c5460;"><strong>What the customer needs to do:</strong></p>
+                    <ol class="mb-2" style="color: #0c5460;">
+                        <li>Log in to Namecheap</li>
+                        <li>Go to <strong>Profile → Tools → API Access</strong></li>
+                        <li>Enable Namecheap API Access</li>
+                        <li>Add the following server IP to <strong>Whitelisted IPs</strong>: 
+                            <code id="namecheap-server-ip" class="user-select-all" style="background-color: #fff; color: #d63384; padding: 2px 6px; border-radius: 3px;">144.172.95.185</code>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="copyNamecheapIP()" title="Copy IP address">
+                                <i class="fa-regular fa-copy me-1"></i>Copy IP
+                            </button>
+                        </li>
+                        <li>Click <strong>Save</strong></li>
+                    </ol>
+                    <div class="mb-2">
+                        <div class="form-check">
+                            <input type="checkbox" id="namecheap_ip_whitelisted" name="namecheap_ip_whitelisted" class="form-check-input" value="1" required>
+                            <label class="form-check-label" for="namecheap_ip_whitelisted" style="color: #0c5460;">
+                                I confirm that I have whitelisted the IP address <strong>144.172.95.185</strong> in my Namecheap account *
+                            </label>
+                        </div>
+                        <div class="invalid-feedback d-block" id="namecheap_ip_whitelisted-error"></div>
+                    </div>
+                    <p class="mb-0 mt-2" style="color: #0c5460;"><small>Once this is completed, we will be able to update the domain nameservers automatically.</small></p>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="namecheap_api_key">Namecheap API Key *</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="namecheap_api_key" name="namecheap_api_key" 
+                                class="form-control" 
+                                value="{{ isset($order) && $order->getPlatformCredential('namecheap') ? $order->getPlatformCredential('namecheap')->getCredential('api_key', '') : '' }}"
+                                placeholder="Enter Namecheap API Key">
+                            <i class="fa-regular fa-eye password-toggle"></i>
+                        </div>
+                        <div class="invalid-feedback" id="namecheap_api_key-error"></div>
                     </div>
                 </div>
             </div>
@@ -456,7 +523,10 @@
                     </div>
                 </div> -->
 
-                <div class="col-md-6 profile-picture" style="display: none;">
+                @php
+                    $isPrivateSMTP = isset($order) && ($order->provider_type === 'Private SMTP' || (isset($order->plan) && $order->plan->provider_type === 'Private SMTP'));
+                @endphp
+                <div class="col-md-6 profile-picture" style="display: none;" @if($isPrivateSMTP) style="display: none !important;" @endif>
                     <label>Profile Picture Link</label>
                     <input type="url" name="profile_picture_link" class="form-control"
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->profile_picture_link : '' }}">
@@ -2343,6 +2413,7 @@ $(document).ready(function() {
         
         const container = $('#platform-fields-container');
         const spaceshipFields = $('#spaceship-api-fields');
+        const namecheapFields = $('#namecheap-api-fields');
         container.empty();
         
         // Show/hide Spaceship API fields based on selection
@@ -2358,6 +2429,22 @@ $(document).ready(function() {
             }
             // Remove required attribute
             $('#spaceship_api_key, #spaceship_api_secret_key').prop('required', false);
+        }
+        
+        // Show/hide Namecheap API fields based on selection
+        if (platformValue === 'namecheap') {
+            if (namecheapFields.length) {
+                namecheapFields.css('display', 'block');
+            }
+            // Make API key field and whitelist checkbox required
+            // Note: platform_login (username) is already required via platform fields
+            $('#namecheap_api_key, #namecheap_ip_whitelisted').prop('required', true);
+        } else {
+            if (namecheapFields.length) {
+                namecheapFields.css('display', 'none');
+            }
+            // Remove required attribute
+            $('#namecheap_api_key, #namecheap_ip_whitelisted').prop('required', false);
         }
         
         if (fieldsData) {
@@ -2718,6 +2805,44 @@ $(document).ready(function() {
                 }
             }
         }
+        
+        // Validate Namecheap API fields if Namecheap is selected
+        if (hostingPlatform === 'namecheap') {
+            const platformLogin = $('#platform_login').val()?.trim(); // This is the Namecheap username
+            const apiKey = $('#namecheap_api_key').val()?.trim();
+            const ipWhitelisted = $('#namecheap_ip_whitelisted').is(':checked');
+
+            $('#platform_login, #namecheap_api_key, #namecheap_ip_whitelisted').removeClass('is-invalid');
+            $('#platform_login-error, #namecheap_api_key-error, #namecheap_ip_whitelisted-error').text('');
+
+            // platform_login is already validated by platform fields, but we ensure it's there for Namecheap
+            if (!platformLogin) {
+                isValid = false;
+                $('#platform_login').addClass('is-invalid');
+                $('#platform_login-error').text('Namecheap username is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#platform_login');
+                }
+            }
+
+            if (!apiKey) {
+                isValid = false;
+                $('#namecheap_api_key').addClass('is-invalid');
+                $('#namecheap_api_key-error').text('Namecheap API Key is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#namecheap_api_key');
+                }
+            }
+
+            if (!ipWhitelisted) {
+                isValid = false;
+                $('#namecheap_ip_whitelisted').addClass('is-invalid');
+                $('#namecheap_ip_whitelisted-error').text('This is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#namecheap_ip_whitelisted');
+                }
+            }
+        }
         // Validate dynamic prefix variant fields
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         for (let i = 1; i <= inboxesPerDomain; i++) {
@@ -3046,6 +3171,12 @@ $(document).ready(function() {
     const container = $('#prefix-variants-container');
     container.empty();
     
+    // Check if provider_type is Private SMTP
+    @php
+        $isPrivateSMTP = isset($order) && ($order->provider_type === 'Private SMTP' || (isset($order->plan) && $order->plan->provider_type === 'Private SMTP'));
+    @endphp
+    const isPrivateSMTP = @json($isPrivateSMTP ?? false);
+    
     // Add header
     container.append('<h5 class="mb-2 col-12">Email Persona - Prefix Variants</h5>');
     
@@ -3106,13 +3237,15 @@ $(document).ready(function() {
                             <p class="note">Last name for this email persona</p>
                         </div>
                         
-                        <div class="col-md-4">
+                        ${isPrivateSMTP ? '' : `
+                        <div class="col-md-4 profile-picture-field">
                             <label>Profile Picture Link</label>
                             <input type="url" name="prefix_variants_details[prefix_variant_${i}][profile_link]" 
                                 class="form-control" value="${existingDetails.profile_link || ''}" >
                             <div class="invalid-feedback" id="prefix_variant_${i}_profile_link-error"></div>
                             <p class="note">Profile picture URL for this persona</p>
                         </div>
+                        `}
 
                         <div class="col-md-12">
                             <label>Email Prefix ${i} *</label>
@@ -3223,6 +3356,28 @@ $(document).ready(function() {
         setTimeout(countDomains, 100);
     });
     
+    // Copy Namecheap IP address to clipboard
+    function copyNamecheapIP() {
+        const ipAddress = '144.172.95.185';
+        navigator.clipboard.writeText(ipAddress).then(function() {
+            // Show success feedback
+            const button = event.target.closest('button');
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<i class="fa-solid fa-check me-1"></i>Copied!';
+            button.classList.remove('btn-outline-secondary');
+            button.classList.add('btn-success');
+            
+            setTimeout(function() {
+                button.innerHTML = originalHTML;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-secondary');
+            }, 2000);
+        }).catch(function(err) {
+            console.error('Failed to copy IP address:', err);
+            alert('Failed to copy IP address. Please copy manually: ' + ipAddress);
+        });
+    }
+
     // Initial domain count on page load - with delay to ensure DOM is fully loaded
     setTimeout(() => {
         countDomains();
