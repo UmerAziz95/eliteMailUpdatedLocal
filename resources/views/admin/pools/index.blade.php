@@ -35,6 +35,13 @@
             border: 1px solid #dc3545;
         }
 
+        .status-badge.badge-danger,
+        .badge-danger {
+            background-color: rgba(220, 53, 69, 0.2) !important;
+            color: rgba(var(--bs-danger-rgb)) !important;
+            border: 1px solid rgba(var(--bs-danger-rgb)) !important;
+        }
+
         /* .table-responsive {
                                                         border-radius: 12px;
                                                         overflow: hidden;
@@ -60,9 +67,26 @@
         }
 
         /* DataTable custom styling to match theme */
+        .dataTables_wrapper > .top {
+            display: flex !important;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: nowrap;
+            gap: 1rem;
+        }
+
         .dataTables_wrapper .dataTables_filter {
             float: right;
             margin-bottom: 1rem;
+        }
+
+        .dataTables_wrapper > .top .dataTables_filter {
+            float: none;
+            margin-bottom: 0;
+            margin-right: 0.5rem;
+            display: flex;
+            align-items: center;
         }
 
         .dataTables_wrapper .dataTables_filter input {
@@ -75,13 +99,38 @@
         .dataTables_wrapper .dataTables_length {
             float: left;
             margin-bottom: 1rem;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .dataTables_wrapper > .top .dataTables_length {
+            float: none;
+            margin-bottom: 0;
+            margin-left: 0.5rem;
+            display: flex !important;
+            align-items: center;
+        }
+
+        .dataTables_wrapper .dataTables_length label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0;
+            font-weight: normal;
         }
 
         .dataTables_wrapper .dataTables_length select {
             border: 1px solid var(--bs-border-color);
             border-radius: 0.375rem;
             padding: 0.375rem 0.75rem;
-            margin: 0 0.5rem;
+            margin: 0;
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            display: inline-block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            min-width: 80px;
         }
 
         .dataTables_wrapper .dataTables_info {
@@ -223,6 +272,7 @@
                                                 <th>Status</th>
                                                 <th>Email Account</th>
                                                 <th>Expiry Date</th>
+                                                <th>Days Remaining</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -316,6 +366,7 @@
                                                 <th>Status</th>
                                                 <th>Email Account</th>
                                                 <th>Expiry Date</th>
+                                                <th>Days Remaining</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -410,6 +461,7 @@
                                                 <th>Email Account</th>
                                                 <th>Provider URL</th>
                                                 <th>Expiry Date</th>
+                                                <th>Days Remaining</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -586,7 +638,7 @@
                     processing: true,
                     serverSide: true,
                     responsive: true,
-                    dom: '<"top"f>rt<"bottom"lip><"clear">',
+                    dom: '<"top"lf>rt<"bottom"ip><"clear">',
                     ajax: {
                         url: "{{ route('admin.pool-domains.index') }}",
                         data: function (d) {
@@ -595,13 +647,15 @@
                             d.status_filter = config.status;
                         }
                     },
-                    columns: getTableColumns(config.provider),
+                    columns: getTableColumns(config.provider, config.status),
                     order: [[1, 'desc']],
                     pageLength: 25,
-                    lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                    lengthMenu: [[25, 50, 100, 250, 500, 1000, -1], [25, 50, 100, 250, 500, 1000, "All"]],
                     drawCallback: function () {
                         // Restore checkbox states after pagination
                         restoreCheckboxStates();
+                        // Initialize tooltips
+                        $('[data-bs-toggle="tooltip"]').tooltip();
                     },
                     language: {
                         emptyTable: `
@@ -611,9 +665,6 @@
                                                                     <p class="">All ${config.status} email accounts will appear here.</p>
                                                                 </div>
                                                             `
-                    },
-                    drawCallback: function () {
-                        $('[data-bs-toggle="tooltip"]').tooltip();
                     }
                 });
             });
@@ -672,7 +723,7 @@
             });
         }
 
-        function getTableColumns(providerType) {
+        function getTableColumns(providerType, statusFilter) {
             const columns = [
                 {
                     data: null,
@@ -741,12 +792,12 @@
                     }
                 },
                 {
-                    data: null,
+                    data: 'email_account',
                     name: 'email_account',
+                    searchable: true,
                     render: function (data, type, row) {
-                        const prefix = row.prefix_value || '';
-                        const domain = row.domain_name || '';
-                        const email = prefix && domain ? `${prefix}@${domain}` : domain;
+                        // Use email_account from backend if available, otherwise construct from prefix and domain
+                        const email = data || (row.prefix_value && row.domain_name ? `${row.prefix_value}@${row.domain_name}` : row.domain_name || '-');
 
                         return `
                                                                 <div class="d-flex gap-1 align-items-center">
@@ -803,6 +854,29 @@
                                                             `;
                 }
             });
+
+            // Add Days Remaining column ONLY for warming status
+            if (statusFilter === 'warming') {
+                columns.push({
+                    data: 'days_remaining',
+                    name: 'days_remaining',
+                    orderable: false,
+                    render: function (data, type, row) {
+                        if (data === null || data === undefined) return '-';
+                        
+                        const days = parseInt(data);
+                        if (isNaN(days)) return '-';
+                        
+                        if (days > 0) {
+                            return `<span class="badge bg-warning text-dark">${days} days left</span>`;
+                        } else if (days === 0) {
+                            return `<span class="badge bg-success">Ready</span>`;
+                        } else {
+                            return `<span class="badge bg-danger">Expired ${Math.abs(days)} days ago</span>`;
+                        }
+                    }
+                });
+            }
 
             return columns;
         }
