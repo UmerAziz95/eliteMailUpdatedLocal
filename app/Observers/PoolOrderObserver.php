@@ -1090,9 +1090,52 @@ class PoolOrderObserver
             }
             
             if ($endDate) {
-                Log::info('Using pool plan duration for order end date', [
+                // Get billing cycle and multiply the duration
+                $billingCycle = 1;
+                if ($poolOrder->poolPlan->billing_cycle) {
+                    $billingCycleStr = strtolower(trim($poolOrder->poolPlan->billing_cycle));
+                    if ($billingCycleStr === 'unlimited') {
+                        // For unlimited, use a very large number (e.g., 10 years)
+                        $billingCycle = 120; // 10 years in months as a reasonable maximum
+                    } else {
+                        $billingCycle = (int) $billingCycleStr;
+                        if ($billingCycle <= 0 || $billingCycle > 10) {
+                            $billingCycle = 1; // Fallback to 1 if invalid
+                        }
+                    }
+                }
+                
+                // Multiply the duration by billing cycle
+                // Add (billing_cycle - 1) more periods to the already calculated endDate
+                if ($billingCycle > 1) {
+                    switch ($duration) {
+                        case 'daily':
+                            $endDate->addDays($billingCycle - 1);
+                            break;
+                        case 'weekly':
+                            $endDate->addWeeks($billingCycle - 1);
+                            break;
+                        case 'monthly':
+                            $endDate->addMonths($billingCycle - 1);
+                            break;
+                        case 'yearly':
+                            $endDate->addYears($billingCycle - 1);
+                            break;
+                        default:
+                            // For numeric duration, calculate from startDate with multiplied value
+                            $numericDuration = (int) $duration;
+                            if ($numericDuration > 0) {
+                                $endDate = $startDate->copy()->addDays($numericDuration * $billingCycle);
+                            }
+                            break;
+                    }
+                }
+                
+                Log::info('Using pool plan duration and billing cycle for order end date', [
                     'pool_order_id' => $poolOrder->id,
                     'plan_duration' => $duration,
+                    'billing_cycle' => $poolOrder->poolPlan->billing_cycle,
+                    'calculated_cycles' => $billingCycle,
                     'end_date' => $endDate->format('Y-m-d')
                 ]);
                 
@@ -1100,7 +1143,7 @@ class PoolOrderObserver
             }
         }
 
-        // Priority 3: Fallback to default duration (7 days)
+        // Fallback to default duration (7 days)
         $defaultDuration = config('app.pool_order_default_duration', 7);
         $endDate = $startDate->copy()->addDays($defaultDuration);
         

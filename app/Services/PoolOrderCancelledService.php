@@ -358,9 +358,10 @@ class PoolOrderCancelledService
      * Free domains when subscription is cancelled
      * 
      * @param array $domains Array of domain data from pool order
+     * @param bool $skipWarming If true, domains go directly to 'available' status without warming period
      * @return array Stats about freed domains
      */
-    private function freeDomains($domains)
+    private function freeDomains($domains, bool $skipWarming = false)
     {
         $stats = [
             'freed' => 0,
@@ -378,22 +379,27 @@ class PoolOrderCancelledService
         }
 
         $stats['total'] = count($domains);
-        Log::info("freeDomains: Processing {$stats['total']} domain(s)");
+        Log::info("freeDomains: Processing {$stats['total']} domain(s)", [
+            'skip_warming' => $skipWarming
+        ]);
 
-        // Determine warming period for cancellations (in days)
-        $cancellationWarmingDays = (int) Configuration::get(
-            'CANCELLATION_POOL_WARMING_PERIOD',
-            Configuration::get('POOL_WARMING_PERIOD', 21)
-        );
-        if ($cancellationWarmingDays < 0) {
-            $cancellationWarmingDays = 0;
+        // Determine warming period for cancellations (in days) - only if not skipping warming
+        $warmingDates = null;
+        if (!$skipWarming) {
+            $cancellationWarmingDays = (int) Configuration::get(
+                'CANCELLATION_POOL_WARMING_PERIOD',
+                Configuration::get('POOL_WARMING_PERIOD', 21)
+            );
+            if ($cancellationWarmingDays < 0) {
+                $cancellationWarmingDays = 0;
+            }
+
+            $warmingStartDate = Carbon::now();
+            $warmingDates = [
+                'start_date' => $warmingStartDate->format('Y-m-d'),
+                'end_date' => $warmingStartDate->copy()->addDays($cancellationWarmingDays)->format('Y-m-d')
+            ];
         }
-
-        $warmingStartDate = Carbon::now();
-        $warmingDates = [
-            'start_date' => $warmingStartDate->format('Y-m-d'),
-            'end_date' => $warmingStartDate->copy()->addDays($cancellationWarmingDays)->format('Y-m-d')
-        ];
 
         foreach ($domains as $index => $domain) {
             try {
@@ -453,7 +459,7 @@ class PoolOrderCancelledService
                 }
 
                 // Process pool domains - only update prefixes that were selected in the order
-                $result = $this->updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, $warmingDates, $selectedPrefixes);
+                $result = $this->updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, $warmingDates, $selectedPrefixes, $skipWarming);
 
                 if ($result['changed']) {
                     // Save updated domains
@@ -492,8 +498,12 @@ class PoolOrderCancelledService
 
     /**
      * Public helper to free domains for a given pool order
+     * 
+     * @param \App\Models\PoolOrder $poolOrder
+     * @param bool $skipWarming If true, domains go directly to 'available' status without warming period
+     * @return array
      */
-    public function freeDomainsFromPoolOrder(\App\Models\PoolOrder $poolOrder): array
+    public function freeDomainsFromPoolOrder(\App\Models\PoolOrder $poolOrder, bool $skipWarming = false): array
     {
         $poolOrder->refresh();
         $domains = $poolOrder->domains;
@@ -519,10 +529,11 @@ class PoolOrderCancelledService
             return ['freed' => 0, 'skipped' => 0, 'total' => 0];
         }
 
-        $freed = $this->freeDomains($domains);
+        $freed = $this->freeDomains($domains, $skipWarming);
 
         Log::info('freeDomainsFromPoolOrder: Domain freeing completed', [
             'pool_order_id' => $poolOrder->id,
+            'skip_warming' => $skipWarming,
             'freed_count' => $freed['freed'] ?? 0,
             'skipped_count' => $freed['skipped'] ?? 0,
             'total' => $freed['total'] ?? 0
@@ -577,16 +588,20 @@ class PoolOrderCancelledService
      * @param mixed $domainId The domain ID to update
      * @param mixed $poolId The pool ID
      * @param string $domainName The domain name for logging
-     * @param array|null $warmingDates Warming period dates
+     * @param array|null $warmingDates Warming period dates (only used if skipWarming is false)
      * @param array $selectedPrefixes The prefixes that were selected in the pool order (keys are prefix variant names)
+     * @param bool $skipWarming If true, set status to 'available' and preserve existing dates
      */
-    private function updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, array $warmingDates = null, array $selectedPrefixes = [])
+    private function updatePoolDomainStatus($poolDomains, $domainId, $poolId, $domainName, array $warmingDates = null, array $selectedPrefixes = [], bool $skipWarming = false)
     {
         $updatedDomains = [];
         $hasChanges = false;
 
         // Get the prefix keys that were actually selected in the order
         $selectedPrefixKeys = is_array($selectedPrefixes) ? array_keys($selectedPrefixes) : [];
+
+        // Determine target status based on skipWarming flag
+        $targetStatus = $skipWarming ? 'available' : 'warming';
 
         foreach ($poolDomains as $poolDomain) {
             // Preserve non-array entries as-is
@@ -611,11 +626,16 @@ class PoolOrderCancelledService
                             // Only update if this prefix was selected in the order
                             // If selectedPrefixKeys is empty, update all (legacy behavior fallback)
                             if (empty($selectedPrefixKeys) || in_array($key, $selectedPrefixKeys)) {
-                                $poolDomain['prefix_statuses'][$key]['status'] = 'warming';
-                                if ($warmingDates) {
+                                // Set status based on skipWarming flag
+                                $poolDomain['prefix_statuses'][$key]['status'] = $targetStatus;
+                                
+                                // Only update dates if NOT skipping warming (preserve existing dates when skipWarming is true)
+                                if (!$skipWarming && $warmingDates) {
                                     $poolDomain['prefix_statuses'][$key]['start_date'] = $warmingDates['start_date'];
                                     $poolDomain['prefix_statuses'][$key]['end_date'] = $warmingDates['end_date'];
                                 }
+                                // When skipWarming is true, dates remain unchanged (preserve existing start_date and end_date)
+                                
                                 $updatedPrefixCount++;
                             }
                         }
@@ -625,7 +645,9 @@ class PoolOrderCancelledService
                         'domain_id' => $domainId,
                         'total_prefixes' => count($poolDomain['prefix_statuses']),
                         'selected_prefixes' => $selectedPrefixKeys,
-                        'updated_count' => $updatedPrefixCount
+                        'updated_count' => $updatedPrefixCount,
+                        'target_status' => $targetStatus,
+                        'skip_warming' => $skipWarming
                     ]);
                 }
 
@@ -634,11 +656,18 @@ class PoolOrderCancelledService
                 if ($updatedPrefixCount > 0 || !isset($poolDomain['prefix_statuses'])) {
                     // For legacy format without prefix_statuses
                     if (!isset($poolDomain['prefix_statuses'])) {
-                        $poolDomain['status'] = 'warming';
-                        if ($warmingDates) {
+                        $poolDomain['status'] = $targetStatus;
+                        // Only update dates if NOT skipping warming
+                        if (!$skipWarming && $warmingDates) {
                             $poolDomain['start_date'] = $warmingDates['start_date'];
                             $poolDomain['end_date'] = $warmingDates['end_date'];
                         }
+                        // When skipWarming is true, dates remain unchanged
+                    }
+
+                    // Set is_used to false when status is available
+                    if ($targetStatus === 'available') {
+                        $poolDomain['is_used'] = false;
                     }
 
                     $hasChanges = true;
@@ -648,10 +677,12 @@ class PoolOrderCancelledService
                         'pool_id' => $poolId,
                         'domain_name' => $this->safeGet($poolDomain, 'name', $domainName),
                         'previous_status' => $previousStatus,
-                        'new_status' => 'warming',
+                        'new_status' => $targetStatus,
                         'previous_is_used' => $previousIsUsed,
+                        'new_is_used' => $poolDomain['is_used'] ?? false,
                         'selected_prefixes' => $selectedPrefixKeys,
-                        'updated_prefix_count' => $updatedPrefixCount
+                        'updated_prefix_count' => $updatedPrefixCount,
+                        'skip_warming' => $skipWarming
                     ]);
                 }
             }

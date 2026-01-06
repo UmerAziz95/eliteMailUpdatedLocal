@@ -936,17 +936,32 @@ class PoolDomainController extends Controller
             // Convert status format: underscore to hyphen for database ENUM compatibility
             $statusValue = str_replace('_', '-', $request->status);
 
-            // If changing to cancelled, use the cancellation service to handle subscription cancellation
+            // If changing to cancelled, check if user is super admin
             if ($statusValue === 'cancelled') {
+                $user = auth()->user();
+                
+                // Only super admin can cancel orders
+                if (!$user->hasRole('super-admin')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Only super admin can cancel pool orders'
+                    ], 403);
+                }
+
+                // This is a force cancellation by super admin
+                // Set force_cancelled_by_admin_at timestamp
+                $poolOrder->force_cancelled_by_admin_at = now();
+                $poolOrder->save();
+
                 $cancellationService = new \App\Services\PoolOrderCancelledService();
-                $reason = 'Admin cancelled the order';
+                $reason = 'Super admin force cancelled the order';
                 $result = $cancellationService->cancelSubscription($request->order_id, $poolOrder->user_id, $reason);
 
                 if ($result['success']) {
-                    \Log::info('Pool order #' . $poolOrder->id . ' cancelled (status_manage_by_admin and subscription) by admin user #' . auth()->id());
+                    \Log::info('Pool order #' . $poolOrder->id . ' force cancelled (status_manage_by_admin and subscription) by super admin user #' . auth()->id());
                     return response()->json([
                         'success' => true,
-                        'message' => 'Pool order and subscription cancelled successfully'
+                        'message' => 'Pool order force cancelled successfully'
                     ]);
                 } else {
                     return response()->json($result, 400);

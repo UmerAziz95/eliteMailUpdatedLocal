@@ -483,12 +483,17 @@ class PoolMigrationTaskService
         }
 
         try {
+            // Check if this is a force cancellation (by super admin)
+            // If force_cancelled_by_admin_at has a value, skip warming period
+            $skipWarming = !empty($poolOrder->force_cancelled_by_admin_at);
+
             /** @var PoolOrderCancelledService $cancellationService */
             $cancellationService = app(PoolOrderCancelledService::class);
-            $result = $cancellationService->freeDomainsFromPoolOrder($poolOrder);
+            $result = $cancellationService->freeDomainsFromPoolOrder($poolOrder, $skipWarming);
 
             Log::info("Pool migration cancellation task {$task->id}: Domains freed", [
                 'pool_order_id' => $poolOrder->id,
+                'force_cancelled' => $skipWarming,
                 'freed' => $result['freed'] ?? 0,
                 'skipped' => $result['skipped'] ?? 0,
                 'total' => $result['total'] ?? 0,

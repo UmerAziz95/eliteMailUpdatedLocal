@@ -539,6 +539,9 @@
             });
         }
 
+        // Check if current user is super admin
+        const isSuperAdmin = @json(auth()->user()->hasRole('super-admin'));
+
         // Change pool order status
         function changePoolOrderStatus(orderId, currentStatus, hasDomains = false) {
             $('#change_status_order_id').val(orderId);
@@ -548,16 +551,20 @@
             statusSelect.empty();
 
             if (currentStatus === 'in-progress') {
-                // When in-progress, only show completed (if domains assigned) and cancelled options
+                // When in-progress, only show completed (if domains assigned) and cancelled options (super admin only)
                 if (hasDomains) {
                     statusSelect.append('<option value="completed">Completed</option>');
                 }
-                // statusSelect.append('<option value="cancelled">Cancelled</option>');
+                if (isSuperAdmin) {
+                    statusSelect.append('<option value="cancelled">Cancelled</option>');
+                }
                 statusSelect.val(hasDomains ? 'completed' : ''); // Default based on domains
             } else if (currentStatus === 'pending') {
-                // When pending, show in-progress and cancelled options
+                // When pending, show in-progress and cancelled options (super admin only)
                 statusSelect.append('<option value="in-progress">In Progress</option>');
-                // statusSelect.append('<option value="cancelled">Cancelled</option>');
+                if (isSuperAdmin) {
+                    statusSelect.append('<option value="cancelled">Cancelled</option>');
+                }
                 statusSelect.val('in-progress'); // Default to in-progress
             } else {
                 // For other statuses, show all options (respecting domain assignment for completed)
@@ -565,7 +572,9 @@
                 if (hasDomains) {
                     statusSelect.append('<option value="completed">Completed</option>');
                 }
-                // statusSelect.append('<option value="cancelled">Cancelled</option>');
+                if (isSuperAdmin) {
+                    statusSelect.append('<option value="cancelled">Cancelled</option>');
+                }
                 statusSelect.val(currentStatus);
             }
 

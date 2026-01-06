@@ -82,6 +82,7 @@ class PoolOrder extends Model
         'meta',
         'completed_at',
         'cancelled_at',
+        'force_cancelled_by_admin_at',
         'locked_out_of_instantly',
         'locked_out_at',
         'reason'
@@ -96,6 +97,7 @@ class PoolOrder extends Model
         'assigned_at' => 'datetime',
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'force_cancelled_by_admin_at' => 'datetime',
         'locked_out_at' => 'datetime',
         'amount' => 'decimal:2',
         'locked_out_of_instantly' => 'boolean'
