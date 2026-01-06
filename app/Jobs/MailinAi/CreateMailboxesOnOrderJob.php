@@ -9,6 +9,7 @@ use App\Models\Notification;
 use App\Models\DomainTransfer;
 use App\Services\MailinAiService;
 use App\Services\SpaceshipService;
+use App\Services\NamecheapService;
 use App\Services\ActivityLogService;
 use App\Mail\OrderStatusChangeMail;
 use Illuminate\Bus\Queueable;
@@ -110,6 +111,40 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 throw new \Exception('Failed to authenticate with Mailin.ai. Please try again later.');
             }
 
+            // First, check which domains already have mailboxes created (to avoid duplicates)
+            $domainsWithMailboxes = OrderEmail::where('order_id', $this->orderId)
+                ->whereNotNull('mailin_mailbox_id')
+                ->get()
+                ->map(function ($email) {
+                    // Extract domain from email (e.g., "prefix@domain.com" -> "domain.com")
+                    $parts = explode('@', $email->email);
+                    return count($parts) === 2 ? $parts[1] : null;
+                })
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+            
+            Log::channel('mailin-ai')->info('Checking for existing mailboxes', [
+                'action' => 'create_mailboxes_on_order',
+                'order_id' => $this->orderId,
+                'domains_with_existing_mailboxes' => $domainsWithMailboxes,
+            ]);
+            
+            // Filter out domains that already have mailboxes
+            $domainsToProcess = array_filter($this->domains, function ($domain) use ($domainsWithMailboxes) {
+                return !in_array($domain, $domainsWithMailboxes);
+            });
+            
+            if (empty($domainsToProcess)) {
+                Log::channel('mailin-ai')->info('All domains already have mailboxes created, skipping mailbox creation', [
+                    'action' => 'create_mailboxes_on_order',
+                    'order_id' => $this->orderId,
+                    'all_domains' => $this->domains,
+                ]);
+                return; // All mailboxes already created
+            }
+            
             // First, check which domains are already registered/active in Mailin.ai
             $registeredDomains = [];
             $unregisteredDomains = [];
@@ -117,10 +152,11 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             Log::channel('mailin-ai')->info('Checking domain registration status before mailbox creation', [
                 'action' => 'create_mailboxes_on_order',
                 'order_id' => $this->orderId,
-                'domains_to_check' => $this->domains,
+                'domains_to_check' => $domainsToProcess,
+                'domains_with_existing_mailboxes' => $domainsWithMailboxes,
             ]);
             
-            foreach ($this->domains as $domain) {
+            foreach ($domainsToProcess as $domain) {
                 try {
                     $statusResult = $mailinService->checkDomainStatus($domain);
                     if ($statusResult['success'] && isset($statusResult['status']) && $statusResult['status'] === 'active') {
@@ -393,9 +429,30 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             // Use provided domains or fallback to all domains
             $domains = $domainsToTransfer ?? $this->domains;
             
+            // Check for existing failed nameserver updates and retry them first
+            $failedTransfers = DomainTransfer::where('order_id', $this->orderId)
+                ->whereIn('domain_name', $domains)
+                ->where('status', 'pending')
+                ->where('name_server_status', 'failed')
+                ->whereNotNull('name_servers')
+                ->get();
+            
+            if ($failedTransfers->count() > 0) {
+                Log::channel('mailin-ai')->info('Found failed nameserver updates to retry', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                    'failed_transfers_count' => $failedTransfers->count(),
+                    'domains' => $failedTransfers->pluck('domain_name')->toArray(),
+                ]);
+                
+                // Retry failed nameserver updates
+                $this->retryFailedNameserverUpdates($order, $failedTransfers);
+            }
+            
             // Get hosting platform from order
             $hostingPlatform = null;
             $spaceshipCredential = null;
+            $namecheapCredential = null;
             if ($order->reorderInfo && $order->reorderInfo->count() > 0) {
                 $hostingPlatform = $order->reorderInfo->first()->hosting_platform;
                 // Get Spaceship credentials if platform is Spaceship
@@ -406,6 +463,16 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                         'order_id' => $this->orderId,
                         'hosting_platform' => $hostingPlatform,
                         'has_credentials' => $spaceshipCredential ? true : false,
+                    ]);
+                }
+                // Get Namecheap credentials if platform is Namecheap
+                if ($hostingPlatform === 'namecheap') {
+                    $namecheapCredential = $order->getPlatformCredential('namecheap');
+                    Log::channel('mailin-ai')->info('Namecheap platform detected, checking credentials', [
+                        'action' => 'handle_domain_transfer',
+                        'order_id' => $this->orderId,
+                        'hosting_platform' => $hostingPlatform,
+                        'has_credentials' => $namecheapCredential ? true : false,
                     ]);
                 }
             }
@@ -438,6 +505,29 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                     'reason' => $reason,
                 ]);
             }
+            
+            // Initialize Namecheap service if needed
+            $namecheapService = null;
+            if ($hostingPlatform === 'namecheap' && $namecheapCredential) {
+                $namecheapService = new NamecheapService();
+                Log::channel('mailin-ai')->info('NamecheapService initialized for nameserver updates', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                ]);
+            } else {
+                $reason = ($hostingPlatform !== 'namecheap') ? 'Platform is not Namecheap' : 'Credentials not found';
+                Log::channel('mailin-ai')->info('NamecheapService not initialized', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                    'hosting_platform' => $hostingPlatform,
+                    'has_credential' => $namecheapCredential ? true : false,
+                    'reason' => $reason,
+                ]);
+            }
+            
+            // Track if any nameserver updates fail (to set order to draft)
+            $hasNameserverUpdateFailures = false;
+            $nameserverUpdateErrors = [];
             
             // Transfer each domain
             foreach ($domains as $index => $domain) {
@@ -583,6 +673,22 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                                             'domain' => $domain,
                                             'name_servers' => $nameServersArray,
                                         ]);
+                                        
+                                        // Update domain transfer status to indicate nameserver update completed
+                                        // Note: Domain transfer status will be set to 'completed' when domain becomes active
+                                        // This is just to track that nameserver update was successful
+                                        try {
+                                            $domainTransfer->update([
+                                                'name_server_status' => 'updated',
+                                            ]);
+                                        } catch (\Exception $updateException) {
+                                            Log::channel('mailin-ai')->warning('Failed to update domain transfer name_server_status', [
+                                                'action' => 'handle_domain_transfer',
+                                                'order_id' => $this->orderId,
+                                                'domain' => $domain,
+                                                'error' => $updateException->getMessage(),
+                                            ]);
+                                        }
                                     }
                                 } else {
                                     Log::channel('mailin-ai')->warning('Spaceship API credentials missing, skipping nameserver update', [
@@ -594,14 +700,39 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                                     ]);
                                 }
                             } catch (\Exception $spaceshipException) {
-                                // Log error but don't fail the transfer
-                                Log::channel('mailin-ai')->error('Failed to update Spaceship nameservers', [
+                                // Mark that we have a nameserver update failure
+                                $hasNameserverUpdateFailures = true;
+                                $errorMessage = 'Spaceship nameserver update failed: ' . $spaceshipException->getMessage();
+                                $nameserverUpdateErrors[] = [
+                                    'domain' => $domain,
+                                    'platform' => 'Spaceship',
+                                    'error' => $errorMessage,
+                                ];
+                                
+                                // Log error but don't fail the transfer - keep status as pending for retry
+                                Log::channel('mailin-ai')->error('Failed to update Spaceship nameservers - will retry via scheduled job', [
                                     'action' => 'handle_domain_transfer',
                                     'order_id' => $this->orderId,
                                     'domain' => $domain,
                                     'error' => $spaceshipException->getMessage(),
                                     'trace' => $spaceshipException->getTraceAsString(),
                                 ]);
+                                
+                                // Store detailed error message in domain transfer
+                                try {
+                                    $domainTransfer->update([
+                                        'error_message' => $errorMessage,
+                                        'name_server_status' => 'failed',
+                                        'status' => 'pending', // Keep as pending for retry
+                                    ]);
+                                } catch (\Exception $updateException) {
+                                    Log::channel('mailin-ai')->warning('Failed to update domain transfer error_message', [
+                                        'action' => 'handle_domain_transfer',
+                                        'order_id' => $this->orderId,
+                                        'domain' => $domain,
+                                        'error' => $updateException->getMessage(),
+                                    ]);
+                                }
                             }
                         } else {
                             // Determine reason for skipping
@@ -617,6 +748,140 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                             }
                             
                             Log::channel('mailin-ai')->info('Skipping Spaceship nameserver update', [
+                                'action' => 'handle_domain_transfer',
+                                'order_id' => $this->orderId,
+                                'domain' => $domain,
+                                'reason' => $skipReason,
+                            ]);
+                        }
+                        
+                        // Update nameservers in Namecheap if hosting platform is Namecheap
+                        Log::channel('mailin-ai')->info('Checking if Namecheap nameserver update is needed', [
+                            'action' => 'handle_domain_transfer',
+                            'order_id' => $this->orderId,
+                            'domain' => $domain,
+                            'hosting_platform' => $hostingPlatform,
+                            'has_namecheap_service' => $namecheapService ? true : false,
+                            'has_credential' => $namecheapCredential ? true : false,
+                            'has_nameservers' => !empty($nameServers),
+                            'nameservers' => $nameServers,
+                        ]);
+                        
+                        if ($hostingPlatform === 'namecheap' && $namecheapService && $namecheapCredential && !empty($nameServers)) {
+                            try {
+                                // api_user is the username (platform_login) used for both ApiUser and UserName
+                                $apiUser = $namecheapCredential->getCredential('api_user');
+                                $apiKey = $namecheapCredential->getCredential('api_key');
+                                
+                                Log::channel('mailin-ai')->info('Attempting to update Namecheap nameservers', [
+                                    'action' => 'handle_domain_transfer',
+                                    'order_id' => $this->orderId,
+                                    'domain' => $domain,
+                                    'has_api_user' => !empty($apiUser),
+                                    'has_api_key' => !empty($apiKey),
+                                ]);
+                                
+                                if ($apiUser && $apiKey) {
+                                    // Ensure nameServers is an array
+                                    $nameServersArray = is_array($nameServers) ? $nameServers : explode(',', $nameServers);
+                                    $nameServersArray = array_map('trim', $nameServersArray);
+                                    
+                                    Log::channel('mailin-ai')->info('Calling NamecheapService.updateNameservers', [
+                                        'action' => 'handle_domain_transfer',
+                                        'order_id' => $this->orderId,
+                                        'domain' => $domain,
+                                        'name_servers' => $nameServersArray,
+                                    ]);
+                                    
+                                    $namecheapResult = $namecheapService->updateNameservers(
+                                        $domain,
+                                        $nameServersArray,
+                                        $apiUser,
+                                        $apiKey
+                                    );
+                                    
+                                    if ($namecheapResult['success']) {
+                                        Log::channel('mailin-ai')->info('Namecheap nameservers updated successfully', [
+                                            'action' => 'handle_domain_transfer',
+                                            'order_id' => $this->orderId,
+                                            'domain' => $domain,
+                                            'name_servers' => $nameServersArray,
+                                        ]);
+                                        
+                                        // Update domain transfer status to indicate nameserver update completed
+                                        // Note: Domain transfer status will be set to 'completed' when domain becomes active
+                                        // This is just to track that nameserver update was successful
+                                        try {
+                                            $domainTransfer->update([
+                                                'name_server_status' => 'updated',
+                                            ]);
+                                        } catch (\Exception $updateException) {
+                                            Log::channel('mailin-ai')->warning('Failed to update domain transfer name_server_status', [
+                                                'action' => 'handle_domain_transfer',
+                                                'order_id' => $this->orderId,
+                                                'domain' => $domain,
+                                                'error' => $updateException->getMessage(),
+                                            ]);
+                                        }
+                                    }
+                                } else {
+                                    Log::channel('mailin-ai')->warning('Namecheap API credentials missing, skipping nameserver update', [
+                                        'action' => 'handle_domain_transfer',
+                                        'order_id' => $this->orderId,
+                                        'domain' => $domain,
+                                        'has_api_user' => !empty($apiUser),
+                                        'has_api_key' => !empty($apiKey),
+                                    ]);
+                                }
+                            } catch (\Exception $namecheapException) {
+                                // Mark that we have a nameserver update failure
+                                $hasNameserverUpdateFailures = true;
+                                $errorMessage = 'Namecheap nameserver update failed: ' . $namecheapException->getMessage();
+                                $nameserverUpdateErrors[] = [
+                                    'domain' => $domain,
+                                    'platform' => 'Namecheap',
+                                    'error' => $errorMessage,
+                                ];
+                                
+                                // Log error but don't fail the transfer - keep status as pending for retry
+                                Log::channel('mailin-ai')->error('Failed to update Namecheap nameservers - will retry via scheduled job', [
+                                    'action' => 'handle_domain_transfer',
+                                    'order_id' => $this->orderId,
+                                    'domain' => $domain,
+                                    'error' => $namecheapException->getMessage(),
+                                    'trace' => $namecheapException->getTraceAsString(),
+                                ]);
+                                
+                                // Store detailed error message in domain transfer
+                                try {
+                                    $domainTransfer->update([
+                                        'error_message' => $errorMessage,
+                                        'name_server_status' => 'failed',
+                                        'status' => 'pending', // Keep as pending for retry
+                                    ]);
+                                } catch (\Exception $updateException) {
+                                    Log::channel('mailin-ai')->warning('Failed to update domain transfer error_message', [
+                                        'action' => 'handle_domain_transfer',
+                                        'order_id' => $this->orderId,
+                                        'domain' => $domain,
+                                        'error' => $updateException->getMessage(),
+                                    ]);
+                                }
+                            }
+                        } else {
+                            // Determine reason for skipping
+                            $skipReason = 'Unknown';
+                            if ($hostingPlatform !== 'namecheap') {
+                                $skipReason = 'Platform is not Namecheap';
+                            } elseif (!$namecheapService) {
+                                $skipReason = 'NamecheapService not initialized';
+                            } elseif (!$namecheapCredential) {
+                                $skipReason = 'Credentials not found';
+                            } elseif (empty($nameServers)) {
+                                $skipReason = 'Nameservers are empty';
+                            }
+                            
+                            Log::channel('mailin-ai')->info('Skipping Namecheap nameserver update', [
                                 'action' => 'handle_domain_transfer',
                                 'order_id' => $this->orderId,
                                 'domain' => $domain,
@@ -661,13 +926,105 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 ->whereIn('domain_name', $domains)
                 ->count();
             
+            // Check for nameserver update failures (status pending but name_server_status failed)
+            $nameserverFailureCount = DomainTransfer::where('order_id', $this->orderId)
+                ->whereIn('domain_name', $domains)
+                ->where('status', 'pending')
+                ->where('name_server_status', 'failed')
+                ->count();
+            
+            $hasNameserverUpdateFailures = $hasNameserverUpdateFailures || $nameserverFailureCount > 0;
+            
             Log::channel('mailin-ai')->info('Domain transfer process completed', [
                 'action' => 'handle_domain_transfer',
                 'order_id' => $this->orderId,
                 'total_domains' => count($domains),
                 'successful_transfers' => $successCount,
                 'failed_transfers' => $failedCount,
+                'nameserver_update_failures' => $nameserverFailureCount,
+                'has_nameserver_failures' => $hasNameserverUpdateFailures,
             ]);
+            
+            // If nameserver updates failed, set order to draft so user can fix and resubmit
+            if ($hasNameserverUpdateFailures) {
+                try {
+                    $oldStatus = $order->status_manage_by_admin;
+                    $order->update([
+                        'status_manage_by_admin' => 'draft',
+                    ]);
+                    
+                    Log::channel('mailin-ai')->warning('Order set to draft due to nameserver update failures', [
+                        'action' => 'handle_domain_transfer',
+                        'order_id' => $this->orderId,
+                        'nameserver_errors' => $nameserverUpdateErrors,
+                        'nameserver_failure_count' => $nameserverFailureCount,
+                    ]);
+                    
+                    // Format error message for email (same as shown on form)
+                    $errorMessage = "Your order could not be processed due to nameserver update failures. Please review the errors below and resubmit:\n\n";
+                    foreach ($nameserverUpdateErrors as $error) {
+                        $errorMessage .= "• {$error['domain']}: {$error['error']}\n";
+                    }
+                    $errorMessage .= "\nAfter fixing the issues (e.g., updating API credentials, whitelisting IP address), please resubmit the order. The system will retry the nameserver updates and continue processing.";
+                    
+                    // Send email notification to customer
+                    try {
+                        $user = $order->user;
+                        if ($user && $user->email) {
+                            Mail::to($user->email)
+                                ->queue(new OrderStatusChangeMail(
+                                    $order,
+                                    $user,
+                                    $oldStatus,
+                                    'draft',
+                                    $errorMessage,
+                                    false
+                                ));
+                            
+                            Log::channel('mailin-ai')->info('Email notification sent for draft order', [
+                                'action' => 'handle_domain_transfer',
+                                'order_id' => $this->orderId,
+                                'user_email' => $user->email,
+                            ]);
+                        }
+                    } catch (\Exception $emailException) {
+                        Log::channel('email-failures')->error('Failed to send draft order email notification', [
+                            'action' => 'handle_domain_transfer',
+                            'order_id' => $this->orderId,
+                            'user_id' => $order->user_id,
+                            'exception' => $emailException->getMessage(),
+                            'stack_trace' => $emailException->getTraceAsString(),
+                            'timestamp' => now()->toDateTimeString(),
+                        ]);
+                    }
+                    
+                    // Log activity
+                    try {
+                        ActivityLogService::log(
+                            'mailin_ai_order_set_to_draft',
+                            "Order #{$order->id} set to draft - nameserver update failed. Please check and resubmit.",
+                            $order,
+                            [
+                                'order_id' => $order->id,
+                                'reason' => 'Nameserver update failed',
+                                'nameserver_errors' => $nameserverUpdateErrors,
+                            ]
+                        );
+                    } catch (\Exception $e) {
+                        Log::channel('mailin-ai')->warning('Failed to create activity log', [
+                            'action' => 'handle_domain_transfer',
+                            'order_id' => $this->orderId,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::channel('mailin-ai')->error('Failed to set order to draft', [
+                        'action' => 'handle_domain_transfer',
+                        'order_id' => $this->orderId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
             
             // No admin notifications - domain status will be checked by cron job
             // Once status is active, mailboxes will be created automatically
@@ -679,6 +1036,112 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+        }
+    }
+    
+    /**
+     * Retry failed nameserver updates for domain transfers
+     */
+    private function retryFailedNameserverUpdates(Order $order, $failedTransfers)
+    {
+        $hostingPlatform = null;
+        if ($order->reorderInfo && $order->reorderInfo->count() > 0) {
+            $hostingPlatform = $order->reorderInfo->first()->hosting_platform;
+        }
+        
+        if (!$hostingPlatform || !in_array($hostingPlatform, ['spaceship', 'namecheap'])) {
+            return;
+        }
+        
+        $spaceshipService = null;
+        $namecheapService = null;
+        $spaceshipCredential = null;
+        $namecheapCredential = null;
+        
+        if ($hostingPlatform === 'spaceship') {
+            $spaceshipService = new SpaceshipService();
+            $spaceshipCredential = $order->getPlatformCredential('spaceship');
+        } elseif ($hostingPlatform === 'namecheap') {
+            $namecheapService = new NamecheapService();
+            $namecheapCredential = $order->getPlatformCredential('namecheap');
+        }
+        
+        foreach ($failedTransfers as $domainTransfer) {
+            $domain = $domainTransfer->domain_name;
+            $nameServers = $domainTransfer->name_servers;
+            
+            if (empty($nameServers)) {
+                continue;
+            }
+            
+            $nameServersArray = is_array($nameServers) ? $nameServers : explode(',', $nameServers);
+            $nameServersArray = array_map('trim', $nameServersArray);
+            $nameServersArray = array_values(array_filter($nameServersArray));
+            
+            if (empty($nameServersArray)) {
+                continue;
+            }
+            
+            try {
+                if ($hostingPlatform === 'spaceship' && $spaceshipService && $spaceshipCredential) {
+                    $apiKey = $spaceshipCredential->getCredential('api_key');
+                    $apiSecretKey = $spaceshipCredential->getCredential('api_secret_key');
+                    
+                    if ($apiKey && $apiSecretKey) {
+                        $result = $spaceshipService->updateNameservers(
+                            $domain,
+                            $nameServersArray,
+                            $apiKey,
+                            $apiSecretKey
+                        );
+                        
+                        if ($result['success']) {
+                            $domainTransfer->update([
+                                'name_server_status' => 'updated',
+                                'error_message' => null,
+                            ]);
+                            Log::channel('mailin-ai')->info('Retried Spaceship nameserver update successful', [
+                                'action' => 'retry_failed_nameserver_updates',
+                                'order_id' => $this->orderId,
+                                'domain' => $domain,
+                            ]);
+                        }
+                    }
+                } elseif ($hostingPlatform === 'namecheap' && $namecheapService && $namecheapCredential) {
+                    $apiUser = $namecheapCredential->getCredential('api_user');
+                    $apiKey = $namecheapCredential->getCredential('api_key');
+                    
+                    if ($apiUser && $apiKey) {
+                        $result = $namecheapService->updateNameservers(
+                            $domain,
+                            $nameServersArray,
+                            $apiUser,
+                            $apiKey
+                        );
+                        
+                        if ($result['success']) {
+                            $domainTransfer->update([
+                                'name_server_status' => 'updated',
+                                'error_message' => null,
+                            ]);
+                            Log::channel('mailin-ai')->info('Retried Namecheap nameserver update successful', [
+                                'action' => 'retry_failed_nameserver_updates',
+                                'order_id' => $this->orderId,
+                                'domain' => $domain,
+                            ]);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::channel('mailin-ai')->error('Retry nameserver update failed', [
+                    'action' => 'retry_failed_nameserver_updates',
+                    'order_id' => $this->orderId,
+                    'domain' => $domain,
+                    'platform' => $hostingPlatform,
+                    'error' => $e->getMessage(),
+                ]);
+                // Keep error message in domain_transfer for display
+            }
         }
     }
 
