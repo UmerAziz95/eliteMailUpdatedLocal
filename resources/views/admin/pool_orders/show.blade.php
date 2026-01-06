@@ -154,127 +154,129 @@
                     </div>
 
                     @if($poolOrder->pool_id && $poolOrder->pool)
-                    <!-- Pool Profile Information Card -->
-                    <div class="card shadow-sm border-0 mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title d-flex align-items-center gap-2 mb-4">
-                                <div class="d-flex align-items-center justify-content-center"
-                                    style="height: 35px; width: 35px; border-radius: 50%; color: #7367ef; border: 1px solid #7367ef">
-                                    <i class="fa fa-user"></i>
-                                </div>
-                                Pool Profile Information
-                            </h5>
+                        @if (auth()->user()->hasRole('super-admin'))
+                            <!-- Pool Profile Information Card -->
+                            <div class="card shadow-sm border-0 mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title d-flex align-items-center gap-2 mb-4">
+                                        <div class="d-flex align-items-center justify-content-center"
+                                            style="height: 35px; width: 35px; border-radius: 50%; color: #7367ef; border: 1px solid #7367ef">
+                                            <i class="fa fa-user"></i>
+                                        </div>
+                                        Pool Profile Information
+                                    </h5>
 
-                            <div class="row">
-                                @if($poolOrder->pool->first_name || $poolOrder->pool->last_name)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Full Name</p>
-                                    <p class="mb-0">{{ trim(($poolOrder->pool->first_name ?? '') . ' ' . ($poolOrder->pool->last_name ?? '')) }}</p>
-                                </div>
-                                @endif
+                                    <div class="row">
+                                        @if($poolOrder->pool->first_name || $poolOrder->pool->last_name)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Full Name</p>
+                                            <p class="mb-0">{{ trim(($poolOrder->pool->first_name ?? '') . ' ' . ($poolOrder->pool->last_name ?? '')) }}</p>
+                                        </div>
+                                        @endif
 
-                                @if($poolOrder->pool->email)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Email</p>
-                                    <p class="mb-0">{{ $poolOrder->pool->email }}</p>
-                                </div>
-                                @endif
+                                        @if($poolOrder->pool->email)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Email</p>
+                                            <p class="mb-0">{{ $poolOrder->pool->email }}</p>
+                                        </div>
+                                        @endif
 
-                                @if($poolOrder->pool->phone)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Phone</p>
-                                    <p class="mb-0">{{ $poolOrder->pool->phone }}</p>
-                                </div>
-                                @endif
+                                        @if($poolOrder->pool->phone)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Phone</p>
+                                            <p class="mb-0">{{ $poolOrder->pool->phone }}</p>
+                                        </div>
+                                        @endif
 
-                                @if($poolOrder->pool->location)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Location</p>
-                                    <p class="mb-0">{{ $poolOrder->pool->location }}</p>
-                                </div>
-                                @endif
+                                        @if($poolOrder->pool->location)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Location</p>
+                                            <p class="mb-0">{{ $poolOrder->pool->location }}</p>
+                                        </div>
+                                        @endif
 
-                                @if($poolOrder->pool->company)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Company</p>
-                                    <p class="mb-0">{{ $poolOrder->pool->company }}</p>
-                                </div>
-                                @endif
+                                        @if($poolOrder->pool->company)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Company</p>
+                                            <p class="mb-0">{{ $poolOrder->pool->company }}</p>
+                                        </div>
+                                        @endif
 
-                                @if($poolOrder->pool->job_title)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Job Title</p>
-                                    <p class="mb-0">{{ $poolOrder->pool->job_title }}</p>
-                                </div>
-                                @endif
+                                        @if($poolOrder->pool->job_title)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Job Title</p>
+                                            <p class="mb-0">{{ $poolOrder->pool->job_title }}</p>
+                                        </div>
+                                        @endif
 
-                                @if($poolOrder->pool->linkedin_url)
-                                <div class="col-md-12 mb-3">
-                                    <p class="mb-1  small">LinkedIn URL</p>
-                                    <a href="{{ $poolOrder->pool->linkedin_url }}" target="_blank" class="text-primary">
-                                        {{ $poolOrder->pool->linkedin_url }}
-                                    </a>
+                                        @if($poolOrder->pool->linkedin_url)
+                                        <div class="col-md-12 mb-3">
+                                            <p class="mb-1  small">LinkedIn URL</p>
+                                            <a href="{{ $poolOrder->pool->linkedin_url }}" target="_blank" class="text-primary">
+                                                {{ $poolOrder->pool->linkedin_url }}
+                                            </a>
+                                        </div>
+                                        @endif
+                                    </div>
+
+                                    <hr>
+                                    <h6 class="mb-3"><i class="fa fa-cog me-2"></i>Platform Configuration</h6>
+                                    
+                                    <div class="row">
+                                        @if($poolOrder->pool->hosting_platform)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Hosting Platform</p>
+                                            <span class="badge bg-success">{{ ucfirst($poolOrder->pool->hosting_platform) }}</span>
+                                        </div>
+                                        @endif
+
+                                        @if($poolOrder->pool->sending_platform)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Sending Platform</p>
+                                            <span class="badge bg-primary">{{ ucfirst($poolOrder->pool->sending_platform) }}</span>
+                                        </div>
+                                        @endif
+
+                                        @if($poolOrder->pool->forwarding_url)
+                                        <div class="col-md-12 mb-3">
+                                            <p class="mb-1  small">Domain Forwarding Destination URL</p>
+                                            <a href="{{ $poolOrder->pool->forwarding_url }}" target="_blank" class="text-primary text-break">
+                                                {{ $poolOrder->pool->forwarding_url }}
+                                            </a>
+                                        </div>
+                                        @endif
+
+                                        @if($poolOrder->pool->platform_login)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Platform Login</p>
+                                            <p class="mb-0">{{ $poolOrder->pool->platform_login }}</p>
+                                        </div>
+                                        @endif
+
+                                        @if($poolOrder->pool->platform_password)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Platform Password</p>
+                                            <p class="mb-0">{{ $poolOrder->pool->platform_password }}</p>
+                                        </div>
+                                        @endif
+
+                                        @if($poolOrder->pool->sequencer_login)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Cold Email Platform - Login</p>
+                                            <p class="mb-0">{{ $poolOrder->pool->sequencer_login }}</p>
+                                        </div>
+                                        @endif
+
+                                        @if($poolOrder->pool->sequencer_password)
+                                        <div class="col-md-6 mb-3">
+                                            <p class="mb-1  small">Cold Email Platform - Password</p>
+                                            <p class="mb-0">{{ $poolOrder->pool->sequencer_password }}</p>
+                                        </div>
+                                        @endif
+                                    </div>
                                 </div>
-                                @endif
                             </div>
-
-                            <hr>
-                            <h6 class="mb-3"><i class="fa fa-cog me-2"></i>Platform Configuration</h6>
-                            
-                            <div class="row">
-                                @if($poolOrder->pool->hosting_platform)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Hosting Platform</p>
-                                    <span class="badge bg-success">{{ ucfirst($poolOrder->pool->hosting_platform) }}</span>
-                                </div>
-                                @endif
-
-                                @if($poolOrder->pool->sending_platform)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Sending Platform</p>
-                                    <span class="badge bg-primary">{{ ucfirst($poolOrder->pool->sending_platform) }}</span>
-                                </div>
-                                @endif
-
-                                @if($poolOrder->pool->forwarding_url)
-                                <div class="col-md-12 mb-3">
-                                    <p class="mb-1  small">Domain Forwarding Destination URL</p>
-                                    <a href="{{ $poolOrder->pool->forwarding_url }}" target="_blank" class="text-primary text-break">
-                                        {{ $poolOrder->pool->forwarding_url }}
-                                    </a>
-                                </div>
-                                @endif
-
-                                @if($poolOrder->pool->platform_login)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Platform Login</p>
-                                    <p class="mb-0">{{ $poolOrder->pool->platform_login }}</p>
-                                </div>
-                                @endif
-
-                                @if($poolOrder->pool->platform_password)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Platform Password</p>
-                                    <p class="mb-0">{{ $poolOrder->pool->platform_password }}</p>
-                                </div>
-                                @endif
-
-                                @if($poolOrder->pool->sequencer_login)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Cold Email Platform - Login</p>
-                                    <p class="mb-0">{{ $poolOrder->pool->sequencer_login }}</p>
-                                </div>
-                                @endif
-
-                                @if($poolOrder->pool->sequencer_password)
-                                <div class="col-md-6 mb-3">
-                                    <p class="mb-1  small">Cold Email Platform - Password</p>
-                                    <p class="mb-0">{{ $poolOrder->pool->sequencer_password }}</p>
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
+                        @endif
                     @endif
 
                     @if($poolOrder->sending_platform_data)
