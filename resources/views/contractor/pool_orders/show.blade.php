@@ -153,7 +153,7 @@
                         </div>
                     </div>
 
-                    @if($poolOrder->pool_id && $poolOrder->pool)
+                    {{-- @if($poolOrder->pool_id && $poolOrder->pool)
                     <!-- Pool Profile Information Card -->
                     <div class="card shadow-sm border-0 mb-3">
                         <div class="card-body">
@@ -275,7 +275,7 @@
                             </div>
                         </div>
                     </div>
-                    @endif
+                    @endif --}}
 
                     @if($poolOrder->sending_platform_data)
                     <!-- Sending Platform Data Card -->

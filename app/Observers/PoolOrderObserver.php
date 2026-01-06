@@ -6,6 +6,7 @@ use App\Models\PoolOrder;
 use App\Models\PoolOrderMigrationTask;
 use App\Services\PoolDomainService;
 use App\Services\SlackNotificationService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class PoolOrderObserver
@@ -89,6 +90,9 @@ class PoolOrderObserver
             ]);
 
             $this->sendCompletionNotification($poolOrder);
+            
+            // Update domain dates in pools table when order is completed
+            $this->updateDomainDatesOnCompletion($poolOrder);
         }
 
         // Check if status or status_manage_by_admin changed to 'cancelled'
@@ -887,5 +891,225 @@ class PoolOrderObserver
                 'trace' => $e->getTraceAsString()
             ]);
         }
+    }
+
+    /**
+     * Update domain dates in pools table when pool order status changes to completed
+     * Sets start_date to today and end_date based on subscription current_term_end or pool plan duration
+     *
+     * @param \App\Models\PoolOrder $poolOrder
+     * @return void
+     */
+    private function updateDomainDatesOnCompletion(PoolOrder $poolOrder): void
+    {
+        try {
+            // Check if order has domains
+            if (!$poolOrder->domains || !is_array($poolOrder->domains) || empty($poolOrder->domains)) {
+                Log::info('Pool order has no domains to update dates', [
+                    'pool_order_id' => $poolOrder->id
+                ]);
+                return;
+            }
+
+            // Calculate end_date from subscription or plan duration
+            $startDate = Carbon::today();
+            $endDate = $this->calculateOrderEndDate($poolOrder);
+
+            Log::info('Updating domain dates on pool order completion', [
+                'pool_order_id' => $poolOrder->id,
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+                'domains_count' => count($poolOrder->domains)
+            ]);
+
+            // Group domains by pool_id for efficient processing
+            $domainsByPool = [];
+            foreach ($poolOrder->domains as $domainEntry) {
+                $poolId = $domainEntry['pool_id'] ?? null;
+                if ($poolId) {
+                    if (!isset($domainsByPool[$poolId])) {
+                        $domainsByPool[$poolId] = [];
+                    }
+                    $domainsByPool[$poolId][] = $domainEntry;
+                }
+            }
+
+            // Process each pool
+            foreach ($domainsByPool as $poolId => $orderDomains) {
+                try {
+                    $pool = \App\Models\Pool::find($poolId);
+                    if (!$pool || !is_array($pool->domains)) {
+                        Log::warning('Pool not found or has no domains', [
+                            'pool_id' => $poolId,
+                            'pool_order_id' => $poolOrder->id
+                        ]);
+                        continue;
+                    }
+
+                    $poolDomains = $pool->domains;
+                    $poolUpdated = false;
+                    $updatedCount = 0;
+
+                    // Process each domain in the order
+                    foreach ($orderDomains as $orderDomain) {
+                        $domainId = $orderDomain['domain_id'] ?? $orderDomain['id'] ?? null;
+                        if (!$domainId) {
+                            continue;
+                        }
+
+                        // Find matching domain in pool
+                        foreach ($poolDomains as $index => &$poolDomain) {
+                            $poolDomainId = $poolDomain['id'] ?? null;
+                            if ($poolDomainId == $domainId) {
+                                // Get selected prefixes from order domain
+                                $selectedPrefixes = [];
+                                if (isset($orderDomain['selected_prefixes'])) {
+                                    $selected = $orderDomain['selected_prefixes'];
+                                    if (is_string($selected)) {
+                                        $selected = json_decode($selected, true);
+                                    }
+                                    if (is_array($selected)) {
+                                        $selectedPrefixes = array_keys($selected);
+                                    }
+                                } elseif (isset($orderDomain['prefixes']) && is_array($orderDomain['prefixes'])) {
+                                    $selectedPrefixes = $orderDomain['prefixes'];
+                                }
+
+                                // Update prefix_statuses if they exist
+                                if (isset($poolDomain['prefix_statuses']) && is_array($poolDomain['prefix_statuses'])) {
+                                    foreach ($poolDomain['prefix_statuses'] as $prefixKey => &$prefixStatus) {
+                                        // Only update if this prefix is selected in the order
+                                        if (empty($selectedPrefixes) || in_array($prefixKey, $selectedPrefixes)) {
+                                            // Only update if status is 'used' (to avoid overwriting warming dates)
+                                            if (isset($prefixStatus['status']) && $prefixStatus['status'] === 'used') {
+                                                $prefixStatus['start_date'] = $startDate->format('Y-m-d');
+                                                $prefixStatus['end_date'] = $endDate->format('Y-m-d');
+                                                $poolUpdated = true;
+                                                $updatedCount++;
+                                                
+                                                Log::debug('Updated prefix dates', [
+                                                    'pool_id' => $poolId,
+                                                    'domain_id' => $domainId,
+                                                    'prefix_key' => $prefixKey,
+                                                    'start_date' => $startDate->format('Y-m-d'),
+                                                    'end_date' => $endDate->format('Y-m-d')
+                                                ]);
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Fallback: Update domain-level dates for old format
+                                    if (isset($poolDomain['status']) && $poolDomain['status'] === 'used') {
+                                        $poolDomain['start_date'] = $startDate->format('Y-m-d');
+                                        $poolDomain['end_date'] = $endDate->format('Y-m-d');
+                                        $poolUpdated = true;
+                                        $updatedCount++;
+                                    }
+                                }
+                                break; // Found the domain, move to next order domain
+                            }
+                        }
+                    }
+
+                    // Save pool if updated
+                    if ($poolUpdated) {
+                        $pool->domains = $poolDomains;
+                        $pool->save();
+                        
+                        Log::info('Pool domains dates updated successfully', [
+                            'pool_id' => $poolId,
+                            'pool_order_id' => $poolOrder->id,
+                            'updated_count' => $updatedCount
+                        ]);
+                    }
+
+                } catch (\Exception $e) {
+                    Log::error('Error updating domain dates for pool', [
+                        'pool_id' => $poolId,
+                        'pool_order_id' => $poolOrder->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
+
+        } catch (\Exception $e) {
+            // Non-critical, just log the error
+            Log::error('Exception updating domain dates on completion', [
+                'error' => $e->getMessage(),
+                'pool_order_id' => $poolOrder->id,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Calculate order end date from subscription current_term_end or pool plan duration
+     *
+     * @param \App\Models\PoolOrder $poolOrder
+     * @return Carbon
+     */
+    private function calculateOrderEndDate(PoolOrder $poolOrder): Carbon
+    {
+        $startDate = Carbon::today();
+        
+        // Try to get duration from pool plan
+        if ($poolOrder->poolPlan && $poolOrder->poolPlan->duration) {
+            $duration = strtolower(trim($poolOrder->poolPlan->duration));
+            
+            // Convert duration string to days based on unit
+            switch ($duration) {
+                case 'daily':
+                    $endDate = $startDate->copy()->addDay(); // Add 1 day
+                    break;
+                case 'weekly':
+                    $endDate = $startDate->copy()->addWeek(); // Add 7 days
+                    break;
+                case 'monthly':
+                    $endDate = $startDate->copy()->addMonth(); // Add 1 month (handles variable days)
+                    break;
+                case 'yearly':
+                    $endDate = $startDate->copy()->addYear(); // Add 1 year
+                    break;
+                default:
+                    // Try to parse as numeric days (for backward compatibility)
+                    $numericDuration = (int) $duration;
+                    if ($numericDuration > 0) {
+                        $endDate = $startDate->copy()->addDays($numericDuration);
+                    } else {
+                        Log::warning('Unknown duration format, using default', [
+                            'pool_order_id' => $poolOrder->id,
+                            'duration' => $duration
+                        ]);
+                        // Will fall back to default below
+                        $endDate = null;
+                    }
+                    break;
+            }
+            
+            if ($endDate) {
+                Log::info('Using pool plan duration for order end date', [
+                    'pool_order_id' => $poolOrder->id,
+                    'plan_duration' => $duration,
+                    'end_date' => $endDate->format('Y-m-d')
+                ]);
+                
+                return $endDate;
+            }
+        }
+
+        // Priority 3: Fallback to default duration (7 days)
+        $defaultDuration = config('app.pool_order_default_duration', 7);
+        $endDate = $startDate->copy()->addDays($defaultDuration);
+        
+        Log::warning('Using default duration for order end date', [
+            'pool_order_id' => $poolOrder->id,
+            'default_duration' => $defaultDuration,
+            'end_date' => $endDate->format('Y-m-d')
+        ]);
+        
+        return $endDate;
     }
 }

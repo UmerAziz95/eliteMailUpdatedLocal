@@ -260,7 +260,7 @@ class PoolDomainService
                     // Construct email address (same format as frontend: prefix@domain)
                     $emailAccount = $prefixValue && $domainName ? $prefixValue . '@' . $domainName : '';
 
-                    // Calculate days_remaining when end_date exists (for warming status display)
+                    // Calculate days_remaining when end_date exists (for warming and used status display)
                     $daysRemaining = null;
                     if (isset($prefixData['end_date']) && !empty($prefixData['end_date'])) {
                         try {

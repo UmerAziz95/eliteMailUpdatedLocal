@@ -313,6 +313,7 @@
                                                 <th>Status</th>
                                                 <th>Email Account</th>
                                                 <th>Expiry Date</th>
+                                                <th>Days Remaining</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -407,6 +408,7 @@
                                                 <th>Status</th>
                                                 <th>Email Account</th>
                                                 <th>Expiry Date</th>
+                                                <th>Days Remaining</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -504,6 +506,7 @@
                                                 <th>Email Account</th>
                                                 <th>Provider URL</th>
                                                 <th>Expiry Date</th>
+                                                <th>Days Remaining</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -855,8 +858,8 @@
                 }
             });
 
-            // Add Days Remaining column ONLY for warming status
-            if (statusFilter === 'warming') {
+            // Add Days Remaining column for warming and used status
+            if (statusFilter === 'warming' || statusFilter === 'used') {
                 columns.push({
                     data: 'days_remaining',
                     name: 'days_remaining',
@@ -870,9 +873,9 @@
                         if (days > 0) {
                             return `<span class="badge bg-warning text-dark">${days} days left</span>`;
                         } else if (days === 0) {
-                            return `<span class="badge bg-success">Ready</span>`;
+                            return `<span class="badge bg-success">Ends today</span>`;
                         } else {
-                            return `<span class="badge bg-danger">Expired ${Math.abs(days)} days ago</span>`;
+                            return `<span class="badge bg-danger">Ended ${Math.abs(days)} days ago</span>`;
                         }
                     }
                 });
