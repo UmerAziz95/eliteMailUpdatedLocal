@@ -61,13 +61,39 @@ class SpaceshipService
                     'response' => $responseBody,
                 ];
             } else {
-                $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
+                // Check for authentication/authorization errors (invalid credentials)
+                $isAuthError = in_array($statusCode, [401, 403]);
+                $rawErrorMessage = $responseBody['message'] ?? $responseBody['error'] ?? null;
+                
+                // If it's an auth error or the error message suggests invalid credentials
+                if ($isAuthError || 
+                    (is_string($rawErrorMessage) && (
+                        stripos($rawErrorMessage, 'unauthorized') !== false ||
+                        stripos($rawErrorMessage, 'forbidden') !== false ||
+                        stripos($rawErrorMessage, 'invalid') !== false ||
+                        stripos($rawErrorMessage, 'authentication') !== false ||
+                        stripos($rawErrorMessage, 'api key') !== false ||
+                        stripos($rawErrorMessage, 'api secret') !== false ||
+                        stripos($rawErrorMessage, 'credentials') !== false
+                    ))) {
+                    $errorMessage = 'Invalid API credentials. Please verify your Spaceship API Key and API Secret Key are correct.';
+                } elseif (empty($rawErrorMessage) || $rawErrorMessage === 'Unknown error') {
+                    // If we get "Unknown error" or empty error, check status code
+                    if ($isAuthError) {
+                        $errorMessage = 'Invalid API credentials. Please verify your Spaceship API Key and API Secret Key are correct.';
+                    } else {
+                        $errorMessage = 'Failed to update nameservers. Please verify your API credentials and try again.';
+                    }
+                } else {
+                    $errorMessage = $rawErrorMessage;
+                }
                 
                 Log::channel('mailin-ai')->error('Spaceship nameserver update failed', [
                     'action' => 'update_nameservers',
                     'domain' => $domain,
                     'status_code' => $statusCode,
                     'error' => $errorMessage,
+                    'raw_error' => $rawErrorMessage,
                     'response' => $responseBody,
                 ]);
 
