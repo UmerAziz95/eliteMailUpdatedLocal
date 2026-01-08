@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Configuration;
 use App\Models\User;
+use App\Models\SmtpProviderSplit;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -25,11 +26,12 @@ class AdminSettingsController extends Controller
         $systemConfigs = Configuration::getSystemConfigurations();
         $poolConfigs = Configuration::getPoolConfigurations();
         $providerTypes = Configuration::getProviderTypes();
+        $providerSplits = SmtpProviderSplit::get();
         
         // Get backups from last 30 days
         $backups = $this->getBackupFiles();
         
-        return view('admin.config.index', compact('configurations', 'chargebeeConfigs', 'systemConfigs', 'poolConfigs', 'providerTypes', 'backups'));
+        return view('admin.config.index', compact('configurations', 'chargebeeConfigs', 'systemConfigs', 'poolConfigs', 'providerTypes', 'backups', 'providerSplits'));
     }
 
     /**
@@ -533,6 +535,116 @@ class AdminSettingsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update System configuration: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get SMTP Provider Split configurations
+     */
+    public function getProviderSplits()
+    {
+        $providers = SmtpProviderSplit::orderBy('priority', 'asc')
+            ->orderBy('name', 'asc')
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $providers
+        ]);
+    }
+
+    /**
+     * Update SMTP Provider Split configurations
+     */
+    public function updateProviderSplits(Request $request)
+    {
+        try {
+            $request->validate([
+                'providers' => 'required|array',
+                'providers.*.id' => 'required|exists:smtp_provider_splits,id',
+                'providers.*.api_endpoint' => 'nullable|string|max:500',
+                'providers.*.email' => 'required|email|max:255',
+                'providers.*.password' => 'required|string|max:255',
+                'providers.*.split_percentage' => 'required|numeric|min:0|max:100',
+                'providers.*.priority' => 'required|integer|min:0',
+                'providers.*.is_active' => 'nullable|boolean',
+            ], [
+                'providers.*.priority.required' => 'Priority is required.',
+                'providers.*.priority.integer' => 'Priority must be a valid number.',
+                'providers.*.priority.min' => 'Priority must be 0 or greater.',
+            ]);
+
+            // Calculate total percentage for ACTIVE providers only
+            $activeTotalPercentage = 0;
+            $priorities = [];
+            foreach ($request->providers as $providerData) {
+                $isActive = isset($providerData['is_active']) && $providerData['is_active'];
+                if ($isActive) {
+                    $activeTotalPercentage += floatval($providerData['split_percentage'] ?? 0);
+                }
+                
+                // Collect priorities for uniqueness check
+                $priority = isset($providerData['priority']) && $providerData['priority'] !== '' 
+                    ? (int) $providerData['priority'] 
+                    : null;
+                
+                if ($priority !== null) {
+                    $priorities[] = $priority;
+                }
+            }
+
+            // Validate priorities are unique
+            if (count($priorities) !== count(array_unique($priorities))) {
+                $duplicates = array_diff_assoc($priorities, array_unique($priorities));
+                $duplicateValues = array_unique($duplicates);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Priority values must be unique. Duplicate priority found: ' . implode(', ', $duplicateValues)
+                ], 422);
+            }
+
+            // Validate total percentage equals 100 for active providers only
+            if (abs($activeTotalPercentage - 100.00) > 0.01) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Total split percentage for active providers must equal 100%. Current total: ' . number_format($activeTotalPercentage, 2) . '%'
+                ], 422);
+            }
+
+            // Update each provider
+            foreach ($request->providers as $providerData) {
+                $provider = SmtpProviderSplit::findOrFail($providerData['id']);
+                
+                // Handle priority - convert to integer, default to 0 if empty or invalid
+                $priority = isset($providerData['priority']) && $providerData['priority'] !== '' 
+                    ? (int) $providerData['priority'] 
+                    : ($provider->priority ?? 0);
+                
+                $provider->update([
+                    'api_endpoint' => $providerData['api_endpoint'] ?? null,
+                    'email' => $providerData['email'] ?? '',
+                    'password' => $providerData['password'] ?? '',
+                    'split_percentage' => $providerData['split_percentage'],
+                    'priority' => $priority,
+                    'is_active' => $providerData['is_active'] ?? $provider->is_active,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Provider split configuration updated successfully'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update provider split configuration: ' . $e->getMessage()
             ], 500);
         }
     }

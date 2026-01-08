@@ -75,3 +75,8 @@ php artisan pools:migrate-prefix-statuses
 php artisan pool-orders:fix-domains
 ```
 
+###
+New Seeder for smtp provider credential and splits
+
+php artisan db:seed --class=SmtpProviderSplitSeeder
+

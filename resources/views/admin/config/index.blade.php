@@ -69,6 +69,131 @@
         border-color: #007bff !important;
         box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
     }
+
+    /* Provider Split Styles (matching Slack Settings) */
+    .webhook-form {
+        background-color: #ffffff1d;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .webhook-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .webhook-title {
+        color: var(--white-color);
+        font-weight: 600;
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .status-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        color: var(--extra-light);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-control {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--white-color);
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+    }
+
+    .form-control:focus {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-color: var(--second-primary);
+        color: var(--white-color);
+        box-shadow: 0 0 0 0.2rem rgba(var(--second-primary-rgb), 0.25);
+    }
+
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .btn-save {
+        background-color: var(--second-primary);
+        border-color: var(--second-primary);
+        color: white;
+    }
+
+    .btn-save:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+        color: white;
+    }
+
+    .form-switch {
+        padding-left: 2.5em;
+    }
+
+    .form-switch .form-check-input {
+        width: 2em;
+        margin-left: -2.5em;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255, 255, 255, 0.25%29'/%3e%3c/svg%3e");
+        background-color: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .form-switch .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255, 255, 255, 1.0%29'/%3e%3c/svg%3e");
+        box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+    }
+
+    .status-indicator {
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-left: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .status-indicator.enabled {
+        color: #28a745;
+        background-color: rgba(40, 167, 69, 0.1);
+        border: 1px solid rgba(40, 167, 69, 0.2);
+    }
+
+    .status-indicator.disabled {
+        color: #6c757d;
+        background-color: rgba(108, 117, 125, 0.1);
+        border: 1px solid rgba(108, 117, 125, 0.2);
+    }
+
+    .validation-error {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-text {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
 </style>
 @endpush
 
@@ -102,6 +227,11 @@
                 <button class="nav-link" id="pool-config-tab" data-bs-toggle="tab" data-bs-target="#pool_configuration-pane"
                     type="button" role="tab" aria-controls="pool_configuration-tab-pane" aria-selected="false"><i
                         class="fa-solid fa-water"></i> Pool Configurations</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="smtp-provider-split-tab" data-bs-toggle="tab" data-bs-target="#smtp_provider_split-pane"
+                    type="button" role="tab" aria-controls="smtp_provider_split-tab-pane" aria-selected="false"><i
+                        class="fa-solid fa-envelope"></i> SMTP Provider Split</button>
             </li>
         </ul>
 
@@ -450,6 +580,208 @@
                 </div>
             </div>
 
+            <!-- SMTP Provider Split Configuration -->
+            <div class="tab-pane fade" id="smtp_provider_split-pane" role="tabpanel"
+                 aria-labelledby="smtp_provider_split-tab" tabindex="0">
+                <div class="row py-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="text-white">
+                                <i class="ti ti-mail me-2"></i>
+                                SMTP Provider Split Configuration
+                            </h2>
+                            <button type="button" class="btn btn-outline-light btn-sm" id="refreshProviderSplits">
+                                <i class="ti ti-refresh me-1"></i> Refresh
+                            </button>
+                        </div>
+
+                        <div class="alert alert-info" role="alert">
+                            <h5 class="alert-heading mb-1">
+                                <i class="ti ti-info-circle me-2"></i>
+                                How to Configure Provider Splits
+                            </h5>
+                            <p class="mb-2 mx-2 text-muted">Configure how orders are split across different SMTP providers:</p>
+                            <ol class="mb-0">
+                                <li>Set the split percentage for each provider (only active providers count toward 100%)</li>
+                                <li>Enter email and password credentials for each provider (required)</li>
+                                <li>Set priority to determine execution order</li>
+                                <li>Enable/disable providers as needed</li>
+                                <li><strong>Important:</strong> Total percentage of active providers must equal 100%</li>
+                            </ol>
+                        </div>
+
+                        <!-- Provider Forms Container -->
+                        <div id="providerSplitFormsContainer">
+                            @php
+                                $providers = $providerSplits ?? collect();
+                                $activeTotalPercentage = 0;
+                            @endphp
+                            
+                            @forelse ($providers as $provider)
+                                @php
+                                    if ($provider->is_active) {
+                                        $activeTotalPercentage += floatval($provider->split_percentage ?? 0);
+                                    }
+                                @endphp
+                                <div class="webhook-form provider-split-form" id="form-{{ $provider->slug }}" data-provider-id="{{ $provider->id }}" data-slug="{{ $provider->slug }}">
+                                    <div class="webhook-header">
+                                        <h5 class="webhook-title">
+                                            <i class="ti ti-server me-2"></i>
+                                            {{ $provider->name }}
+                                        </h5>
+                                        <div class="status-toggle">
+                                            <label for="status-{{ $provider->slug }}" class="form-label mb-0">Enable</label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input status-switch" type="checkbox" role="switch" 
+                                                       id="status-{{ $provider->slug }}" 
+                                                       data-slug="{{ $provider->slug }}"
+                                                       {{ ($provider->is_active ?? true) ? 'checked' : '' }}>
+                                            </div>
+                                            <span class="status-indicator {{ ($provider->is_active ?? true) ? 'enabled' : 'disabled' }}" 
+                                                  id="status-text-{{ $provider->slug }}">
+                                                {{ ($provider->is_active ?? true) ? 'Enabled' : 'Disabled' }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <form class="provider-settings-form" data-provider-id="{{ $provider->id }}" data-slug="{{ $provider->slug }}">
+                                        @csrf
+                                        <input type="hidden" name="providers[{{ $provider->id }}][id]" value="{{ $provider->id }}">
+                                        
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="api_endpoint-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-link me-1"></i>
+                                                        API Endpoint
+                                                    </label>
+                                                    <input type="url" 
+                                                           class="form-control" 
+                                                           id="api_endpoint-{{ $provider->slug }}" 
+                                                           name="providers[{{ $provider->id }}][api_endpoint]" 
+                                                           placeholder="https://api.example.com" 
+                                                           value="{{ $provider->api_endpoint ?? '' }}">
+                                                    <small class="form-text text-muted">
+                                                        Enter the API endpoint URL for {{ $provider->name }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="email-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-mail me-1"></i>
+                                                        Email *
+                                                    </label>
+                                                    <input type="email" 
+                                                           class="form-control" 
+                                                           id="email-{{ $provider->slug }}" 
+                                                           name="providers[{{ $provider->id }}][email]" 
+                                                           placeholder="Enter Email" 
+                                                           value="{{ $provider->email ?? '' }}"
+                                                           required>
+                                                    <small class="form-text text-muted">
+                                                        Email for {{ $provider->name }} authentication
+                                                    </small>
+                                                    <div class="validation-error" id="email-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="password-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-lock me-1"></i>
+                                                        Password *
+                                                    </label>
+                                                    <input type="password" 
+                                                           class="form-control" 
+                                                           id="password-{{ $provider->slug }}" 
+                                                           name="providers[{{ $provider->id }}][password]" 
+                                                           placeholder="Enter Password" 
+                                                           value="{{ $provider->password ?? '' }}"
+                                                           required>
+                                                    <small class="form-text text-muted">
+                                                        Password for {{ $provider->name }} authentication
+                                                    </small>
+                                                    <div class="validation-error" id="password-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="split_percentage-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-percentage me-1"></i>
+                                                        Split Percentage (%) *
+                                                    </label>
+                                                    <input type="number" 
+                                                           class="form-control split-percentage-input" 
+                                                           id="split_percentage-{{ $provider->slug }}" 
+                                                           name="providers[{{ $provider->id }}][split_percentage]" 
+                                                           value="{{ $provider->split_percentage ?? 0 }}"
+                                                           min="0" max="100" step="0.01" required>
+                                                    <small class="form-text text-muted">
+                                                        Percentage of orders for this provider
+                                                    </small>
+                                                    <div class="validation-error" id="percentage-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="priority-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-sort-ascending me-1"></i>
+                                                        Priority *
+                                                    </label>
+                                                    <input type="number" 
+                                                           class="form-control priority-input" 
+                                                           id="priority-{{ $provider->slug }}" 
+                                                           name="providers[{{ $provider->id }}][priority]" 
+                                                           value="{{ $provider->priority ?? 0 }}"
+                                                           min="0"
+                                                           required>
+                                                    <small class="form-text text-muted">
+                                                        Lower number = higher priority (must be unique)
+                                                    </small>
+                                                    <div class="validation-error" id="priority-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex gap-2 flex-wrap mt-3">
+                                            <button type="submit" class="btn btn-save btn-sm">
+                                                <i class="ti ti-device-floppy me-1"></i> Save Settings
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            @empty
+                                <div class="alert alert-info">
+                                    <i class="ti ti-info-circle me-2"></i>
+                                    No provider splits configured. Please run the seeder to add providers.
+                                </div>
+                            @endforelse
+                        </div>
+
+                        <!-- Total Percentage Display -->
+                        <div class="mt-4">
+                            <div class="alert alert-{{ abs($activeTotalPercentage - 100.00) > 0.01 ? 'warning' : 'success' }}" role="alert">
+                                <h6 class="alert-heading mb-1" style="color: {{ abs($activeTotalPercentage - 100.00) > 0.01 ? '#856404' : '#155724' }};">
+                                    <i class="ti ti-{{ abs($activeTotalPercentage - 100.00) > 0.01 ? 'alert-triangle' : 'check' }} me-2"></i>
+                                    Active Providers Total Percentage
+                                </h6>
+                                <p class="mb-0" style="color: {{ abs($activeTotalPercentage - 100.00) > 0.01 ? '#856404' : '#155724' }};">
+                                    <strong>Total: <span id="activeTotalPercentage">{{ number_format($activeTotalPercentage, 2) }}</span>%</strong>
+                                    @if (abs($activeTotalPercentage - 100.00) > 0.01)
+                                        <span class="ms-2" style="color: #721c24;">⚠ Total must equal 100% for active providers</span>
+                                    @else
+                                        <span class="ms-2" style="color: #155724;">✓ Valid - Active providers total 100%</span>
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
         </div>
     </div>
@@ -1453,6 +1785,325 @@
                 window.backupsTable.ajax.reload();
             });
         }
+    });
+
+    // SMTP Provider Split Configuration
+    $(document).ready(function() {
+        // Utility Functions
+        const showSwalLoading = (title = 'Processing...', text = 'Please wait') => {
+            Swal.fire({
+                title: title,
+                text: text,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                customClass: {
+                    popup: 'swal-dark'
+                }
+            });
+        };
+
+        const closeSwalLoading = () => {
+            Swal.close();
+        };
+
+        const calculateActiveTotalPercentage = () => {
+            let total = 0;
+            document.querySelectorAll('.provider-split-form').forEach(form => {
+                const statusSwitch = form.querySelector('.status-switch');
+                if (statusSwitch && statusSwitch.checked) {
+                    const percentageInput = form.querySelector('.split-percentage-input');
+                    if (percentageInput) {
+                        total += parseFloat(percentageInput.value || 0);
+                    }
+                }
+            });
+            
+            const totalElement = document.getElementById('activeTotalPercentage');
+            const alertDiv = totalElement?.closest('.alert');
+            
+            if (totalElement) {
+                totalElement.textContent = total.toFixed(2);
+            }
+            
+            if (alertDiv) {
+                const isValid = Math.abs(total - 100.00) <= 0.01;
+                alertDiv.className = `alert alert-${isValid ? 'success' : 'warning'}`;
+                
+                // Update heading color
+                const heading = alertDiv.querySelector('.alert-heading');
+                if (heading) {
+                    heading.style.color = isValid ? '#155724' : '#856404';
+                }
+                
+                // Update icon
+                const icon = alertDiv.querySelector('.ti');
+                if (icon) {
+                    icon.className = `ti ti-${isValid ? 'check' : 'alert-triangle'} me-2`;
+                }
+                
+                // Update paragraph color
+                const paragraph = alertDiv.querySelector('p');
+                if (paragraph) {
+                    paragraph.style.color = isValid ? '#155724' : '#856404';
+                }
+                
+                // Update status text
+                const statusText = paragraph?.querySelector('span.ms-2');
+                if (statusText) {
+                    statusText.style.color = isValid ? '#155724' : '#721c24';
+                    statusText.textContent = isValid 
+                        ? '✓ Valid - Active providers total 100%' 
+                        : '⚠ Total must equal 100% for active providers';
+                }
+            }
+            
+            return total;
+        };
+
+        const updateStatusDisplay = (slug, enabled) => {
+            const statusText = document.getElementById(`status-text-${slug}`);
+            const checkbox = document.getElementById(`status-${slug}`);
+            
+            if (checkbox) {
+                checkbox.checked = enabled;
+            }
+            
+            if (statusText) {
+                statusText.textContent = enabled ? 'Enabled' : 'Disabled';
+                statusText.className = `status-indicator ${enabled ? 'enabled' : 'disabled'}`;
+            }
+            
+            // Recalculate total percentage
+            calculateActiveTotalPercentage();
+        };
+
+        // Handle status toggle change
+        $('.status-switch').on('change', function() {
+            const slug = $(this).data('slug');
+            const isChecked = $(this).is(':checked');
+            updateStatusDisplay(slug, isChecked);
+        });
+
+        // Handle form submission
+        $('.provider-settings-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const form = $(this);
+            const providerId = form.data('provider-id');
+            const slug = form.data('slug');
+            const formData = new FormData(this);
+            const statusCheckbox = $(`#status-${slug}`);
+            
+            // Get all providers data
+            const providers = [];
+            document.querySelectorAll('.provider-split-form').forEach(providerForm => {
+                const providerFormEl = $(providerForm);
+                const providerId = providerFormEl.data('provider-id');
+                const slug = providerFormEl.data('slug');
+                const statusSwitch = providerFormEl.find('.status-switch');
+                
+                const priorityValue = providerFormEl.find(`#priority-${slug}`).val();
+                const priority = priorityValue !== '' && !isNaN(priorityValue) ? parseInt(priorityValue) : null;
+                
+                providers.push({
+                    id: providerId,
+                    api_endpoint: providerFormEl.find(`#api_endpoint-${slug}`).val() || null,
+                    email: providerFormEl.find(`#email-${slug}`).val() || '',
+                    password: providerFormEl.find(`#password-${slug}`).val() || '',
+                    split_percentage: parseFloat(providerFormEl.find(`#split_percentage-${slug}`).val() || 0),
+                    priority: priority,
+                    is_active: statusSwitch.is(':checked') ? true : false,
+                });
+            });
+
+            const submitBtn = form.find('button[type="submit"]');
+            const originalText = submitBtn.html();
+            
+            // Validate priorities are unique
+            const priorities = providers
+                .map(p => p.priority)
+                .filter(p => p !== null && p !== undefined && p !== '');
+            
+            const uniquePriorities = [...new Set(priorities)];
+            if (priorities.length !== uniquePriorities.length) {
+                // Find duplicates
+                const duplicates = priorities.filter((p, index) => priorities.indexOf(p) !== index);
+                const duplicateValues = [...new Set(duplicates)];
+                
+                // Ensure button is enabled before showing error
+                submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error!',
+                    text: `Priority values must be unique. Duplicate priority found: ${duplicateValues.join(', ')}`,
+                    customClass: {
+                        popup: 'swal-dark'
+                    }
+                }).then(() => {
+                    // Ensure button is enabled after user closes the alert
+                    submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                });
+                return;
+            }
+            
+            // Validate active providers total percentage
+            const activeTotal = providers
+                .filter(p => p.is_active)
+                .reduce((sum, p) => sum + p.split_percentage, 0);
+
+            if (Math.abs(activeTotal - 100.00) > 0.01) {
+                // Ensure button is enabled before showing error
+                submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error!',
+                    text: `Total split percentage for active providers must equal 100%. Current total: ${activeTotal.toFixed(2)}%`,
+                    customClass: {
+                        popup: 'swal-dark'
+                    }
+                }).then(() => {
+                    // Ensure button is enabled after user closes the alert
+                    submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                });
+                return;
+            }
+            
+            showSwalLoading('Saving Settings...', 'Please wait while we save your provider configuration');
+            submitBtn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-1"></i> Saving...');
+            
+            $.ajax({
+                url: '{{ route("admin.provider.splits.update") }}',
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json'
+                },
+                data: JSON.stringify({ providers: providers }),
+                contentType: 'application/json',
+                success: function(response) {
+                    if (response.success) {
+                        closeSwalLoading();
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: response.message || 'Provider split configuration updated successfully',
+                            timer: 2000,
+                            showConfirmButton: false,
+                            customClass: {
+                                popup: 'swal-dark'
+                            }
+                        });
+                        
+                        // Recalculate total
+                        calculateActiveTotalPercentage();
+                    } else {
+                        closeSwalLoading();
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response.message || 'Something went wrong!',
+                            customClass: {
+                                popup: 'swal-dark'
+                            }
+                        }).then(() => {
+                            // Ensure button is enabled after user closes the alert
+                            submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Something went wrong!';
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        errorMessage = Object.values(xhr.responseJSON.errors).flat().join(', ');
+                    }
+                    
+                    closeSwalLoading();
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: errorMessage,
+                        customClass: {
+                            popup: 'swal-dark'
+                        }
+                    }).then(() => {
+                        // Ensure button is enabled after user closes the alert
+                        submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                    });
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                }
+            });
+        });
+
+        // Calculate total percentage on input change
+        $('.split-percentage-input').on('input', function() {
+            calculateActiveTotalPercentage();
+            // Ensure all save buttons are enabled when user changes values
+            $('.provider-settings-form').each(function() {
+                const btn = $(this).find('button[type="submit"]');
+                btn.prop('disabled', false).removeAttr('disabled');
+            });
+        });
+
+        // Validate priority uniqueness on input change
+        $('.priority-input').on('input', function() {
+            const currentValue = $(this).val();
+            const currentSlug = $(this).closest('.provider-split-form').data('slug');
+            const errorElement = $(`#priority-error-${currentSlug}`);
+            
+            // Clear previous errors
+            errorElement.hide().text('');
+            $(this).removeClass('is-invalid');
+            
+            if (currentValue === '' || currentValue === null) {
+                return;
+            }
+            
+            // Check for duplicates
+            let hasDuplicate = false;
+            $('.priority-input').each(function() {
+                const otherSlug = $(this).closest('.provider-split-form').data('slug');
+                if (otherSlug !== currentSlug && $(this).val() === currentValue && $(this).val() !== '') {
+                    hasDuplicate = true;
+                    return false; // break loop
+                }
+            });
+            
+            if (hasDuplicate) {
+                $(this).addClass('is-invalid');
+                errorElement.text('This priority is already used by another provider').show();
+            }
+        });
+
+        // Handle refresh
+        $('#refreshProviderSplits').on('click', function() {
+            const btn = $(this);
+            const originalText = btn.html();
+            
+            btn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-1"></i> Refreshing...');
+            
+            showSwalLoading('Refreshing Settings...', 'Please wait while we reload the page');
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        });
+
+        // Initialize total percentage calculation
+        calculateActiveTotalPercentage();
     });
 </script>
 @endpush
