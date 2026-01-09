@@ -4,6 +4,7 @@ namespace App\Jobs\MailinAi;
 
 use App\Models\Order;
 use App\Models\OrderAutomation;
+use App\Models\SmtpProviderSplit;
 use App\Services\MailinAiService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -152,8 +153,27 @@ class CreateMailboxesJob implements ShouldQueue
                 'prefix_count' => count($prefixVariants),
             ]);
 
-            // Call MailinAiService to create mailboxes
-            $mailinService = new MailinAiService();
+            // Get active provider from split table (Mailin for now)
+            $activeProvider = SmtpProviderSplit::getActiveProvider();
+            $credentials = null;
+            
+            if ($activeProvider) {
+                $credentials = $activeProvider->getCredentials();
+                Log::channel('mailin-ai')->info('Using provider split credentials', [
+                    'action' => 'create_mailboxes_job',
+                    'order_id' => $this->orderId,
+                    'provider' => $activeProvider->slug,
+                    'has_credentials' => !empty($credentials),
+                ]);
+            } else {
+                Log::channel('mailin-ai')->info('No active provider found in split table, using config fallback', [
+                    'action' => 'create_mailboxes_job',
+                    'order_id' => $this->orderId,
+                ]);
+            }
+
+            // Call MailinAiService to create mailboxes with credentials from split table (or fallback to config)
+            $mailinService = new MailinAiService($credentials);
             $result = $mailinService->createMailboxes($mailboxes);
 
             if ($result['success'] && isset($result['uuid'])) {

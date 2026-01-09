@@ -17,10 +17,10 @@ class SmtpProviderSplitSeeder extends Seeder
                 'name' => 'Mailin',
                 'slug' => 'mailin',
                 'api_endpoint' => config('mailin_ai.base_url', 'https://api.mailin.ai'),
-                'email' => env('MAILIN_EMAIL', ''),
-                'password' => env('MAILIN_PASSWORD', ''),
+                'email' => config('mailin_ai.email', env('MAILIN_EMAIL', '')),
+                'password' => config('mailin_ai.password', env('MAILIN_PASSWORD', '')),
                 'additional_config' => null,
-                'split_percentage' => 50.00,
+                'split_percentage' => 100.00, // Mailin is 100% active for now
                 'priority' => 1,
                 'is_active' => true,
             ],
@@ -31,9 +31,9 @@ class SmtpProviderSplitSeeder extends Seeder
                 'email' => 'dummy@mailrun.com',
                 'password' => 'dummy_password',
                 'additional_config' => null,
-                'split_percentage' => 50.00,
+                'split_percentage' => 0.00,
                 'priority' => 2,
-                'is_active' => true,
+                'is_active' => false, // Disabled until fully integrated
             ],
             [
                 'name' => 'Premiuminboxes',
@@ -44,7 +44,7 @@ class SmtpProviderSplitSeeder extends Seeder
                 'additional_config' => null,
                 'split_percentage' => 0.00,
                 'priority' => 3,
-                'is_active' => false,
+                'is_active' => false, // Disabled until fully integrated
             ],
         ];
 

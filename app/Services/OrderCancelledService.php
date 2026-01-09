@@ -8,6 +8,7 @@ use App\Models\OrderPanel;
 use App\Models\User;
 use App\Models\DomainRemovalTask;
 use App\Models\OrderEmail;
+use App\Models\SmtpProviderSplit;
 use App\Mail\SubscriptionCancellationMail;
 use App\Services\ActivityLogService;
 use App\Services\MailinAiService;
@@ -401,7 +402,10 @@ class OrderCancelledService
                 'mailbox_count' => $orderEmails->count(),
             ]);
 
-            $mailinService = new MailinAiService();
+            // Get active provider credentials (or fallback to config)
+            $activeProvider = SmtpProviderSplit::getActiveProvider();
+            $credentials = $activeProvider ? $activeProvider->getCredentials() : null;
+            $mailinService = new MailinAiService($credentials);
             $deletedCount = 0;
             $failedCount = 0;
             $errors = [];

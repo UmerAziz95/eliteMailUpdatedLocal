@@ -15,11 +15,37 @@ class MailinAiService
     protected $timeout;
     protected $token = null;
 
-    public function __construct()
+    /**
+     * Constructor - accepts optional credentials from split table
+     * Falls back to config if not provided
+     * 
+     * @param array|null $credentials ['base_url' => string, 'email' => string, 'password' => string]
+     */
+    public function __construct(array $credentials = null)
     {
-        $this->baseUrl = config('mailin_ai.base_url');
-        $this->email = config('mailin_ai.email');
-        $this->password = config('mailin_ai.password');
+        // Use provided credentials from split table, or fallback to config
+        if ($credentials && !empty($credentials['email']) && !empty($credentials['password'])) {
+            $this->baseUrl = $credentials['base_url'] ?: config('mailin_ai.base_url');
+            $this->email = $credentials['email'];
+            $this->password = $credentials['password'];
+            
+            Log::channel('mailin-ai')->debug('MailinAiService initialized with split table credentials', [
+                'action' => 'constructor',
+                'has_base_url' => !empty($credentials['base_url']),
+                'email_preview' => substr($this->email, 0, 3) . '***',
+            ]);
+        } else {
+            // Fallback to existing config
+            $this->baseUrl = config('mailin_ai.base_url');
+            $this->email = config('mailin_ai.email');
+            $this->password = config('mailin_ai.password');
+            
+            Log::channel('mailin-ai')->debug('MailinAiService initialized with config fallback', [
+                'action' => 'constructor',
+                'has_credentials' => !empty($credentials),
+            ]);
+        }
+        
         $this->deviceName = config('mailin_ai.device_name', 'project inbox');
         $this->timeout = config('mailin_ai.timeout', 30);
     }

@@ -57,5 +57,42 @@ class SmtpProviderSplit extends Model
         $total = self::where('is_active', true)->sum('split_percentage');
         return abs($total - 100.00) < 0.01; // Allow small floating point differences
     }
+
+    /**
+     * Get the active provider for mailbox creation
+     * For now, returns Mailin (100% active provider)
+     * Returns null if no active provider found
+     * 
+     * @return SmtpProviderSplit|null
+     */
+    public static function getActiveProvider()
+    {
+        // Get active providers ordered by priority
+        $activeProviders = self::getActiveProviders();
+        
+        // For now, return Mailin (first active provider)
+        // In future, this will handle split logic
+        return $activeProviders->first();
+    }
+
+    /**
+     * Get provider credentials for API usage
+     * Returns array with baseUrl, email, password, or null if not configured
+     * 
+     * @return array|null ['base_url' => string, 'email' => string, 'password' => string]
+     */
+    public function getCredentials()
+    {
+        // Check if provider has credentials configured
+        if (empty($this->email) || empty($this->password)) {
+            return null;
+        }
+
+        return [
+            'base_url' => $this->api_endpoint ?: null,
+            'email' => $this->email,
+            'password' => $this->password,
+        ];
+    }
 }
 

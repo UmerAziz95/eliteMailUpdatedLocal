@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\DomainTransfer;
 use App\Models\Order;
+use App\Models\SmtpProviderSplit;
 use App\Services\MailinAiService;
 use App\Jobs\MailinAi\CreateMailboxesOnOrderJob;
 use Illuminate\Console\Command;
@@ -93,7 +94,10 @@ class CheckDomainTransferStatus extends Command
 
             $this->info("Found {$allTransfers->count()} domain transfer(s) to process ({$pendingTransfers->count()} pending, {$completedTransfers->count()} completed without mailboxes).");
 
-            $mailinService = new MailinAiService();
+            // Get active provider credentials (or fallback to config)
+            $activeProvider = SmtpProviderSplit::getActiveProvider();
+            $credentials = $activeProvider ? $activeProvider->getCredentials() : null;
+            $mailinService = new MailinAiService($credentials);
             $processedOrders = [];
 
             foreach ($allTransfers as $domainTransfer) {

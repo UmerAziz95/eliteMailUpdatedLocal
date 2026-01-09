@@ -25,6 +25,7 @@ class OrderEmail extends Model
         'is_migrated_to_mailin',
         'mailin_ai_inbox_id',
         'domain',
+        'provider_slug',
     ];
 
     protected $casts = [

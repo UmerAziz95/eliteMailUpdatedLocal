@@ -13,6 +13,7 @@ class DomainTransfer extends Model
 
     protected $fillable = [
         'order_id',
+        'provider_slug',
         'domain_name',
         'name_servers',
         'status',

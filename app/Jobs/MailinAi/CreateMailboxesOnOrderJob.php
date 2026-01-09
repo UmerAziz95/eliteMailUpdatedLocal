@@ -5,12 +5,15 @@ namespace App\Jobs\MailinAi;
 use App\Models\Order;
 use App\Models\OrderAutomation;
 use App\Models\OrderEmail;
+use App\Models\OrderProviderSplit;
 use App\Models\Notification;
 use App\Models\DomainTransfer;
+use App\Models\SmtpProviderSplit;
 use App\Services\MailinAiService;
 use App\Services\SpaceshipService;
 use App\Services\NamecheapService;
 use App\Services\ActivityLogService;
+use App\Services\DomainSplitService;
 use App\Mail\OrderStatusChangeMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -89,7 +92,7 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 return;
             }
 
-            Log::channel('mailin-ai')->info('Extracted data for Mailin.ai mailbox creation', [
+            Log::channel('mailin-ai')->info('Extracted data for mailbox creation', [
                 'action' => 'create_mailboxes_on_order',
                 'order_id' => $this->orderId,
                 'domains' => $this->domains,
@@ -98,286 +101,177 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'prefix_count' => count($this->prefixVariants),
             ]);
 
-            // Initialize Mailin.ai service
-            $mailinService = new MailinAiService();
-
-            // Authenticate (token is cached internally)
-            $token = $mailinService->authenticate();
-            if (!$token) {
-                Log::channel('mailin-ai')->error('Failed to authenticate with Mailin.ai for mailbox creation', [
+            // Split domains across active providers
+            $domainSplitService = new DomainSplitService();
+            $domainSplit = $domainSplitService->splitDomains($this->domains);
+            
+            if (empty($domainSplit)) {
+                Log::channel('mailin-ai')->error('Failed to split domains across providers', [
                     'action' => 'create_mailboxes_on_order',
                     'order_id' => $this->orderId,
+                    'domains' => $this->domains,
                 ]);
-                throw new \Exception('Failed to authenticate with Mailin.ai. Please try again later.');
+                throw new \Exception('Failed to split domains across providers. Please check provider configuration.');
             }
 
-            // First, check which domains already have mailboxes created (to avoid duplicates)
-            $domainsWithMailboxes = OrderEmail::where('order_id', $this->orderId)
-                ->whereNotNull('mailin_mailbox_id')
-                ->get()
-                ->map(function ($email) {
-                    // Extract domain from email (e.g., "prefix@domain.com" -> "domain.com")
-                    $parts = explode('@', $email->email);
-                    return count($parts) === 2 ? $parts[1] : null;
-                })
-                ->filter()
-                ->unique()
-                ->values()
-                ->toArray();
-            
-            Log::channel('mailin-ai')->info('Checking for existing mailboxes', [
+            Log::channel('mailin-ai')->info('Domain split completed', [
                 'action' => 'create_mailboxes_on_order',
                 'order_id' => $this->orderId,
-                'domains_with_existing_mailboxes' => $domainsWithMailboxes,
+                'domain_split' => array_map(function($domains) {
+                    return count($domains);
+                }, $domainSplit),
             ]);
-            
-            // Filter out domains that already have mailboxes
-            $domainsToProcess = array_filter($this->domains, function ($domain) use ($domainsWithMailboxes) {
-                return !in_array($domain, $domainsWithMailboxes);
-            });
-            
-            if (empty($domainsToProcess)) {
-                Log::channel('mailin-ai')->info('All domains already have mailboxes created, skipping mailbox creation', [
+
+            // Save order provider splits to track which providers are used
+            $this->saveOrderProviderSplits($order, $domainSplit);
+
+            // Process domains for each provider
+            $allUnregisteredDomains = [];
+            $allRegisteredDomains = [];
+            $hasUnregisteredDomains = false;
+
+            foreach ($domainSplit as $providerSlug => $providerDomains) {
+                if (empty($providerDomains)) {
+                    continue; // Skip providers with no domains
+                }
+
+                Log::channel('mailin-ai')->info('Processing domains for provider', [
                     'action' => 'create_mailboxes_on_order',
                     'order_id' => $this->orderId,
-                    'all_domains' => $this->domains,
+                    'provider' => $providerSlug,
+                    'domain_count' => count($providerDomains),
+                    'domains' => $providerDomains,
                 ]);
-                return; // All mailboxes already created
-            }
-            
-            // First, check which domains are already registered/active in Mailin.ai
-            $registeredDomains = [];
-            $unregisteredDomains = [];
-            
-            Log::channel('mailin-ai')->info('Checking domain registration status before mailbox creation', [
-                'action' => 'create_mailboxes_on_order',
-                'order_id' => $this->orderId,
-                'domains_to_check' => $domainsToProcess,
-                'domains_with_existing_mailboxes' => $domainsWithMailboxes,
-            ]);
-            
-            foreach ($domainsToProcess as $domain) {
-                try {
-                    $statusResult = $mailinService->checkDomainStatus($domain);
-                    if ($statusResult['success'] && isset($statusResult['status']) && $statusResult['status'] === 'active') {
-                        $registeredDomains[] = $domain;
-                        Log::channel('mailin-ai')->info('Domain is registered and active', [
-                            'action' => 'create_mailboxes_on_order',
-                            'order_id' => $this->orderId,
-                            'domain' => $domain,
-                        ]);
-                    } else {
-                        $unregisteredDomains[] = $domain;
-                        Log::channel('mailin-ai')->info('Domain is not registered or not active', [
-                            'action' => 'create_mailboxes_on_order',
-                            'order_id' => $this->orderId,
-                            'domain' => $domain,
-                            'status' => $statusResult['status'] ?? 'not_found',
-                        ]);
-                    }
-                } catch (\Exception $e) {
-                    // If check fails, assume domain needs transfer
-                    $unregisteredDomains[] = $domain;
-                    Log::channel('mailin-ai')->warning('Failed to check domain status, will require transfer', [
+
+                // Get provider configuration
+                $provider = SmtpProviderSplit::getBySlug($providerSlug);
+                if (!$provider) {
+                    Log::channel('mailin-ai')->error('Provider not found in split table', [
                         'action' => 'create_mailboxes_on_order',
                         'order_id' => $this->orderId,
-                        'domain' => $domain,
-                        'error' => $e->getMessage(),
+                        'provider_slug' => $providerSlug,
                     ]);
+                    continue;
                 }
-            }
-            
-            Log::channel('mailin-ai')->info('Domain registration check completed', [
-                'action' => 'create_mailboxes_on_order',
-                'order_id' => $this->orderId,
-                'registered_domains' => $registeredDomains,
-                'unregistered_domains' => $unregisteredDomains,
-            ]);
-            
-            // If there are unregistered domains, initiate transfer for them
-            if (!empty($unregisteredDomains)) {
-                Log::channel('mailin-ai')->info('Unregistered domains found, initiating transfer process', [
-                    'action' => 'create_mailboxes_on_order',
-                    'order_id' => $this->orderId,
-                    'unregistered_domains' => $unregisteredDomains,
-                    'registered_domains' => $registeredDomains,
-                ]);
-                
-                // Ensure order status is in-progress (not completed)
-                $oldStatus = $order->status_manage_by_admin;
-                if ($oldStatus !== 'in-progress') {
-                    $order->update([
-                        'status_manage_by_admin' => 'in-progress',
+
+                // Get provider credentials
+                $credentials = $provider->getCredentials();
+                if (!$credentials) {
+                    Log::channel('mailin-ai')->error('Provider credentials not configured', [
+                        'action' => 'create_mailboxes_on_order',
+                        'order_id' => $this->orderId,
+                        'provider_slug' => $providerSlug,
                     ]);
-                    
-                    // Log the status change
-                    try {
-                        ActivityLogService::log(
-                            'mailin_ai_order_status_in_progress',
-                            "Order #{$order->id} status set to in-progress - domain transfer required",
-                            $order,
-                            [
-                                'order_id' => $order->id,
-                                'old_status' => $oldStatus,
-                                'new_status' => 'in-progress',
-                                'provider_type' => $this->providerType,
-                                'reason' => 'Domain transfer required before mailbox creation',
-                            ]
-                        );
-                    } catch (\Exception $e) {
-                        Log::channel('mailin-ai')->warning('Failed to create activity log for status change', [
-                            'action' => 'create_mailboxes_on_order',
-                            'order_id' => $this->orderId,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
+                    continue;
                 }
-                
-                // Transfer unregistered domains
-                $this->handleDomainTransfer($order, $mailinService, $unregisteredDomains);
-            }
-            
-            // Create mailboxes for registered domains immediately (if any)
-            if (!empty($registeredDomains)) {
-                Log::channel('mailin-ai')->info('Creating mailboxes for registered domains', [
-                    'action' => 'create_mailboxes_on_order',
-                    'order_id' => $this->orderId,
-                    'registered_domains' => $registeredDomains,
-                ]);
-                
-                // Generate mailboxes only for registered domains
-                $mailboxes = [];
-                $mailboxData = []; // Store mailbox data for OrderEmail creation
-                $mailboxIndex = 0;
 
-                foreach ($registeredDomains as $domain) {
-                    foreach ($this->prefixVariants as $prefix) {
-                        $username = $prefix . '@' . $domain;
-                        $name = $prefix; // Use prefix as name
-                        
-                        // Generate password
-                        $password = $this->generatePassword($this->userId, $mailboxIndex);
-
-                        $mailboxes[] = [
-                            'username' => $username,
-                            'name' => $name,
-                            'password' => $password,
-                        ];
-                        
-                        // Store for OrderEmail creation with domain information
-                        $mailboxData[] = [
-                            'order_id' => $this->orderId,
-                            'username' => $username,
-                            'name' => $name,
-                            'password' => $password,
-                            'domain' => $domain,
-                            'prefix' => $prefix,
-                        ];
-
-                        $mailboxIndex++;
-                    }
+                // Initialize provider service (for now, only Mailin is supported)
+                if ($providerSlug !== 'mailin') {
+                    Log::channel('mailin-ai')->warning('Provider not yet implemented, skipping', [
+                        'action' => 'create_mailboxes_on_order',
+                        'order_id' => $this->orderId,
+                        'provider_slug' => $providerSlug,
+                    ]);
+                    continue;
                 }
+
+                $mailinService = new MailinAiService($credentials);
                 
-                if (!empty($mailboxes)) {
-                    // Call Mailin.ai API to create mailboxes for registered domains
+                // Authenticate
+                $token = $mailinService->authenticate();
+                if (!$token) {
+                    Log::channel('mailin-ai')->error('Failed to authenticate with provider', [
+                        'action' => 'create_mailboxes_on_order',
+                        'order_id' => $this->orderId,
+                        'provider' => $providerSlug,
+                    ]);
+                    continue;
+                }
+
+                // Check which domains already have mailboxes for this provider
+                $domainsWithMailboxes = OrderEmail::where('order_id', $this->orderId)
+                    ->where('provider_slug', $providerSlug)
+                    ->whereNotNull('mailin_mailbox_id')
+                    ->get()
+                    ->map(function ($email) {
+                        $parts = explode('@', $email->email);
+                        return count($parts) === 2 ? $parts[1] : null;
+                    })
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->toArray();
+
+                // Filter out domains that already have mailboxes
+                $domainsToProcess = array_filter($providerDomains, function ($domain) use ($domainsWithMailboxes) {
+                    return !in_array($domain, $domainsWithMailboxes);
+                });
+
+                if (empty($domainsToProcess)) {
+                    Log::channel('mailin-ai')->info('All domains already have mailboxes for provider', [
+                        'action' => 'create_mailboxes_on_order',
+                        'order_id' => $this->orderId,
+                        'provider' => $providerSlug,
+                    ]);
+                    continue;
+                }
+
+                // Check domain registration status
+                $registeredDomains = [];
+                $unregisteredDomains = [];
+
+                foreach ($domainsToProcess as $domain) {
                     try {
-                        $result = $mailinService->createMailboxes($mailboxes);
-                        
-                        // If successful, save mailboxes
-                        // Complete order only if there are no unregistered domains
-                        if ($result['success'] && isset($result['uuid'])) {
-                            $shouldCompleteOrder = empty($unregisteredDomains);
-                            $this->saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $shouldCompleteOrder);
+                        $statusResult = $mailinService->checkDomainStatus($domain);
+                        if ($statusResult['success'] && isset($statusResult['status']) && $statusResult['status'] === 'active') {
+                            $registeredDomains[] = $domain;
+                        } else {
+                            $unregisteredDomains[] = $domain;
                         }
                     } catch (\Exception $e) {
-                        Log::channel('mailin-ai')->error('Failed to create mailboxes for registered domains', [
-                            'action' => 'create_mailboxes_on_order',
-                            'order_id' => $this->orderId,
-                            'registered_domains' => $registeredDomains,
-                            'error' => $e->getMessage(),
-                        ]);
-                        // Don't throw - we've already initiated transfer for unregistered domains
-                        // Registered domain mailboxes can be retried later
+                        $unregisteredDomains[] = $domain;
                     }
                 }
+
+                $allRegisteredDomains = array_merge($allRegisteredDomains, $registeredDomains);
+                $allUnregisteredDomains = array_merge($allUnregisteredDomains, $unregisteredDomains);
+
+                if (!empty($unregisteredDomains)) {
+                    $hasUnregisteredDomains = true;
+                    Log::channel('mailin-ai')->info('Unregistered domains found for provider', [
+                        'action' => 'create_mailboxes_on_order',
+                        'order_id' => $this->orderId,
+                        'provider' => $providerSlug,
+                        'unregistered_domains' => $unregisteredDomains,
+                    ]);
+                }
+
+                // Handle domain transfer if needed
+                if (!empty($unregisteredDomains)) {
+                    // Ensure order status is in-progress
+                    $oldStatus = $order->status_manage_by_admin;
+                    if ($oldStatus !== 'in-progress') {
+                        $order->update(['status_manage_by_admin' => 'in-progress']);
+                    }
+                    
+                    // Transfer unregistered domains with provider_slug
+                    $this->handleDomainTransfer($order, $mailinService, $unregisteredDomains, $providerSlug);
+                }
+
+                // Create mailboxes for registered domains
+                if (!empty($registeredDomains)) {
+                    $this->createMailboxesForProvider($order, $mailinService, $providerSlug, $registeredDomains, empty($unregisteredDomains));
+                }
             }
-            
-            // If we have unregistered domains, return early (transfer is in progress)
-            if (!empty($unregisteredDomains)) {
+
+            // If we have unregistered domains, return early (transfer in progress)
+            if ($hasUnregisteredDomains) {
                 Log::channel('mailin-ai')->info('Domain transfer initiated, waiting for domains to become active', [
                     'action' => 'create_mailboxes_on_order',
                     'order_id' => $this->orderId,
-                    'unregistered_domains' => $unregisteredDomains,
-                ]);
-                return; // Exit early - will retry when domains become active
-            }
-            
-            // If all domains are registered and mailboxes were already created above, we're done
-            if (!empty($registeredDomains)) {
-                Log::channel('mailin-ai')->info('All mailboxes created for registered domains, order processing complete', [
-                    'action' => 'create_mailboxes_on_order',
-                    'order_id' => $this->orderId,
-                ]);
-                return; // Exit - mailboxes already created in the block above
-            }
-            
-            // Fallback: If no registered domains were found but we reach here, proceed with normal mailbox creation
-            // (This should rarely happen, but handles edge cases)
-            // Generate mailboxes: for each domain × each prefix variant
-            $mailboxes = [];
-            $mailboxData = []; // Store mailbox data for OrderEmail creation
-            $mailboxIndex = 0;
-
-            foreach ($this->domains as $domain) {
-                foreach ($this->prefixVariants as $prefix) {
-                    $username = $prefix . '@' . $domain;
-                    $name = $prefix; // Use prefix as name
-                    
-                    // Generate password
-                    $password = $this->generatePassword($this->userId, $mailboxIndex);
-
-                    $mailboxes[] = [
-                        'username' => $username,
-                        'name' => $name,
-                        'password' => $password,
-                    ];
-                    
-                    // Store for OrderEmail creation with domain information
-                    $mailboxData[] = [
-                        'order_id' => $this->orderId,
-                        'username' => $username,
-                        'name' => $name,
-                        'password' => $password,
-                        'domain' => $domain,
-                        'prefix' => $prefix,
-                    ];
-
-                    $mailboxIndex++;
-                }
-            }
-
-            if (empty($mailboxes)) {
-                Log::channel('mailin-ai')->warning('No mailboxes generated', [
-                    'action' => 'create_mailboxes_on_order',
-                    'order_id' => $this->orderId,
+                    'unregistered_domains' => $allUnregisteredDomains,
                 ]);
                 return;
-            }
-
-            Log::channel('mailin-ai')->info('Generated mailbox list for all domains', [
-                'action' => 'create_mailboxes_on_order',
-                'order_id' => $this->orderId,
-                'mailbox_count' => count($mailboxes),
-            ]);
-
-            // Call Mailin.ai API to create mailboxes
-            $result = $mailinService->createMailboxes($mailboxes);
-
-            if ($result['success'] && isset($result['uuid'])) {
-                // Save mailboxes and complete order (all domains are registered)
-                $this->saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, true); // true = complete order
-            } else {
-                throw new \Exception('Mailbox creation failed: ' . ($result['message'] ?? 'Unknown error'));
             }
 
         } catch (\Exception $e) {
@@ -421,9 +315,10 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
      * @param Order $order
      * @param MailinAiService $mailinService
      * @param array $domainsToTransfer Array of domain names to transfer
+     * @param string|null $providerSlug Provider slug for tracking
      * @return void
      */
-    private function handleDomainTransfer($order, $mailinService, $domainsToTransfer = null)
+    private function handleDomainTransfer($order, $mailinService, $domainsToTransfer = null, $providerSlug = null)
     {
         try {
             // Use provided domains or fallback to all domains
@@ -590,6 +485,7 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                         try {
                             $domainTransfer = DomainTransfer::create([
                                 'order_id' => $this->orderId,
+                                'provider_slug' => $providerSlug,
                                 'domain_name' => $domain,
                                 'name_servers' => $nameServersForDb, // Store as array (will be cast to JSON)
                                 'status' => 'pending',
@@ -901,6 +797,7 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                     try {
                         DomainTransfer::create([
                             'order_id' => $this->orderId,
+                            'provider_slug' => $providerSlug,
                             'domain_name' => $domain,
                             'status' => 'failed',
                             'error_message' => $transferException->getMessage(),
@@ -1155,10 +1052,104 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
      * @param bool $completeOrder Whether to mark order as completed
      * @return void
      */
-    private function saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $completeOrder = true)
+    /**
+     * Create mailboxes for a specific provider's domains
+     * 
+     * @param Order $order
+     * @param MailinAiService $mailinService
+     * @param string $providerSlug
+     * @param array $domains
+     * @param bool $shouldCompleteOrder
+     * @return void
+     */
+    private function createMailboxesForProvider($order, $mailinService, $providerSlug, $domains, $shouldCompleteOrder = true)
+    {
+        Log::channel('mailin-ai')->info('Creating mailboxes for provider domains', [
+            'action' => 'create_mailboxes_for_provider',
+            'order_id' => $this->orderId,
+            'provider' => $providerSlug,
+            'domains' => $domains,
+        ]);
+
+        // Generate mailboxes for these domains
+        $mailboxes = [];
+        $mailboxData = [];
+        $mailboxIndex = 0;
+
+        foreach ($domains as $domain) {
+            foreach ($this->prefixVariants as $prefix) {
+                $username = $prefix . '@' . $domain;
+                $name = $prefix;
+                $password = $this->generatePassword($this->userId, $mailboxIndex);
+
+                $mailboxes[] = [
+                    'username' => $username,
+                    'name' => $name,
+                    'password' => $password,
+                ];
+
+                $mailboxData[] = [
+                    'order_id' => $this->orderId,
+                    'username' => $username,
+                    'name' => $name,
+                    'password' => $password,
+                    'domain' => $domain,
+                    'prefix' => $prefix,
+                    'provider_slug' => $providerSlug,
+                ];
+
+                $mailboxIndex++;
+            }
+        }
+
+        if (empty($mailboxes)) {
+            Log::channel('mailin-ai')->warning('No mailboxes generated for provider', [
+                'action' => 'create_mailboxes_for_provider',
+                'order_id' => $this->orderId,
+                'provider' => $providerSlug,
+            ]);
+            return;
+        }
+
+        try {
+            $result = $mailinService->createMailboxes($mailboxes);
+            
+            if ($result['success'] && isset($result['uuid'])) {
+                $this->saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $shouldCompleteOrder, $providerSlug);
+            } else {
+                throw new \Exception('Mailbox creation failed: ' . ($result['message'] ?? 'Unknown error'));
+            }
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Failed to create mailboxes for provider', [
+                'action' => 'create_mailboxes_for_provider',
+                'order_id' => $this->orderId,
+                'provider' => $providerSlug,
+                'domains' => $domains,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    private function saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $completeOrder = true, $providerSlug = null)
     {
         $jobUuid = $result['uuid'];
-        $mailinService = new MailinAiService();
+        
+        // Get provider credentials based on provider_slug (or fallback to active provider)
+        $provider = null;
+        if ($providerSlug) {
+            $provider = SmtpProviderSplit::getBySlug($providerSlug);
+        }
+        
+        if (!$provider) {
+            $provider = SmtpProviderSplit::getActiveProvider();
+        }
+        
+        $credentials = $provider ? $provider->getCredentials() : null;
+        $mailinService = new MailinAiService($credentials);
+        
+        // Use provider slug from parameter or provider, or fallback to 'mailin'
+        $finalProviderSlug = $providerSlug ?: ($provider ? $provider->slug : 'mailin');
         
         // Save OrderAutomation record
         OrderAutomation::create([
@@ -1262,6 +1253,9 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                         $mailinMailboxId = $mailboxMap[$mailbox['username']]['mailbox_id'] ?? null;
                         $mailinDomainId = $mailboxMap[$mailbox['username']]['domain_id'] ?? null;
                         
+                        // Get provider_slug from mailboxData or use finalProviderSlug
+                        $mailboxProviderSlug = $mailbox['provider_slug'] ?? $finalProviderSlug;
+                        
                         OrderEmail::create([
                             'order_id' => $this->orderId,
                             'user_id' => $order->user_id,
@@ -1274,6 +1268,8 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                             'profile_picture' => null,
                             'mailin_mailbox_id' => $mailinMailboxId,
                             'mailin_domain_id' => $mailinDomainId,
+                            'domain' => $mailbox['domain'] ?? null,
+                            'provider_slug' => $mailboxProviderSlug,
                         ]);
                         $savedCount++;
                         
@@ -1471,6 +1467,73 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
      * @param int $index Index for uniqueness
      * @return string Generated password
      */
+    /**
+     * Save order provider splits to track which providers are used for this order
+     * 
+     * @param Order $order
+     * @param array $domainSplit Array with provider slug as key and domains array as value
+     * @return void
+     */
+    private function saveOrderProviderSplits($order, $domainSplit)
+    {
+        try {
+            // Get total domains for percentage calculation
+            $totalDomains = count($this->domains);
+            
+            if ($totalDomains === 0) {
+                return;
+            }
+
+            // Delete existing splits for this order (in case of resubmission)
+            OrderProviderSplit::where('order_id', $this->orderId)->delete();
+
+            foreach ($domainSplit as $providerSlug => $providerDomains) {
+                if (empty($providerDomains)) {
+                    continue;
+                }
+
+                // Get provider configuration
+                $provider = SmtpProviderSplit::getBySlug($providerSlug);
+                if (!$provider) {
+                    Log::channel('mailin-ai')->warning('Provider not found when saving order provider split', [
+                        'action' => 'save_order_provider_splits',
+                        'order_id' => $this->orderId,
+                        'provider_slug' => $providerSlug,
+                    ]);
+                    continue;
+                }
+
+                $domainCount = count($providerDomains);
+                $percentage = ($domainCount / $totalDomains) * 100;
+
+                OrderProviderSplit::create([
+                    'order_id' => $this->orderId,
+                    'provider_slug' => $providerSlug,
+                    'provider_name' => $provider->name,
+                    'split_percentage' => round($percentage, 2),
+                    'domain_count' => $domainCount,
+                    'domains' => $providerDomains,
+                    'priority' => $provider->priority,
+                ]);
+
+                Log::channel('mailin-ai')->info('Saved order provider split', [
+                    'action' => 'save_order_provider_splits',
+                    'order_id' => $this->orderId,
+                    'provider_slug' => $providerSlug,
+                    'domain_count' => $domainCount,
+                    'percentage' => round($percentage, 2),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Failed to save order provider splits', [
+                'action' => 'save_order_provider_splits',
+                'order_id' => $this->orderId,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't throw - this is tracking data, not critical for order processing
+        }
+    }
+
     private function generatePassword($userId, $index = 0)
     {
         $upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
