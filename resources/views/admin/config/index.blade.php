@@ -194,6 +194,93 @@
         font-size: 0.875rem;
         margin-top: 0.25rem;
     }
+
+    /* Improved visibility for SMTP Provider Split Configuration helper text */
+    .provider-split-form .form-text,
+    .provider-split-form .form-text.text-muted {
+        color: rgba(255, 255, 255, 0.85) !important;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        opacity: 1;
+    }
+
+    /* Password Toggle Styles */
+    .password-wrapper {
+        position: relative;
+    }
+
+    .password-wrapper .form-control {
+        padding-right: 40px;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.8);
+        z-index: 10;
+        font-size: 1rem;
+        transition: color 0.2s ease;
+        background-color: transparent;
+        border: none;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .password-toggle:hover {
+        color: var(--white-color);
+    }
+
+    .password-toggle:active {
+        opacity: 0.8;
+    }
+
+    /* Simple Glassy Alert Styles for SMTP Provider Split Configuration */
+    #smtp_provider_split-pane .alert {
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    #smtp_provider_split-pane .alert-info {
+        background: rgba(13, 110, 253, 0.15) !important;
+        border-color: rgba(13, 110, 253, 0.3) !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
+
+    #smtp_provider_split-pane .alert-success {
+        background: rgba(25, 135, 84, 0.15) !important;
+        border-color: rgba(25, 135, 84, 0.3) !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
+
+    #smtp_provider_split-pane .alert-warning {
+        background: rgba(255, 193, 7, 0.15) !important;
+        border-color: rgba(255, 193, 7, 0.3) !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
+
+    #smtp_provider_split-pane .alert .alert-heading {
+        color: rgba(255, 255, 255, 0.95) !important;
+        font-weight: 600;
+    }
+
+    #smtp_provider_split-pane .alert p,
+    #smtp_provider_split-pane .alert ol,
+    #smtp_provider_split-pane .alert li {
+        color: rgba(255, 255, 255, 0.85) !important;
+    }
+
+    #smtp_provider_split-pane .alert strong {
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
 </style>
 @endpush
 
@@ -595,12 +682,12 @@
                             </button>
                         </div>
 
-                        <div class="alert alert-info" role="alert">
+                        <div class="alert alert-info glassy-alert" role="alert">
                             <h5 class="alert-heading mb-1">
                                 <i class="ti ti-info-circle me-2"></i>
                                 How to Configure Provider Splits
                             </h5>
-                            <p class="mb-2 mx-2 text-muted">Configure how orders are split across different SMTP providers:</p>
+                            <p class="mb-2 mx-2">Configure how orders are split across different SMTP providers:</p>
                             <ol class="mb-0">
                                 <li>Set the split percentage for each provider (only active providers count toward 100%)</li>
                                 <li>Enter email and password credentials for each provider (required)</li>
@@ -693,13 +780,16 @@
                                                         <i class="ti ti-lock me-1"></i>
                                                         Password *
                                                     </label>
-                                                    <input type="password" 
-                                                           class="form-control" 
-                                                           id="password-{{ $provider->slug }}" 
-                                                           name="providers[{{ $provider->id }}][password]" 
-                                                           placeholder="Enter Password" 
-                                                           value="{{ $provider->password ?? '' }}"
-                                                           required>
+                                                    <div class="password-wrapper">
+                                                        <input type="password" 
+                                                               class="form-control" 
+                                                               id="password-{{ $provider->slug }}" 
+                                                               name="providers[{{ $provider->id }}][password]" 
+                                                               placeholder="Enter Password" 
+                                                               value="{{ $provider->password ?? '' }}"
+                                                               required>
+                                                        <i class="fa-regular fa-eye password-toggle"></i>
+                                                    </div>
                                                     <small class="form-text text-muted">
                                                         Password for {{ $provider->name }} authentication
                                                     </small>
@@ -755,7 +845,7 @@
                                     </form>
                                 </div>
                             @empty
-                                <div class="alert alert-info">
+                                <div class="alert alert-info glassy-alert">
                                     <i class="ti ti-info-circle me-2"></i>
                                     No provider splits configured. Please run the seeder to add providers.
                                 </div>
@@ -764,17 +854,17 @@
 
                         <!-- Total Percentage Display -->
                         <div class="mt-4">
-                            <div class="alert alert-{{ abs($activeTotalPercentage - 100.00) > 0.01 ? 'warning' : 'success' }}" role="alert">
-                                <h6 class="alert-heading mb-1" style="color: {{ abs($activeTotalPercentage - 100.00) > 0.01 ? '#856404' : '#155724' }};">
+                            <div class="alert alert-{{ abs($activeTotalPercentage - 100.00) > 0.01 ? 'warning' : 'success' }} glassy-alert" role="alert">
+                                <h6 class="alert-heading mb-1">
                                     <i class="ti ti-{{ abs($activeTotalPercentage - 100.00) > 0.01 ? 'alert-triangle' : 'check' }} me-2"></i>
                                     Active Providers Total Percentage
                                 </h6>
-                                <p class="mb-0" style="color: {{ abs($activeTotalPercentage - 100.00) > 0.01 ? '#856404' : '#155724' }};">
+                                <p class="mb-0">
                                     <strong>Total: <span id="activeTotalPercentage">{{ number_format($activeTotalPercentage, 2) }}</span>%</strong>
                                     @if (abs($activeTotalPercentage - 100.00) > 0.01)
-                                        <span class="ms-2" style="color: #721c24;">⚠ Total must equal 100% for active providers</span>
+                                        <span class="ms-2">⚠ Total must equal 100% for active providers</span>
                                     @else
-                                        <span class="ms-2" style="color: #155724;">✓ Valid - Active providers total 100%</span>
+                                        <span class="ms-2">✓ Valid - Active providers total 100%</span>
                                     @endif
                                 </p>
                             </div>
@@ -1831,24 +1921,31 @@
             
             if (alertDiv) {
                 const isValid = Math.abs(total - 100.00) <= 0.01;
-                alertDiv.className = `alert alert-${isValid ? 'success' : 'warning'}`;
+                alertDiv.className = `alert alert-${isValid ? 'success' : 'warning'} glassy-alert`;
                 
-                // Update heading color
+                // Update icon and text (remove inline styles for glassy look)
                 const heading = alertDiv.querySelector('.alert-heading');
                 if (heading) {
-                    heading.style.color = isValid ? '#155724' : '#856404';
+                    heading.style.color = ''; // Remove inline color for glassy styling
+                    const icon = heading.querySelector('i');
+                    if (icon) {
+                        icon.className = `ti ti-${isValid ? 'check' : 'alert-triangle'} me-2`;
+                    }
                 }
                 
-                // Update icon
-                const icon = alertDiv.querySelector('.ti');
-                if (icon) {
-                    icon.className = `ti ti-${isValid ? 'check' : 'alert-triangle'} me-2`;
+                // Update message text
+                const messageSpan = alertDiv.querySelector('p .ms-2');
+                if (messageSpan) {
+                    messageSpan.textContent = isValid 
+                        ? '✓ Valid - Active providers total 100%' 
+                        : '⚠ Total must equal 100% for active providers';
+                    messageSpan.style.color = ''; // Remove inline color for glassy styling
                 }
                 
-                // Update paragraph color
+                // Remove inline paragraph color for glassy styling
                 const paragraph = alertDiv.querySelector('p');
                 if (paragraph) {
-                    paragraph.style.color = isValid ? '#155724' : '#856404';
+                    paragraph.style.color = '';
                 }
                 
                 // Update status text
@@ -2104,6 +2201,25 @@
 
         // Initialize total percentage calculation
         calculateActiveTotalPercentage();
+
+        // Initialize password toggle functionality for SMTP Provider Split Configuration
+        function initializePasswordToggles() {
+            $('.password-toggle').off('click').on('click', function() {
+                const input = $(this).closest('.password-wrapper').find('input');
+                const icon = $(this);
+
+                if (input.attr('type') === 'password') {
+                    input.attr('type', 'text');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    input.attr('type', 'password');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                }
+            });
+        }
+
+        // Initialize password toggles on page load
+        initializePasswordToggles();
     });
 </script>
 @endpush

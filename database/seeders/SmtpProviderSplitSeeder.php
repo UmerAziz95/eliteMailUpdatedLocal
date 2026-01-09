@@ -35,6 +35,17 @@ class SmtpProviderSplitSeeder extends Seeder
                 'priority' => 2,
                 'is_active' => true,
             ],
+            [
+                'name' => 'Zapmail',
+                'slug' => 'zapmail',
+                'api_endpoint' => config('zapmail.base_url', null),
+                'email' => env('ZAPMAIL_EMAIL', ''),
+                'password' => env('ZAPMAIL_PASSWORD', ''),
+                'additional_config' => null,
+                'split_percentage' => 0.00,
+                'priority' => 3,
+                'is_active' => false,
+            ],
         ];
 
         foreach ($providers as $provider) {
