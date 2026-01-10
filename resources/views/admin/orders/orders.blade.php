@@ -2279,9 +2279,12 @@
                                 // For Private SMTP, show "Automation" instead of "Unassigned"
                                 const displayValue = isPrivateSMTP ? 'Automation' : (data || 'Unassigned');
                                 
+                                // Use robot icon for Automation, person icon for others
+                                const iconClass = isPrivateSMTP ? 'ti ti-robot fs-6' : 'ti ti-user fs-6';
+                                
                                 return `
                                 <div class="d-flex align-items-center gap-1">
-                                    <i class="ti ti-user fs-6"></i>
+                                    <i class="${iconClass}"></i>
                                     <span>${displayValue}</span>
                                 </div>
                             `;
