@@ -26,6 +26,12 @@ return [
     'retry_attempts' => env('MAILIN_AI_RETRY_ATTEMPTS', 3),
     'retry_delay' => env('MAILIN_AI_RETRY_DELAY', 5), // seconds
 
+    // Domain transfer rate limiting settings
+    'domain_transfer_delay' => env('MAILIN_AI_DOMAIN_TRANSFER_DELAY', 2), // seconds between individual transfers
+    'domain_transfer_batch_size' => env('MAILIN_AI_DOMAIN_TRANSFER_BATCH_SIZE', 10), // domains per batch
+    'domain_transfer_batch_delay' => env('MAILIN_AI_DOMAIN_TRANSFER_BATCH_DELAY', 10), // seconds between batches
+    'rate_limit_delay' => env('MAILIN_AI_RATE_LIMIT_DELAY', 30), // seconds to wait after hitting rate limit
+
     // Webhook configuration (if available)
     'webhook_secret' => env('MAILIN_AI_WEBHOOK_SECRET'),
     'webhook_url' => env('MAILIN_AI_WEBHOOK_URL', '/webhook/mailin-ai'),

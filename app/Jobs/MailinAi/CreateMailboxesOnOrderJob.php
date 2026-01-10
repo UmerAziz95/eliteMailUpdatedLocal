@@ -529,15 +529,44 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             $hasNameserverUpdateFailures = false;
             $nameserverUpdateErrors = [];
             
-            // Transfer each domain
+            // Configuration for rate limit handling
+            $delayBetweenTransfers = config('mailin_ai.domain_transfer_delay', 2); // seconds between transfers
+            $batchSize = config('mailin_ai.domain_transfer_batch_size', 10); // domains per batch
+            $batchDelay = config('mailin_ai.domain_transfer_batch_delay', 10); // seconds between batches
+            
+            // Track domains that hit rate limits for retry
+            $rateLimitedDomains = [];
+            
+            // Transfer each domain with delays and rate limit handling
             foreach ($domains as $index => $domain) {
                 try {
+                    // Add delay between transfers (except for the first one)
+                    if ($index > 0) {
+                        // Longer delay between batches
+                        if ($index % $batchSize === 0) {
+                            Log::channel('mailin-ai')->info('Batch delay before processing next batch', [
+                                'action' => 'handle_domain_transfer',
+                                'order_id' => $this->orderId,
+                                'batch_number' => ($index / $batchSize) + 1,
+                                'delay_seconds' => $batchDelay,
+                            ]);
+                            sleep($batchDelay);
+                        } else {
+                            // Regular delay between individual transfers
+                            sleep($delayBetweenTransfers);
+                        }
+                    }
+                    
                     Log::channel('mailin-ai')->info('Initiating domain transfer', [
                         'action' => 'handle_domain_transfer',
                         'order_id' => $this->orderId,
                         'domain_index' => $index + 1,
                         'total_domains' => count($domains),
                         'domain' => $domain,
+                        'batch_info' => [
+                            'batch_number' => floor($index / $batchSize) + 1,
+                            'position_in_batch' => ($index % $batchSize) + 1,
+                        ],
                     ]);
                     
                     $transferResult = $mailinService->transferDomain($domain);
@@ -890,28 +919,77 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                         }
                     }
                 } catch (\Exception $transferException) {
-                    Log::channel('mailin-ai')->error('Failed to transfer domain', [
-                        'action' => 'handle_domain_transfer',
-                        'order_id' => $this->orderId,
-                        'domain' => $domain,
-                        'error' => $transferException->getMessage(),
-                    ]);
+                    $errorMessage = $transferException->getMessage();
+                    $isRateLimitError = $transferException->getCode() === 429 
+                        || str_contains($errorMessage, 'rate limit') 
+                        || str_contains($errorMessage, 'Too Many Attempts')
+                        || str_contains($errorMessage, '429');
                     
-                    // Save failed transfer record
-                    try {
-                        DomainTransfer::create([
-                            'order_id' => $this->orderId,
-                            'domain_name' => $domain,
-                            'status' => 'failed',
-                            'error_message' => $transferException->getMessage(),
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::channel('mailin-ai')->error('Failed to save failed domain transfer record', [
+                    if ($isRateLimitError) {
+                        // Rate limit error - mark for retry instead of failing
+                        $rateLimitedDomains[] = $domain;
+                        
+                        Log::channel('mailin-ai')->warning('Domain transfer hit rate limit, will retry later', [
                             'action' => 'handle_domain_transfer',
                             'order_id' => $this->orderId,
                             'domain' => $domain,
-                            'error' => $e->getMessage(),
+                            'error' => $errorMessage,
+                            'retry_strategy' => 'scheduled_retry',
                         ]);
+                        
+                        // Save as pending (not failed) so it can be retried
+                        try {
+                            DomainTransfer::create([
+                                'order_id' => $this->orderId,
+                                'domain_name' => $domain,
+                                'status' => 'pending',
+                                'error_message' => 'Rate limit exceeded. Will retry automatically: ' . $errorMessage,
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::channel('mailin-ai')->error('Failed to save rate-limited domain transfer record', [
+                                'action' => 'handle_domain_transfer',
+                                'order_id' => $this->orderId,
+                                'domain' => $domain,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                        
+                        // If we hit rate limit, add extra delay before continuing
+                        // This helps prevent hitting rate limits on subsequent requests
+                        $rateLimitDelay = config('mailin_ai.rate_limit_delay', 30); // seconds
+                        Log::channel('mailin-ai')->info('Adding delay after rate limit to prevent further rate limiting', [
+                            'action' => 'handle_domain_transfer',
+                            'order_id' => $this->orderId,
+                            'delay_seconds' => $rateLimitDelay,
+                        ]);
+                        sleep($rateLimitDelay);
+                        
+                    } else {
+                        // Other errors - log and save as failed
+                        Log::channel('mailin-ai')->error('Failed to transfer domain', [
+                            'action' => 'handle_domain_transfer',
+                            'order_id' => $this->orderId,
+                            'domain' => $domain,
+                            'error' => $errorMessage,
+                            'is_rate_limit' => false,
+                        ]);
+                        
+                        // Save failed transfer record
+                        try {
+                            DomainTransfer::create([
+                                'order_id' => $this->orderId,
+                                'domain_name' => $domain,
+                                'status' => 'failed',
+                                'error_message' => $errorMessage,
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::channel('mailin-ai')->error('Failed to save failed domain transfer record', [
+                                'action' => 'handle_domain_transfer',
+                                'order_id' => $this->orderId,
+                                'domain' => $domain,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
                 }
             }
@@ -920,11 +998,38 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             $successCount = DomainTransfer::where('order_id', $this->orderId)
                 ->where('status', 'pending')
                 ->whereIn('domain_name', $domains)
+                ->where(function($query) {
+                    $query->whereNull('error_message')
+                        ->orWhere('error_message', 'not like', '%Rate limit%');
+                })
                 ->count();
             $failedCount = DomainTransfer::where('order_id', $this->orderId)
                 ->where('status', 'failed')
                 ->whereIn('domain_name', $domains)
                 ->count();
+            $rateLimitedCount = count($rateLimitedDomains);
+            
+            // Log summary including rate-limited domains
+            Log::channel('mailin-ai')->info('Domain transfer batch completed', [
+                'action' => 'handle_domain_transfer',
+                'order_id' => $this->orderId,
+                'total_domains' => count($domains),
+                'successful_transfers' => $successCount,
+                'failed_transfers' => $failedCount,
+                'rate_limited_domains' => $rateLimitedCount,
+                'rate_limited_domain_list' => $rateLimitedDomains,
+            ]);
+            
+            // If we have rate-limited domains, log a warning
+            if ($rateLimitedCount > 0) {
+                Log::channel('mailin-ai')->warning('Some domains hit rate limits and will be retried automatically', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                    'rate_limited_count' => $rateLimitedCount,
+                    'rate_limited_domains' => $rateLimitedDomains,
+                    'retry_info' => 'These domains will be retried by the scheduled domain transfer status check command',
+                ]);
+            }
             
             // Check for nameserver update failures (status pending but name_server_status failed)
             $nameserverFailureCount = DomainTransfer::where('order_id', $this->orderId)
