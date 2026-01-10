@@ -1046,7 +1046,7 @@ class OrderController extends Controller
                 // $this->pannelCreationAndOrderSplitOnPannels($order);
             }
             // Create order tracking record at the end
-            if($request->edit_id && $request->order_id) {
+            if($request->edit_id && $request->order_id && $order->provider_type !== 'Private SMTP') {
                 // For existing orders, update or create tracking record
                 $order->orderTracking()->updateOrCreate(
                     ['order_id' => $order->id],
@@ -1148,7 +1148,7 @@ class OrderController extends Controller
         try {
             // Skip panel assignment if order uses Mailin.ai automation (Private SMTP)
             // Note: This will be implemented when full Mailin.ai automation is added
-            if (config('mailin_ai.automation_enabled') === true && $order->provider_type === 'Private SMTP') {
+            if ($order->provider_type === 'Private SMTP') {
                 Log::info("Skipping panel assignment for automated order #{$order->id}", [
                     'order_id' => $order->id,
                     'provider_type' => $order->provider_type
