@@ -35,14 +35,34 @@ class CheckDomainTransferStatus extends Command
         $this->info('Starting domain transfer status check...');
 
         try {
-            // Get all pending domain transfers
+            // Get all pending domain transfers (including rate-limited ones)
             $pendingTransfers = DomainTransfer::where('status', 'pending')
                 ->with('order')
                 ->get();
             
+            // Separate rate-limited transfers that need retry
+            $rateLimitedTransfers = $pendingTransfers->filter(function($transfer) {
+                return $transfer->error_message && 
+                       (str_contains($transfer->error_message, 'Rate limit') || 
+                        str_contains($transfer->error_message, 'Too Many Attempts'));
+            });
+            
+            // Retry rate-limited transfers
+            if ($rateLimitedTransfers->count() > 0) {
+                $this->info("Found {$rateLimitedTransfers->count()} rate-limited domain transfer(s) to retry...");
+                Log::channel('mailin-ai')->info('Retrying rate-limited domain transfers', [
+                    'action' => 'check_domain_transfer_status',
+                    'rate_limited_count' => $rateLimitedTransfers->count(),
+                    'rate_limited_ids' => $rateLimitedTransfers->pluck('id')->toArray(),
+                ]);
+                
+                $this->retryRateLimitedTransfers($rateLimitedTransfers);
+            }
+            
             Log::channel('mailin-ai')->info('Found pending domain transfers', [
                 'action' => 'check_domain_transfer_status',
                 'pending_count' => $pendingTransfers->count(),
+                'rate_limited_count' => $rateLimitedTransfers->count(),
                 'pending_ids' => $pendingTransfers->pluck('id')->toArray(),
             ]);
             
@@ -328,6 +348,113 @@ class CheckDomainTransferStatus extends Command
                 'order_id' => $orderId,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * Retry rate-limited domain transfers
+     * 
+     * @param \Illuminate\Support\Collection $rateLimitedTransfers
+     * @return void
+     */
+    private function retryRateLimitedTransfers($rateLimitedTransfers)
+    {
+        $mailinService = new MailinAiService();
+        $delayBetweenRetries = config('mailin_ai.domain_transfer_delay', 2);
+        $retryCount = 0;
+        
+        foreach ($rateLimitedTransfers as $transfer) {
+            try {
+                // Add delay between retries
+                if ($retryCount > 0) {
+                    sleep($delayBetweenRetries);
+                }
+                
+                $this->line("Retrying transfer for domain: {$transfer->domain_name}");
+                
+                Log::channel('mailin-ai')->info('Retrying rate-limited domain transfer', [
+                    'action' => 'retry_rate_limited_transfer',
+                    'domain_transfer_id' => $transfer->id,
+                    'domain_name' => $transfer->domain_name,
+                    'order_id' => $transfer->order_id,
+                ]);
+                
+                // Clear the error message and retry
+                $transferResult = $mailinService->transferDomain($transfer->domain_name);
+                
+                if ($transferResult['success']) {
+                    $nameServers = $transferResult['name_servers'] ?? [];
+                    
+                    // Ensure nameServers is an array
+                    if (!is_array($nameServers)) {
+                        if (is_string($nameServers)) {
+                            $nameServers = array_filter(array_map('trim', explode(',', $nameServers)));
+                            $nameServers = array_values($nameServers);
+                        } else {
+                            $nameServers = [];
+                        }
+                    }
+                    
+                    // Update transfer record - clear error and update nameservers
+                    $transfer->update([
+                        'name_servers' => $nameServers,
+                        'status' => 'pending',
+                        'error_message' => null, // Clear the rate limit error
+                        'response_data' => $transferResult['response'] ?? null,
+                    ]);
+                    
+                    $this->info("✓ Successfully retried transfer for {$transfer->domain_name}");
+                    
+                    Log::channel('mailin-ai')->info('Rate-limited domain transfer retry successful', [
+                        'action' => 'retry_rate_limited_transfer',
+                        'domain_transfer_id' => $transfer->id,
+                        'domain_name' => $transfer->domain_name,
+                        'order_id' => $transfer->order_id,
+                    ]);
+                }
+                
+                $retryCount++;
+                
+            } catch (\Exception $e) {
+                $errorMessage = $e->getMessage();
+                $isRateLimitError = $e->getCode() === 429 
+                    || str_contains($errorMessage, 'rate limit') 
+                    || str_contains($errorMessage, 'Too Many Attempts')
+                    || str_contains($errorMessage, '429');
+                
+                if ($isRateLimitError) {
+                    // Still rate limited - update error message with timestamp
+                    $transfer->update([
+                        'error_message' => 'Rate limit exceeded. Will retry automatically: ' . $errorMessage . ' (Last retry: ' . now()->toDateTimeString() . ')',
+                    ]);
+                    
+                    $this->warn("  Rate limit still active for {$transfer->domain_name} - will retry later");
+                    
+                    Log::channel('mailin-ai')->warning('Rate-limited domain transfer still rate limited on retry', [
+                        'action' => 'retry_rate_limited_transfer',
+                        'domain_transfer_id' => $transfer->id,
+                        'domain_name' => $transfer->domain_name,
+                        'order_id' => $transfer->order_id,
+                        'error' => $errorMessage,
+                    ]);
+                } else {
+                    // Other error - mark as failed
+                    $transfer->update([
+                        'status' => 'failed',
+                        'error_message' => $errorMessage,
+                    ]);
+                    
+                    $this->error("  Failed to retry transfer for {$transfer->domain_name}: {$errorMessage}");
+                    
+                    Log::channel('mailin-ai')->error('Rate-limited domain transfer retry failed', [
+                        'action' => 'retry_rate_limited_transfer',
+                        'domain_transfer_id' => $transfer->id,
+                        'domain_name' => $transfer->domain_name,
+                        'order_id' => $transfer->order_id,
+                        'error' => $errorMessage,
+                    ]);
+                }
+            }
         }
     }
 }

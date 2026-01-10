@@ -193,14 +193,16 @@ class MailinAiService
     }
 
     /**
-     * Make an authenticated API request
+     * Make an authenticated API request with rate limit handling
      * 
      * @param string $method HTTP method (GET, POST, PUT, DELETE)
      * @param string $endpoint API endpoint (without base URL)
      * @param array $data Request data (for POST/PUT)
+     * @param int $maxRetries Maximum number of retries for rate limits (default: 3)
      * @return \Illuminate\Http\Client\Response
+     * @throws \Exception
      */
-    public function makeRequest($method, $endpoint, $data = [])
+    public function makeRequest($method, $endpoint, $data = [], $maxRetries = 3)
     {
         $token = $this->getToken();
         
@@ -209,82 +211,134 @@ class MailinAiService
         }
 
         $url = rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
+        $retryCount = 0;
+        $baseDelay = 2; // Base delay in seconds for exponential backoff
 
-        Log::channel('mailin-ai')->info('Making Mailin.ai API request', [
-            'action' => 'make_request',
-            'method' => $method,
-            'url' => $url,
-        ]);
-
-        $response = Http::timeout($this->timeout)
-            ->withHeaders([
-                'Authorization' => 'Bearer ' . $token,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ]);
-
-        // Handle different HTTP methods
-        switch (strtoupper($method)) {
-            case 'GET':
-                $response = $response->get($url, $data);
-                break;
-            case 'POST':
-                $response = $response->post($url, $data);
-                break;
-            case 'PUT':
-                $response = $response->put($url, $data);
-                break;
-            case 'DELETE':
-                $response = $response->delete($url, $data);
-                break;
-            default:
-                throw new \Exception("Unsupported HTTP method: {$method}");
-        }
-
-        // If we get a 401, token might be expired, try to re-authenticate once
-        if ($response->status() === 401) {
-            Log::channel('mailin-ai')->warning('Mailin.ai API returned 401, re-authenticating', [
+        while ($retryCount <= $maxRetries) {
+            Log::channel('mailin-ai')->info('Making Mailin.ai API request', [
                 'action' => 'make_request',
-                'endpoint' => $endpoint,
+                'method' => $method,
+                'url' => $url,
+                'retry_attempt' => $retryCount,
+                'max_retries' => $maxRetries,
             ]);
 
-            $this->clearToken();
-            $token = $this->authenticate();
+            $response = Http::timeout($this->timeout)
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ]);
 
-            if ($token) {
-                // Retry the request with new token
-                $response = Http::timeout($this->timeout)
-                    ->withHeaders([
-                        'Authorization' => 'Bearer ' . $token,
-                        'Content-Type' => 'application/json',
-                        'Accept' => 'application/json',
-                    ]);
+            // Handle different HTTP methods
+            switch (strtoupper($method)) {
+                case 'GET':
+                    $response = $response->get($url, $data);
+                    break;
+                case 'POST':
+                    $response = $response->post($url, $data);
+                    break;
+                case 'PUT':
+                    $response = $response->put($url, $data);
+                    break;
+                case 'DELETE':
+                    $response = $response->delete($url, $data);
+                    break;
+                default:
+                    throw new \Exception("Unsupported HTTP method: {$method}");
+            }
 
-                switch (strtoupper($method)) {
-                    case 'GET':
-                        $response = $response->get($url, $data);
-                        break;
-                    case 'POST':
-                        $response = $response->post($url, $data);
-                        break;
-                    case 'PUT':
-                        $response = $response->put($url, $data);
-                        break;
-                    case 'DELETE':
-                        $response = $response->delete($url, $data);
-                        break;
+            $statusCode = $response->status();
+
+            // If we get a 401, token might be expired, try to re-authenticate once
+            if ($statusCode === 401) {
+                Log::channel('mailin-ai')->warning('Mailin.ai API returned 401, re-authenticating', [
+                    'action' => 'make_request',
+                    'endpoint' => $endpoint,
+                ]);
+
+                $this->clearToken();
+                $token = $this->authenticate();
+
+                if ($token) {
+                    // Retry the request with new token (don't count this as a retry)
+                    $response = Http::timeout($this->timeout)
+                        ->withHeaders([
+                            'Authorization' => 'Bearer ' . $token,
+                            'Content-Type' => 'application/json',
+                            'Accept' => 'application/json',
+                        ]);
+
+                    switch (strtoupper($method)) {
+                        case 'GET':
+                            $response = $response->get($url, $data);
+                            break;
+                        case 'POST':
+                            $response = $response->post($url, $data);
+                            break;
+                        case 'PUT':
+                            $response = $response->put($url, $data);
+                            break;
+                        case 'DELETE':
+                            $response = $response->delete($url, $data);
+                            break;
+                    }
+                    $statusCode = $response->status();
                 }
             }
+
+            // Handle rate limiting (429 Too Many Requests)
+            if ($statusCode === 429) {
+                $responseBody = $response->json();
+                $errorMessage = $responseBody['message'] ?? 'Too Many Attempts.';
+                
+                // Calculate exponential backoff delay: 2^retryCount * baseDelay seconds
+                $delay = pow(2, $retryCount) * $baseDelay;
+                
+                // Cap delay at 60 seconds to avoid extremely long waits
+                $delay = min($delay, 60);
+                
+                if ($retryCount < $maxRetries) {
+                    Log::channel('mailin-ai')->warning('Mailin.ai API returned 429 (rate limit), retrying with exponential backoff', [
+                        'action' => 'make_request',
+                        'endpoint' => $endpoint,
+                        'retry_attempt' => $retryCount + 1,
+                        'max_retries' => $maxRetries,
+                        'delay_seconds' => $delay,
+                        'error_message' => $errorMessage,
+                    ]);
+                    
+                    // Wait before retrying
+                    sleep($delay);
+                    $retryCount++;
+                    continue; // Retry the request
+                } else {
+                    // Max retries reached, throw exception
+                    Log::channel('mailin-ai')->error('Mailin.ai API rate limit exceeded after max retries', [
+                        'action' => 'make_request',
+                        'endpoint' => $endpoint,
+                        'retry_attempts' => $retryCount,
+                        'error_message' => $errorMessage,
+                    ]);
+                    
+                    throw new \Exception('Mailin.ai API rate limit exceeded. ' . $errorMessage . ' Please try again later.');
+                }
+            }
+
+            // If we get here, request was successful or non-rate-limit error
+            Log::channel('mailin-ai')->info('Mailin.ai API response received', [
+                'action' => 'make_request',
+                'method' => $method,
+                'endpoint' => $endpoint,
+                'status_code' => $statusCode,
+                'retry_attempts' => $retryCount,
+            ]);
+
+            return $response;
         }
 
-        Log::channel('mailin-ai')->info('Mailin.ai API response received', [
-            'action' => 'make_request',
-            'method' => $method,
-            'endpoint' => $endpoint,
-            'status_code' => $response->status(),
-        ]);
-
-        return $response;
+        // This should never be reached, but just in case
+        throw new \Exception('Unexpected error in makeRequest');
     }
 
     /**
@@ -493,25 +547,28 @@ class MailinAiService
     }
 
     /**
-     * Transfer domain to Mailin.ai
+     * Transfer domain to Mailin.ai with rate limit handling
      * POST /domains/transfer
      * 
      * @param string $domainName The domain name to transfer
+     * @param int $maxRetries Maximum number of retries for rate limits (default: 3)
      * @return array Response with message and name_servers if successful
      * @throws \Exception
      */
-    public function transferDomain(string $domainName)
+    public function transferDomain(string $domainName, $maxRetries = 3)
     {
         try {
             Log::channel('mailin-ai')->info('Transferring domain via Mailin.ai API', [
                 'action' => 'transfer_domain',
                 'domain_name' => $domainName,
+                'max_retries' => $maxRetries,
             ]);
 
             $response = $this->makeRequest(
                 'POST',
                 '/domains/transfer',
-                ['domain_name' => $domainName]
+                ['domain_name' => $domainName],
+                $maxRetries
             );
 
             $statusCode = $response->status();
@@ -545,12 +602,24 @@ class MailinAiService
             }
 
         } catch (\Exception $e) {
+            // Check if it's a rate limit error
+            $isRateLimitError = str_contains($e->getMessage(), 'rate limit') 
+                || str_contains($e->getMessage(), 'Too Many Attempts')
+                || str_contains($e->getMessage(), '429');
+            
             Log::channel('mailin-ai')->error('Mailin.ai domain transfer exception', [
                 'action' => 'transfer_domain',
                 'domain_name' => $domainName,
                 'error' => $e->getMessage(),
+                'is_rate_limit' => $isRateLimitError,
                 'trace' => $e->getTraceAsString(),
             ]);
+            
+            // Re-throw with a specific exception type for rate limits
+            if ($isRateLimitError) {
+                throw new \Exception('Rate limit exceeded while transferring domain: ' . $domainName . '. ' . $e->getMessage(), 429, $e);
+            }
+            
             throw $e;
         }
     }
