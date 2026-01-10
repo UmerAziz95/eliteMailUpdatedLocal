@@ -41,10 +41,16 @@
                 class="border border-{{ $order->status_manage_by_admin == 'cancelled' ? 'warning' : ' success' }} rounded-2 py-1 px-2 text-{{ $order->status_manage_by_admin == 'reject' ? ' warning' : 'success' }} bg-transparent">
                 {{ ucfirst($order->status_manage_by_admin ?? '') }}
             </div>
+            @php
+                $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+                $isPrivateSMTP = strtolower($providerType ?? '') === 'private smtp';
+            @endphp
             @can('Order Reassign')
-            <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
-                <i class="fa fa-user-edit"></i> Reassign Contractor
-            </button>
+                @if(!$isPrivateSMTP)
+                <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
+                    <i class="fa fa-user-edit"></i> Reassign Contractor
+                </button>
+                @endif
             @endcan
         </div>
     </div>

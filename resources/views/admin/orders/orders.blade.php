@@ -2272,10 +2272,17 @@
                             name: 'contractor_name',
                             searchable:false,
                             render: function(data, type, row) {
+                                // Check if this is a Private SMTP order
+                                const providerType = row.provider_type || (row.plan ? row.plan.provider_type : null);
+                                const isPrivateSMTP = providerType && providerType.toLowerCase() === 'private smtp';
+                                
+                                // For Private SMTP, show "Automation" instead of "Unassigned"
+                                const displayValue = isPrivateSMTP ? 'Automation' : (data || 'Unassigned');
+                                
                                 return `
                                 <div class="d-flex align-items-center gap-1">
                                     <i class="ti ti-user fs-6"></i>
-                                    <span>${data}</span>
+                                    <span>${displayValue}</span>
                                 </div>
                             `;
                             }
@@ -3033,12 +3040,21 @@
                                             <small class="text-white">${new Date(order.created_at).toLocaleDateString()}</small>
                                         </div>
                                         <div>
-                                            ${helpersCount === 0 ? `
-                                                <button class="btn btn-sm btn-outline-success" onclick="openAssignContractorsModal(${order.id})" title="Assign Contractors">
-                                                    <i class="fa-solid fa-users me-1"></i>
-                                                    Add Helpers
-                                                </button>
-                                            ` : ''}
+                                            ${(() => {
+                                                const providerType = order.provider_type || (order.plan ? order.plan.provider_type : null);
+                                                const isPrivateSMTP = providerType && providerType.toLowerCase() === 'private smtp';
+                                                
+                                                if (isPrivateSMTP) {
+                                                    return ''; // Don't show assign buttons for Private SMTP
+                                                }
+                                                
+                                                return helpersCount === 0 ? `
+                                                    <button class="btn btn-sm btn-outline-success" onclick="openAssignContractorsModal(${order.id})" title="Assign Contractors">
+                                                        <i class="fa-solid fa-users me-1"></i>
+                                                        Add Helpers
+                                                    </button>
+                                                ` : '';
+                                            })()}
                                             <button class="btn btn-sm btn-outline-warning toggle-shared" data-order-id="${order.id}" title="Unshare Order">
                                                 <i class="fa-solid fa-share-from-square me-1"></i>
                                                 Unshare
@@ -4149,19 +4165,30 @@
                             </button>
                             
 
-                            <button class="btn btn-outline-primary btn-sm px-3 py-2" 
-                                    onclick="openAssignContractorsModal(${orderInfo?.id})"
-                                    style="font-size: 13px;">
-                                <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
-                                Add Helper
-                            </button>
+                            ${(() => {
+                                const providerType = orderInfo?.provider_type || (orderInfo?.plan ? orderInfo.plan.provider_type : null);
+                                const isPrivateSMTP = providerType && providerType.toLowerCase() === 'private smtp';
+                                
+                                if (isPrivateSMTP) {
+                                    return ''; // Don't show assign/reassign buttons for Private SMTP
+                                }
+                                
+                                return `
+                                    <button class="btn btn-outline-primary btn-sm px-3 py-2" 
+                                            onclick="openAssignContractorsModal(${orderInfo?.id})"
+                                            style="font-size: 13px;">
+                                        <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
+                                        Add Helper
+                                    </button>
 
-                            <button class="btn btn-outline-secondary btn-sm px-3 py-2" 
-                                    onclick="openReassignContractorModal(${orderInfo?.id})"
-                                    style="font-size: 13px;">
-                                <i class="fas fa-user-edit me-1" style="font-size: 12px;"></i>
-                                Reassign Contractor
-                            </button>
+                                    <button class="btn btn-outline-secondary btn-sm px-3 py-2" 
+                                            onclick="openReassignContractorModal(${orderInfo?.id})"
+                                            style="font-size: 13px;">
+                                        <i class="fas fa-user-edit me-1" style="font-size: 12px;"></i>
+                                        Reassign Contractor
+                                    </button>
+                                `;
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -4241,19 +4268,30 @@
                         </button>
                         
 
-                        <button class="btn btn-outline-primary btn-sm px-3 py-2" 
-                                onclick="openAssignContractorsModal(${orderInfo?.id})"
-                                style="font-size: 13px;">
-                            <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
-                            Add Helper
-                        </button>
+                        ${(() => {
+                            const providerType = orderInfo?.provider_type || (orderInfo?.plan ? orderInfo.plan.provider_type : null);
+                            const isPrivateSMTP = providerType && providerType.toLowerCase() === 'private smtp';
+                            
+                            if (isPrivateSMTP) {
+                                return ''; // Don't show assign/reassign buttons for Private SMTP
+                            }
+                            
+                            return `
+                                <button class="btn btn-outline-primary btn-sm px-3 py-2" 
+                                        onclick="openAssignContractorsModal(${orderInfo?.id})"
+                                        style="font-size: 13px;">
+                                    <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
+                                    Add Helper
+                                </button>
 
-                        <button class="btn btn-outline-secondary btn-sm px-3 py-2" 
-                                onclick="openReassignContractorModal(${orderInfo?.id})"
-                                style="font-size: 13px;">
-                            <i class="fas fa-user-edit me-1" style="font-size: 12px;"></i>
-                            Reassign Contractor
-                        </button>
+                                <button class="btn btn-outline-secondary btn-sm px-3 py-2" 
+                                        onclick="openReassignContractorModal(${orderInfo?.id})"
+                                        style="font-size: 13px;">
+                                    <i class="fas fa-user-edit me-1" style="font-size: 12px;"></i>
+                                    Reassign Contractor
+                                </button>
+                            `;
+                        })()}
                     </div>
                 </div>
                 ${orderInfo.is_shared == 1 ? `
