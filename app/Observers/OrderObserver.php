@@ -108,6 +108,9 @@ class OrderObserver
                         $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
                     }
                     
+                    // Get provider type from order or plan
+                    $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+                    
                     $orderData = [
                         'id' => $order->id,
                         'order_id' => $order->id,
@@ -118,7 +121,9 @@ class OrderObserver
                         'inbox_count' => $inboxCount,
                         'split_count' => $splitCount,
                         'previous_status' => $previousStatus,
-                        'new_status' => $newStatus
+                        'new_status' => $newStatus,
+                        'provider_type' => $providerType,
+                        'updated_by' => auth()->user() ? auth()->user()->name : 'System'
                     ];
                     // if new status is not equal to cancelled
                     if (strtolower($newStatus) !== 'cancelled') {

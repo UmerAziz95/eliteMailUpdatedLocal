@@ -807,8 +807,11 @@ class OrderController extends Controller
                     'customer_image' => $order->user->profile_image ? asset('storage/profile_images/' . $order->user->profile_image) : null,
                     'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
                     'inboxes_per_domain' => $inboxesPerDomain,
-                    'provider_type' => $order->provider_type,
+                    'provider_type' => $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null),
                     'contractor_name' => $order->assignedTo ? $order->assignedTo->name : null,
+                    'plan' => $order->plan ? [
+                        'provider_type' => $order->plan->provider_type
+                    ] : null,
                     'total_domains' => $totalDomainsCount,
                     'status' => $order->status_manage_by_admin ?? 'pending',
                     'status_manage_by_admin' => (function() use ($order) {
