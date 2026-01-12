@@ -63,10 +63,26 @@ class SpaceshipService
             } else {
                 // Check for authentication/authorization errors (invalid credentials)
                 $isAuthError = in_array($statusCode, [401, 403]);
-                $rawErrorMessage = $responseBody['message'] ?? $responseBody['error'] ?? null;
+                $rawErrorMessage = $responseBody['message'] ?? $responseBody['error'] ?? $responseBody['detail'] ?? null;
                 
-                // If it's an auth error or the error message suggests invalid credentials
-                if ($isAuthError || 
+                // Check if domain not found (404 with "hasn't been found" or "not found" in detail/message)
+                $isDomainNotFound = false;
+                if ($statusCode === 404) {
+                    $detailMessage = $responseBody['detail'] ?? $rawErrorMessage ?? '';
+                    if (is_string($detailMessage)) {
+                        $detailLower = strtolower($detailMessage);
+                        $isDomainNotFound = 
+                            str_contains($detailLower, "hasn't been found") ||
+                            str_contains($detailLower, 'has not been found') ||
+                            str_contains($detailLower, 'zone file') && str_contains($detailLower, 'not found') ||
+                            str_contains($detailLower, 'domain') && str_contains($detailLower, 'not found');
+                    }
+                }
+                
+                // If domain not found, provide specific error message
+                if ($isDomainNotFound) {
+                    $errorMessage = "Domain '{$domain}' does not exist in your Spaceship account. Please ensure the domain is added to your Spaceship account before proceeding.";
+                } elseif ($isAuthError || 
                     (is_string($rawErrorMessage) && (
                         stripos($rawErrorMessage, 'unauthorized') !== false ||
                         stripos($rawErrorMessage, 'forbidden') !== false ||
@@ -76,6 +92,7 @@ class SpaceshipService
                         stripos($rawErrorMessage, 'api secret') !== false ||
                         stripos($rawErrorMessage, 'credentials') !== false
                     ))) {
+                    // If it's an auth error or the error message suggests invalid credentials
                     $errorMessage = 'Invalid API credentials. Please verify your Spaceship API Key and API Secret Key are correct.';
                 } elseif (empty($rawErrorMessage) || $rawErrorMessage === 'Unknown error') {
                     // If we get "Unknown error" or empty error, check status code
@@ -94,10 +111,16 @@ class SpaceshipService
                     'status_code' => $statusCode,
                     'error' => $errorMessage,
                     'raw_error' => $rawErrorMessage,
+                    'is_domain_not_found' => $isDomainNotFound,
                     'response' => $responseBody,
                 ]);
 
-                throw new \Exception('Failed to update nameservers via Spaceship API: ' . $errorMessage);
+                // Throw exception with specific error code for domain not found
+                if ($isDomainNotFound) {
+                    throw new \Exception('Failed to update nameservers via Spaceship API: ' . $errorMessage, 404);
+                } else {
+                    throw new \Exception('Failed to update nameservers via Spaceship API: ' . $errorMessage);
+                }
             }
 
         } catch (\Exception $e) {

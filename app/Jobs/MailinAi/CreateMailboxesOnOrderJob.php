@@ -627,19 +627,47 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                             } catch (\Exception $spaceshipException) {
                                 // Check if error is due to invalid credentials or domain not found
                                 $errorMsg = $spaceshipException->getMessage();
-                                $isInvalidCredentials = str_contains($errorMsg, 'Invalid API credentials') 
-                                    || str_contains($errorMsg, 'invalid') && (str_contains($errorMsg, 'API') || str_contains($errorMsg, 'credentials'));
-                                $isDomainNotFound = str_contains($errorMsg, 'Domain name not found') 
-                                    || str_contains($errorMsg, 'Domain not found')
-                                    || str_contains($errorMsg, 'domain not exist');
+                                $errorMsgLower = strtolower($errorMsg);
+                                
+                                // Detect invalid credentials - check for various credential-related error patterns
+                                $isInvalidCredentials = 
+                                    str_contains($errorMsgLower, 'invalid api credentials') ||
+                                    str_contains($errorMsgLower, 'please verify your api credentials') ||
+                                    str_contains($errorMsgLower, 'verify your api credentials') ||
+                                    (str_contains($errorMsgLower, 'invalid') && (str_contains($errorMsgLower, 'api') || str_contains($errorMsgLower, 'credentials'))) ||
+                                    str_contains($errorMsgLower, 'unauthorized') ||
+                                    str_contains($errorMsgLower, 'forbidden') ||
+                                    str_contains($errorMsgLower, 'authentication') ||
+                                    str_contains($errorMsgLower, 'api key') && (str_contains($errorMsgLower, 'invalid') || str_contains($errorMsgLower, 'incorrect') || str_contains($errorMsgLower, 'wrong'));
+                                
+                                // Detect domain not found errors - check exception code and message patterns
+                                $isDomainNotFound = 
+                                    $spaceshipException->getCode() === 404 || // 404 status code indicates domain not found
+                                    str_contains($errorMsgLower, "hasn't been found") ||
+                                    str_contains($errorMsgLower, 'has not been found') ||
+                                    str_contains($errorMsgLower, 'zone file') && str_contains($errorMsgLower, 'not found') ||
+                                    str_contains($errorMsgLower, 'domain name not found') ||
+                                    str_contains($errorMsgLower, 'domain not found') ||
+                                    str_contains($errorMsgLower, 'domain not exist') ||
+                                    str_contains($errorMsgLower, 'domain does not exist') ||
+                                    str_contains($errorMsgLower, 'domain is not registered') ||
+                                    (str_contains($errorMsgLower, 'domain') && str_contains($errorMsgLower, 'not exist'));
                                 
                                 // Mark that we have a nameserver update failure
                                 $hasNameserverUpdateFailures = true;
-                                $errorMessage = 'Spaceship nameserver update failed: ' . $errorMsg;
+                                
+                                // Extract the actual error message (remove "Failed to update nameservers via Spaceship API: " prefix if present)
+                                $actualErrorMsg = $errorMsg;
+                                $apiPrefix = 'Failed to update nameservers via Spaceship API: ';
+                                if (strpos($actualErrorMsg, $apiPrefix) === 0) {
+                                    $actualErrorMsg = substr($actualErrorMsg, strlen($apiPrefix));
+                                }
+                                
+                                $errorMessage = 'Spaceship nameserver update failed: ' . $actualErrorMsg;
                                 $nameserverUpdateErrors[] = [
                                     'domain' => $domain,
                                     'platform' => 'Spaceship',
-                                    'error' => $errorMessage,
+                                    'error' => $actualErrorMsg, // Store the actual error without the prefix
                                     'is_invalid_credentials' => $isInvalidCredentials,
                                     'is_domain_not_found' => $isDomainNotFound,
                                 ];
@@ -773,20 +801,43 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                             } catch (\Exception $namecheapException) {
                                 // Check if error is due to invalid credentials or domain not found
                                 $errorMsg = $namecheapException->getMessage();
-                                $isInvalidCredentials = str_contains($errorMsg, 'API Key is invalid') 
-                                    || str_contains($errorMsg, 'API access has not been enabled')
-                                    || str_contains($errorMsg, 'Invalid request IP') && str_contains($errorMsg, 'whitelisted');
-                                $isDomainNotFound = str_contains($errorMsg, 'Domain name not found') 
-                                    || str_contains($errorMsg, 'Domain not found')
-                                    || str_contains($errorMsg, 'domain not exist');
+                                $errorMsgLower = strtolower($errorMsg);
+                                
+                                // Detect invalid credentials - check for various credential-related error patterns
+                                $isInvalidCredentials = 
+                                    str_contains($errorMsgLower, 'api key is invalid') ||
+                                    str_contains($errorMsgLower, 'api access has not been enabled') ||
+                                    str_contains($errorMsgLower, 'invalid request ip') ||
+                                    str_contains($errorMsgLower, 'api key') && (str_contains($errorMsgLower, 'invalid') || str_contains($errorMsgLower, 'incorrect')) ||
+                                    str_contains($errorMsgLower, 'unauthorized') ||
+                                    str_contains($errorMsgLower, 'forbidden') ||
+                                    str_contains($errorMsgLower, 'authentication') ||
+                                    (str_contains($errorMsgLower, 'invalid') && (str_contains($errorMsgLower, 'api') || str_contains($errorMsgLower, 'credentials'))) ||
+                                    str_contains($errorMsgLower, 'whitelist') && str_contains($errorMsgLower, 'invalid');
+                                
+                                // Detect domain not found errors
+                                $isDomainNotFound = 
+                                    str_contains($errorMsgLower, 'domain name not found') ||
+                                    str_contains($errorMsgLower, 'domain not found') ||
+                                    str_contains($errorMsgLower, 'domain not exist') ||
+                                    str_contains($errorMsgLower, 'domain does not exist') ||
+                                    str_contains($errorMsgLower, 'domain is not registered');
                                 
                                 // Mark that we have a nameserver update failure
                                 $hasNameserverUpdateFailures = true;
-                                $errorMessage = 'Namecheap nameserver update failed: ' . $errorMsg;
+                                
+                                // Extract the actual error message (remove "Failed to update nameservers via Namecheap API: " prefix if present)
+                                $actualErrorMsg = $errorMsg;
+                                $apiPrefix = 'Failed to update nameservers via Namecheap API: ';
+                                if (strpos($actualErrorMsg, $apiPrefix) === 0) {
+                                    $actualErrorMsg = substr($actualErrorMsg, strlen($apiPrefix));
+                                }
+                                
+                                $errorMessage = 'Namecheap nameserver update failed: ' . $actualErrorMsg;
                                 $nameserverUpdateErrors[] = [
                                     'domain' => $domain,
                                     'platform' => 'Namecheap',
-                                    'error' => $errorMessage,
+                                    'error' => $actualErrorMsg, // Store the actual error without the prefix
                                     'is_invalid_credentials' => $isInvalidCredentials,
                                     'is_domain_not_found' => $isDomainNotFound,
                                 ];
@@ -997,13 +1048,8 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                     // Format error message for rejection reason
                     $rejectionReason = "Order rejected due to nameserver update failures during automation. Please review the errors below:\n\n";
                     foreach ($nameserverUpdateErrors as $error) {
-                        // Extract the actual error message (remove any platform prefix if present)
+                        // Use the actual error message (already cleaned of prefixes)
                         $actualError = $error['error'];
-                        // Remove duplicate platform prefix if it exists
-                        $platformPrefix = $error['platform'] . ' nameserver update failed: ';
-                        if (strpos($actualError, $platformPrefix) === 0) {
-                            $actualError = substr($actualError, strlen($platformPrefix));
-                        }
                         $rejectionReason .= "• **{$error['domain']}** ({$error['platform']}): {$actualError}\n";
                     }
                     $rejectionReason .= "\nAfter fixing the issues, please resubmit the order. The system will retry the nameserver updates and continue processing.";

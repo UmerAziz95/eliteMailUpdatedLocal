@@ -209,26 +209,6 @@
     </div>
 @endif
 
-{{-- Display Domain Transfer Errors --}}
-@if(isset($domainTransferErrors) && $domainTransferErrors->count() > 0)
-    <div class="alert alert-danger mb-4 mt-2" role="alert" style="background-color: #f8d7da; border-color: #f5c2c7; color: #842029;">
-        <h6 class="alert-heading" style="color: #842029;">
-            <i class="fa-solid fa-exclamation-triangle me-2"></i>
-            Order Processing Failed - Nameserver Update Errors
-        </h6>
-        <p class="mb-2" style="color: #842029;"><strong>Your order could not be processed due to nameserver update failures. Please review the errors below and resubmit:</strong></p>
-        <ul class="mb-0" style="color: #842029;">
-            @foreach($domainTransferErrors as $error)
-                <li>
-                    <strong>{{ $error->domain_name }}:</strong> {{ $error->error_message }}
-                </li>
-            @endforeach
-        </ul>
-        <hr style="border-color: #f5c2c7;">
-        <p class="mb-0" style="color: #842029;"><small>After fixing the issues (e.g., updating API credentials, whitelisting IP address), please resubmit the order. The system will retry the nameserver updates and continue processing.</small></p>
-    </div>
-@endif
-
 <form id="editOrderForm" novalidate>
     @csrf
     <input type="hidden" name="user_id" value="{{ auth()->id() }}">
