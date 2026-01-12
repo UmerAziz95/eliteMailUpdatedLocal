@@ -171,6 +171,33 @@ class SlackNotificationService
     }
 
     /**
+     * Send order fixed notification to Slack (when order status changes from reject to in-progress)
+     *
+     * @param array $orderData
+     * @return bool
+     */
+    public static function sendOrderFixedNotification($orderData)
+    {
+        $data = [
+            'order_id' => $orderData['order_id'] ?? $orderData['id'] ?? 'N/A',
+            'order_name' => $orderData['name'] ?? 'N/A',
+            'customer_name' => $orderData['customer_name'] ?? 'Unknown',
+            'customer_email' => $orderData['customer_email'] ?? 'Unknown',
+            'contractor_name' => $orderData['contractor_name'] ?? 'Unassigned',
+            'inbox_count' => $orderData['inbox_count'] ?? 0,
+            'split_count' => $orderData['split_count'] ?? 0,
+            'previous_status' => $orderData['previous_status'] ?? 'N/A',
+            'new_status' => $orderData['new_status'] ?? 'N/A',
+            'updated_by' => auth()->user() ? auth()->user()->name : 'System',
+            'provider_type' => $orderData['provider_type'] ?? 'N/A',
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-fixed', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
      * Send order rejection notification to Slack
      *
      * @param \App\Models\Order $order
@@ -1419,6 +1446,84 @@ class SlackNotificationService
                     ]
                 ];
                 
+            case 'order-fixed':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                // Build fields array
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                ];
+                
+                // For Private SMTP: Show "Assigned to: Automation", otherwise show "Contractor Name"
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
+                        'title' => 'Contractor Name',
+                        'value' => $data['contractor_name'] ?? 'Unassigned',
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Inbox Count',
+                    'value' => $data['inbox_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                // For Private SMTP: Don't show Previous Status
+                if (!$isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Previous Status',
+                        'value' => ucfirst($data['previous_status'] ?? 'N/A'),
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'New Status',
+                    'value' => ucfirst($data['new_status'] ?? 'N/A'),
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Updated By',
+                    'value' => $data['updated_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Timestamp',
+                    'value' => now()->format('Y-m-d H:i:s T'),
+                    'short' => false
+                ];
+                
+                return [
+                    'text' => "✅ *Customer Has Fixed Order*",
+                    'attachments' => [
+                        [
+                            'color' => '#28a745',
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+                
             case 'order-rejection':
                 // Check if this is a Private SMTP order
                 $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
@@ -2408,6 +2513,7 @@ class SlackNotificationService
     {
         $emojis = [
             'new-order-available' => ':new:',
+            'order-fixed' => ':white_check_mark:',
             'order-rejection' => ':no_entry_sign:',
             'order-completion' => ':white_check_mark:',
             'order-assignment' => ':bust_in_silhouette:',
