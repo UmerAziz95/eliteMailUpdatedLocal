@@ -1012,6 +1012,9 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             
             $hasNameserverUpdateFailures = $hasNameserverUpdateFailures || $nameserverFailureCount > 0;
             
+            // Check if there are any rate limit errors (from domain transfers)
+            $hasRateLimitErrors = $rateLimitedCount > 0;
+            
             Log::channel('mailin-ai')->info('Domain transfer process completed', [
                 'action' => 'handle_domain_transfer',
                 'order_id' => $this->orderId,
@@ -1020,9 +1023,24 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'failed_transfers' => $failedCount,
                 'nameserver_update_failures' => $nameserverFailureCount,
                 'has_nameserver_failures' => $hasNameserverUpdateFailures,
+                'rate_limited_count' => $rateLimitedCount,
+                'has_rate_limit_errors' => $hasRateLimitErrors,
             ]);
             
-            // If nameserver updates failed, check if we should reject or set to draft
+            // If there are ONLY rate limit errors (no nameserver failures), keep order in-progress
+            // Rate limit errors are automatically retried by scheduled command
+            if ($hasRateLimitErrors && !$hasNameserverUpdateFailures) {
+                Log::channel('mailin-ai')->info('Order kept in-progress due to rate limit errors only (will retry automatically)', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                    'rate_limited_count' => $rateLimitedCount,
+                    'rate_limited_domains' => $rateLimitedDomains,
+                ]);
+                // Don't change status - order stays in-progress and will retry automatically
+                return;
+            }
+            
+            // If nameserver updates failed, check if we should reject or keep in-progress
             if ($hasNameserverUpdateFailures) {
                 // Check if any errors are due to invalid credentials or domain not found
                 $hasInvalidCredentials = false;
@@ -1038,9 +1056,28 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 }
                 
                 // If invalid credentials or domain not found, reject the order
-                // Otherwise, set to draft for retry
+                // If only rate limit errors exist (no credential/domain errors), keep in-progress
+                // Otherwise, set to draft for retry (only if no rate limit errors)
                 $shouldReject = $hasInvalidCredentials || $hasDomainNotFound;
-                $newStatus = $shouldReject ? 'reject' : 'draft';
+                
+                // If there are rate limit errors and no credential/domain errors, keep in-progress
+                // Rate limit errors are automatically retried by scheduled command
+                $isRateLimitOnly = $hasRateLimitErrors && !$shouldReject;
+                if ($isRateLimitOnly) {
+                    $newStatus = 'in-progress'; // Keep in-progress, will retry automatically
+                    Log::channel('mailin-ai')->info('Order kept in-progress due to rate limit errors (will retry automatically)', [
+                        'action' => 'handle_domain_transfer',
+                        'order_id' => $this->orderId,
+                        'rate_limited_count' => $rateLimitedCount,
+                        'has_credential_errors' => $shouldReject,
+                    ]);
+                    
+                    // Don't change status or send notifications for rate limit errors
+                    // The order will remain in-progress and retry automatically
+                    return;
+                } else {
+                    $newStatus = $shouldReject ? 'reject' : 'draft';
+                }
                 
                 try {
                     $oldStatus = $order->status_manage_by_admin;
