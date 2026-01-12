@@ -219,6 +219,9 @@ class CheckDomainTransferStatus extends Command
                 $this->processOrderMailboxCreation($orderId);
             }
 
+            // Check for orders that have been in-progress for too long
+            $this->checkDelayedOrders();
+
             $this->info('Domain transfer status check completed.');
             return 0;
 
@@ -455,6 +458,149 @@ class CheckDomainTransferStatus extends Command
                     ]);
                 }
             }
+        }
+    }
+
+    /**
+     * Check for orders that have been in-progress for more than configured hours
+     * and send Slack notifications if they're waiting for domain transfer completion
+     */
+    private function checkDelayedOrders()
+    {
+        try {
+            $delayHours = config('mailin_ai.order_delay_notification_hours', 24);
+            $delayThreshold = now()->subHours($delayHours);
+
+            // Get orders that:
+            // 1. Are in 'in-progress' status
+            // 2. Have pending domain transfers (waiting for Mailin/other provider)
+            // 3. Were updated more than X hours ago
+            // 4. Are Private SMTP orders (automation enabled)
+            $delayedOrders = Order::where('status_manage_by_admin', 'in-progress')
+                ->whereHas('domainTransfers', function ($query) {
+                    $query->where('status', 'pending');
+                })
+                ->where('updated_at', '<=', $delayThreshold)
+                ->where(function ($query) {
+                    $query->where('provider_type', 'Private SMTP')
+                        ->orWhereHas('plan', function ($planQuery) {
+                            $planQuery->where('provider_type', 'Private SMTP');
+                        });
+                })
+                ->with(['user', 'domainTransfers', 'plan'])
+                ->get();
+
+            if ($delayedOrders->isEmpty()) {
+                return;
+            }
+
+            $this->info("Found {$delayedOrders->count()} order(s) that have been in-progress for more than {$delayHours} hours.");
+
+            foreach ($delayedOrders as $order) {
+                // Verify order still has pending domain transfers
+                $pendingTransfers = $order->domainTransfers->where('status', 'pending');
+                if ($pendingTransfers->isEmpty()) {
+                    continue; // No pending transfers, skip
+                }
+
+                // IMPORTANT: Check if notification should be sent
+                // Since this command runs every 5 minutes (12 times per hour), we need to ensure
+                // notifications are sent only once per delay interval (e.g., once every 24 hours)
+                $lastNotificationSent = $order->last_draft_notification_sent_at;
+                $shouldSendNotification = false;
+                $reason = '';
+
+                if (!$lastNotificationSent) {
+                    // First notification: Order has been in-progress for more than X hours
+                    // and notification was never sent before
+                    $shouldSendNotification = true;
+                    $reason = 'First notification - order delayed for more than ' . $delayHours . ' hours';
+                } else {
+                    // Subsequent notifications: Check if it's been at least X hours since last notification
+                    // This ensures we only send once per delay interval, even though command runs every 5 minutes
+                    $hoursSinceLastNotification = now()->diffInHours($lastNotificationSent);
+                    $minutesSinceLastNotification = now()->diffInMinutes($lastNotificationSent);
+                    
+                    if ($hoursSinceLastNotification >= $delayHours) {
+                        $shouldSendNotification = true;
+                        $reason = 'Recurring notification - ' . $hoursSinceLastNotification . ' hours since last notification (threshold: ' . $delayHours . ' hours)';
+                    } else {
+                        $reason = 'Skipped - Only ' . $minutesSinceLastNotification . ' minutes since last notification (need ' . ($delayHours * 60) . ' minutes)';
+                    }
+                }
+
+                if (!$shouldSendNotification) {
+                    // Log why we're skipping (for debugging)
+                    Log::channel('mailin-ai')->debug('Skipping delayed order notification', [
+                        'action' => 'check_delayed_orders',
+                        'order_id' => $order->id,
+                        'reason' => $reason,
+                        'last_notification_sent_at' => $lastNotificationSent ? $lastNotificationSent->toDateTimeString() : 'Never',
+                        'delay_hours' => $delayHours,
+                    ]);
+                    continue; // Skip if not enough time has passed since last notification
+                }
+
+                // Send Slack notification (only reaches here if shouldSendNotification is true)
+                $this->sendDelayedOrderNotification($order, $pendingTransfers, $delayHours);
+
+                // Update last notification sent timestamp immediately to prevent duplicate sends
+                // This is critical since command runs every 5 minutes
+                $order->update([
+                    'last_draft_notification_sent_at' => now(),
+                ]);
+
+                Log::channel('mailin-ai')->info('Sent delayed order notification', [
+                    'action' => 'check_delayed_orders',
+                    'order_id' => $order->id,
+                    'delay_hours' => $delayHours,
+                    'pending_transfers_count' => $pendingTransfers->count(),
+                    'reason' => $reason,
+                    'hours_since_last_notification' => $lastNotificationSent ? now()->diffInHours($lastNotificationSent) : 'N/A (first notification)',
+                    'notification_sent_at' => now()->toDateTimeString(),
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            $this->error('Error checking delayed orders: ' . $e->getMessage());
+            Log::channel('mailin-ai')->error('Error checking delayed orders', [
+                'action' => 'check_delayed_orders',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * Send Slack notification for delayed order
+     */
+    private function sendDelayedOrderNotification($order, $pendingTransfers, $delayHours)
+    {
+        try {
+            $pendingDomains = $pendingTransfers->pluck('domain_name')->toArray();
+            $domainCount = count($pendingDomains);
+
+            $orderData = [
+                'order_id' => $order->id,
+                'customer_name' => $order->user ? $order->user->name : 'Unknown',
+                'customer_email' => $order->user ? $order->user->email : 'Unknown',
+                'delay_hours' => $delayHours,
+                'pending_domains_count' => $domainCount,
+                'pending_domains' => $pendingDomains,
+                'provider_type' => $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null),
+            ];
+
+            \App\Services\SlackNotificationService::sendDelayedOrderNotification($orderData);
+
+            $this->info("Sent delayed order notification for Order #{$order->id}");
+
+        } catch (\Exception $e) {
+            $this->error("Failed to send delayed order notification for Order #{$order->id}: " . $e->getMessage());
+            Log::channel('mailin-ai')->error('Failed to send delayed order notification', [
+                'action' => 'send_delayed_order_notification',
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

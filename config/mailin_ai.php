@@ -42,4 +42,7 @@ return [
 
     // Enable/disable automation
     'automation_enabled' => env('MAILIN_AI_AUTOMATION_ENABLED', false),
+
+    // Order delay notification settings
+    'order_delay_notification_hours' => env('MAILIN_AI_ORDER_DELAY_NOTIFICATION_HOURS', 24), // Hours after which to send notification for in-progress orders
 ];

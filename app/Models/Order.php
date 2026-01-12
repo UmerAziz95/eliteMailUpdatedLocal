@@ -222,6 +222,14 @@ class Order extends Model
     {
         return $this->platformCredentials()->where('platform_type', $platformType)->first();
     }
+
+    /**
+     * Get domain transfers for this order.
+     */
+    public function domainTransfers()
+    {
+        return $this->hasMany(DomainTransfer::class);
+    }
     
 
 }

@@ -171,6 +171,29 @@ class SlackNotificationService
     }
 
     /**
+     * Send delayed order notification to Slack (when order is in-progress for too long)
+     *
+     * @param array $orderData
+     * @return bool
+     */
+    public static function sendDelayedOrderNotification($orderData)
+    {
+        $data = [
+            'order_id' => $orderData['order_id'] ?? 'N/A',
+            'customer_name' => $orderData['customer_name'] ?? 'Unknown',
+            'customer_email' => $orderData['customer_email'] ?? 'Unknown',
+            'delay_hours' => $orderData['delay_hours'] ?? 24,
+            'pending_domains_count' => $orderData['pending_domains_count'] ?? 0,
+            'pending_domains' => $orderData['pending_domains'] ?? [],
+            'provider_type' => $orderData['provider_type'] ?? 'N/A',
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-delayed', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
      * Send order fixed notification to Slack (when order status changes from reject to in-progress)
      *
      * @param array $orderData
@@ -1536,6 +1559,72 @@ class SlackNotificationService
                     ]
                 ];
                 
+            case 'order-delayed':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                $pendingDomainsList = '';
+                if (isset($data['pending_domains']) && is_array($data['pending_domains']) && count($data['pending_domains']) > 0) {
+                    $pendingDomainsList = implode(', ', array_slice($data['pending_domains'], 0, 10));
+                    if (count($data['pending_domains']) > 10) {
+                        $pendingDomainsList .= '... (' . (count($data['pending_domains']) - 10) . ' more)';
+                    }
+                }
+                
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Delay Duration',
+                        'value' => ($data['delay_hours'] ?? 24) . ' hours',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Pending Domains',
+                        'value' => ($data['pending_domains_count'] ?? 0) . ' domain(s)',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Reason',
+                        'value' => 'Order is in-progress and pending Mailin confirmation. System automation is waiting for domain transfer completion.',
+                        'short' => false
+                    ],
+                ];
+                
+                if (!empty($pendingDomainsList)) {
+                    $fields[] = [
+                        'title' => 'Pending Domain Names',
+                        'value' => $pendingDomainsList,
+                        'short' => false
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Timestamp',
+                    'value' => now()->format('Y-m-d H:i:s T'),
+                    'short' => false
+                ];
+                
+                return [
+                    'text' => "⏳ *Order Delayed - Pending Mailin Confirmation*",
+                    'attachments' => [
+                        [
+                            'color' => '#ffc107',
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+                
             case 'order-rejection':
                 // Check if this is a Private SMTP order
                 $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
@@ -2526,6 +2615,7 @@ class SlackNotificationService
         $emojis = [
             'new-order-available' => ':new:',
             'order-fixed' => ':white_check_mark:',
+            'order-delayed' => ':hourglass_flowing_sand:',
             'order-rejection' => ':no_entry_sign:',
             'order-completion' => ':white_check_mark:',
             'order-assignment' => ':bust_in_silhouette:',
