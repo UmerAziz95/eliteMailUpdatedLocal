@@ -625,21 +625,33 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                                     ]);
                                 }
                             } catch (\Exception $spaceshipException) {
+                                // Check if error is due to invalid credentials or domain not found
+                                $errorMsg = $spaceshipException->getMessage();
+                                $isInvalidCredentials = str_contains($errorMsg, 'Invalid API credentials') 
+                                    || str_contains($errorMsg, 'invalid') && (str_contains($errorMsg, 'API') || str_contains($errorMsg, 'credentials'));
+                                $isDomainNotFound = str_contains($errorMsg, 'Domain name not found') 
+                                    || str_contains($errorMsg, 'Domain not found')
+                                    || str_contains($errorMsg, 'domain not exist');
+                                
                                 // Mark that we have a nameserver update failure
                                 $hasNameserverUpdateFailures = true;
-                                $errorMessage = 'Spaceship nameserver update failed: ' . $spaceshipException->getMessage();
+                                $errorMessage = 'Spaceship nameserver update failed: ' . $errorMsg;
                                 $nameserverUpdateErrors[] = [
                                     'domain' => $domain,
                                     'platform' => 'Spaceship',
                                     'error' => $errorMessage,
+                                    'is_invalid_credentials' => $isInvalidCredentials,
+                                    'is_domain_not_found' => $isDomainNotFound,
                                 ];
                                 
-                                // Log error but don't fail the transfer - keep status as pending for retry
-                                Log::channel('mailin-ai')->error('Failed to update Spaceship nameservers - will retry via scheduled job', [
+                                // Log error
+                                Log::channel('mailin-ai')->error('Failed to update Spaceship nameservers', [
                                     'action' => 'handle_domain_transfer',
                                     'order_id' => $this->orderId,
                                     'domain' => $domain,
-                                    'error' => $spaceshipException->getMessage(),
+                                    'error' => $errorMsg,
+                                    'is_invalid_credentials' => $isInvalidCredentials,
+                                    'is_domain_not_found' => $isDomainNotFound,
                                     'trace' => $spaceshipException->getTraceAsString(),
                                 ]);
                                 
@@ -759,21 +771,34 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                                     ]);
                                 }
                             } catch (\Exception $namecheapException) {
+                                // Check if error is due to invalid credentials or domain not found
+                                $errorMsg = $namecheapException->getMessage();
+                                $isInvalidCredentials = str_contains($errorMsg, 'API Key is invalid') 
+                                    || str_contains($errorMsg, 'API access has not been enabled')
+                                    || str_contains($errorMsg, 'Invalid request IP') && str_contains($errorMsg, 'whitelisted');
+                                $isDomainNotFound = str_contains($errorMsg, 'Domain name not found') 
+                                    || str_contains($errorMsg, 'Domain not found')
+                                    || str_contains($errorMsg, 'domain not exist');
+                                
                                 // Mark that we have a nameserver update failure
                                 $hasNameserverUpdateFailures = true;
-                                $errorMessage = 'Namecheap nameserver update failed: ' . $namecheapException->getMessage();
+                                $errorMessage = 'Namecheap nameserver update failed: ' . $errorMsg;
                                 $nameserverUpdateErrors[] = [
                                     'domain' => $domain,
                                     'platform' => 'Namecheap',
                                     'error' => $errorMessage,
+                                    'is_invalid_credentials' => $isInvalidCredentials,
+                                    'is_domain_not_found' => $isDomainNotFound,
                                 ];
                                 
-                                // Log error but don't fail the transfer - keep status as pending for retry
-                                Log::channel('mailin-ai')->error('Failed to update Namecheap nameservers - will retry via scheduled job', [
+                                // Log error
+                                Log::channel('mailin-ai')->error('Failed to update Namecheap nameservers', [
                                     'action' => 'handle_domain_transfer',
                                     'order_id' => $this->orderId,
                                     'domain' => $domain,
-                                    'error' => $namecheapException->getMessage(),
+                                    'error' => $errorMsg,
+                                    'is_invalid_credentials' => $isInvalidCredentials,
+                                    'is_domain_not_found' => $isDomainNotFound,
                                     'trace' => $namecheapException->getTraceAsString(),
                                 ]);
                                 
@@ -946,27 +971,67 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'has_nameserver_failures' => $hasNameserverUpdateFailures,
             ]);
             
-            // If nameserver updates failed, set order to draft so user can fix and resubmit
+            // If nameserver updates failed, check if we should reject or set to draft
             if ($hasNameserverUpdateFailures) {
+                // Check if any errors are due to invalid credentials or domain not found
+                $hasInvalidCredentials = false;
+                $hasDomainNotFound = false;
+                
+                foreach ($nameserverUpdateErrors as $error) {
+                    if (isset($error['is_invalid_credentials']) && $error['is_invalid_credentials']) {
+                        $hasInvalidCredentials = true;
+                    }
+                    if (isset($error['is_domain_not_found']) && $error['is_domain_not_found']) {
+                        $hasDomainNotFound = true;
+                    }
+                }
+                
+                // If invalid credentials or domain not found, reject the order
+                // Otherwise, set to draft for retry
+                $shouldReject = $hasInvalidCredentials || $hasDomainNotFound;
+                $newStatus = $shouldReject ? 'reject' : 'draft';
+                
                 try {
                     $oldStatus = $order->status_manage_by_admin;
+                    
+                    // Format error message for rejection reason
+                    $rejectionReason = "Order rejected due to nameserver update failures during automation. Please review the errors below:\n\n";
+                    foreach ($nameserverUpdateErrors as $error) {
+                        // Extract the actual error message (remove any platform prefix if present)
+                        $actualError = $error['error'];
+                        // Remove duplicate platform prefix if it exists
+                        $platformPrefix = $error['platform'] . ' nameserver update failed: ';
+                        if (strpos($actualError, $platformPrefix) === 0) {
+                            $actualError = substr($actualError, strlen($platformPrefix));
+                        }
+                        $rejectionReason .= "• **{$error['domain']}** ({$error['platform']}): {$actualError}\n";
+                    }
+                    $rejectionReason .= "\nAfter fixing the issues, please resubmit the order. The system will retry the nameserver updates and continue processing.";
+                    
                     $order->update([
-                        'status_manage_by_admin' => 'draft',
+                        'status_manage_by_admin' => $newStatus,
+                        'reason' => $shouldReject ? $rejectionReason : null,
                     ]);
                     
-                    Log::channel('mailin-ai')->warning('Order set to draft due to nameserver update failures', [
+                    Log::channel('mailin-ai')->warning("Order set to {$newStatus} due to nameserver update failures", [
                         'action' => 'handle_domain_transfer',
                         'order_id' => $this->orderId,
                         'nameserver_errors' => $nameserverUpdateErrors,
                         'nameserver_failure_count' => $nameserverFailureCount,
+                        'has_invalid_credentials' => $hasInvalidCredentials,
+                        'has_domain_not_found' => $hasDomainNotFound,
+                        'should_reject' => $shouldReject,
+                        'new_status' => $newStatus,
                     ]);
                     
-                    // Format error message for email (same as shown on form)
-                    $errorMessage = "Your order could not be processed due to nameserver update failures. Please review the errors below and resubmit:\n\n";
-                    foreach ($nameserverUpdateErrors as $error) {
-                        $errorMessage .= "• {$error['domain']}: {$error['error']}\n";
-                    }
-                    $errorMessage .= "\nAfter fixing the issues (e.g., updating API credentials, whitelisting IP address), please resubmit the order. The system will retry the nameserver updates and continue processing.";
+                    // Format error message for email
+                    $emailErrorMessage = $shouldReject 
+                        ? $rejectionReason
+                        : "Your order could not be processed due to nameserver update failures. Please review the errors below and resubmit:\n\n" . 
+                          implode("\n", array_map(function($error) {
+                              return "• {$error['domain']}: {$error['error']}";
+                          }, $nameserverUpdateErrors)) . 
+                          "\n\nAfter fixing the issues (e.g., updating API credentials, whitelisting IP address), please resubmit the order. The system will retry the nameserver updates and continue processing.";
                     
                     // Send email notification to customer
                     try {
@@ -977,22 +1042,24 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                                     $order,
                                     $user,
                                     $oldStatus,
-                                    'draft',
-                                    $errorMessage,
+                                    $newStatus,
+                                    $emailErrorMessage,
                                     false
                                 ));
                             
-                            Log::channel('mailin-ai')->info('Email notification sent for draft order', [
+                            Log::channel('mailin-ai')->info("Email notification sent for {$newStatus} order", [
                                 'action' => 'handle_domain_transfer',
                                 'order_id' => $this->orderId,
                                 'user_email' => $user->email,
+                                'status' => $newStatus,
                             ]);
                         }
                     } catch (\Exception $emailException) {
-                        Log::channel('email-failures')->error('Failed to send draft order email notification', [
+                        Log::channel('email-failures')->error("Failed to send {$newStatus} order email notification", [
                             'action' => 'handle_domain_transfer',
                             'order_id' => $this->orderId,
                             'user_id' => $order->user_id,
+                            'status' => $newStatus,
                             'exception' => $emailException->getMessage(),
                             'stack_trace' => $emailException->getTraceAsString(),
                             'timestamp' => now()->toDateTimeString(),
@@ -1001,14 +1068,21 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                     
                     // Log activity
                     try {
+                        $logAction = $shouldReject ? 'mailin_ai_order_rejected' : 'mailin_ai_order_set_to_draft';
+                        $logMessage = $shouldReject 
+                            ? "Order #{$order->id} rejected - nameserver update failed due to invalid credentials or domain not found."
+                            : "Order #{$order->id} set to draft - nameserver update failed. Please check and resubmit.";
+                        
                         ActivityLogService::log(
-                            'mailin_ai_order_set_to_draft',
-                            "Order #{$order->id} set to draft - nameserver update failed. Please check and resubmit.",
+                            $logAction,
+                            $logMessage,
                             $order,
                             [
                                 'order_id' => $order->id,
-                                'reason' => 'Nameserver update failed',
+                                'reason' => $shouldReject ? 'Invalid credentials or domain not found' : 'Nameserver update failed',
                                 'nameserver_errors' => $nameserverUpdateErrors,
+                                'has_invalid_credentials' => $hasInvalidCredentials,
+                                'has_domain_not_found' => $hasDomainNotFound,
                             ]
                         );
                     } catch (\Exception $e) {
@@ -1019,7 +1093,7 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                         ]);
                     }
                 } catch (\Exception $e) {
-                    Log::channel('mailin-ai')->error('Failed to set order to draft', [
+                    Log::channel('mailin-ai')->error("Failed to set order to {$newStatus}", [
                         'action' => 'handle_domain_transfer',
                         'order_id' => $this->orderId,
                         'error' => $e->getMessage(),
