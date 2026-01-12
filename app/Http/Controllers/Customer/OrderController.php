@@ -960,20 +960,20 @@ class OrderController extends Controller
                     }
                     
                     // dd(config('mail.admin_address', 'admin@example.com'));
-                    // Send notification to admin - COMMENTED OUT: Admin email not sent when customer edits order
-                    // try {
-                    //     Mail::to(config('mail.admin_address', 'admin@example.com'))
-                    //         ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], true));
-                    // } catch (\Exception $e) {
-                    //     \Log::channel('email-failures')->error('Failed to send order edited email to admin', [
-                    //         'exception' => $e->getMessage(),
-                    //         'stack_trace' => $e->getTraceAsString(),
-                    //         'order_id' => $order->id,
-                    //         'admin_email' => config('mail.admin_address', 'admin@example.com'),
-                    //         'timestamp' => now()->toDateTimeString(),
-                    //         'context' => 'Customer\\OrderController::editOrder'
-                    //     ]);
-                    // }
+                    // Send notification to admin
+                    try {
+                        Mail::to(config('mail.admin_address', 'admin@example.com'))
+                            ->queue(new OrderEditedMail($order, $user, $reorderInfo, [], true));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order edited email to admin', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'order_id' => $order->id,
+                            'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Customer\\OrderController::editOrder'
+                        ]);
+                    }
                     
                     // Check if the order has an assigned contractor
                     if ($order->assigned_to ) {
