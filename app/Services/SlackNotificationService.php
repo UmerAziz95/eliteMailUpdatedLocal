@@ -161,7 +161,8 @@ class SlackNotificationService
             'split_count' => $orderData['split_count'] ?? 0,
             'previous_status' => $orderData['previous_status'] ?? 'N/A',
             'new_status' => $orderData['new_status'] ?? 'N/A',
-            'updated_by' => auth()->user() ? auth()->user()->name : 'System'
+            'updated_by' => auth()->user() ? auth()->user()->name : 'System',
+            'provider_type' => $orderData['provider_type'] ?? 'N/A',
         ];
 
         // Prepare the message based on type
