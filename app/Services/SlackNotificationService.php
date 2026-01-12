@@ -524,12 +524,24 @@ class SlackNotificationService
                 $removalTaskDate = 'Removal task shows at end of billing cycle';
             }
         }
+        
+        // Check if this is a Private SMTP order with automation enabled
+        $automationEnabled = config('mailin_ai.automation_enabled', false);
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        $isPrivateSMTPAutomation = $automationEnabled && strtolower($providerType) === 'private smtp';
+        
+        // Modify reason for automation flow
+        $displayReason = $reason ?: 'No reason provided';
+        if ($isPrivateSMTPAutomation) {
+            $displayReason = 'System will automatically delete mailboxes. ' . ($reason ?: 'Automated cleanup process initiated.');
+        }
+        
         $data = [
             'inbox_id' => $order->id,
             'order_id' => $order->id, // Keep for backward compatibility
             'customer_name' => $order->user ? $order->user->name : 'Unknown',
             'customer_email' => $order->user ? $order->user->email : 'Unknown',
-            'reason' => $reason ?: 'No reason provided',
+            'reason' => $displayReason,
             'cancelled_by' => auth()->user() ? auth()->user()->name : 'System',
             'cancellation_type' => $cancellationType,
             'removal_domains_task_date' => $removalTaskDate
