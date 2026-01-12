@@ -134,7 +134,8 @@ class SlackNotificationService
             'plan_name' => $planName,
             // 'split_count' => $splitCount,
             'created_by' => auth()->user() ? auth()->user()->name : 'System',
-            'created_at' => $order->created_at ? $order->created_at->format('Y-m-d H:i:s T') : 'N/A'
+            'created_at' => $order->created_at ? $order->created_at->format('Y-m-d H:i:s T') : 'N/A',
+            'provider_type' => $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null)
         ];
 
         // Prepare the message based on type
