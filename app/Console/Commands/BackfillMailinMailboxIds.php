@@ -95,6 +95,7 @@ class BackfillMailinMailboxIds extends Command
             }
 
             $totalUpdated = 0;
+            $totalCreated = 0;
             $totalSkipped = 0;
             $totalErrors = 0;
 
@@ -125,48 +126,137 @@ class BackfillMailinMailboxIds extends Command
 
                         // Fetch mailbox from Mailin.ai using email/name parameter
                         $mailboxesResult = $mailinService->getMailboxesByName($email);
-
-                        if (!$mailboxesResult['success'] || empty($mailboxesResult['mailboxes'])) {
-                            $this->warn("    No mailbox found on Mailin.ai: {$email}");
-                            Log::channel('mailin-ai')->warning('Mailbox not found on Mailin.ai during backfill', [
-                                'action' => 'backfill_mailbox_ids',
-                                'order_id' => $order->id,
-                                'order_email_id' => $orderEmail->id,
-                                'email' => $email,
-                                'message' => $mailboxesResult['message'] ?? 'Unknown error',
-                            ]);
-                            $totalSkipped++;
-                            
-                            // Add delay to avoid rate limiting
-                            usleep(500000); // 0.5 seconds
-                            continue;
-                        }
-
-                        // Find matching mailbox by username/email (case-insensitive)
-                        $emailLower = strtolower($email);
                         $matchedMailbox = null;
-                        
-                        foreach ($mailboxesResult['mailboxes'] as $apiMailbox) {
-                            $username = $apiMailbox['username'] ?? $apiMailbox['email'] ?? null;
-                            if ($username && strtolower($username) === $emailLower) {
-                                $matchedMailbox = $apiMailbox;
-                                break;
+                        $emailLower = strtolower($email);
+
+                        // If name search returns results, try to find exact match
+                        if ($mailboxesResult['success'] && !empty($mailboxesResult['mailboxes'])) {
+                            foreach ($mailboxesResult['mailboxes'] as $apiMailbox) {
+                                $username = $apiMailbox['username'] ?? $apiMailbox['email'] ?? null;
+                                if ($username && strtolower($username) === $emailLower) {
+                                    $matchedMailbox = $apiMailbox;
+                                    break;
+                                }
                             }
                         }
 
+                        // Fallback: If name search didn't find exact match, try fetching by domain
                         if (!$matchedMailbox) {
-                            $this->warn("    Mailbox not found on Mailin.ai (no exact match): {$email}");
-                            Log::channel('mailin-ai')->warning('Mailbox not found on Mailin.ai during backfill (no exact match)', [
-                                'action' => 'backfill_mailbox_ids',
-                                'order_id' => $order->id,
-                                'order_email_id' => $orderEmail->id,
-                                'email' => $email,
-                            ]);
-                            $totalSkipped++;
+                            $emailParts = explode('@', $email);
+                            if (count($emailParts) === 2) {
+                                $domain = $emailParts[1];
+                                $this->line("    Name search failed, trying domain search for: {$domain}");
+                                
+                                $domainMailboxesResult = $mailinService->getMailboxesByDomain($domain);
+                                
+                                if ($domainMailboxesResult['success'] && !empty($domainMailboxesResult['mailboxes'])) {
+                                    foreach ($domainMailboxesResult['mailboxes'] as $apiMailbox) {
+                                        $username = $apiMailbox['username'] ?? $apiMailbox['email'] ?? null;
+                                        if ($username && strtolower($username) === $emailLower) {
+                                            $matchedMailbox = $apiMailbox;
+                                            $this->line("    Found via domain search!");
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // If mailbox not found, create it on Mailin.ai
+                        if (!$matchedMailbox) {
+                            $emailParts = explode('@', $email);
+                            if (count($emailParts) !== 2) {
+                                $this->warn("    Invalid email format: {$email}");
+                                $totalSkipped++;
+                                continue;
+                            }
                             
-                            // Add delay to avoid rate limiting
-                            usleep(500000); // 0.5 seconds
-                            continue;
+                            $domain = $emailParts[1];
+                            $this->info("    Mailbox not found, creating on Mailin.ai: {$email}");
+                            
+                            try {
+                                // Prepare mailbox data for creation
+                                $mailboxName = $orderEmail->name ?? explode('@', $email)[0];
+                                $mailboxPassword = $orderEmail->password ?? null;
+                                
+                                $mailboxData = [
+                                    'username' => $email,
+                                    'name' => $mailboxName,
+                                ];
+                                
+                                if ($mailboxPassword) {
+                                    $mailboxData['password'] = $mailboxPassword;
+                                }
+                                
+                                // Create mailbox on Mailin.ai
+                                $createResult = $mailinService->createMailboxes([$mailboxData]);
+                                
+                                if (!$createResult['success']) {
+                                    $this->error("    Failed to create mailbox: " . ($createResult['message'] ?? 'Unknown error'));
+                                    Log::channel('mailin-ai')->error('Failed to create mailbox during backfill', [
+                                        'action' => 'backfill_mailbox_ids',
+                                        'order_id' => $order->id,
+                                        'order_email_id' => $orderEmail->id,
+                                        'email' => $email,
+                                        'error' => $createResult['message'] ?? 'Unknown error',
+                                    ]);
+                                    $totalSkipped++;
+                                    
+                                    // Add delay to avoid rate limiting
+                                    usleep(500000); // 0.5 seconds
+                                    continue;
+                                }
+                                
+                                // Wait a few seconds for mailbox to be created
+                                $this->line("    Waiting for mailbox creation to complete...");
+                                sleep(5);
+                                
+                                // Fetch the newly created mailbox by domain
+                                $domainMailboxesResult = $mailinService->getMailboxesByDomain($domain);
+                                
+                                if ($domainMailboxesResult['success'] && !empty($domainMailboxesResult['mailboxes'])) {
+                                    foreach ($domainMailboxesResult['mailboxes'] as $apiMailbox) {
+                                        $username = $apiMailbox['username'] ?? $apiMailbox['email'] ?? null;
+                                        if ($username && strtolower($username) === $emailLower) {
+                                            $matchedMailbox = $apiMailbox;
+                                            $this->info("    ✓ Mailbox created and found!");
+                                            $totalCreated++;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                if (!$matchedMailbox) {
+                                    $this->warn("    Mailbox created but could not retrieve ID. May need to retry later.");
+                                    Log::channel('mailin-ai')->warning('Mailbox created but ID not found during backfill', [
+                                        'action' => 'backfill_mailbox_ids',
+                                        'order_id' => $order->id,
+                                        'order_email_id' => $orderEmail->id,
+                                        'email' => $email,
+                                        'domain' => $domain,
+                                    ]);
+                                    $totalSkipped++;
+                                    
+                                    // Add delay to avoid rate limiting
+                                    usleep(500000); // 0.5 seconds
+                                    continue;
+                                }
+                            } catch (\Exception $e) {
+                                $this->error("    Error creating mailbox: {$e->getMessage()}");
+                                Log::channel('mailin-ai')->error('Exception creating mailbox during backfill', [
+                                    'action' => 'backfill_mailbox_ids',
+                                    'order_id' => $order->id,
+                                    'order_email_id' => $orderEmail->id,
+                                    'email' => $email,
+                                    'error' => $e->getMessage(),
+                                    'trace' => $e->getTraceAsString(),
+                                ]);
+                                $totalSkipped++;
+                                
+                                // Add delay to avoid rate limiting
+                                usleep(500000); // 0.5 seconds
+                                continue;
+                            }
                         }
 
                         $mailinMailboxId = $matchedMailbox['id'] ?? null;
@@ -268,6 +358,7 @@ class BackfillMailinMailboxIds extends Command
             $this->info('Backfill Summary:');
             $this->info("  Orders processed: {$orders->count()}");
             $this->info("  Mailboxes updated: {$totalUpdated}");
+            $this->info("  Mailboxes created: {$totalCreated}");
             $this->info("  Mailboxes skipped: {$totalSkipped}");
             $this->info("  Errors: {$totalErrors}");
 
@@ -279,6 +370,7 @@ class BackfillMailinMailboxIds extends Command
                 'action' => 'backfill_mailbox_ids',
                 'orders_processed' => $orders->count(),
                 'mailboxes_updated' => $totalUpdated,
+                'mailboxes_created' => $totalCreated,
                 'mailboxes_skipped' => $totalSkipped,
                 'errors' => $totalErrors,
                 'dry_run' => $dryRun,
