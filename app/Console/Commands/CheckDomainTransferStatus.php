@@ -36,7 +36,11 @@ class CheckDomainTransferStatus extends Command
 
         try {
             // Get all pending domain transfers (including rate-limited ones)
+            // Only from orders that are in 'in-progress' status
             $pendingTransfers = DomainTransfer::where('status', 'pending')
+                ->whereHas('order', function ($query) {
+                    $query->where('status_manage_by_admin', 'in-progress');
+                })
                 ->with('order')
                 ->get();
             
@@ -67,11 +71,20 @@ class CheckDomainTransferStatus extends Command
             ]);
             
             // Also get completed transfers that haven't triggered mailbox creation yet
+            // Only from orders that are in 'in-progress' status
             $allCompleted = DomainTransfer::where('status', 'completed')
+                ->whereHas('order', function ($query) {
+                    $query->where('status_manage_by_admin', 'in-progress');
+                })
                 ->with('order')
                 ->get();
             
             $completedTransfers = $allCompleted->filter(function ($transfer) {
+                // Verify order is still in-progress
+                if (!$transfer->order || $transfer->order->status_manage_by_admin !== 'in-progress') {
+                    return false;
+                }
+                
                 // Check if mailboxes have been successfully created for this order
                 $hasCompletedMailboxes = \App\Models\OrderAutomation::where('order_id', $transfer->order_id)
                     ->where('action_type', 'mailbox')
@@ -104,15 +117,16 @@ class CheckDomainTransferStatus extends Command
                 'completed_ids' => $completedTransfers->pluck('id')->toArray(),
             ]);
             
-            // Merge both collections
-            $allTransfers = $pendingTransfers->merge($completedTransfers);
+            // Only process pending transfers for status checking (don't check completed ones again)
+            // Completed transfers are only used to determine if order is ready for mailbox creation
+            $transfersToCheck = $pendingTransfers;
 
-            if ($allTransfers->isEmpty()) {
+            if ($transfersToCheck->isEmpty() && $completedTransfers->isEmpty()) {
                 $this->info('No domain transfers found that need processing.');
                 return 0;
             }
 
-            $this->info("Found {$allTransfers->count()} domain transfer(s) to process ({$pendingTransfers->count()} pending, {$completedTransfers->count()} completed without mailboxes).");
+            $this->info("Found {$transfersToCheck->count()} pending domain transfer(s) to check status, and {$completedTransfers->count()} completed transfer(s) to check for mailbox creation.");
 
             // Get active provider credentials (or fallback to config)
             $activeProvider = SmtpProviderSplit::getActiveProvider();
@@ -120,8 +134,49 @@ class CheckDomainTransferStatus extends Command
             $mailinService = new MailinAiService($credentials);
             $processedOrders = [];
 
-            foreach ($allTransfers as $domainTransfer) {
+            // Only check status for pending transfers (skip completed ones - no need to call API again)
+            foreach ($transfersToCheck as $domainTransfer) {
                 try {
+                    // Skip if domain transfer is already completed - no need to check again
+                    if ($domainTransfer->status === 'completed') {
+                        $this->line("Skipping domain: {$domainTransfer->domain_name} (already completed)");
+                        Log::channel('mailin-ai')->debug('Skipping completed domain transfer', [
+                            'action' => 'check_domain_transfer_status',
+                            'domain_transfer_id' => $domainTransfer->id,
+                            'domain_name' => $domainTransfer->domain_name,
+                            'order_id' => $domainTransfer->order_id,
+                            'reason' => 'already_completed',
+                        ]);
+                        continue;
+                    }
+                    
+                    // Verify order is still in-progress before checking
+                    if (!$domainTransfer->order || $domainTransfer->order->status_manage_by_admin !== 'in-progress') {
+                        $orderStatus = $domainTransfer->order ? $domainTransfer->order->status_manage_by_admin : 'N/A';
+                        $this->line("Skipping domain: {$domainTransfer->domain_name} (order not in-progress: {$orderStatus})");
+                        Log::channel('mailin-ai')->debug('Skipping domain transfer - order not in-progress', [
+                            'action' => 'check_domain_transfer_status',
+                            'domain_transfer_id' => $domainTransfer->id,
+                            'domain_name' => $domainTransfer->domain_name,
+                            'order_id' => $domainTransfer->order_id,
+                            'order_status' => $orderStatus,
+                        ]);
+                        continue;
+                    }
+                    
+                    // Only check pending domain transfers
+                    if ($domainTransfer->status !== 'pending') {
+                        $this->line("Skipping domain: {$domainTransfer->domain_name} (status: {$domainTransfer->status}, expected: pending)");
+                        Log::channel('mailin-ai')->debug('Skipping domain transfer - not pending', [
+                            'action' => 'check_domain_transfer_status',
+                            'domain_transfer_id' => $domainTransfer->id,
+                            'domain_name' => $domainTransfer->domain_name,
+                            'order_id' => $domainTransfer->order_id,
+                            'current_status' => $domainTransfer->status,
+                        ]);
+                        continue;
+                    }
+
                     $this->line("Checking domain: {$domainTransfer->domain_name}");
 
                     // Check domain status via Mailin.ai public API
@@ -205,6 +260,56 @@ class CheckDomainTransferStatus extends Command
                 }
             }
 
+            // Also find orders that have all completed domain transfers but weren't added to processedOrders
+            // This handles the case where all domains were already completed before this run
+            // Only check orders that are in 'in-progress' status
+            $uniqueOrderIds = $completedTransfers->pluck('order_id')->unique()->toArray();
+            
+            foreach ($uniqueOrderIds as $orderId) {
+                if (!in_array($orderId, $processedOrders)) {
+                    // Verify order is still in-progress
+                    $order = Order::find($orderId);
+                    if (!$order || $order->status_manage_by_admin !== 'in-progress') {
+                        Log::channel('mailin-ai')->debug('Skipping order - not in-progress', [
+                            'action' => 'check_domain_transfer_status',
+                            'order_id' => $orderId,
+                            'order_status' => $order ? $order->status_manage_by_admin : 'N/A',
+                        ]);
+                        continue;
+                    }
+                    
+                    // Check if all domain transfers for this order are completed
+                    // Only count transfers that are pending or completed (exclude failed ones from total)
+                    $allTransfersForOrder = DomainTransfer::where('order_id', $orderId)
+                        ->whereIn('status', ['pending', 'completed'])
+                        ->get();
+                    $completedCount = $allTransfersForOrder->where('status', 'completed')->count();
+                    $totalCount = $allTransfersForOrder->count();
+                    
+                    // Only process if all transfers are completed (no pending transfers remaining)
+                    if ($totalCount > 0 && $completedCount === $totalCount && $completedCount > 0) {
+                        // Check if mailboxes haven't been created yet
+                        $hasCompletedMailboxes = \App\Models\OrderAutomation::where('order_id', $orderId)
+                            ->where('action_type', 'mailbox')
+                            ->where('status', 'completed')
+                            ->exists();
+                        
+                        $hasOrderEmails = \App\Models\OrderEmail::where('order_id', $orderId)->exists();
+                        
+                        if (!$hasCompletedMailboxes && !$hasOrderEmails) {
+                            $processedOrders[] = $orderId;
+                            Log::channel('mailin-ai')->info('Order with all completed transfers added to processing queue', [
+                                'action' => 'check_domain_transfer_status',
+                                'order_id' => $orderId,
+                                'reason' => 'all_domains_completed',
+                                'completed_count' => $completedCount,
+                                'total_count' => $totalCount,
+                            ]);
+                        }
+                    }
+                }
+            }
+
             // Process orders with all domains completed
             if (count($processedOrders) > 0) {
                 $this->info("Processing " . count($processedOrders) . " order(s) for mailbox creation...");
@@ -258,24 +363,42 @@ class CheckDomainTransferStatus extends Command
                 return;
             }
 
+            // Only process orders that are in 'in-progress' status
+            if ($order->status_manage_by_admin !== 'in-progress') {
+                $this->warn("Order #{$orderId} is not in-progress (status: {$order->status_manage_by_admin}). Skipping mailbox creation.");
+                Log::channel('mailin-ai')->warning('Skipping order - not in-progress', [
+                    'action' => 'process_order_mailbox_creation',
+                    'order_id' => $orderId,
+                    'order_status' => $order->status_manage_by_admin,
+                ]);
+                return;
+            }
+
             // Check if all domains for this order are completed
-            $allDomainTransfers = DomainTransfer::where('order_id', $orderId)->get();
+            // Only count transfers that are pending or completed (exclude failed ones from total)
+            $allDomainTransfers = DomainTransfer::where('order_id', $orderId)
+                ->whereIn('status', ['pending', 'completed'])
+                ->get();
             $completedCount = $allDomainTransfers->where('status', 'completed')->count();
+            $pendingCount = $allDomainTransfers->where('status', 'pending')->count();
             $totalCount = $allDomainTransfers->count();
 
             Log::channel('mailin-ai')->info('Checking domain transfer completion status', [
                 'action' => 'process_order_mailbox_creation',
                 'order_id' => $orderId,
                 'completed_count' => $completedCount,
+                'pending_count' => $pendingCount,
                 'total_count' => $totalCount,
             ]);
 
-            if ($completedCount < $totalCount || $totalCount === 0) {
-                $this->line("Order #{$orderId}: Not all domains are completed yet ({$completedCount}/{$totalCount}).");
+            // Only proceed if all transfers are completed (no pending transfers)
+            if ($totalCount === 0 || $pendingCount > 0 || $completedCount < $totalCount) {
+                $this->line("Order #{$orderId}: Not all domains are completed yet ({$completedCount} completed, {$pendingCount} pending, {$totalCount} total).");
                 Log::channel('mailin-ai')->info('Not all domains completed yet', [
                     'action' => 'process_order_mailbox_creation',
                     'order_id' => $orderId,
                     'completed_count' => $completedCount,
+                    'pending_count' => $pendingCount,
                     'total_count' => $totalCount,
                 ]);
                 return;
@@ -289,6 +412,11 @@ class CheckDomainTransferStatus extends Command
 
             if ($existingAutomation) {
                 $this->line("Order #{$orderId}: Mailboxes already created.");
+                Log::channel('mailin-ai')->info('Skipping order - mailboxes already created', [
+                    'action' => 'process_order_mailbox_creation',
+                    'order_id' => $orderId,
+                    'automation_id' => $existingAutomation->id,
+                ]);
                 return;
             }
 
@@ -297,6 +425,10 @@ class CheckDomainTransferStatus extends Command
             // Get domains and prefix variants from reorderInfo
             if (!$order->reorderInfo || $order->reorderInfo->count() === 0) {
                 $this->warn("Order #{$orderId}: No reorder info found.");
+                Log::channel('mailin-ai')->warning('Skipping order - no reorder info found', [
+                    'action' => 'process_order_mailbox_creation',
+                    'order_id' => $orderId,
+                ]);
                 return;
             }
 
@@ -307,6 +439,10 @@ class CheckDomainTransferStatus extends Command
 
             if (empty($domains)) {
                 $this->warn("Order #{$orderId}: No domains found in reorder info.");
+                Log::channel('mailin-ai')->warning('Skipping order - no domains found in reorder info', [
+                    'action' => 'process_order_mailbox_creation',
+                    'order_id' => $orderId,
+                ]);
                 return;
             }
 
@@ -323,6 +459,10 @@ class CheckDomainTransferStatus extends Command
 
             if (empty($prefixVariants)) {
                 $this->warn("Order #{$orderId}: No prefix variants found.");
+                Log::channel('mailin-ai')->warning('Skipping order - no prefix variants found', [
+                    'action' => 'process_order_mailbox_creation',
+                    'order_id' => $orderId,
+                ]);
                 return;
             }
 
