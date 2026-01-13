@@ -258,9 +258,9 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                     $this->handleDomainTransfer($order, $mailinService, $unregisteredDomains, $providerSlug);
                 }
 
-                // Create mailboxes for registered domains
+                // Create mailboxes for registered domains (already active - skip status checking)
                 if (!empty($registeredDomains)) {
-                    $this->createMailboxesForProvider($order, $mailinService, $providerSlug, $registeredDomains, empty($unregisteredDomains));
+                    $this->createMailboxesForProvider($order, $mailinService, $providerSlug, $registeredDomains, empty($unregisteredDomains), true);
                 }
             }
 
@@ -1424,7 +1424,7 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
      * @param bool $shouldCompleteOrder
      * @return void
      */
-    private function createMailboxesForProvider($order, $mailinService, $providerSlug, $domains, $shouldCompleteOrder = true)
+    private function createMailboxesForProvider($order, $mailinService, $providerSlug, $domains, $shouldCompleteOrder = true, $domainsAreActive = false)
     {
         Log::channel('mailin-ai')->info('Creating mailboxes for provider domains', [
             'action' => 'create_mailboxes_for_provider',
@@ -1477,7 +1477,7 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             $result = $mailinService->createMailboxes($mailboxes);
 
             if ($result['success'] && isset($result['uuid'])) {
-                $this->saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $shouldCompleteOrder, $providerSlug);
+                $this->saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $shouldCompleteOrder, $providerSlug, $domainsAreActive);
             } else {
                 throw new \Exception('Mailbox creation failed: ' . ($result['message'] ?? 'Unknown error'));
             }
@@ -1493,7 +1493,7 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
         }
     }
 
-    private function saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $completeOrder = true, $providerSlug = null)
+    private function saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $completeOrder = true, $providerSlug = null, $domainsAreActive = false)
     {
         $jobUuid = $result['uuid'];
 
@@ -1524,66 +1524,81 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
         ]);
 
         // Check job status and wait for completion to get mailbox IDs
+        // Skip status checking if domains are already active - mailboxes will be created immediately
         $mailboxStatusData = null;
-        $maxAttempts = 30; // Maximum 30 attempts (5 minutes if polling every 10 seconds)
-        $attempt = 0;
+        
+        if ($domainsAreActive) {
+            // For active domains, skip status checking - mailboxes are created immediately
+            // Just save mailboxes without waiting for status
+            Log::channel('mailin-ai')->info('Domains are already active, skipping job status checking - saving mailboxes directly', [
+                'action' => 'save_mailboxes_for_domains',
+                'order_id' => $this->orderId,
+                'job_uuid' => $jobUuid,
+                'reason' => 'domains_already_active',
+            ]);
+        } else {
+            // For unregistered domains (transferred), check job status to get mailbox IDs
+            $maxAttempts = 30; // Maximum 30 attempts (5 minutes if polling every 10 seconds)
+            $attempt = 0;
 
-        Log::channel('mailin-ai')->info('Checking mailbox job status to get mailbox IDs', [
-            'action' => 'save_mailboxes_for_domains',
-            'order_id' => $this->orderId,
-            'job_uuid' => $jobUuid,
-        ]);
+            Log::channel('mailin-ai')->info('Checking mailbox job status to get mailbox IDs', [
+                'action' => 'save_mailboxes_for_domains',
+                'order_id' => $this->orderId,
+                'job_uuid' => $jobUuid,
+                'reason' => 'domains_were_transferred',
+            ]);
 
-        while ($attempt < $maxAttempts) {
-            try {
-                $statusResult = $mailinService->getMailboxJobStatus($jobUuid);
+            while ($attempt < $maxAttempts) {
+                try {
+                    $statusResult = $mailinService->getMailboxJobStatus($jobUuid);
 
-                if ($statusResult['success']) {
-                    $status = $statusResult['data']['status'] ?? 'unknown';
+                    if ($statusResult['success']) {
+                        $status = $statusResult['data']['status'] ?? 'unknown';
 
-                    Log::channel('mailin-ai')->info('Mailbox job status checked', [
+                        Log::channel('mailin-ai')->info('Mailbox job status checked', [
+                            'action' => 'save_mailboxes_for_domains',
+                            'order_id' => $this->orderId,
+                            'job_uuid' => $jobUuid,
+                            'status' => $status,
+                            'attempt' => $attempt + 1,
+                        ]);
+
+                        if ($status === 'completed') {
+                            $mailboxStatusData = $statusResult['data'];
+                            Log::channel('mailin-ai')->info('Mailbox job completed, extracting mailbox data', [
+                                'action' => 'save_mailboxes_for_domains',
+                                'order_id' => $this->orderId,
+                                'job_uuid' => $jobUuid,
+                                'mailbox_count' => count($mailboxStatusData['data'] ?? []),
+                            ]);
+                            break;
+                        } elseif ($status === 'failed') {
+                            Log::channel('mailin-ai')->error('Mailbox job failed', [
+                                'action' => 'save_mailboxes_for_domains',
+                                'order_id' => $this->orderId,
+                                'job_uuid' => $jobUuid,
+                                'report' => $statusResult['data']['report'] ?? 'Unknown error',
+                            ]);
+                            break;
+                        }
+
+                        // If still pending/processing, wait before next check
+                        if ($status === 'pending' || $status === 'processing' || $status === 'created') {
+                            sleep(10); // Wait 10 seconds before next check
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::channel('mailin-ai')->warning('Error checking mailbox job status, will continue without mailbox IDs', [
                         'action' => 'save_mailboxes_for_domains',
                         'order_id' => $this->orderId,
                         'job_uuid' => $jobUuid,
-                        'status' => $status,
-                        'attempt' => $attempt + 1,
+                        'error' => $e->getMessage(),
                     ]);
-
-                    if ($status === 'completed') {
-                        $mailboxStatusData = $statusResult['data'];
-                        Log::channel('mailin-ai')->info('Mailbox job completed, extracting mailbox data', [
-                            'action' => 'save_mailboxes_for_domains',
-                            'order_id' => $this->orderId,
-                            'job_uuid' => $jobUuid,
-                            'mailbox_count' => count($mailboxStatusData['data'] ?? []),
-                        ]);
-                        break;
-                    } elseif ($status === 'failed') {
-                        Log::channel('mailin-ai')->error('Mailbox job failed', [
-                            'action' => 'save_mailboxes_for_domains',
-                            'order_id' => $this->orderId,
-                            'job_uuid' => $jobUuid,
-                            'report' => $statusResult['data']['report'] ?? 'Unknown error',
-                        ]);
-                        break;
-                    }
-
-                    // If still pending/processing, wait before next check
-                    if ($status === 'pending' || $status === 'processing') {
-                        sleep(10); // Wait 10 seconds before next check
-                    }
+                    break; // Continue without mailbox IDs if status check fails
                 }
-            } catch (\Exception $e) {
-                Log::channel('mailin-ai')->warning('Error checking mailbox job status, will continue without mailbox IDs', [
-                    'action' => 'save_mailboxes_for_domains',
-                    'order_id' => $this->orderId,
-                    'job_uuid' => $jobUuid,
-                    'error' => $e->getMessage(),
-                ]);
-                break; // Continue without mailbox IDs if status check fails
-            }
 
-            $attempt++;
+                $attempt++;
+            }
         }
 
         // Create a map of username -> mailbox data from API response
