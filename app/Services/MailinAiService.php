@@ -824,7 +824,7 @@ class MailinAiService
             $response = $this->makeRequest(
                 'GET',
                 '/mailboxes',
-                ['domain' => $domainName]
+                ['name' => $domainName]
             );
 
             $statusCode = $response->status();
@@ -1051,6 +1051,111 @@ class MailinAiService
                 'error' => $e->getMessage(),
             ]);
             throw $e;
+        }
+    }
+
+    /**
+     * Get mailboxes by email/name from Mailin.ai API
+     * GET /mailboxes?name={email}&per_page=10
+     * 
+     * @param string $email Email address to search for (e.g., "john.doe@example.com")
+     * @param int $perPage Number of results per page (default: 10)
+     * @return array List of mailboxes with their IDs
+     * @throws \Exception
+     */
+    public function getMailboxesByName(string $email, int $perPage = 10)
+    {
+        try {
+            Log::channel('mailin-ai')->info('Fetching mailboxes by email/name from Mailin.ai API', [
+                'action' => 'get_mailboxes_by_name',
+                'email' => $email,
+                'per_page' => $perPage,
+            ]);
+
+            $response = $this->makeRequest(
+                'GET',
+                '/mailboxes',
+                [
+                    'name' => $email,
+                    'per_page' => $perPage,
+                ]
+            );
+
+            $statusCode = $response->status();
+            $responseBody = $response->json();
+
+            if ($response->successful() && isset($responseBody['data']) && is_array($responseBody['data'])) {
+                Log::channel('mailin-ai')->info('Mailboxes fetched successfully by email/name', [
+                    'action' => 'get_mailboxes_by_name',
+                    'email' => $email,
+                    'mailbox_count' => count($responseBody['data']),
+                ]);
+
+                return [
+                    'success' => true,
+                    'mailboxes' => $responseBody['data'],
+                    'total' => $responseBody['total'] ?? count($responseBody['data']),
+                    'current_page' => $responseBody['current_page'] ?? 1,
+                ];
+            } else {
+                // If API doesn't return data array, try alternative response format
+                if ($response->successful() && is_array($responseBody)) {
+                    Log::channel('mailin-ai')->info('Mailboxes fetched successfully by email/name (alternative format)', [
+                        'action' => 'get_mailboxes_by_name',
+                        'email' => $email,
+                        'mailbox_count' => count($responseBody),
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'mailboxes' => $responseBody,
+                        'total' => count($responseBody),
+                        'current_page' => 1,
+                    ];
+                }
+
+                Log::channel('mailin-ai')->warning('No mailboxes found or unexpected response format', [
+                    'action' => 'get_mailboxes_by_name',
+                    'email' => $email,
+                    'status_code' => $statusCode,
+                    'response' => $responseBody,
+                ]);
+
+                return [
+                    'success' => false,
+                    'mailboxes' => [],
+                    'message' => 'No mailboxes found or unexpected response format',
+                ];
+            }
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            $errorMessage = 'Network error';
+            if ($e->response) {
+                $errorMessage .= '. Status: ' . $e->response->status() . '. Body: ' . substr($e->response->body(), 0, 500);
+            }
+
+            Log::channel('mailin-ai')->error('Failed to fetch mailboxes by email/name', [
+                'action' => 'get_mailboxes_by_name',
+                'email' => $email,
+                'error' => $errorMessage,
+            ]);
+
+            return [
+                'success' => false,
+                'mailboxes' => [],
+                'message' => $errorMessage,
+            ];
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Failed to fetch mailboxes by email/name', [
+                'action' => 'get_mailboxes_by_name',
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'mailboxes' => [],
+                'message' => $e->getMessage(),
+            ];
         }
     }
 }

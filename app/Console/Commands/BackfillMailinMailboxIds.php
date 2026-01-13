@@ -117,159 +117,150 @@ class BackfillMailinMailboxIds extends Command
 
                 $this->line("  Found {$orderEmails->count()} order email(s) with missing IDs.");
 
-                // Group emails by domain for efficient API calls
-                $emailsByDomain = [];
+                // Process each email individually using the name parameter API endpoint
                 foreach ($orderEmails as $orderEmail) {
-                    $email = $orderEmail->email;
-                    $parts = explode('@', $email);
-                    if (count($parts) === 2) {
-                        $domain = $parts[1];
-                        if (!isset($emailsByDomain[$domain])) {
-                            $emailsByDomain[$domain] = [];
-                        }
-                        $emailsByDomain[$domain][] = $orderEmail;
-                    }
-                }
-
-                $this->line("  Processing " . count($emailsByDomain) . " domain(s)...");
-
-                foreach ($emailsByDomain as $domain => $emails) {
                     try {
-                        $this->line("  Fetching mailboxes for domain: {$domain}");
+                        $email = $orderEmail->email;
+                        $this->line("  Fetching mailbox for: {$email}");
 
-                        // Fetch mailboxes from Mailin.ai
-                        $mailboxesResult = $mailinService->getMailboxesByDomain($domain);
+                        // Fetch mailbox from Mailin.ai using email/name parameter
+                        $mailboxesResult = $mailinService->getMailboxesByName($email);
 
                         if (!$mailboxesResult['success'] || empty($mailboxesResult['mailboxes'])) {
-                            $this->warn("    No mailboxes found for domain: {$domain}");
-                            Log::channel('mailin-ai')->warning('No mailboxes found for domain during backfill', [
+                            $this->warn("    No mailbox found on Mailin.ai: {$email}");
+                            Log::channel('mailin-ai')->warning('Mailbox not found on Mailin.ai during backfill', [
                                 'action' => 'backfill_mailbox_ids',
                                 'order_id' => $order->id,
-                                'domain' => $domain,
+                                'order_email_id' => $orderEmail->id,
+                                'email' => $email,
                                 'message' => $mailboxesResult['message'] ?? 'Unknown error',
                             ]);
-                            $totalSkipped += count($emails);
+                            $totalSkipped++;
+                            
+                            // Add delay to avoid rate limiting
+                            usleep(500000); // 0.5 seconds
                             continue;
                         }
 
-                        // Create a map of username -> mailbox data
-                        $mailboxMap = [];
+                        // Find matching mailbox by username/email (case-insensitive)
+                        $emailLower = strtolower($email);
+                        $matchedMailbox = null;
+                        
                         foreach ($mailboxesResult['mailboxes'] as $apiMailbox) {
                             $username = $apiMailbox['username'] ?? $apiMailbox['email'] ?? null;
-                            if ($username) {
-                                $mailboxMap[strtolower($username)] = [
-                                    'mailbox_id' => $apiMailbox['id'] ?? null,
-                                    'domain_id' => $apiMailbox['domain_id'] ?? null,
-                                ];
+                            if ($username && strtolower($username) === $emailLower) {
+                                $matchedMailbox = $apiMailbox;
+                                break;
                             }
                         }
 
-                        $this->line("    Found " . count($mailboxMap) . " mailbox(es) on Mailin.ai for domain: {$domain}");
-
-                        // Update each order email
-                        foreach ($emails as $orderEmail) {
-                            $emailLower = strtolower($orderEmail->email);
+                        if (!$matchedMailbox) {
+                            $this->warn("    Mailbox not found on Mailin.ai (no exact match): {$email}");
+                            Log::channel('mailin-ai')->warning('Mailbox not found on Mailin.ai during backfill (no exact match)', [
+                                'action' => 'backfill_mailbox_ids',
+                                'order_id' => $order->id,
+                                'order_email_id' => $orderEmail->id,
+                                'email' => $email,
+                            ]);
+                            $totalSkipped++;
                             
-                            if (!isset($mailboxMap[$emailLower])) {
-                                $this->warn("    Mailbox not found on Mailin.ai: {$orderEmail->email}");
-                                Log::channel('mailin-ai')->warning('Mailbox not found on Mailin.ai during backfill', [
+                            // Add delay to avoid rate limiting
+                            usleep(500000); // 0.5 seconds
+                            continue;
+                        }
+
+                        $mailinMailboxId = $matchedMailbox['id'] ?? null;
+                        $mailinDomainId = $matchedMailbox['domain_id'] ?? null;
+
+                        if (!$mailinMailboxId) {
+                            $this->warn("    Mailbox ID is null for: {$email}");
+                            $totalSkipped++;
+                            
+                            // Add delay to avoid rate limiting
+                            usleep(500000); // 0.5 seconds
+                            continue;
+                        }
+
+                        // Check if update is needed
+                        $needsUpdate = false;
+                        $updateData = [];
+
+                        if (!$orderEmail->mailin_mailbox_id && $mailinMailboxId) {
+                            $needsUpdate = true;
+                            $updateData['mailin_mailbox_id'] = $mailinMailboxId;
+                        }
+
+                        if (!$orderEmail->mailin_domain_id && $mailinDomainId) {
+                            $needsUpdate = true;
+                            $updateData['mailin_domain_id'] = $mailinDomainId;
+                        }
+
+                        if (!$needsUpdate) {
+                            $this->line("    Already has IDs: {$email}");
+                            
+                            // Add delay to avoid rate limiting
+                            usleep(500000); // 0.5 seconds
+                            continue;
+                        }
+
+                        if ($dryRun) {
+                            $this->info("    [DRY RUN] Would update: {$email}");
+                            $this->line("      mailin_mailbox_id: " . ($orderEmail->mailin_mailbox_id ?? 'null') . " -> {$mailinMailboxId}");
+                            if ($mailinDomainId) {
+                                $this->line("      mailin_domain_id: " . ($orderEmail->mailin_domain_id ?? 'null') . " -> {$mailinDomainId}");
+                            }
+                            $totalUpdated++;
+                        } else {
+                            try {
+                                $orderEmail->update($updateData);
+
+                                $this->info("    ✓ Updated: {$email}");
+                                $this->line("      mailin_mailbox_id: {$mailinMailboxId}");
+                                if ($mailinDomainId) {
+                                    $this->line("      mailin_domain_id: {$mailinDomainId}");
+                                }
+
+                                Log::channel('mailin-ai')->info('Backfilled Mailin.ai mailbox IDs', [
                                     'action' => 'backfill_mailbox_ids',
                                     'order_id' => $order->id,
                                     'order_email_id' => $orderEmail->id,
-                                    'email' => $orderEmail->email,
-                                    'domain' => $domain,
+                                    'email' => $email,
+                                    'mailin_mailbox_id' => $mailinMailboxId,
+                                    'mailin_domain_id' => $mailinDomainId,
                                 ]);
-                                $totalSkipped++;
-                                continue;
-                            }
 
-                            $mailboxData = $mailboxMap[$emailLower];
-                            $mailinMailboxId = $mailboxData['mailbox_id'] ?? null;
-                            $mailinDomainId = $mailboxData['domain_id'] ?? null;
-
-                            if (!$mailinMailboxId) {
-                                $this->warn("    Mailbox ID is null for: {$orderEmail->email}");
-                                $totalSkipped++;
-                                continue;
-                            }
-
-                            // Check if update is needed
-                            $needsUpdate = false;
-                            $updateData = [];
-
-                            if (!$orderEmail->mailin_mailbox_id && $mailinMailboxId) {
-                                $needsUpdate = true;
-                                $updateData['mailin_mailbox_id'] = $mailinMailboxId;
-                            }
-
-                            if (!$orderEmail->mailin_domain_id && $mailinDomainId) {
-                                $needsUpdate = true;
-                                $updateData['mailin_domain_id'] = $mailinDomainId;
-                            }
-
-                            if (!$needsUpdate) {
-                                $this->line("    Already has IDs: {$orderEmail->email}");
-                                continue;
-                            }
-
-                            if ($dryRun) {
-                                $this->info("    [DRY RUN] Would update: {$orderEmail->email}");
-                                $this->line("      mailin_mailbox_id: null -> {$mailinMailboxId}");
-                                if ($mailinDomainId) {
-                                    $this->line("      mailin_domain_id: null -> {$mailinDomainId}");
-                                }
                                 $totalUpdated++;
-                            } else {
-                                try {
-                                    $orderEmail->update($updateData);
-
-                                    $this->info("    ✓ Updated: {$orderEmail->email}");
-                                    $this->line("      mailin_mailbox_id: {$mailinMailboxId}");
-                                    if ($mailinDomainId) {
-                                        $this->line("      mailin_domain_id: {$mailinDomainId}");
-                                    }
-
-                                    Log::channel('mailin-ai')->info('Backfilled Mailin.ai mailbox IDs', [
-                                        'action' => 'backfill_mailbox_ids',
-                                        'order_id' => $order->id,
-                                        'order_email_id' => $orderEmail->id,
-                                        'email' => $orderEmail->email,
-                                        'mailin_mailbox_id' => $mailinMailboxId,
-                                        'mailin_domain_id' => $mailinDomainId,
-                                    ]);
-
-                                    $totalUpdated++;
-                                } catch (\Exception $e) {
-                                    $this->error("    ✗ Failed to update: {$orderEmail->email} - {$e->getMessage()}");
-                                    Log::channel('mailin-ai')->error('Failed to backfill mailbox IDs', [
-                                        'action' => 'backfill_mailbox_ids',
-                                        'order_id' => $order->id,
-                                        'order_email_id' => $orderEmail->id,
-                                        'email' => $orderEmail->email,
-                                        'error' => $e->getMessage(),
-                                    ]);
-                                    $totalErrors++;
-                                }
+                            } catch (\Exception $e) {
+                                $this->error("    ✗ Failed to update: {$email} - {$e->getMessage()}");
+                                Log::channel('mailin-ai')->error('Failed to backfill mailbox IDs', [
+                                    'action' => 'backfill_mailbox_ids',
+                                    'order_id' => $order->id,
+                                    'order_email_id' => $orderEmail->id,
+                                    'email' => $email,
+                                    'error' => $e->getMessage(),
+                                ]);
+                                $totalErrors++;
                             }
-
-                            // Add small delay to avoid rate limiting
-                            usleep(500000); // 0.5 seconds
                         }
 
+                        // Add delay to avoid rate limiting
+                        usleep(500000); // 0.5 seconds
+
                     } catch (\Exception $e) {
-                        $this->error("  Error processing domain {$domain}: {$e->getMessage()}");
-                        Log::channel('mailin-ai')->error('Error processing domain during backfill', [
+                        $this->error("  Error processing email {$orderEmail->email}: {$e->getMessage()}");
+                        Log::channel('mailin-ai')->error('Error processing email during backfill', [
                             'action' => 'backfill_mailbox_ids',
                             'order_id' => $order->id,
-                            'domain' => $domain,
+                            'order_email_id' => $orderEmail->id,
+                            'email' => $orderEmail->email,
                             'error' => $e->getMessage(),
                             'trace' => $e->getTraceAsString(),
                         ]);
                         $totalErrors++;
+                        
+                        // Add delay to avoid rate limiting
+                        usleep(500000); // 0.5 seconds
                     }
-
-                    // Add delay between domains to avoid rate limiting
-                    sleep(1);
                 }
             }
 
