@@ -362,6 +362,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.domains');
         // Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
         Route::get('/orders/split/{splitId}/export-csv-smart', [AdminOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.smart');
+        Route::get('/orders/{orderId}/export-smtp-csv', [AdminOrderController::class, 'exportSmtpOrderCsv'])->name('orders.export.smtp.csv');
         Route::get('/orders/split/{splitId}/export-txt-domains', [AdminOrderController::class, 'exportTxtSplitDomainsSmartById'])->name('orders.split.export.txt.domains');
         Route::get('/orders/split/{splitId}/export-txt-comprehensive', [AdminOrderController::class, 'exportComprehensiveTextReport'])->name('orders.split.export.txt.comprehensive');
         Route::get('/orders/split/{splitId}/export-txt-generated-emails', [AdminOrderController::class, 'exportTxtGeneratedEmails'])->name('orders.split.export.txt.generated.emails');

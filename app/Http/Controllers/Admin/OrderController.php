@@ -2628,6 +2628,396 @@ class OrderController extends Controller
             Log::error('Error exporting CSV with smart selection: ' . $e->getMessage());
             return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Export CSV for Private SMTP orders using domains from reorder_info
+     * 
+     * @param \App\Models\Order $order
+     * @param int|null $splitId (null for orders without splits)
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    private function exportPrivateSmtpCsv($order, $splitId = null)
+    {
+        try {
+            $reorderInfo = $order->reorderInfo->first();
+            
+            if (!$reorderInfo) {
+                throw new \Exception('ReorderInfo not found for this order.');
+            }
+
+            // Get domains from reorder_info.domains (comma-separated string)
+            $domainsString = $reorderInfo->domains ?? '';
+            if (empty($domainsString)) {
+                throw new \Exception('No domains found in reorder_info for this order.');
+            }
+
+            // Parse domains (handle comma and newline separated)
+            $domains = array_filter(
+                preg_split('/[\r\n,]+/', $domainsString),
+                function($domain) {
+                    return !empty(trim($domain));
+                }
+            );
+            $domains = array_map('trim', $domains);
+
+            if (empty($domains)) {
+                throw new \Exception('No valid domains found after parsing.');
+            }
+
+            // Get prefix variants from reorder_info
+            $prefixVariants = [];
+            if ($reorderInfo->prefix_variants) {
+                if (is_string($reorderInfo->prefix_variants)) {
+                    $decoded = json_decode($reorderInfo->prefix_variants, true);
+                    if (is_array($decoded)) {
+                        // Extract values from associative array like {"prefix_variant_1": "john", "prefix_variant_2": "jane"}
+                        $prefixVariants = array_values($decoded);
+                    } else {
+                        // Comma-separated string
+                        $prefixVariants = array_map('trim', explode(',', $reorderInfo->prefix_variants));
+                    }
+                } elseif (is_array($reorderInfo->prefix_variants)) {
+                    $prefixVariants = array_values($reorderInfo->prefix_variants);
+                }
+            }
+
+            // Default prefixes if none found
+            if (empty($prefixVariants)) {
+                $prefixVariants = ['info', 'contact'];
+            }
+
+            // Get prefix variant details for first_name, last_name, password
+            $prefixVariantDetails = [];
+            if ($reorderInfo->prefix_variants_details) {
+                if (is_string($reorderInfo->prefix_variants_details)) {
+                    $decoded = json_decode($reorderInfo->prefix_variants_details, true);
+                    if (is_array($decoded)) {
+                        $prefixVariantDetails = $decoded;
+                    }
+                } elseif (is_array($reorderInfo->prefix_variants_details)) {
+                    $prefixVariantDetails = $reorderInfo->prefix_variants_details;
+                }
+            }
+
+            // Get inboxes per domain
+            $inboxesPerDomain = (int) ($reorderInfo->inboxes_per_domain ?? 1);
+            if ($inboxesPerDomain <= 0) {
+                $inboxesPerDomain = 1;
+            }
+
+            // Limit prefix variants to inboxes_per_domain
+            $prefixVariants = array_slice($prefixVariants, 0, $inboxesPerDomain);
+
+            // Generate CSV filename
+            $filename = "order_{$order->id}_split_{$splitId}_private_smtp_" . date('Y-m-d_His') . ".csv";
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($domains, $prefixVariants, $prefixVariantDetails, $order) {
+                $file = fopen('php://output', 'w');
+                
+                // Add CSV headers (Google Workspace format)
+                fputcsv($file, [
+                    'First Name',
+                    'Last Name',
+                    'Email Address',
+                    'Password',
+                    'Org Unit Path [Required]'
+                ]);
+
+                $counter = 0;
+                // Generate emails: prefix@domain for each combination
+                foreach ($domains as $domain) {
+                    foreach ($prefixVariants as $index => $prefix) {
+                        $emailAddress = $prefix . '@' . $domain;
+                        
+                        // Get first and last name from prefix_variants_details
+                        $prefixKey = 'prefix_variant_' . ($index + 1);
+                        $firstName = '';
+                        $lastName = '';
+                        $password = '';
+                        
+                        if (isset($prefixVariantDetails[$prefixKey])) {
+                            $details = $prefixVariantDetails[$prefixKey];
+                            $firstName = $details['first_name'] ?? '';
+                            $lastName = $details['last_name'] ?? '';
+                            $password = $details['password'] ?? '';
+                        }
+                        
+                        // If no details found, try to parse prefix intelligently
+                        if (empty($firstName) && empty($lastName)) {
+                            // If prefix contains a dot (e.g., "mitsu.bee"), split by dot
+                            if (strpos($prefix, '.') !== false) {
+                                $parts = explode('.', $prefix, 2);
+                                $firstName = ucfirst(str_replace('.', '', $parts[0]));
+                                $lastName = ucfirst(str_replace('.', '', $parts[1]));
+                            }
+                            // Try to find capital letter in the middle for compound names
+                            elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]+.*)$/', $prefix, $matches)) {
+                                $firstName = $matches[1];
+                                $lastName = $matches[2];
+                            }
+                            // If prefix has PascalCase short form (e.g., RyanL -> Ryan, L)
+                            elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]*)$/', $prefix, $matches)) {
+                                $firstName = $matches[1];
+                                $lastName = $matches[2] ?: $matches[1];
+                            }
+                            // If it starts with lowercase and has uppercase
+                            elseif (preg_match('/^([a-z]+)([A-Z].*)$/', $prefix, $matches)) {
+                                $firstName = ucfirst($matches[1]);
+                                $lastName = $matches[2];
+                            }
+                            // Single word - use as both first and last name
+                            else {
+                                $firstName = ucfirst($prefix);
+                                $lastName = ucfirst($prefix);
+                            }
+                        }
+                        
+                        // Remove any remaining dots from names
+                        $firstName = str_replace('.', '', $firstName);
+                        $lastName = str_replace('.', '', $lastName);
+                        
+                        // Generate password if not found in details
+                        if (empty($password)) {
+                            $password = $this->customEncrypt($order->id);
+                        }
+                        
+                        // Write CSV row
+                        fputcsv($file, [
+                            $firstName,
+                            $lastName,
+                            $emailAddress,
+                            $password,
+                            '/' // Org Unit Path [Required]
+                        ]);
+                        
+                        $counter++;
+                    }
+                }
+
+                fclose($file);
+            };
+
+            Log::info('Private SMTP CSV export initiated', [
+                'order_id' => $order->id,
+                'split_id' => $splitId ?? 'N/A (no split)',
+                'domains_count' => count($domains),
+                'prefix_variants_count' => count($prefixVariants),
+                'total_emails' => count($domains) * count($prefixVariants)
+            ]);
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting Private SMTP CSV: ' . $e->getMessage(), [
+                'order_id' => $order->id ?? null,
+                'split_id' => $splitId ?? 'N/A (no split)'
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Export CSV for SMTP orders (without split) - called from order view page
+     * 
+     * @param int $orderId
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function exportSmtpOrderCsv($orderId)
+    {
+        try {
+            $order = Order::with('reorderInfo')->findOrFail($orderId);
+            
+            // Check if this is a Private SMTP or SMTP order
+            $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+            if (strtolower($providerType ?? '') !== 'private smtp' && strtolower($providerType ?? '') !== 'smtp') {
+                return back()->with('error', 'This order is not a Private SMTP or SMTP order.');
+            }
+
+            $reorderInfo = $order->reorderInfo->first();
+            
+            if (!$reorderInfo) {
+                throw new \Exception('ReorderInfo not found for this order.');
+            }
+
+            // Get domains from reorder_info.domains (comma-separated string)
+            $domainsString = $reorderInfo->domains ?? '';
+            if (empty($domainsString)) {
+                throw new \Exception('No domains found in reorder_info for this order.');
+            }
+
+            // Parse domains (handle comma and newline separated)
+            $domains = array_filter(
+                preg_split('/[\r\n,]+/', $domainsString),
+                function($domain) {
+                    return !empty(trim($domain));
+                }
+            );
+            $domains = array_map('trim', $domains);
+
+            if (empty($domains)) {
+                throw new \Exception('No valid domains found after parsing.');
+            }
+
+            // Get prefix variants from reorder_info
+            $prefixVariants = [];
+            if ($reorderInfo->prefix_variants) {
+                if (is_string($reorderInfo->prefix_variants)) {
+                    $decoded = json_decode($reorderInfo->prefix_variants, true);
+                    if (is_array($decoded)) {
+                        // Extract values from associative array like {"prefix_variant_1": "john", "prefix_variant_2": "jane"}
+                        $prefixVariants = array_values($decoded);
+                    } else {
+                        // Comma-separated string
+                        $prefixVariants = array_map('trim', explode(',', $reorderInfo->prefix_variants));
+                    }
+                } elseif (is_array($reorderInfo->prefix_variants)) {
+                    $prefixVariants = array_values($reorderInfo->prefix_variants);
+                }
+            }
+
+            // Default prefixes if none found
+            if (empty($prefixVariants)) {
+                $prefixVariants = ['info', 'contact'];
+            }
+
+            // Get prefix variant details for first_name, last_name, password
+            $prefixVariantDetails = [];
+            if ($reorderInfo->prefix_variants_details) {
+                if (is_string($reorderInfo->prefix_variants_details)) {
+                    $decoded = json_decode($reorderInfo->prefix_variants_details, true);
+                    if (is_array($decoded)) {
+                        $prefixVariantDetails = $decoded;
+                    }
+                } elseif (is_array($reorderInfo->prefix_variants_details)) {
+                    $prefixVariantDetails = $reorderInfo->prefix_variants_details;
+                }
+            }
+
+            // Get inboxes per domain
+            $inboxesPerDomain = (int) ($reorderInfo->inboxes_per_domain ?? 1);
+            if ($inboxesPerDomain <= 0) {
+                $inboxesPerDomain = 1;
+            }
+
+            // Limit prefix variants to inboxes_per_domain
+            $prefixVariants = array_slice($prefixVariants, 0, $inboxesPerDomain);
+
+            // Generate CSV filename
+            $filename = "order_{$order->id}_smtp_" . date('Y-m-d_His') . ".csv";
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($domains, $prefixVariants, $prefixVariantDetails, $order) {
+                $file = fopen('php://output', 'w');
+                
+                // Add CSV headers (Google Workspace format)
+                fputcsv($file, [
+                    'First Name',
+                    'Last Name',
+                    'Email Address',
+                    'Password',
+                    'Org Unit Path [Required]'
+                ]);
+
+                $counter = 0;
+                // Generate emails: prefix@domain for each combination
+                foreach ($domains as $domain) {
+                    foreach ($prefixVariants as $index => $prefix) {
+                        $emailAddress = $prefix . '@' . $domain;
+                        
+                        // Get first and last name from prefix_variants_details
+                        $prefixKey = 'prefix_variant_' . ($index + 1);
+                        $firstName = '';
+                        $lastName = '';
+                        $password = '';
+                        
+                        if (isset($prefixVariantDetails[$prefixKey])) {
+                            $details = $prefixVariantDetails[$prefixKey];
+                            $firstName = $details['first_name'] ?? '';
+                            $lastName = $details['last_name'] ?? '';
+                            $password = $details['password'] ?? '';
+                        }
+                        
+                        // If no details found, try to parse prefix intelligently
+                        if (empty($firstName) && empty($lastName)) {
+                            // If prefix contains a dot (e.g., "mitsu.bee"), split by dot
+                            if (strpos($prefix, '.') !== false) {
+                                $parts = explode('.', $prefix, 2);
+                                $firstName = ucfirst(str_replace('.', '', $parts[0]));
+                                $lastName = ucfirst(str_replace('.', '', $parts[1]));
+                            }
+                            // Try to find capital letter in the middle for compound names
+                            elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]+.*)$/', $prefix, $matches)) {
+                                $firstName = $matches[1];
+                                $lastName = $matches[2];
+                            }
+                            // If prefix has PascalCase short form (e.g., RyanL -> Ryan, L)
+                            elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]*)$/', $prefix, $matches)) {
+                                $firstName = $matches[1];
+                                $lastName = $matches[2] ?: $matches[1];
+                            }
+                            // If it starts with lowercase and has uppercase
+                            elseif (preg_match('/^([a-z]+)([A-Z].*)$/', $prefix, $matches)) {
+                                $firstName = ucfirst($matches[1]);
+                                $lastName = $matches[2];
+                            }
+                            // Single word - use as both first and last name
+                            else {
+                                $firstName = ucfirst($prefix);
+                                $lastName = ucfirst($prefix);
+                            }
+                        }
+                        
+                        // Remove any remaining dots from names
+                        $firstName = str_replace('.', '', $firstName);
+                        $lastName = str_replace('.', '', $lastName);
+                        
+                        // Generate password if not found in details
+                        if (empty($password)) {
+                            $password = $this->customEncrypt($order->id);
+                        }
+                        
+                        // Write CSV row
+                        fputcsv($file, [
+                            $firstName,
+                            $lastName,
+                            $emailAddress,
+                            $password,
+                            '/' // Org Unit Path [Required]
+                        ]);
+                        
+                        $counter++;
+                    }
+                }
+
+                fclose($file);
+            };
+
+            Log::info('SMTP Order CSV export initiated', [
+                'order_id' => $order->id,
+                'provider_type' => $providerType,
+                'domains_count' => count($domains),
+                'prefix_variants_count' => count($prefixVariants),
+                'total_emails' => count($domains) * count($prefixVariants)
+            ]);
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting SMTP Order CSV: ' . $e->getMessage(), [
+                'order_id' => $orderId
+            ]);
+            return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
+        }
     }    /**
      * Export CSV using existing order_emails data
      */
