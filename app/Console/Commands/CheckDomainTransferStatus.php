@@ -79,6 +79,19 @@ class CheckDomainTransferStatus extends Command
                 ->with('order')
                 ->get();
             
+            // Log for debugging - check all completed transfers regardless of order status
+            $allCompletedTransfers = DomainTransfer::where('status', 'completed')->with('order')->get();
+            if ($allCompletedTransfers->count() > 0 && $allCompleted->count() === 0) {
+                $orderStatuses = $allCompletedTransfers->pluck('order.status_manage_by_admin')->unique()->toArray();
+                Log::channel('mailin-ai')->info('Found completed transfers but orders are not in-progress', [
+                    'action' => 'check_domain_transfer_status',
+                    'total_completed_transfers' => $allCompletedTransfers->count(),
+                    'in_progress_orders_count' => $allCompleted->count(),
+                    'order_statuses' => $orderStatuses,
+                    'sample_order_ids' => $allCompletedTransfers->take(5)->pluck('order_id')->toArray(),
+                ]);
+            }
+            
             $completedTransfers = $allCompleted->filter(function ($transfer) {
                 // Verify order is still in-progress
                 if (!$transfer->order || $transfer->order->status_manage_by_admin !== 'in-progress') {
@@ -116,6 +129,28 @@ class CheckDomainTransferStatus extends Command
                 'without_mailboxes' => $completedTransfers->count(),
                 'completed_ids' => $completedTransfers->pluck('id')->toArray(),
             ]);
+            
+            // Additional diagnostic logging if no transfers found
+            if ($allCompleted->count() === 0 && $pendingTransfers->count() === 0) {
+                $totalDomainTransfers = DomainTransfer::count();
+                $totalCompletedAll = DomainTransfer::where('status', 'completed')->count();
+                $totalPendingAll = DomainTransfer::where('status', 'pending')->count();
+                $totalInProgressOrders = Order::where('status_manage_by_admin', 'in-progress')
+                    ->where('provider_type', 'Private SMTP')
+                    ->orWhereHas('plan', function ($q) {
+                        $q->where('provider_type', 'Private SMTP');
+                    })
+                    ->count();
+                
+                Log::channel('mailin-ai')->info('No domain transfers found for processing - diagnostic info', [
+                    'action' => 'check_domain_transfer_status',
+                    'total_domain_transfers_all' => $totalDomainTransfers,
+                    'total_completed_all' => $totalCompletedAll,
+                    'total_pending_all' => $totalPendingAll,
+                    'total_in_progress_orders' => $totalInProgressOrders,
+                    'reason' => 'No pending or completed transfers found for in-progress orders',
+                ]);
+            }
             
             // Only process pending transfers for status checking (don't check completed ones again)
             // Completed transfers are only used to determine if order is ready for mailbox creation
