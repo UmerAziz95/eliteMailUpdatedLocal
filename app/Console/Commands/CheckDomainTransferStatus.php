@@ -107,8 +107,22 @@ class CheckDomainTransferStatus extends Command
                 // Also check if there are any OrderEmail records (actual mailboxes created)
                 $hasOrderEmails = \App\Models\OrderEmail::where('order_id', $transfer->order_id)->exists();
                 
-                // Only process if mailboxes haven't been created yet (no completed automation AND no order emails)
-                $shouldProcess = !$hasCompletedMailboxes && !$hasOrderEmails;
+                // Only process if mailboxes haven't been created yet
+                // IMPORTANT: If OrderEmail records don't exist, we should process even if automation is marked completed
+                // This handles the case where automation was marked completed but mailboxes were never actually created
+                $shouldProcess = !$hasOrderEmails;
+                
+                // If automation is completed but no emails exist, log this inconsistency
+                if ($hasCompletedMailboxes && !$hasOrderEmails) {
+                    Log::channel('mailin-ai')->warning('Data inconsistency detected - automation completed but no mailboxes exist', [
+                        'action' => 'check_domain_transfer_status',
+                        'domain_transfer_id' => $transfer->id,
+                        'order_id' => $transfer->order_id,
+                        'has_completed_automation' => $hasCompletedMailboxes,
+                        'has_order_emails' => $hasOrderEmails,
+                        'action_taken' => 'will_process_to_create_mailboxes',
+                    ]);
+                }
                 
                 if (!$shouldProcess) {
                     Log::channel('mailin-ai')->debug('Skipping completed transfer - mailboxes already exist', [
@@ -331,7 +345,18 @@ class CheckDomainTransferStatus extends Command
                         
                         $hasOrderEmails = \App\Models\OrderEmail::where('order_id', $orderId)->exists();
                         
-                        if (!$hasCompletedMailboxes && !$hasOrderEmails) {
+                        // IMPORTANT: If OrderEmail records don't exist, we should process even if automation is marked completed
+                        // This handles the case where automation was marked completed but mailboxes were never actually created
+                        if (!$hasOrderEmails) {
+                            if ($hasCompletedMailboxes) {
+                                Log::channel('mailin-ai')->warning('Data inconsistency - automation completed but no mailboxes, will process order', [
+                                    'action' => 'check_domain_transfer_status',
+                                    'order_id' => $orderId,
+                                    'has_completed_automation' => $hasCompletedMailboxes,
+                                    'has_order_emails' => $hasOrderEmails,
+                                ]);
+                            }
+                            
                             $processedOrders[] = $orderId;
                             Log::channel('mailin-ai')->info('Order with all completed transfers added to processing queue', [
                                 'action' => 'check_domain_transfer_status',
@@ -468,19 +493,34 @@ class CheckDomainTransferStatus extends Command
             ]);
 
             // Check if order already has mailboxes created
+            // IMPORTANT: Only check for OrderEmail records (actual mailboxes), not automation status
+            // This handles the case where automation was marked completed but mailboxes were never actually created
+            $hasOrderEmails = \App\Models\OrderEmail::where('order_id', $orderId)->exists();
+            
             $existingAutomation = \App\Models\OrderAutomation::where('order_id', $orderId)
                 ->where('action_type', 'mailbox')
                 ->where('status', 'completed')
                 ->first();
 
-            if ($existingAutomation) {
+            if ($hasOrderEmails) {
                 $this->line("Order #{$orderId}: Mailboxes already created.");
                 Log::channel('mailin-ai')->info('Skipping order - mailboxes already created', [
                     'action' => 'process_order_mailbox_creation',
                     'order_id' => $orderId,
-                    'automation_id' => $existingAutomation->id,
+                    'has_order_emails' => true,
+                    'automation_id' => $existingAutomation ? $existingAutomation->id : null,
                 ]);
                 return;
+            }
+            
+            // If automation exists but no emails, log the inconsistency but proceed
+            if ($existingAutomation) {
+                Log::channel('mailin-ai')->warning('Data inconsistency - automation completed but no mailboxes exist, proceeding to create', [
+                    'action' => 'process_order_mailbox_creation',
+                    'order_id' => $orderId,
+                    'automation_id' => $existingAutomation->id,
+                    'has_order_emails' => false,
+                ]);
             }
 
             Log::channel('mailin-ai')->info('No existing mailboxes found, proceeding with mailbox creation', [

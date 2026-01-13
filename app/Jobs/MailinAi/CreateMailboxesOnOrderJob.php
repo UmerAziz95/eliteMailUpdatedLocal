@@ -1521,7 +1521,8 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
         try {
             $result = $mailinService->createMailboxes($mailboxes);
 
-            if ($result['success'] && isset($result['uuid'])) {
+            // Handle both cases: new mailboxes (with UUID) and existing mailboxes (already_exists flag)
+            if ($result['success'] && (isset($result['uuid']) || isset($result['already_exists']))) {
                 $this->saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $shouldCompleteOrder, $providerSlug, $domainsAreActive);
             } else {
                 throw new \Exception('Mailbox creation failed: ' . ($result['message'] ?? 'Unknown error'));
@@ -1540,7 +1541,8 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
 
     private function saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $completeOrder = true, $providerSlug = null, $domainsAreActive = false)
     {
-        $jobUuid = $result['uuid'];
+        $jobUuid = $result['uuid'] ?? null;
+        $mailboxesAlreadyExist = isset($result['already_exists']) && $result['already_exists'];
 
         // Get provider credentials based on provider_slug (or fallback to active provider)
         $provider = null;
@@ -1558,29 +1560,139 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
         // Use provider slug from parameter or provider, or fallback to 'mailin'
         $finalProviderSlug = $providerSlug ?: ($provider ? $provider->slug : 'mailin');
 
-        // Save OrderAutomation record
-        OrderAutomation::create([
-            'order_id' => $this->orderId,
-            'provider_type' => $this->providerType,
-            'action_type' => 'mailbox',
-            'job_uuid' => $jobUuid,
-            'status' => 'pending',
-            'response_data' => $result['response'] ?? null,
-        ]);
+        // Save or update OrderAutomation record
+        OrderAutomation::updateOrCreate(
+            [
+                'order_id' => $this->orderId,
+                'action_type' => 'mailbox',
+            ],
+            [
+                'provider_type' => $this->providerType,
+                'job_uuid' => $jobUuid,
+                'status' => $mailboxesAlreadyExist ? 'completed' : 'pending',
+                'response_data' => $result['response'] ?? null,
+            ]
+        );
 
+        // Initialize mailbox map to store mailbox IDs from API
+        $mailboxMap = [];
+        
         // Check job status and wait for completion to get mailbox IDs
-        // Skip status checking if domains are already active - mailboxes will be created immediately
+        // Skip status checking if:
+        // 1. Domains are already active - mailboxes will be created immediately
+        // 2. Mailboxes already exist on Mailin.ai - fetch IDs from API
         $mailboxStatusData = null;
         
-        if ($domainsAreActive) {
-            // For active domains, skip status checking - mailboxes are created immediately
-            // Just save mailboxes without waiting for status
-            Log::channel('mailin-ai')->info('Domains are already active, skipping job status checking - saving mailboxes directly', [
+        if ($mailboxesAlreadyExist) {
+            // Mailboxes already exist on Mailin.ai, fetch their IDs from API
+            Log::channel('mailin-ai')->info('Mailboxes already exist on Mailin.ai, fetching mailbox IDs from API', [
+                'action' => 'save_mailboxes_for_domains',
+                'order_id' => $this->orderId,
+                'reason' => 'mailboxes_already_exist',
+            ]);
+            
+            // Get unique domains from mailboxData
+            $uniqueDomains = array_unique(array_column($mailboxData, 'domain'));
+            
+            // Fetch mailboxes for each domain to get their IDs
+            foreach ($uniqueDomains as $domain) {
+                try {
+                    $mailboxesResult = $mailinService->getMailboxesByDomain($domain);
+                    
+                    if ($mailboxesResult['success'] && !empty($mailboxesResult['mailboxes'])) {
+                        // Add mailboxes to mailboxMap (use lowercase for case-insensitive matching)
+                        foreach ($mailboxesResult['mailboxes'] as $apiMailbox) {
+                            $username = $apiMailbox['username'] ?? $apiMailbox['email'] ?? null;
+                            if ($username) {
+                                $mailboxMap[strtolower($username)] = [
+                                    'mailbox_id' => $apiMailbox['id'] ?? null,
+                                    'domain_id' => $apiMailbox['domain_id'] ?? null,
+                                ];
+                            }
+                        }
+                        
+                        Log::channel('mailin-ai')->info('Fetched mailbox IDs for domain', [
+                            'action' => 'save_mailboxes_for_domains',
+                            'order_id' => $this->orderId,
+                            'domain' => $domain,
+                            'mailbox_count' => count($mailboxesResult['mailboxes']),
+                        ]);
+                    } else {
+                        Log::channel('mailin-ai')->warning('Could not fetch mailboxes for domain', [
+                            'action' => 'save_mailboxes_for_domains',
+                            'order_id' => $this->orderId,
+                            'domain' => $domain,
+                            'message' => $mailboxesResult['message'] ?? 'Unknown error',
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::channel('mailin-ai')->warning('Error fetching mailboxes for domain, will continue without IDs', [
+                        'action' => 'save_mailboxes_for_domains',
+                        'order_id' => $this->orderId,
+                        'domain' => $domain,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        } elseif ($domainsAreActive) {
+            // For active domains, mailboxes are created immediately
+            // Try to fetch mailbox IDs from API after a short delay (mailboxes might be created instantly)
+            Log::channel('mailin-ai')->info('Domains are already active, attempting to fetch mailbox IDs from API', [
                 'action' => 'save_mailboxes_for_domains',
                 'order_id' => $this->orderId,
                 'job_uuid' => $jobUuid,
                 'reason' => 'domains_already_active',
             ]);
+            
+            // Wait a few seconds for mailboxes to be created on Mailin.ai
+            sleep(3);
+            
+            // Get unique domains from mailboxData
+            $uniqueDomains = array_unique(array_column($mailboxData, 'domain'));
+            
+            // Try to fetch mailbox IDs for each domain
+            foreach ($uniqueDomains as $domain) {
+                try {
+                    $mailboxesResult = $mailinService->getMailboxesByDomain($domain);
+                    
+                    if ($mailboxesResult['success'] && !empty($mailboxesResult['mailboxes'])) {
+                        // Add mailboxes to mailboxMap
+                        foreach ($mailboxesResult['mailboxes'] as $apiMailbox) {
+                            $username = $apiMailbox['username'] ?? $apiMailbox['email'] ?? null;
+                            if ($username) {
+                                $mailboxMap[strtolower($username)] = [
+                                    'mailbox_id' => $apiMailbox['id'] ?? null,
+                                    'domain_id' => $apiMailbox['domain_id'] ?? null,
+                                ];
+                            }
+                        }
+                        
+                        Log::channel('mailin-ai')->info('Fetched mailbox IDs for active domain', [
+                            'action' => 'save_mailboxes_for_domains',
+                            'order_id' => $this->orderId,
+                            'domain' => $domain,
+                            'mailbox_count' => count($mailboxesResult['mailboxes']),
+                        ]);
+                    } else {
+                        Log::channel('mailin-ai')->warning('Could not fetch mailboxes for active domain (may need to wait longer)', [
+                            'action' => 'save_mailboxes_for_domains',
+                            'order_id' => $this->orderId,
+                            'domain' => $domain,
+                            'message' => $mailboxesResult['message'] ?? 'Unknown error',
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::channel('mailin-ai')->warning('Error fetching mailboxes for active domain, will continue without IDs', [
+                        'action' => 'save_mailboxes_for_domains',
+                        'order_id' => $this->orderId,
+                        'domain' => $domain,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+                
+                // Small delay between domain fetches
+                usleep(500000); // 0.5 seconds
+            }
         } else {
             // For unregistered domains (transferred), check job status to get mailbox IDs
             $maxAttempts = 30; // Maximum 30 attempts (5 minutes if polling every 10 seconds)
@@ -1646,22 +1758,32 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             }
         }
 
-        // Create a map of username -> mailbox data from API response
-        $mailboxMap = [];
+        // Populate mailbox map from job status data (if not already populated from existing mailboxes)
         if ($mailboxStatusData && isset($mailboxStatusData['data']) && is_array($mailboxStatusData['data'])) {
             foreach ($mailboxStatusData['data'] as $apiMailbox) {
-                $username = $apiMailbox['username'] ?? null;
+                $username = $apiMailbox['username'] ?? $apiMailbox['email'] ?? null;
                 if ($username) {
-                    $mailboxMap[$username] = [
-                        'mailbox_id' => $apiMailbox['id'] ?? null,
-                        'domain_id' => $apiMailbox['domain_id'] ?? null,
-                    ];
+                    $usernameLower = strtolower($username);
+                    if (!isset($mailboxMap[$usernameLower])) {
+                        $mailboxMap[$usernameLower] = [
+                            'mailbox_id' => $apiMailbox['id'] ?? null,
+                            'domain_id' => $apiMailbox['domain_id'] ?? null,
+                        ];
+                    }
                 }
             }
         }
 
         // Create OrderEmail records - don't delete existing ones (may be adding for additional domains)
         try {
+            if ($mailboxesAlreadyExist) {
+                Log::channel('mailin-ai')->info('Saving mailboxes that already exist on Mailin.ai to database', [
+                    'action' => 'save_mailboxes_for_domains',
+                    'order_id' => $this->orderId,
+                    'mailbox_count' => count($mailboxData),
+                ]);
+            }
+            
             $savedCount = 0;
             foreach ($mailboxData as $mailbox) {
                 try {
@@ -1672,8 +1794,12 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
 
                     if (!$existing) {
                         // Get mailbox ID and domain ID from API response if available
-                        $mailinMailboxId = $mailboxMap[$mailbox['username']]['mailbox_id'] ?? null;
-                        $mailinDomainId = $mailboxMap[$mailbox['username']]['domain_id'] ?? null;
+                        $mailinMailboxId = isset($mailboxMap[$mailbox['username']]) 
+                            ? ($mailboxMap[$mailbox['username']]['mailbox_id'] ?? null) 
+                            : null;
+                        $mailinDomainId = isset($mailboxMap[$mailbox['username']]) 
+                            ? ($mailboxMap[$mailbox['username']]['domain_id'] ?? null) 
+                            : null;
 
                         // Get provider_slug from mailboxData or use finalProviderSlug
                         $mailboxProviderSlug = $mailbox['provider_slug'] ?? $finalProviderSlug;
@@ -1706,8 +1832,14 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                         }
                     } else {
                         // Update existing mailbox with Mailin.ai IDs if not already set
-                        $mailinMailboxId = $mailboxMap[$mailbox['username']]['mailbox_id'] ?? null;
-                        $mailinDomainId = $mailboxMap[$mailbox['username']]['domain_id'] ?? null;
+                        // Use case-insensitive lookup for username matching
+                        $usernameLower = strtolower($mailbox['username']);
+                        $mailinMailboxId = isset($mailboxMap[$usernameLower]) 
+                            ? ($mailboxMap[$usernameLower]['mailbox_id'] ?? null) 
+                            : null;
+                        $mailinDomainId = isset($mailboxMap[$usernameLower]) 
+                            ? ($mailboxMap[$usernameLower]['domain_id'] ?? null) 
+                            : null;
 
                         if ($mailinMailboxId && !$existing->mailin_mailbox_id) {
                             $existing->update([

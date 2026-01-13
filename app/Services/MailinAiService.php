@@ -469,6 +469,9 @@ class MailinAiService
                 $domainNotRegistered = false;
                 $unregisteredDomains = [];
                 
+                // Check if error is about mailboxes already being registered
+                $mailboxesAlreadyExist = false;
+                
                 if (isset($responseBody['errors']) && is_array($responseBody['errors'])) {
                     foreach ($responseBody['errors'] as $field => $messages) {
                         if (is_array($messages)) {
@@ -477,11 +480,19 @@ class MailinAiService
                                     $domainNotRegistered = true;
                                     $unregisteredDomains[] = $matches[1];
                                 }
+                                // Check for "already registered" errors
+                                if (preg_match("/already registered to your account/i", $message)) {
+                                    $mailboxesAlreadyExist = true;
+                                }
                             }
                         } elseif (is_string($messages)) {
                             if (preg_match("/domain '([^']+)' is not registered/i", $messages, $matches)) {
                                 $domainNotRegistered = true;
                                 $unregisteredDomains[] = $matches[1];
+                            }
+                            // Check for "already registered" errors
+                            if (preg_match("/already registered to your account/i", $messages)) {
+                                $mailboxesAlreadyExist = true;
                             }
                         }
                     }
@@ -493,6 +504,32 @@ class MailinAiService
                     $unregisteredDomains[] = $matches[1];
                 }
                 
+                // Check main error message for "already registered"
+                if (preg_match("/already registered to your account/i", $errorMessage)) {
+                    $mailboxesAlreadyExist = true;
+                }
+                
+                // If all mailboxes already exist, treat as success (they're already on Mailin.ai)
+                if ($mailboxesAlreadyExist && !$domainNotRegistered) {
+                    Log::channel('mailin-ai')->info('Mailboxes already exist on Mailin.ai - treating as success', [
+                        'action' => 'create_mailboxes',
+                        'status_code' => $statusCode,
+                        'mailbox_count' => count($mailboxes),
+                        'mailbox_usernames' => array_map(function($mb) {
+                            return $mb['username'] ?? 'unknown';
+                        }, $mailboxes),
+                    ]);
+                    
+                    // Return success response without UUID (mailboxes already exist)
+                    return [
+                        'success' => true,
+                        'uuid' => null, // No UUID since mailboxes already exist
+                        'already_exists' => true, // Flag to indicate mailboxes already exist
+                        'message' => 'Mailboxes already exist on Mailin.ai',
+                        'response' => $responseBody,
+                    ];
+                }
+                
                 Log::channel('mailin-ai')->error('Mailin.ai mailbox creation failed', [
                     'action' => 'create_mailboxes',
                     'status_code' => $statusCode,
@@ -501,6 +538,7 @@ class MailinAiService
                     'raw_body' => $rawBody,
                     'domain_not_registered' => $domainNotRegistered,
                     'unregistered_domains' => $unregisteredDomains,
+                    'mailboxes_already_exist' => $mailboxesAlreadyExist,
                     'mailbox_count' => count($mailboxes),
                     'mailbox_usernames' => array_map(function($mb) {
                         return $mb['username'] ?? 'unknown';
@@ -764,6 +802,102 @@ class MailinAiService
             ]);
 
             throw $e;
+        }
+    }
+
+    /**
+     * Get mailboxes by domain from Mailin.ai API
+     * GET /mailboxes?domain={domain_name}
+     * 
+     * @param string $domainName Domain name to fetch mailboxes for
+     * @return array List of mailboxes with their IDs
+     * @throws \Exception
+     */
+    public function getMailboxesByDomain(string $domainName)
+    {
+        try {
+            Log::channel('mailin-ai')->info('Fetching mailboxes by domain from Mailin.ai API', [
+                'action' => 'get_mailboxes_by_domain',
+                'domain_name' => $domainName,
+            ]);
+
+            $response = $this->makeRequest(
+                'GET',
+                '/mailboxes',
+                ['domain' => $domainName]
+            );
+
+            $statusCode = $response->status();
+            $responseBody = $response->json();
+
+            if ($response->successful() && isset($responseBody['data']) && is_array($responseBody['data'])) {
+                Log::channel('mailin-ai')->info('Mailboxes fetched successfully', [
+                    'action' => 'get_mailboxes_by_domain',
+                    'domain_name' => $domainName,
+                    'mailbox_count' => count($responseBody['data']),
+                ]);
+
+                return [
+                    'success' => true,
+                    'mailboxes' => $responseBody['data'],
+                ];
+            } else {
+                // If API doesn't return data array, try alternative response format
+                if ($response->successful() && is_array($responseBody)) {
+                    Log::channel('mailin-ai')->info('Mailboxes fetched successfully (alternative format)', [
+                        'action' => 'get_mailboxes_by_domain',
+                        'domain_name' => $domainName,
+                        'mailbox_count' => count($responseBody),
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'mailboxes' => $responseBody,
+                    ];
+                }
+
+                Log::channel('mailin-ai')->warning('No mailboxes found or unexpected response format', [
+                    'action' => 'get_mailboxes_by_domain',
+                    'domain_name' => $domainName,
+                    'status_code' => $statusCode,
+                    'response' => $responseBody,
+                ]);
+
+                return [
+                    'success' => false,
+                    'mailboxes' => [],
+                    'message' => 'No mailboxes found or unexpected response format',
+                ];
+            }
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            $errorMessage = 'Network error';
+            if ($e->response) {
+                $errorMessage .= '. Status: ' . $e->response->status() . '. Body: ' . substr($e->response->body(), 0, 500);
+            }
+
+            Log::channel('mailin-ai')->error('Failed to fetch mailboxes by domain', [
+                'action' => 'get_mailboxes_by_domain',
+                'domain_name' => $domainName,
+                'error' => $errorMessage,
+            ]);
+
+            return [
+                'success' => false,
+                'mailboxes' => [],
+                'message' => $errorMessage,
+            ];
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Failed to fetch mailboxes by domain', [
+                'action' => 'get_mailboxes_by_domain',
+                'domain_name' => $domainName,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'mailboxes' => [],
+                'message' => $e->getMessage(),
+            ];
         }
     }
 
