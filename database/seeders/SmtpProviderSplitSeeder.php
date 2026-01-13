@@ -24,28 +24,28 @@ class SmtpProviderSplitSeeder extends Seeder
                 'priority' => 1,
                 'is_active' => true,
             ],
-            [
-                'name' => 'Mailrun',
-                'slug' => 'mailrun',
-                'api_endpoint' => null,
-                'email' => 'dummy@mailrun.com',
-                'password' => 'dummy_password',
-                'additional_config' => null,
-                'split_percentage' => 0.00,
-                'priority' => 2,
-                'is_active' => false, // Disabled until fully integrated
-            ],
-            [
-                'name' => 'Premiuminboxes',
-                'slug' => 'premiuminboxes',
-                'api_endpoint' => config('premiuminboxes.base_url', null),
-                'email' => env('PREMIUMINBOXES_EMAIL', ''),
-                'password' => env('PREMIUMINBOXES_PASSWORD', ''),
-                'additional_config' => null,
-                'split_percentage' => 0.00,
-                'priority' => 3,
-                'is_active' => false, // Disabled until fully integrated
-            ],
+            // [
+            //     'name' => 'Mailrun',
+            //     'slug' => 'mailrun',
+            //     'api_endpoint' => null,
+            //     'email' => 'dummy@mailrun.com',
+            //     'password' => 'dummy_password',
+            //     'additional_config' => null,
+            //     'split_percentage' => 0.00,
+            //     'priority' => 2,
+            //     'is_active' => false, // Disabled until fully integrated
+            // ],
+            // [
+            //     'name' => 'Premiuminboxes',
+            //     'slug' => 'premiuminboxes',
+            //     'api_endpoint' => config('premiuminboxes.base_url', null),
+            //     'email' => env('PREMIUMINBOXES_EMAIL', ''),
+            //     'password' => env('PREMIUMINBOXES_PASSWORD', ''),
+            //     'additional_config' => null,
+            //     'split_percentage' => 0.00,
+            //     'priority' => 3,
+            //     'is_active' => false, // Disabled until fully integrated
+            // ],
         ];
 
         foreach ($providers as $provider) {
