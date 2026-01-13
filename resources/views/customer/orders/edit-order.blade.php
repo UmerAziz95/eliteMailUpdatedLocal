@@ -177,6 +177,33 @@
 
 
 @if(isset($order) && $order->reason)
+    @php
+        // Parse the rejection reason to extract domain-specific errors
+        $reason = $order->reason;
+        $domainErrors = [];
+        $generalMessage = '';
+        
+        // Try to extract domain-specific errors from the message
+        // Pattern: **domain.com** (Platform): Error message
+        preg_match_all('/\*\*([^*]+)\*\*\s*\(([^)]+)\):\s*([^•*]+)/i', $reason, $matches, PREG_SET_ORDER);
+        
+        if (!empty($matches)) {
+            foreach ($matches as $match) {
+                $domainErrors[] = [
+                    'domain' => trim($match[1]),
+                    'platform' => trim($match[2]),
+                    'error' => trim($match[3])
+                ];
+            }
+            // Extract general message (text before the domain errors)
+            $generalMessage = preg_replace('/Please review the errors below:.*$/s', '', $reason);
+            $generalMessage = trim($generalMessage);
+        } else {
+            // No domain-specific pattern found, show as general message
+            // But still try to clean up markdown-like syntax
+            $generalMessage = str_replace(['**', '*'], '', $reason);
+        }
+    @endphp
     <div class="mb-4">
         <div class="alert border-0 shadow-lg panel-rejection-alert mt-5"
             style="background-color: rgba(255, 0, 0, 0.32); border-left: 5px solid red !important; position: relative; overflow: hidden;">
@@ -190,13 +217,43 @@
                 </div>
                 <div class="flex-grow-1">
                     <h6 class="alert-heading mb-2 text-white fw-bold">
-                        Rejection Reason
+                        <i class="fa-solid fa-circle-xmark me-2"></i>Order Requires Attention
                     </h6>
-                    <div class="rejection-note-content">
-                        <p class="mb-0 text-white fw-medium small">
-                            {{ $order->reason }}
+                    
+                    @if(!empty($domainErrors))
+                        {{-- Domain-wise error display --}}
+                        <p class="mb-2 text-white-50 small">
+                            The following domain(s) encountered issues:
                         </p>
-                    </div>
+                        <div class="rejection-domains-list" style="max-height: 200px; overflow-y: auto; padding-right: 10px;">
+                            @foreach($domainErrors as $error)
+                                <div class="domain-error-item mb-2 p-2 rounded" style="background-color: rgba(0,0,0,0.2);">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="badge bg-danger me-2">{{ $error['domain'] }}</span>
+                                        <span class="badge bg-secondary">{{ $error['platform'] }}</span>
+                                    </div>
+                                    <p class="mb-0 text-white small ps-1">
+                                        <i class="fa-solid fa-arrow-right me-1 text-warning" style="font-size: 0.7rem;"></i>
+                                        {{ $error['error'] }}
+                                    </p>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="mt-3 pt-2" style="border-top: 1px solid rgba(255,255,255,0.2);">
+                            <p class="mb-0 text-white-50 small">
+                                <i class="fa-solid fa-info-circle me-1"></i>
+                                Please fix the issues above and resubmit your order.
+                            </p>
+                        </div>
+                    @else
+                        {{-- General message display --}}
+                        <div class="rejection-note-content" style="max-height: 150px; overflow-y: auto;">
+                            <p class="mb-0 text-white fw-medium small">
+                                {{ $generalMessage }}
+                            </p>
+                        </div>
+                    @endif
+                    
                     <div class="mt-3">
                         <span class="badge bg-warning text-dark px-2 rounded-1 py-1">
                             <i class="fa-solid fa-clock me-1"></i>
@@ -207,6 +264,29 @@
             </div>
         </div>
     </div>
+    
+    <style>
+        .rejection-domains-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .rejection-domains-list::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+        .rejection-domains-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+        .rejection-domains-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        .domain-error-item {
+            transition: background-color 0.2s ease;
+        }
+        .domain-error-item:hover {
+            background-color: rgba(0,0,0,0.3) !important;
+        }
+    </style>
 @endif
 
 <form id="editOrderForm" novalidate>
