@@ -142,6 +142,13 @@ class Kernel extends ConsoleKernel
                         ->withoutOverlapping()
                         ->runInBackground()
                         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
+                // Backfill missing Mailin.ai mailbox IDs every 20 minutes
+                $schedule->command('mailin:backfill-mailbox-ids')
+                        ->cron('*/20 * * * *')
+                        ->withoutOverlapping()
+                        ->runInBackground()
+                        ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
         }
                 
 
