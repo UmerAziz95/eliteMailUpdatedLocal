@@ -392,7 +392,25 @@ class CheckDomainTransferStatus extends Command
             ]);
 
             // Only proceed if all transfers are completed (no pending transfers)
-            if ($totalCount === 0 || $pendingCount > 0 || $completedCount < $totalCount) {
+            $conditionResult = ($totalCount === 0 || $pendingCount > 0 || $completedCount < $totalCount);
+            
+            Log::channel('mailin-ai')->info('Evaluating domain completion condition', [
+                'action' => 'process_order_mailbox_creation',
+                'order_id' => $orderId,
+                'condition_result' => $conditionResult,
+                'total_count' => $totalCount,
+                'pending_count' => $pendingCount,
+                'completed_count' => $completedCount,
+                'check_1_total_zero' => $totalCount === 0,
+                'check_2_pending_gt_zero' => $pendingCount > 0,
+                'check_3_completed_lt_total' => $completedCount < $totalCount,
+            ]);
+            
+            if ($conditionResult) {
+                Log::channel('mailin-ai')->info('Domain completion check failed - returning early', [
+                    'action' => 'process_order_mailbox_creation',
+                    'order_id' => $orderId,
+                ]);
                 $this->line("Order #{$orderId}: Not all domains are completed yet ({$completedCount} completed, {$pendingCount} pending, {$totalCount} total).");
                 Log::channel('mailin-ai')->info('Not all domains completed yet', [
                     'action' => 'process_order_mailbox_creation',
@@ -403,6 +421,16 @@ class CheckDomainTransferStatus extends Command
                 ]);
                 return;
             }
+
+            Log::channel('mailin-ai')->info('Domain completion check passed - proceeding to mailbox creation checks', [
+                'action' => 'process_order_mailbox_creation',
+                'order_id' => $orderId,
+            ]);
+
+            Log::channel('mailin-ai')->info('All domain transfers completed, checking for existing mailboxes', [
+                'action' => 'process_order_mailbox_creation',
+                'order_id' => $orderId,
+            ]);
 
             // Check if order already has mailboxes created
             $existingAutomation = \App\Models\OrderAutomation::where('order_id', $orderId)
@@ -420,6 +448,11 @@ class CheckDomainTransferStatus extends Command
                 return;
             }
 
+            Log::channel('mailin-ai')->info('No existing mailboxes found, proceeding with mailbox creation', [
+                'action' => 'process_order_mailbox_creation',
+                'order_id' => $orderId,
+            ]);
+
             $this->info("Order #{$orderId}: All domains are active. Creating mailboxes...");
 
             // Get domains and prefix variants from reorderInfo
@@ -433,22 +466,50 @@ class CheckDomainTransferStatus extends Command
             }
 
             $reorderInfo = $order->reorderInfo->first();
+            
+            // Extract domains - handle both newline and comma separators
+            // Domains are stored as comma-separated in reorder_infos table
+            $domainsRaw = $reorderInfo->domains ?? '';
+            
+            // Split by both newline and comma (handle mixed formats)
+            // Use preg_split to handle both separators
             $domains = array_filter(
-                array_map('trim', explode("\n", $reorderInfo->domains ?? ''))
+                array_map('trim', preg_split('/[\r\n,]+/', $domainsRaw))
             );
+            
+            // Remove empty values and re-index array
+            $domains = array_values(array_filter($domains, function($domain) {
+                return !empty($domain) && strlen(trim($domain)) > 0;
+            }));
+
+            Log::channel('mailin-ai')->info('Extracted domains from reorder info', [
+                'action' => 'process_order_mailbox_creation',
+                'order_id' => $orderId,
+                'domains_count' => count($domains),
+                'domains_preview' => array_slice($domains, 0, 5), // First 5 domains for preview
+            ]);
 
             if (empty($domains)) {
                 $this->warn("Order #{$orderId}: No domains found in reorder info.");
                 Log::channel('mailin-ai')->warning('Skipping order - no domains found in reorder info', [
                     'action' => 'process_order_mailbox_creation',
                     'order_id' => $orderId,
+                    'domains_raw_length' => strlen($domainsRaw),
                 ]);
                 return;
             }
 
             // Get prefix variants
             $prefixVariants = [];
-            $prefixVariantsData = json_decode($reorderInfo->prefix_variants ?? '{}', true);
+            $prefixVariantsRaw = $reorderInfo->prefix_variants ?? '{}';
+            
+            // Handle both JSON string and array formats
+            if (is_array($prefixVariantsRaw)) {
+                $prefixVariantsData = $prefixVariantsRaw;
+            } else {
+                $prefixVariantsData = json_decode($prefixVariantsRaw, true);
+            }
+            
             if (is_array($prefixVariantsData)) {
                 foreach ($prefixVariantsData as $key => $value) {
                     if (!empty($value)) {
