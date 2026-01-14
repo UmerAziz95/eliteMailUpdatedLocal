@@ -1718,8 +1718,108 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
         try {
             $result = $mailinService->createMailboxes($mailboxes);
 
-            // Handle both cases: new mailboxes (with UUID) and existing mailboxes (already_exists flag)
-            if ($result['success'] && (isset($result['uuid']) || isset($result['already_exists']))) {
+            // Check if mailboxes already exist on Mailin.ai - reject the order
+            if ($result['success'] && isset($result['already_exists']) && $result['already_exists']) {
+                // Get the specific mailbox emails that already exist from the API response
+                $existingMailboxes = $result['existing_mailbox_emails'] ?? [];
+                
+                // If no specific emails extracted, use the request mailboxes as fallback
+                if (empty($existingMailboxes)) {
+                    $existingMailboxes = array_map(function($mb) {
+                        return $mb['username'] ?? 'unknown';
+                    }, $mailboxes);
+                }
+                
+                // Delete any mailboxes that were already created for this order
+                $createdMailboxes = OrderEmail::where('order_id', $this->orderId)
+                    ->whereNotNull('mailin_mailbox_id')
+                    ->get();
+                
+                if ($createdMailboxes->count() > 0) {
+                    Log::channel('mailin-ai')->info('Deleting previously created mailboxes before rejection', [
+                        'action' => 'create_mailboxes_for_provider',
+                        'order_id' => $this->orderId,
+                        'mailbox_count' => $createdMailboxes->count(),
+                        'mailbox_ids' => $createdMailboxes->pluck('mailin_mailbox_id')->toArray(),
+                    ]);
+                    
+                    foreach ($createdMailboxes as $createdMailbox) {
+                        try {
+                            if ($createdMailbox->mailin_mailbox_id) {
+                                $mailinService->deleteMailbox($createdMailbox->mailin_mailbox_id);
+                                Log::channel('mailin-ai')->info('Deleted mailbox from Mailin.ai', [
+                                    'action' => 'create_mailboxes_for_provider',
+                                    'order_id' => $this->orderId,
+                                    'email' => $createdMailbox->email,
+                                    'mailin_mailbox_id' => $createdMailbox->mailin_mailbox_id,
+                                ]);
+                            }
+                        } catch (\Exception $deleteException) {
+                            Log::channel('mailin-ai')->error('Failed to delete mailbox from Mailin.ai', [
+                                'action' => 'create_mailboxes_for_provider',
+                                'order_id' => $this->orderId,
+                                'email' => $createdMailbox->email,
+                                'mailin_mailbox_id' => $createdMailbox->mailin_mailbox_id,
+                                'error' => $deleteException->getMessage(),
+                            ]);
+                        }
+                    }
+                    
+                    // Delete OrderEmail records from database
+                    OrderEmail::where('order_id', $this->orderId)->delete();
+                    Log::channel('mailin-ai')->info('Deleted OrderEmail records from database', [
+                        'action' => 'create_mailboxes_for_provider',
+                        'order_id' => $this->orderId,
+                        'deleted_count' => $createdMailboxes->count(),
+                    ]);
+                }
+                
+                $rejectionReason = "Order rejected: The following mailboxes already exist on Mailin.ai:\n\n";
+                foreach ($existingMailboxes as $email) {
+                    $rejectionReason .= "• {$email}\n";
+                }
+                $rejectionReason .= "\nPlease use different email prefixes or domains, or contact support if you believe this is an error.";
+                
+                $order->update([
+                    'status_manage_by_admin' => 'reject',
+                    'reason' => $rejectionReason,
+                ]);
+                
+                Log::channel('mailin-ai')->warning('Order rejected - mailboxes already exist on Mailin.ai', [
+                    'action' => 'create_mailboxes_for_provider',
+                    'order_id' => $this->orderId,
+                    'provider' => $providerSlug,
+                    'existing_mailboxes' => $existingMailboxes,
+                    'new_status' => 'reject',
+                ]);
+                
+                // Send email notification
+                try {
+                    $order->refresh();
+                    $user = $order->user;
+                    if ($user && $user->email) {
+                        Mail::to($user->email)
+                            ->queue(new OrderStatusChangeMail(
+                                $order,
+                                $user,
+                                'in-progress',
+                                'reject',
+                                $rejectionReason,
+                                false
+                            ));
+                    }
+                } catch (\Exception $emailException) {
+                    Log::channel('email-failures')->error('Failed to send order rejection email', [
+                        'exception' => $emailException->getMessage(),
+                        'order_id' => $this->orderId,
+                    ]);
+                }
+                
+                return; // Stop processing this provider's domains
+            }
+
+            // Handle new mailboxes (with UUID)
+            if ($result['success'] && isset($result['uuid'])) {
                 $this->saveMailboxesForDomains($order, $result, $mailboxData, $mailboxes, $shouldCompleteOrder, $providerSlug, $domainsAreActive);
             } else {
                 throw new \Exception('Mailbox creation failed: ' . ($result['message'] ?? 'Unknown error'));

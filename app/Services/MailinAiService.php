@@ -471,6 +471,7 @@ class MailinAiService
                 
                 // Check if error is about mailboxes already being registered
                 $mailboxesAlreadyExist = false;
+                $existingMailboxEmails = [];
                 
                 if (isset($responseBody['errors']) && is_array($responseBody['errors'])) {
                     foreach ($responseBody['errors'] as $field => $messages) {
@@ -480,8 +481,11 @@ class MailinAiService
                                     $domainNotRegistered = true;
                                     $unregisteredDomains[] = $matches[1];
                                 }
-                                // Check for "already registered" errors
-                                if (preg_match("/already registered to your account/i", $message)) {
+                                // Check for "already registered" errors and extract mailbox email
+                                if (preg_match("/mailbox '([^']+)' is already registered to your account/i", $message, $matches)) {
+                                    $mailboxesAlreadyExist = true;
+                                    $existingMailboxEmails[] = $matches[1];
+                                } elseif (preg_match("/already registered to your account/i", $message)) {
                                     $mailboxesAlreadyExist = true;
                                 }
                             }
@@ -490,8 +494,11 @@ class MailinAiService
                                 $domainNotRegistered = true;
                                 $unregisteredDomains[] = $matches[1];
                             }
-                            // Check for "already registered" errors
-                            if (preg_match("/already registered to your account/i", $messages)) {
+                            // Check for "already registered" errors and extract mailbox email
+                            if (preg_match("/mailbox '([^']+)' is already registered to your account/i", $messages, $matches)) {
+                                $mailboxesAlreadyExist = true;
+                                $existingMailboxEmails[] = $matches[1];
+                            } elseif (preg_match("/already registered to your account/i", $messages)) {
                                 $mailboxesAlreadyExist = true;
                             }
                         }
@@ -504,8 +511,11 @@ class MailinAiService
                     $unregisteredDomains[] = $matches[1];
                 }
                 
-                // Check main error message for "already registered"
-                if (preg_match("/already registered to your account/i", $errorMessage)) {
+                // Check main error message for "already registered" and extract email
+                if (preg_match("/mailbox '([^']+)' is already registered to your account/i", $errorMessage, $matches)) {
+                    $mailboxesAlreadyExist = true;
+                    $existingMailboxEmails[] = $matches[1];
+                } elseif (preg_match("/already registered to your account/i", $errorMessage)) {
                     $mailboxesAlreadyExist = true;
                 }
                 
@@ -515,6 +525,7 @@ class MailinAiService
                         'action' => 'create_mailboxes',
                         'status_code' => $statusCode,
                         'mailbox_count' => count($mailboxes),
+                        'existing_mailbox_emails' => $existingMailboxEmails,
                         'mailbox_usernames' => array_map(function($mb) {
                             return $mb['username'] ?? 'unknown';
                         }, $mailboxes),
@@ -525,6 +536,7 @@ class MailinAiService
                         'success' => true,
                         'uuid' => null, // No UUID since mailboxes already exist
                         'already_exists' => true, // Flag to indicate mailboxes already exist
+                        'existing_mailbox_emails' => array_unique($existingMailboxEmails), // Specific mailboxes that already exist
                         'message' => 'Mailboxes already exist on Mailin.ai',
                         'response' => $responseBody,
                     ];
