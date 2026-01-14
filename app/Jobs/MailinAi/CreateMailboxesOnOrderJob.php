@@ -369,6 +369,32 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             // Use provided domains or fallback to all domains
             $domains = $domainsToTransfer ?? $this->domains;
 
+            // Clean up old domain transfers that are no longer in the current order
+            // This handles cases where an order was rejected and resubmitted with different domains
+            $staleDomainTransfers = DomainTransfer::where('order_id', $this->orderId)
+                ->whereNotIn('domain_name', $domains)
+                ->where('status', 'pending') // Only clean up pending, not already failed
+                ->get();
+
+            if ($staleDomainTransfers->count() > 0) {
+                $staleDomainNames = $staleDomainTransfers->pluck('domain_name')->toArray();
+                
+                DomainTransfer::where('order_id', $this->orderId)
+                    ->whereNotIn('domain_name', $domains)
+                    ->where('status', 'pending')
+                    ->update([
+                        'status' => 'failed',
+                        'error_message' => 'Domain removed from order - superseded by new submission',
+                    ]);
+
+                Log::channel('mailin-ai')->info('Marked stale domain transfers as failed from previous submission', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                    'superseded_domains' => $staleDomainNames,
+                    'current_domains' => $domains,
+                ]);
+            }
+
             // Check for existing failed nameserver updates and retry them first
             $failedTransfers = DomainTransfer::where('order_id', $this->orderId)
                 ->whereIn('domain_name', $domains)
@@ -385,8 +411,10 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                     'domains' => $failedTransfers->pluck('domain_name')->toArray(),
                 ]);
 
-                // Retry failed nameserver updates
-                $this->retryFailedNameserverUpdates($order, $failedTransfers);
+                // Retry failed nameserver updates and capture any errors
+                $retryNameserverErrors = $this->retryFailedNameserverUpdates($order, $failedTransfers);
+            } else {
+                $retryNameserverErrors = [];
             }
 
             // Get hosting platform from order
@@ -468,6 +496,18 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             // Track if any nameserver updates fail (to set order to draft)
             $hasNameserverUpdateFailures = false;
             $nameserverUpdateErrors = [];
+
+            // Merge retry errors with nameserver update errors
+            if (!empty($retryNameserverErrors)) {
+                $nameserverUpdateErrors = array_merge($nameserverUpdateErrors, $retryNameserverErrors);
+                $hasNameserverUpdateFailures = true;
+                
+                Log::channel('mailin-ai')->info('Retry errors added to nameserver update errors', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                    'retry_errors_count' => count($retryNameserverErrors),
+                ]);
+            }
 
             // Configuration for rate limit handling
             $delayBetweenTransfers = config('mailin_ai.domain_transfer_delay', 2); // seconds between transfers
@@ -1073,6 +1113,9 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
 
             $hasNameserverUpdateFailures = $hasNameserverUpdateFailures || $nameserverFailureCount > 0;
 
+            // Check if there are domain transfer failures (status = failed)
+            $hasDomainTransferFailures = $failedCount > 0;
+
             // Check if there are any rate limit errors (from domain transfers)
             $hasRateLimitErrors = $rateLimitedCount > 0;
 
@@ -1084,13 +1127,81 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'failed_transfers' => $failedCount,
                 'nameserver_update_failures' => $nameserverFailureCount,
                 'has_nameserver_failures' => $hasNameserverUpdateFailures,
+                'has_domain_transfer_failures' => $hasDomainTransferFailures,
                 'rate_limited_count' => $rateLimitedCount,
                 'has_rate_limit_errors' => $hasRateLimitErrors,
             ]);
 
-            // If there are ONLY rate limit errors (no nameserver failures), keep order in-progress
+            // If ALL domains failed to transfer (no successful transfers and no rate-limited), reject the order
+            if ($hasDomainTransferFailures && $successCount === 0 && $rateLimitedCount === 0) {
+                // Get the failed domain transfer errors
+                $failedDomainTransfers = DomainTransfer::where('order_id', $this->orderId)
+                    ->whereIn('domain_name', $domains)
+                    ->where('status', 'failed')
+                    ->get();
+
+                $domainTransferErrors = [];
+                foreach ($failedDomainTransfers as $failedTransfer) {
+                    $domainTransferErrors[] = [
+                        'domain' => $failedTransfer->domain_name,
+                        'platform' => 'Mailin.ai',
+                        'error' => $failedTransfer->error_message ?? 'Domain transfer failed',
+                    ];
+                }
+
+                // Format rejection reason
+                $rejectionReason = "Order rejected due to domain transfer failures during automation. Please review the errors below:\n\n";
+                foreach ($domainTransferErrors as $error) {
+                    $rejectionReason .= "• **{$error['domain']}** ({$error['platform']}): {$error['error']}\n";
+                }
+                $rejectionReason .= "\nAfter fixing the issues, please resubmit the order.";
+
+                $order->update([
+                    'status_manage_by_admin' => 'reject',
+                    'reason' => $rejectionReason,
+                ]);
+
+                Log::channel('mailin-ai')->warning('Order rejected due to domain transfer failures', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                    'failed_count' => $failedCount,
+                    'domain_transfer_errors' => $domainTransferErrors,
+                    'new_status' => 'reject',
+                ]);
+
+                // Send email notification
+                try {
+                    $order->refresh();
+                    $user = $order->user;
+                    if ($user && $user->email) {
+                        Mail::to($user->email)
+                            ->queue(new OrderStatusChangeMail(
+                                $order,
+                                $user,
+                                'in-progress',
+                                'reject',
+                                $rejectionReason,
+                                false
+                            ));
+                        Log::channel('mailin-ai')->info('Email notification sent for rejected order', [
+                            'action' => 'handle_domain_transfer',
+                            'order_id' => $this->orderId,
+                            'user_email' => $user->email,
+                        ]);
+                    }
+                } catch (\Exception $emailException) {
+                    Log::channel('email-failures')->error('Failed to send order rejection email', [
+                        'exception' => $emailException->getMessage(),
+                        'order_id' => $this->orderId,
+                    ]);
+                }
+
+                return;
+            }
+
+            // If there are ONLY rate limit errors (no nameserver failures, no domain transfer failures), keep order in-progress
             // Rate limit errors are automatically retried by scheduled command
-            if ($hasRateLimitErrors && !$hasNameserverUpdateFailures) {
+            if ($hasRateLimitErrors && !$hasNameserverUpdateFailures && !$hasDomainTransferFailures) {
                 Log::channel('mailin-ai')->info('Order kept in-progress due to rate limit errors only (will retry automatically)', [
                     'action' => 'handle_domain_transfer',
                     'order_id' => $this->orderId,
@@ -1263,16 +1374,22 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
      * 
      * This method deduplicates domains before retrying to avoid hitting rate limits.
      * Spaceship API limit: 5 requests per domain within 300 seconds.
+     * 
+     * @param Order $order
+     * @param Collection $failedTransfers
+     * @return array Array of errors with 'domain', 'platform', 'error', 'is_invalid_credentials', 'is_domain_not_found'
      */
-    private function retryFailedNameserverUpdates(Order $order, $failedTransfers)
+    private function retryFailedNameserverUpdates(Order $order, $failedTransfers): array
     {
+        $retryErrors = [];
+        
         $hostingPlatform = null;
         if ($order->reorderInfo && $order->reorderInfo->count() > 0) {
             $hostingPlatform = $order->reorderInfo->first()->hosting_platform;
         }
 
         if (!$hostingPlatform || !in_array($hostingPlatform, ['spaceship', 'namecheap'])) {
-            return;
+            return $retryErrors;
         }
 
         // Deduplicate domain transfers by domain name - only retry once per unique domain
@@ -1413,10 +1530,32 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 }
             } catch (\Exception $e) {
                 $errorMessage = $e->getMessage();
+                $errorMsgLower = strtolower($errorMessage);
+                
                 $isRateLimitError = str_contains($errorMessage, 'rate limit')
                     || str_contains($errorMessage, 'Rate limit')
                     || str_contains($errorMessage, 'Too Many Attempts')
                     || str_contains($errorMessage, '429');
+
+                // Detect invalid credentials
+                $isInvalidCredentials =
+                    str_contains($errorMsgLower, 'invalid api credentials') ||
+                    str_contains($errorMsgLower, 'please verify your api credentials') ||
+                    str_contains($errorMsgLower, 'verify your api credentials') ||
+                    (str_contains($errorMsgLower, 'invalid') && (str_contains($errorMsgLower, 'api') || str_contains($errorMsgLower, 'credentials'))) ||
+                    str_contains($errorMsgLower, 'unauthorized') ||
+                    str_contains($errorMsgLower, 'forbidden') ||
+                    str_contains($errorMsgLower, 'authentication');
+
+                // Detect domain not found
+                $isDomainNotFound =
+                    $e->getCode() === 404 ||
+                    str_contains($errorMsgLower, "hasn't been found") ||
+                    str_contains($errorMsgLower, 'has not been found') ||
+                    str_contains($errorMsgLower, 'domain not found') ||
+                    str_contains($errorMsgLower, 'domain does not exist') ||
+                    str_contains($errorMsgLower, 'zone file') && str_contains($errorMsgLower, 'not found') ||
+                    (str_contains($errorMsgLower, 'domain') && str_contains($errorMsgLower, 'not exist'));
 
                 if ($isRateLimitError) {
                     $rateLimitHit = true;
@@ -1429,12 +1568,34 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                         'remaining_domains' => array_diff(array_keys($uniqueDomainTransfers), $processedDomains),
                     ]);
                 } else {
+                    // Extract the actual error message (remove prefix if present)
+                    $actualErrorMsg = $errorMessage;
+                    $apiPrefix = 'Failed to update nameservers via Spaceship API: ';
+                    if (strpos($actualErrorMsg, $apiPrefix) === 0) {
+                        $actualErrorMsg = substr($actualErrorMsg, strlen($apiPrefix));
+                    }
+                    $apiPrefix2 = 'Failed to update nameservers via Namecheap API: ';
+                    if (strpos($actualErrorMsg, $apiPrefix2) === 0) {
+                        $actualErrorMsg = substr($actualErrorMsg, strlen($apiPrefix2));
+                    }
+
+                    // Add to retry errors for rejection handling
+                    $retryErrors[] = [
+                        'domain' => $domain,
+                        'platform' => ucfirst($hostingPlatform),
+                        'error' => $actualErrorMsg,
+                        'is_invalid_credentials' => $isInvalidCredentials,
+                        'is_domain_not_found' => $isDomainNotFound,
+                    ];
+
                     Log::channel('mailin-ai')->error('Retry nameserver update failed', [
                         'action' => 'retry_failed_nameserver_updates',
                         'order_id' => $this->orderId,
                         'domain' => $domain,
                         'platform' => $hostingPlatform,
                         'error' => $errorMessage,
+                        'is_invalid_credentials' => $isInvalidCredentials,
+                        'is_domain_not_found' => $isDomainNotFound,
                     ]);
                 }
                 // Keep error message in domain_transfer for display
@@ -1446,7 +1607,10 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             'order_id' => $this->orderId,
             'processed_domains' => $processedDomains,
             'rate_limit_hit' => $rateLimitHit,
+            'retry_errors_count' => count($retryErrors),
         ]);
+
+        return $retryErrors;
     }
 
     /**
