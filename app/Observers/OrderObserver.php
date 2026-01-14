@@ -226,6 +226,27 @@ class OrderObserver
                         'error' => $e->getMessage()
                     ]);
                 }
+                
+                // Delete mailboxes from Mailin.ai when order is rejected
+                try {
+                    $orderId = $order->id;
+                    dispatch(function () use ($orderId) {
+                        \Illuminate\Support\Facades\Artisan::call('order:delete-mailboxes', [
+                            'order_id' => $orderId
+                        ]);
+                    })->afterResponse();
+                    
+                    \Log::channel('mailin-ai')->info('OrderObserver: Dispatched command to delete mailboxes for rejected order', [
+                        'order_id' => $order->id,
+                        'previous_status' => $previousStatus,
+                        'new_status' => $newStatus
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::channel('mailin-ai')->error('OrderObserver: Failed to dispatch mailbox deletion command', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
 
             // Send Slack notification if order is completed

@@ -256,11 +256,31 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
 
                     // Transfer unregistered domains with provider_slug
                     $this->handleDomainTransfer($order, $mailinService, $unregisteredDomains, $providerSlug);
+                    
+                    // Check if order was rejected during domain transfer - stop processing
+                    $order->refresh();
+                    if ($order->status_manage_by_admin === 'reject') {
+                        Log::channel('mailin-ai')->info('Order was rejected during domain transfer, stopping mailbox creation', [
+                            'action' => 'create_mailboxes_on_order',
+                            'order_id' => $this->orderId,
+                        ]);
+                        return;
+                    }
                 }
 
                 // Create mailboxes for registered domains (already active - skip status checking)
                 // DO NOT complete order here - wait until ALL providers are processed
                 if (!empty($registeredDomains)) {
+                    // Double-check order is not rejected before creating mailboxes
+                    $order->refresh();
+                    if ($order->status_manage_by_admin === 'reject') {
+                        Log::channel('mailin-ai')->info('Order is rejected, skipping mailbox creation for registered domains', [
+                            'action' => 'create_mailboxes_on_order',
+                            'order_id' => $this->orderId,
+                            'registered_domains' => $registeredDomains,
+                        ]);
+                        return;
+                    }
                     $this->createMailboxesForProvider($order, $mailinService, $providerSlug, $registeredDomains, false, true);
                 }
             }
@@ -1156,6 +1176,9 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 }
                 $rejectionReason .= "\nAfter fixing the issues, please resubmit the order.";
 
+                // Delete any mailboxes created for this order before rejecting
+                $this->deleteOrderMailboxesFromMailin($mailinService);
+
                 $order->update([
                     'status_manage_by_admin' => 'reject',
                     'reason' => $rejectionReason,
@@ -1262,6 +1285,11 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                         $rejectionReason .= "• **{$error['domain']}** ({$error['platform']}): {$actualError}\n";
                     }
                     $rejectionReason .= "\nAfter fixing the issues, please resubmit the order. The system will retry the nameserver updates and continue processing.";
+
+                    // Delete any mailboxes created for this order before rejecting
+                    if ($shouldReject) {
+                        $this->deleteOrderMailboxesFromMailin($mailinService);
+                    }
 
                     $order->update([
                         'status_manage_by_admin' => $newStatus,
@@ -1730,49 +1758,8 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                     }, $mailboxes);
                 }
                 
-                // Delete any mailboxes that were already created for this order
-                $createdMailboxes = OrderEmail::where('order_id', $this->orderId)
-                    ->whereNotNull('mailin_mailbox_id')
-                    ->get();
-                
-                if ($createdMailboxes->count() > 0) {
-                    Log::channel('mailin-ai')->info('Deleting previously created mailboxes before rejection', [
-                        'action' => 'create_mailboxes_for_provider',
-                        'order_id' => $this->orderId,
-                        'mailbox_count' => $createdMailboxes->count(),
-                        'mailbox_ids' => $createdMailboxes->pluck('mailin_mailbox_id')->toArray(),
-                    ]);
-                    
-                    foreach ($createdMailboxes as $createdMailbox) {
-                        try {
-                            if ($createdMailbox->mailin_mailbox_id) {
-                                $mailinService->deleteMailbox($createdMailbox->mailin_mailbox_id);
-                                Log::channel('mailin-ai')->info('Deleted mailbox from Mailin.ai', [
-                                    'action' => 'create_mailboxes_for_provider',
-                                    'order_id' => $this->orderId,
-                                    'email' => $createdMailbox->email,
-                                    'mailin_mailbox_id' => $createdMailbox->mailin_mailbox_id,
-                                ]);
-                            }
-                        } catch (\Exception $deleteException) {
-                            Log::channel('mailin-ai')->error('Failed to delete mailbox from Mailin.ai', [
-                                'action' => 'create_mailboxes_for_provider',
-                                'order_id' => $this->orderId,
-                                'email' => $createdMailbox->email,
-                                'mailin_mailbox_id' => $createdMailbox->mailin_mailbox_id,
-                                'error' => $deleteException->getMessage(),
-                            ]);
-                        }
-                    }
-                    
-                    // Delete OrderEmail records from database
-                    OrderEmail::where('order_id', $this->orderId)->delete();
-                    Log::channel('mailin-ai')->info('Deleted OrderEmail records from database', [
-                        'action' => 'create_mailboxes_for_provider',
-                        'order_id' => $this->orderId,
-                        'deleted_count' => $createdMailboxes->count(),
-                    ]);
-                }
+                // Delete any mailboxes that were created for this order before rejecting
+                $this->deleteOrderMailboxesFromMailin($mailinService);
                 
                 $rejectionReason = "Order rejected: The following mailboxes already exist on Mailin.ai:\n\n";
                 foreach ($existingMailboxes as $email) {
@@ -1809,7 +1796,7 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                             ));
                     }
                 } catch (\Exception $emailException) {
-                    Log::channel('email-failures')->error('Failed to send order rejection email', [
+                      Log::channel('email-failures')->error('Failed to send order rejection email', [
                         'exception' => $emailException->getMessage(),
                         'order_id' => $this->orderId,
                     ]);
@@ -2429,6 +2416,92 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
         }
 
         return implode('', $passwordArray);
+    }
+
+    /**
+     * Delete all mailboxes for an order from Mailin.ai
+     * Called when an order is rejected to clean up any created mailboxes
+     * 
+     * @param MailinAiService|null $mailinService
+     * @return void
+     */
+    private function deleteOrderMailboxesFromMailin($mailinService = null)
+    {
+        // Get all order emails that have mailin_mailbox_id or need lookup
+        $orderEmails = OrderEmail::where('order_id', $this->orderId)->get();
+        
+        if ($orderEmails->count() === 0) {
+            return;
+        }
+        
+        Log::channel('mailin-ai')->info('Deleting mailboxes from Mailin.ai on order rejection', [
+            'action' => 'delete_order_mailboxes',
+            'order_id' => $this->orderId,
+            'email_count' => $orderEmails->count(),
+        ]);
+        
+        // Get mailin service if not provided
+        if (!$mailinService) {
+            $provider = SmtpProviderSplit::getActiveProvider();
+            $credentials = $provider ? $provider->getCredentials() : null;
+            $mailinService = new MailinAiService($credentials);
+        }
+        
+        $deletedCount = 0;
+        $failedCount = 0;
+        
+        foreach ($orderEmails as $orderEmail) {
+            try {
+                $mailboxIdToDelete = $orderEmail->mailin_mailbox_id;
+                
+                // If mailin_mailbox_id is null, look up by email
+                if (!$mailboxIdToDelete && $orderEmail->email) {
+                    try {
+                        $lookupResult = $mailinService->getMailboxesByName($orderEmail->email);
+                        if (!empty($lookupResult) && isset($lookupResult[0]['id'])) {
+                            $mailboxIdToDelete = $lookupResult[0]['id'];
+                        }
+                    } catch (\Exception $lookupException) {
+                        Log::channel('mailin-ai')->warning('Failed to lookup mailbox by email', [
+                            'action' => 'delete_order_mailboxes',
+                            'order_id' => $this->orderId,
+                            'email' => $orderEmail->email,
+                            'error' => $lookupException->getMessage(),
+                        ]);
+                    }
+                }
+                
+                if ($mailboxIdToDelete) {
+                    $mailinService->deleteMailbox($mailboxIdToDelete);
+                    $deletedCount++;
+                    Log::channel('mailin-ai')->info('Deleted mailbox from Mailin.ai', [
+                        'action' => 'delete_order_mailboxes',
+                        'order_id' => $this->orderId,
+                        'email' => $orderEmail->email,
+                        'mailin_mailbox_id' => $mailboxIdToDelete,
+                    ]);
+                }
+            } catch (\Exception $deleteException) {
+                $failedCount++;
+                Log::channel('mailin-ai')->error('Failed to delete mailbox from Mailin.ai', [
+                    'action' => 'delete_order_mailboxes',
+                    'order_id' => $this->orderId,
+                    'email' => $orderEmail->email,
+                    'error' => $deleteException->getMessage(),
+                ]);
+            }
+        }
+        
+        // Delete OrderEmail records from database
+        OrderEmail::where('order_id', $this->orderId)->delete();
+        
+        Log::channel('mailin-ai')->info('Completed mailbox cleanup on order rejection', [
+            'action' => 'delete_order_mailboxes',
+            'order_id' => $this->orderId,
+            'deleted_from_mailin' => $deletedCount,
+            'failed_deletions' => $failedCount,
+            'deleted_from_database' => $orderEmails->count(),
+        ]);
     }
 }
 
