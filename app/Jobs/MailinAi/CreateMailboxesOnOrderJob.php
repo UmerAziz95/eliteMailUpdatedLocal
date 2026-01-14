@@ -1642,15 +1642,48 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
             'domains' => $domains,
         ]);
 
+        // Get prefix_variants_details from reorderInfo for proper mailbox names
+        $prefixVariantsDetails = [];
+        if ($order->reorderInfo && $order->reorderInfo->count() > 0) {
+            $reorderInfo = $order->reorderInfo->first();
+            $details = $reorderInfo->prefix_variants_details;
+            if ($details) {
+                $prefixVariantsDetails = is_string($details) 
+                    ? json_decode($details, true) ?? []
+                    : (is_array($details) ? $details : []);
+            }
+        }
+
         // Generate mailboxes for these domains
         $mailboxes = [];
         $mailboxData = [];
         $mailboxIndex = 0;
+        $prefixIndex = 0;
 
         foreach ($domains as $domain) {
-            foreach ($this->prefixVariants as $prefix) {
+            $prefixIndex = 0;
+            foreach ($this->prefixVariants as $prefixKey => $prefix) {
+                $prefixIndex++;
                 $username = $prefix . '@' . $domain;
-                $name = $prefix;
+                
+                // Get proper name from prefix_variants_details
+                // Try with the original key first, then try prefix_variant_N format
+                $variantKey = is_numeric($prefixKey) ? 'prefix_variant_' . ($prefixKey + 1) : $prefixKey;
+                $variantDetails = $prefixVariantsDetails[$variantKey] ?? $prefixVariantsDetails['prefix_variant_' . $prefixIndex] ?? null;
+                
+                if ($variantDetails && (isset($variantDetails['first_name']) || isset($variantDetails['last_name']))) {
+                    $firstName = trim($variantDetails['first_name'] ?? '');
+                    $lastName = trim($variantDetails['last_name'] ?? '');
+                    $name = trim($firstName . ' ' . $lastName);
+                    // Fallback to prefix if name is empty after trimming
+                    if (empty($name)) {
+                        $name = $prefix;
+                    }
+                } else {
+                    // Fallback to email prefix if no details found
+                    $name = $prefix;
+                }
+                
                 $password = $this->generatePassword($this->userId, $mailboxIndex);
 
                 $mailboxes[] = [
