@@ -492,29 +492,64 @@ class CheckDomainTransferStatus extends Command
                 'order_id' => $orderId,
             ]);
 
-            // Check if order already has mailboxes created
-            // IMPORTANT: Only check for OrderEmail records (actual mailboxes), not automation status
-            // This handles the case where automation was marked completed but mailboxes were never actually created
-            $hasOrderEmails = \App\Models\OrderEmail::where('order_id', $orderId)->exists();
+            // Check if ALL expected mailboxes already exist, not just any
+            // For mixed orders (some domains registered, some transferred), we need to create remaining mailboxes
+            $existingMailboxCount = \App\Models\OrderEmail::where('order_id', $orderId)->count();
+            
+            // Get expected mailbox count from reorderInfo
+            $reorderInfo = $order->reorderInfo->first();
+            if ($reorderInfo) {
+                // Parse domains
+                $domainsRaw = $reorderInfo->domains ?? '';
+                $domainsForCount = array_values(array_filter(
+                    array_map('trim', preg_split('/[\r\n,]+/', $domainsRaw))
+                ));
+                
+                // Parse prefix variants
+                $prefixVariantsRaw = $reorderInfo->prefix_variants ?? '{}';
+                if (is_array($prefixVariantsRaw)) {
+                    $prefixVariantsData = $prefixVariantsRaw;
+                } else {
+                    $prefixVariantsData = json_decode($prefixVariantsRaw, true) ?? [];
+                }
+                $prefixCount = count(array_filter($prefixVariantsData));
+                
+                $expectedMailboxCount = count($domainsForCount) * $prefixCount;
+            } else {
+                $expectedMailboxCount = 0;
+            }
             
             $existingAutomation = \App\Models\OrderAutomation::where('order_id', $orderId)
                 ->where('action_type', 'mailbox')
                 ->where('status', 'completed')
                 ->first();
 
-            if ($hasOrderEmails) {
-                $this->line("Order #{$orderId}: Mailboxes already created.");
-                Log::channel('mailin-ai')->info('Skipping order - mailboxes already created', [
+            // Only skip if ALL expected mailboxes exist
+            if ($existingMailboxCount >= $expectedMailboxCount && $expectedMailboxCount > 0) {
+                $this->line("Order #{$orderId}: All mailboxes already created ({$existingMailboxCount}/{$expectedMailboxCount}).");
+                Log::channel('mailin-ai')->info('Skipping order - all mailboxes already created', [
                     'action' => 'process_order_mailbox_creation',
                     'order_id' => $orderId,
-                    'has_order_emails' => true,
+                    'existing_count' => $existingMailboxCount,
+                    'expected_count' => $expectedMailboxCount,
                     'automation_id' => $existingAutomation ? $existingAutomation->id : null,
                 ]);
                 return;
             }
             
+            // Log if we have partial mailboxes (some but not all)
+            if ($existingMailboxCount > 0 && $existingMailboxCount < $expectedMailboxCount) {
+                Log::channel('mailin-ai')->info('Order has partial mailboxes, proceeding to create remaining', [
+                    'action' => 'process_order_mailbox_creation',
+                    'order_id' => $orderId,
+                    'existing_count' => $existingMailboxCount,
+                    'expected_count' => $expectedMailboxCount,
+                    'missing_count' => $expectedMailboxCount - $existingMailboxCount,
+                ]);
+            }
+            
             // If automation exists but no emails, log the inconsistency but proceed
-            if ($existingAutomation) {
+            if ($existingAutomation && $existingMailboxCount == 0) {
                 Log::channel('mailin-ai')->warning('Data inconsistency - automation completed but no mailboxes exist, proceeding to create', [
                     'action' => 'process_order_mailbox_creation',
                     'order_id' => $orderId,
@@ -523,12 +558,14 @@ class CheckDomainTransferStatus extends Command
                 ]);
             }
 
-            Log::channel('mailin-ai')->info('No existing mailboxes found, proceeding with mailbox creation', [
+            Log::channel('mailin-ai')->info('Proceeding with mailbox creation', [
                 'action' => 'process_order_mailbox_creation',
                 'order_id' => $orderId,
+                'existing_count' => $existingMailboxCount,
+                'expected_count' => $expectedMailboxCount,
             ]);
 
-            $this->info("Order #{$orderId}: All domains are active. Creating mailboxes...");
+            $this->info("Order #{$orderId}: Creating mailboxes ({$existingMailboxCount}/{$expectedMailboxCount} exist)...");
 
             // Get domains and prefix variants from reorderInfo
             if (!$order->reorderInfo || $order->reorderInfo->count() === 0) {
