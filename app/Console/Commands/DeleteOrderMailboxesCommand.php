@@ -67,6 +67,7 @@ class DeleteOrderMailboxesCommand extends Command
 
         $deletedCount = 0;
         $failedCount = 0;
+        $successfullyDeletedIds = []; // Track IDs that were successfully deleted from Mailin.ai
 
         // Group emails by domain for efficient lookups
         $emailsByDomain = [];
@@ -130,14 +131,10 @@ class DeleteOrderMailboxesCommand extends Command
                         $this->line("  Deleting: {$orderEmail->email} (ID: {$mailboxIdToDelete})");
                         $result = $mailinService->deleteMailbox($mailboxIdToDelete);
                         
-                        if (isset($result['success']) && $result['success']) {
-                            $deletedCount++;
-                            $this->info("    ✓ Deleted from Mailin.ai");
-                        } else {
-                            // Some APIs return success even if already deleted
-                            $deletedCount++;
-                            $this->info("    ✓ Deleted from Mailin.ai");
-                        }
+                        // Successfully deleted from Mailin.ai - track for DB deletion
+                        $deletedCount++;
+                        $successfullyDeletedIds[] = $orderEmail->id;
+                        $this->info("    ✓ Deleted from Mailin.ai");
                         
                         Log::channel('mailin-ai')->info('DeleteOrderMailboxesCommand: Deleted mailbox from Mailin.ai', [
                             'action' => 'delete_order_mailboxes_cmd',
@@ -146,14 +143,18 @@ class DeleteOrderMailboxesCommand extends Command
                             'mailin_mailbox_id' => $mailboxIdToDelete,
                         ]);
                     } else {
-                        $this->warn("  ⚠ Could not find mailbox ID for: {$orderEmail->email}");
+                        // No mailbox ID found - safe to delete from DB (doesn't exist on Mailin.ai)
+                        $successfullyDeletedIds[] = $orderEmail->id;
+                        $this->warn("  ⚠ No mailbox ID for: {$orderEmail->email} (will remove from DB)");
                     }
                     
-                    usleep(300000); // 0.3 sec delay to avoid rate limits
+                    usleep(500000); // 0.5 sec delay to avoid rate limits
                     
                 } catch (\Exception $deleteException) {
                     $failedCount++;
+                    // Do NOT add to successfullyDeletedIds - keep in DB
                     $this->error("  ✗ Failed to delete {$orderEmail->email}: {$deleteException->getMessage()}");
+                    $this->warn("    → Keeping in database (retry later)");
                     
                     Log::channel('mailin-ai')->error('DeleteOrderMailboxesCommand: Failed to delete mailbox from Mailin.ai', [
                         'action' => 'delete_order_mailboxes_cmd',
@@ -165,14 +166,21 @@ class DeleteOrderMailboxesCommand extends Command
             }
         }
 
-        // Delete OrderEmail records from database
-        $deletedFromDb = OrderEmail::where('order_id', $orderId)->delete();
+        // Delete ONLY successfully deleted OrderEmail records from database
+        $deletedFromDb = 0;
+        if (!empty($successfullyDeletedIds)) {
+            $deletedFromDb = OrderEmail::whereIn('id', $successfullyDeletedIds)->delete();
+        }
 
         $this->newLine();
         $this->info("=== Deletion Summary ===");
         $this->info("Deleted from Mailin.ai: {$deletedCount}");
         $this->info("Failed deletions: {$failedCount}");
         $this->info("Deleted from database: {$deletedFromDb}");
+        
+        if ($failedCount > 0) {
+            $this->warn("Note: {$failedCount} mailbox(es) kept in database. Run command again to retry.");
+        }
 
         Log::channel('mailin-ai')->info('DeleteOrderMailboxesCommand: Completed mailbox deletion', [
             'action' => 'delete_order_mailboxes_cmd',
