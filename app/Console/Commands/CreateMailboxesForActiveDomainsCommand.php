@@ -60,19 +60,19 @@ class CreateMailboxesForActiveDomainsCommand extends Command
         $domains = array_map('trim', array_filter(preg_split('/[\r\n,]+/', $reorderInfo->domains)));
         $this->info("Domains in order: " . count($domains));
 
-        // Extract prefix variants
+        // Extract prefix variants - use prefix_variants field for email prefix
+        $prefixVariants = $reorderInfo->prefix_variants ?? [];
         $prefixVariantsDetails = $reorderInfo->prefix_variants_details ?? [];
         $mailboxPrefixVariants = [];
         $inboxesPerDomain = (int) $reorderInfo->inboxes_per_domain;
 
         for ($i = 1; $i <= $inboxesPerDomain; $i++) {
             $prefixKey = 'prefix_variant_' . $i;
-            if (isset($prefixVariantsDetails[$prefixKey])) {
-                $firstName = trim($prefixVariantsDetails[$prefixKey]['first_name'] ?? '');
-                $lastName = trim($prefixVariantsDetails[$prefixKey]['last_name'] ?? '');
-                $prefix = trim($firstName . '.' . $lastName);
+            // Use prefix_variants for email prefix (not prefix_variants_details)
+            if (isset($prefixVariants[$prefixKey])) {
+                $prefix = trim($prefixVariants[$prefixKey]);
                 if (!empty($prefix)) {
-                    $mailboxPrefixVariants[] = $prefix;
+                    $mailboxPrefixVariants[$prefixKey] = $prefix;
                 }
             }
         }
@@ -175,8 +175,8 @@ class CreateMailboxesForActiveDomainsCommand extends Command
                 }
 
                 // Get proper name from prefix_variants_details
-                $variantKey = is_numeric($prefixKey) ? 'prefix_variant_' . ($prefixKey + 1) : $prefixKey;
-                $variantDetails = $prefixVariantsDetails[$variantKey] ?? $prefixVariantsDetails['prefix_variant_' . $prefixIndex] ?? null;
+                // $prefixKey is now 'prefix_variant_X' format
+                $variantDetails = $prefixVariantsDetails[$prefixKey] ?? null;
 
                 if ($variantDetails && (isset($variantDetails['first_name']) || isset($variantDetails['last_name']))) {
                     $firstName = trim($variantDetails['first_name'] ?? '');
