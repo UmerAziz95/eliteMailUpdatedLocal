@@ -1791,7 +1791,7 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                     $name = $prefix;
                 }
                 
-                $password = $this->generatePassword($this->userId, $mailboxIndex);
+                $password = $this->customEncrypt($this->orderId);
 
                 $mailboxes[] = [
                     'username' => $username,
@@ -2461,15 +2461,23 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
         }
     }
 
-    private function generatePassword($userId, $index = 0)
+    /**
+     * Generate password using the same logic as CSV export
+     * Uses orderId + index as seed for consistent password generation
+     * 
+     * @param int $orderId Order ID for seeding
+     * @param int $index Index for uniqueness (default: 0)
+     * @return string Generated 8-character password
+     */
+    private function customEncrypt($orderId, $index = 0)
     {
         $upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $lowerCase = 'abcdefghijklmnopqrstuvwxyz';
         $numbers = '0123456789';
         $specialChars = '!@#$%^&*';
-
-        // Use userId + index as seed for unique passwords
-        mt_srand($userId + $index);
+        
+        // Use order ID as seed for consistent password generation
+        mt_srand($orderId);
 
         // Generate password with requirements
         $password = '';
