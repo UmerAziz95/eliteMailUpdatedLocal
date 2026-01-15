@@ -638,7 +638,31 @@ class MailinAiService
                     'response' => $responseBody,
                 ];
             } else {
-                $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
+                // Build comprehensive error message - check multiple sources
+                $errorMessage = 'Unknown error';
+                
+                if (isset($responseBody['message'])) {
+                    $errorMessage = $responseBody['message'];
+                } elseif (isset($responseBody['error'])) {
+                    $errorMessage = $responseBody['error'];
+                }
+                
+                // Extract error messages from 'errors' array (Laravel validation format)
+                if (isset($responseBody['errors']) && is_array($responseBody['errors'])) {
+                    $errorMessages = [];
+                    foreach ($responseBody['errors'] as $field => $messages) {
+                        if (is_array($messages)) {
+                            foreach ($messages as $message) {
+                                $errorMessages[] = $message;
+                            }
+                        } elseif (is_string($messages)) {
+                            $errorMessages[] = $messages;
+                        }
+                    }
+                    if (!empty($errorMessages)) {
+                        $errorMessage = implode('. ', $errorMessages);
+                    }
+                }
                 
                 Log::channel('mailin-ai')->error('Mailin.ai domain transfer failed', [
                     'action' => 'transfer_domain',

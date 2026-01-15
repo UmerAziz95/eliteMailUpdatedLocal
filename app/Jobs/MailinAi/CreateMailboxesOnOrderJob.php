@@ -536,6 +536,9 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
 
             // Track domains that hit rate limits for retry
             $rateLimitedDomains = [];
+            
+            // Track domains with permanent errors (invalid format, etc.) that should trigger rejection
+            $invalidFormatDomains = [];
 
             // Transfer each domain with delays and rate limit handling
             foreach ($domains as $index => $domain) {
@@ -1053,6 +1056,15 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                         sleep($rateLimitDelay);
 
                     } else {
+                        // Check if this is a permanent error (invalid domain format)
+                        $isInvalidFormatError = str_contains(strtolower($errorMessage), 'domain name format is invalid')
+                            || str_contains(strtolower($errorMessage), 'format is invalid')
+                            || str_contains(strtolower($errorMessage), 'invalid domain');
+                        
+                        if ($isInvalidFormatError) {
+                            $invalidFormatDomains[] = $domain;
+                        }
+                        
                         // Other errors - log and save as failed
                         Log::channel('mailin-ai')->error('Failed to transfer domain', [
                             'action' => 'handle_domain_transfer',
@@ -1060,6 +1072,7 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                             'domain' => $domain,
                             'error' => $errorMessage,
                             'is_rate_limit' => false,
+                            'is_invalid_format' => $isInvalidFormatError,
                         ]);
 
                         // Save failed transfer record
@@ -1151,6 +1164,72 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                 'rate_limited_count' => $rateLimitedCount,
                 'has_rate_limit_errors' => $hasRateLimitErrors,
             ]);
+
+            // Check if there are domains with invalid format errors - these are permanent errors that should trigger rejection
+            if (!empty($invalidFormatDomains)) {
+                Log::channel('mailin-ai')->warning('Order has domains with invalid format - rejecting', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                    'invalid_format_domains' => $invalidFormatDomains,
+                ]);
+                
+                // Get failed domain transfer records for the invalid format domains
+                $invalidDomainTransfers = DomainTransfer::where('order_id', $this->orderId)
+                    ->whereIn('domain_name', $invalidFormatDomains)
+                    ->get();
+                
+                // Format rejection reason
+                $rejectionReason = "Order rejected: The following domains have an invalid format and cannot be processed by Mailin.ai:\n\n";
+                foreach ($invalidDomainTransfers as $transfer) {
+                    $rejectionReason .= "• **{$transfer->domain_name}**: {$transfer->error_message}\n";
+                }
+                $rejectionReason .= "\nPlease verify these domains are valid and properly registered, then resubmit the order with corrected domains.";
+                
+                // Delete any mailboxes created for this order before rejecting
+                $this->deleteOrderMailboxesFromMailin($mailinService);
+                
+                $order->update([
+                    'status_manage_by_admin' => 'reject',
+                    'reason' => $rejectionReason,
+                ]);
+                
+                Log::channel('mailin-ai')->warning('Order rejected due to invalid domain format', [
+                    'action' => 'handle_domain_transfer',
+                    'order_id' => $this->orderId,
+                    'invalid_domains_count' => count($invalidFormatDomains),
+                    'invalid_domains' => $invalidFormatDomains,
+                    'new_status' => 'reject',
+                ]);
+                
+                // Send email notification
+                try {
+                    $order->refresh();
+                    $user = $order->user;
+                    if ($user && $user->email) {
+                        Mail::to($user->email)
+                            ->queue(new OrderStatusChangeMail(
+                                $order,
+                                $user,
+                                'in-progress',
+                                'reject',
+                                $rejectionReason,
+                                false
+                            ));
+                        Log::channel('mailin-ai')->info('Email notification sent for rejected order (invalid domain format)', [
+                            'action' => 'handle_domain_transfer',
+                            'order_id' => $this->orderId,
+                            'user_email' => $user->email,
+                        ]);
+                    }
+                } catch (\Exception $emailException) {
+                    Log::channel('email-failures')->error('Failed to send order rejection email', [
+                        'exception' => $emailException->getMessage(),
+                        'order_id' => $this->orderId,
+                    ]);
+                }
+                
+                return;
+            }
 
             // If ALL domains failed to transfer (no successful transfers and no rate-limited), reject the order
             if ($hasDomainTransferFailures && $successCount === 0 && $rateLimitedCount === 0) {
