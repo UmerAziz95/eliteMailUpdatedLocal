@@ -109,20 +109,44 @@ class CreateMailboxesForActiveDomainsCommand extends Command
 
         $this->info("Checking domain status on Mailin.ai...");
         foreach ($domains as $domain) {
-            try {
-                $status = $mailinService->checkDomainStatus($domain);
-                if ($status['success'] && $status['status'] === 'active') {
-                    $activeDomains[] = $domain;
-                    $domainIds[$domain] = $status['data']['id'] ?? null;
-                    $this->line("  ✓ {$domain} - ACTIVE" . ($domainIds[$domain] ? " (ID: {$domainIds[$domain]})" : ""));
-                } else {
-                    $inactiveDomains[] = $domain;
-                    $this->line("  ✗ {$domain} - NOT ACTIVE");
+            $maxRetries = 3;
+            $retryCount = 0;
+            $success = false;
+            
+            while (!$success && $retryCount < $maxRetries) {
+                try {
+                    $status = $mailinService->checkDomainStatus($domain);
+                    if ($status['success'] && $status['status'] === 'active') {
+                        $activeDomains[] = $domain;
+                        $domainIds[$domain] = $status['data']['id'] ?? null;
+                        $this->line("  ✓ {$domain} - ACTIVE" . ($domainIds[$domain] ? " (ID: {$domainIds[$domain]})" : ""));
+                    } else {
+                        $inactiveDomains[] = $domain;
+                        $this->line("  ✗ {$domain} - NOT ACTIVE");
+                    }
+                    $success = true;
+                } catch (\Exception $e) {
+                    $errorMsg = $e->getMessage();
+                    // Check if it's a rate limit error
+                    if (stripos($errorMsg, 'rate limit') !== false || stripos($errorMsg, 'Too Many Attempts') !== false) {
+                        $retryCount++;
+                        if ($retryCount < $maxRetries) {
+                            $waitTime = $retryCount * 2; // 2s, 4s, 6s
+                            $this->warn("  ⏳ {$domain} - Rate limited, waiting {$waitTime}s (retry {$retryCount}/{$maxRetries})...");
+                            sleep($waitTime);
+                        } else {
+                            $inactiveDomains[] = $domain;
+                            $this->line("  ✗ {$domain} - ERROR after {$maxRetries} retries: {$errorMsg}");
+                        }
+                    } else {
+                        $inactiveDomains[] = $domain;
+                        $this->line("  ✗ {$domain} - ERROR: {$errorMsg}");
+                        $success = true; // Don't retry non-rate-limit errors
+                    }
                 }
-            } catch (\Exception $e) {
-                $inactiveDomains[] = $domain;
-                $this->line("  ✗ {$domain} - ERROR: {$e->getMessage()}");
             }
+            
+            usleep(200000); // 0.2 sec delay between domains to prevent rate limiting
         }
 
         $this->newLine();
@@ -290,6 +314,49 @@ class CreateMailboxesForActiveDomainsCommand extends Command
                 $this->newLine();
                 $this->info("✓ Saved {$savedCount} new mailboxes to database");
 
+                // Fetch mailin_mailbox_id from Mailin.ai and update records
+                if ($savedCount > 0) {
+                    $this->newLine();
+                    $this->info("Fetching mailbox IDs from Mailin.ai...");
+                    sleep(3); // Wait for Mailin.ai to process
+                    
+                    $updatedIds = 0;
+                    foreach ($activeDomains as $domain) {
+                        try {
+                            $fetchResult = $mailinService->getMailboxesByDomain($domain);
+                            if ($fetchResult['success'] && !empty($fetchResult['mailboxes'])) {
+                                // Build lookup map
+                                $mailinMailboxes = [];
+                                foreach ($fetchResult['mailboxes'] as $mb) {
+                                    $username = strtolower($mb['username'] ?? $mb['email'] ?? '');
+                                    if ($username && isset($mb['id'])) {
+                                        $mailinMailboxes[$username] = $mb['id'];
+                                    }
+                                }
+                                
+                                // Update emails for this domain
+                                $domainEmails = OrderEmail::where('order_id', $orderId)
+                                    ->where('email', 'like', '%@' . $domain)
+                                    ->whereNull('mailin_mailbox_id')
+                                    ->get();
+                                
+                                foreach ($domainEmails as $email) {
+                                    $emailLower = strtolower($email->email);
+                                    if (isset($mailinMailboxes[$emailLower])) {
+                                        $email->update(['mailin_mailbox_id' => $mailinMailboxes[$emailLower]]);
+                                        $updatedIds++;
+                                    }
+                                }
+                            }
+                            usleep(300000); // 0.3 sec delay between domains
+                        } catch (\Exception $e) {
+                            $this->warn("  Could not fetch IDs for {$domain}: {$e->getMessage()}");
+                        }
+                    }
+                    
+                    $this->info("  Updated {$updatedIds} mailboxes with Mailin IDs");
+                }
+
                 Log::channel('mailin-ai')->info('Manually created mailboxes for active domains', [
                     'action' => 'create_mailboxes_for_active_domains',
                     'order_id' => $orderId,
@@ -348,28 +415,50 @@ class CreateMailboxesForActiveDomainsCommand extends Command
             }
         }
 
-        // Determine status
-        $allDomainsActive = count($inactiveDomains) === 0;
+        // Determine status - PRIMARY check is mailbox count, not domain status
+        // If all mailboxes are created, order is complete even if domain check had rate limit errors
         $allMailboxesCreated = $totalEmails >= $expectedTotal;
+        $allDomainsHaveMailboxes = empty($missingDomains);
 
-        if ($allDomainsActive && $allMailboxesCreated) {
-            $this->info("✓ All domains active and all mailboxes created");
+        if ($allMailboxesCreated && $allDomainsHaveMailboxes) {
+            $this->info("✓ All mailboxes created ({$totalEmails}/{$expectedTotal})");
             $statusType = 'all_complete';
-        } elseif (!$allDomainsActive) {
-            $missing = $expectedTotal - $totalEmails;
-            $this->warn("  {$missing} mailboxes missing - Some domains are not active on Mailin.ai");
-            $statusType = 'domains_not_active';
-        } else {
+        } elseif (!$allMailboxesCreated) {
             $missing = $expectedTotal - $totalEmails;
             $this->warn("  {$missing} mailboxes missing");
+            if (!empty($missingDomains)) {
+                $this->warn("  Missing domains: " . implode(', ', array_slice($missingDomains, 0, 5)));
+            }
             $statusType = 'incomplete_mailboxes';
+        } else {
+            $statusType = 'all_complete';
         }
 
-        // NOTE: Order status is NOT changed - manual intervention required
-        $this->info("  Order status NOT changed (manual intervention required)");
+        // If all mailboxes created, mark order as completed
+        if ($allMailboxesCreated && $allDomainsHaveMailboxes) {
+            if (!$isDryRun && $order->status_manage_by_admin !== 'completed') {
+                $order->update([
+                    'status_manage_by_admin' => 'completed',
+                    'completed_at' => now(),
+                ]);
+                $this->info("✓ Order marked as COMPLETED");
 
-        // Only send Slack notification if there are inactive domains
-        if (!$isDryRun && !$allDomainsActive) {
+                Log::channel('mailin-ai')->info('Order completed after manual mailbox creation', [
+                    'action' => 'create_mailboxes_for_active_domains',
+                    'order_id' => $order->id,
+                    'mailbox_count' => $totalEmails,
+                ]);
+            } elseif ($order->status_manage_by_admin === 'completed') {
+                $this->info("  Order already completed");
+            } else {
+                $this->info("  DRY RUN: Would mark order as completed");
+            }
+        } else {
+            $this->info("  Order status NOT changed (not all mailboxes created)");
+        }
+
+        // Only send Slack notification if there are missing mailboxes
+        if (!$isDryRun && !$allDomainsHaveMailboxes) {
             $this->sendSlackNotification($order, 'command_summary', [
                 'total_emails' => $totalEmails,
                 'expected_total' => $expectedTotal,
@@ -378,11 +467,11 @@ class CreateMailboxesForActiveDomainsCommand extends Command
                 'active_domains_count' => count($activeDomains),
                 'inactive_domains_count' => count($inactiveDomains),
                 'inactive_domains' => $inactiveDomains,
-                'all_complete' => $allDomainsActive && $allMailboxesCreated,
+                'all_complete' => $allMailboxesCreated && $allDomainsHaveMailboxes,
                 'status_type' => $statusType,
             ]);
-        } elseif ($allDomainsActive) {
-            $this->info("  All domains active - Slack notification not sent");
+        } elseif ($allDomainsHaveMailboxes) {
+            $this->info("  All mailboxes exist - Slack notification not sent");
         }
     }
 
