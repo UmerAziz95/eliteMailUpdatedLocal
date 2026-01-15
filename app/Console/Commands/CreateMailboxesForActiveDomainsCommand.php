@@ -146,12 +146,6 @@ class CreateMailboxesForActiveDomainsCommand extends Command
         // Backfill missing mailin_mailbox_id and mailin_domain_id for existing emails
         $this->backfillMissingMailinIds($orderId, $activeDomains, $domainIds, $mailinService, $isDryRun);
 
-        // Generate password function
-        $generatePassword = function ($userId, $index = 0) {
-            $basePassword = substr(md5($userId . 'salt_key_2024' . $index), 0, 12);
-            return ucfirst($basePassword) . '!' . rand(10, 99);
-        };
-
         // Build list of mailboxes to create (skip existing ones)
         $this->newLine();
         $this->info("Building mailbox list (skipping existing)...");
@@ -189,7 +183,7 @@ class CreateMailboxesForActiveDomainsCommand extends Command
                     $name = $prefix;
                 }
 
-                $password = $generatePassword($order->user_id, $mailboxIndex);
+                $password = $this->generatePassword($orderId);
 
                 $mailboxesToCreate[] = [
                     'username' => $username,
@@ -393,6 +387,50 @@ class CreateMailboxesForActiveDomainsCommand extends Command
     }
 
     /**
+     * Generate password using the same logic as CreateMailboxesOnOrderJob::customEncrypt()
+     * Uses orderId + index as seed for consistent password generation
+     * 
+     * @param int $orderId Order ID for seeding
+     * @param int $index Index for uniqueness (default: 0)
+     * @return string Generated 8-character password
+     */
+    private function generatePassword($orderId, $index = 0)
+    {
+        $upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $lowerCase = 'abcdefghijklmnopqrstuvwxyz';
+        $numbers = '0123456789';
+        $specialChars = '!@#$%^&*';
+        
+        // Use order ID + index as seed for consistent password generation
+        mt_srand($orderId + $index);
+
+        // Generate password with requirements
+        $password = '';
+        $password .= $upperCase[mt_rand(0, strlen($upperCase) - 1)]; // 1 uppercase
+        $password .= $lowerCase[mt_rand(0, strlen($lowerCase) - 1)]; // 1 lowercase
+        $password .= $numbers[mt_rand(0, strlen($numbers) - 1)];     // 1 number
+        $password .= $specialChars[mt_rand(0, strlen($specialChars) - 1)]; // 1 special char
+
+        // Fill remaining 4 characters with mix of all character types
+        $allChars = $upperCase . $lowerCase . $numbers . $specialChars;
+        for ($i = 4; $i < 8; $i++) {
+            $password .= $allChars[mt_rand(0, strlen($allChars) - 1)];
+        }
+
+        // Shuffle using seeded random generator
+        $passwordArray = str_split($password);
+        for ($i = count($passwordArray) - 1; $i > 0; $i--) {
+            $j = mt_rand(0, $i);
+            // Swap characters
+            $temp = $passwordArray[$i];
+            $passwordArray[$i] = $passwordArray[$j];
+            $passwordArray[$j] = $temp;
+        }
+
+        return implode('', $passwordArray);
+    }
+
+    /**
      * Backfill missing mailin_mailbox_id and mailin_domain_id for existing emails
      */
     private function backfillMissingMailinIds($orderId, $activeDomains, $domainIds, $mailinService, $isDryRun)
@@ -510,17 +548,11 @@ class CreateMailboxesForActiveDomainsCommand extends Command
             $this->newLine();
             $this->info("Creating " . count($mailboxesToCreate) . " missing mailboxes on Mailin.ai...");
             
-            // Generate password function
-            $generatePassword = function ($userId, $index = 0) {
-                $basePassword = substr(md5($userId . 'salt_key_2024_backfill' . $index), 0, 12);
-                return ucfirst($basePassword) . '!' . rand(10, 99);
-            };
-            
             // Prepare mailbox data for API
             $mailboxApiData = [];
             foreach ($mailboxesToCreate as $index => $mbData) {
                 $email = $mbData['email'];
-                $password = $email->password ?: $generatePassword($email->order_id, $index);
+                $password = $email->password ?: $this->generatePassword($email->order_id);
                 $name = trim(($email->first_name ?? '') . ' ' . ($email->last_name ?? ''));
                 if (empty($name)) {
                     $name = explode('@', $email->email)[0];
