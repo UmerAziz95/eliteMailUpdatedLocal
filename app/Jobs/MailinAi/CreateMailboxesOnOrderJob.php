@@ -575,6 +575,46 @@ class CreateMailboxesOnOrderJob implements ShouldQueue
                     $transferResult = $mailinService->transferDomain($domain);
 
                     if ($transferResult['success']) {
+                        // Check if domain already exists in the account
+                        $domainAlreadyExists = $transferResult['already_exists'] ?? false;
+                        
+                        if ($domainAlreadyExists) {
+                            // Domain already exists in Mailin.ai account - mark as completed directly
+                            // No nameserver update needed since domain is already configured
+                            Log::channel('mailin-ai')->info('Domain already exists in Mailin.ai account - marking as completed', [
+                                'action' => 'handle_domain_transfer',
+                                'order_id' => $this->orderId,
+                                'domain' => $domain,
+                            ]);
+                            
+                            try {
+                                DomainTransfer::updateOrCreate(
+                                    [
+                                        'order_id' => $this->orderId,
+                                        'domain_name' => $domain,
+                                    ],
+                                    [
+                                        'provider_slug' => $providerSlug,
+                                        'name_servers' => [],
+                                        'status' => 'completed', // Mark as completed since domain already exists
+                                        'name_server_status' => 'updated', // Consider nameservers already updated
+                                        'response_data' => $transferResult['response'] ?? null,
+                                        'error_message' => null,
+                                    ]
+                                );
+                            } catch (\Exception $dbException) {
+                                Log::channel('mailin-ai')->error('Failed to save domain transfer record for existing domain', [
+                                    'action' => 'handle_domain_transfer',
+                                    'order_id' => $this->orderId,
+                                    'domain' => $domain,
+                                    'error' => $dbException->getMessage(),
+                                ]);
+                            }
+                            
+                            // Skip to next domain - no nameserver update needed
+                            continue;
+                        }
+                        
                         $nameServers = $transferResult['name_servers'] ?? [];
 
                         // Log the raw name_servers value to debug

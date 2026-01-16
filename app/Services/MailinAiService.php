@@ -664,6 +664,30 @@ class MailinAiService
                     }
                 }
                 
+                // Check if domain already exists in the account - this is not a failure
+                // The domain is already registered, so treat it as success
+                $errorMessageLower = strtolower($errorMessage);
+                $domainAlreadyExists = str_contains($errorMessageLower, 'domain already exists in your account')
+                    || str_contains($errorMessageLower, 'already exists in your account')
+                    || str_contains($errorMessageLower, 'domain is already registered');
+                
+                if ($domainAlreadyExists) {
+                    Log::channel('mailin-ai')->info('Domain already exists in Mailin.ai account - treating as success', [
+                        'action' => 'transfer_domain',
+                        'domain_name' => $domainName,
+                        'status_code' => $statusCode,
+                        'message' => $errorMessage,
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'already_exists' => true, // Flag to indicate domain already exists
+                        'message' => 'Domain already exists in your account',
+                        'name_servers' => [], // No nameservers returned since domain already exists
+                        'response' => $responseBody,
+                    ];
+                }
+                
                 Log::channel('mailin-ai')->error('Mailin.ai domain transfer failed', [
                     'action' => 'transfer_domain',
                     'domain_name' => $domainName,
