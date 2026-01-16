@@ -2783,10 +2783,6 @@ class OrderController extends Controller
                             }
                         }
                         
-                        // Remove any remaining dots from names
-                        $firstName = str_replace('.', '', $firstName);
-                        $lastName = str_replace('.', '', $lastName);
-                        
                         // Generate password if not found in details
                         if (empty($password)) {
                             $password = $this->customEncrypt($order->id);
@@ -2982,9 +2978,9 @@ class OrderController extends Controller
                             }
                         }
                         
-                        // Remove any remaining dots from names
-                        $firstName = str_replace('.', '', $firstName);
-                        $lastName = str_replace('.', '', $lastName);
+                        // // Remove any remaining dots from names
+                        // $firstName = str_replace('.', '', $firstName);
+                        // $lastName = str_replace('.', '', $lastName);
                         
                         // Generate password if not found in details
                         if (empty($password)) {
