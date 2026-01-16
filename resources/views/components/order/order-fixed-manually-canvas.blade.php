@@ -27,7 +27,11 @@
                                 <i class="fa-solid fa-stop me-1"></i> Stop
                             </button>
                             <button type="button" id="clearFixLogs" class="btn btn-outline-secondary">
-                                <i class="fa-solid fa-trash me-1"></i> Clear Logs
+                                <i class="fa-solid fa-eraser me-1"></i> Clear Logs
+                            </button>
+                            <div class="vr mx-2"></div>
+                            <button type="button" id="deleteMailboxesBtn" class="btn btn-outline-danger">
+                                <i class="fa-solid fa-trash-alt me-1"></i> Delete Mailboxes
                             </button>
                         </div>
                         <div class="d-flex align-items-center gap-3">
@@ -105,6 +109,11 @@
                             <div class="d-flex align-items-center gap-2">
                                 <i class="fa-solid fa-globe text-primary"></i>
                                 <span>Active Domains: <strong id="activeDomainsCount">0</strong></span>
+                            </div>
+                            <div class="vr mx-2"></div>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-trash-alt text-danger"></i>
+                                <span>Deleted: <strong id="deletedCount">0</strong></span>
                             </div>
                         </div>
                         <div id="lastRunTime" class="text-muted small">
@@ -210,8 +219,10 @@
         created: 0,
         skipped: 0,
         failed: 0,
-        activeDomains: 0
+        activeDomains: 0,
+        deleted: 0
     };
+    let currentMode = 'create'; // 'create' or 'delete'
 
     // DOM Elements
     const canvas = document.getElementById('orderFixedManuallyCanvas');
@@ -219,6 +230,7 @@
     const runBtn = document.getElementById('runFixCommand');
     const stopBtn = document.getElementById('stopFixCommand');
     const clearBtn = document.getElementById('clearFixLogs');
+    const deleteBtn = document.getElementById('deleteMailboxesBtn');
     const statusBadge = document.getElementById('fixStatusBadge');
     const progressBar = document.getElementById('fixProgressBar');
     const autoRetryToggle = document.getElementById('autoRetryToggle');
@@ -255,18 +267,70 @@
         clearTerminal();
     });
 
-    // Run the artisan command
+    // Delete Mailboxes Button
+    deleteBtn.addEventListener('click', function() {
+        if (!currentOrderId || isRunning) return;
+        
+        // Show confirmation dialog
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: '⚠️ Delete Mailboxes',
+                html: `<p>Are you sure you want to delete <strong>ALL mailboxes</strong> for Order #${currentOrderId}?</p>
+                       <p class="text-danger"><strong>This will:</strong></p>
+                       <ul class="text-start">
+                           <li>Delete all mailboxes from Mailin.ai</li>
+                           <li>Remove all email records from database</li>
+                       </ul>
+                       <p class="text-danger"><strong>This action cannot be undone!</strong></p>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Delete All!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    runDeleteCommand();
+                }
+            });
+        } else {
+            // Fallback to native confirm
+            if (confirm(`Are you sure you want to delete ALL mailboxes for Order #${currentOrderId}? This action cannot be undone!`)) {
+                runDeleteCommand();
+            }
+        }
+    });
+
+    // Run the create mailboxes command
     function runCommand() {
         if (!currentOrderId) return;
         
+        currentMode = 'create';
         isRunning = true;
         updateUI('running');
-        appendLog('info', `Starting command for Order #${currentOrderId}...`);
+        appendLog('info', `Starting mailbox creation for Order #${currentOrderId}...`);
         appendLog('separator');
+        executeCommand(`{{ url('/admin/orders') }}/${currentOrderId}/run-fix-mailboxes`);
+    }
+
+    // Run the delete mailboxes command
+    function runDeleteCommand() {
+        if (!currentOrderId) return;
+        
+        currentMode = 'delete';
+        isRunning = true;
+        stats.deleted = 0;
+        document.getElementById('deletedCount').textContent = '0';
+        updateUI('running');
+        appendLog('error', `⚠️ DELETING mailboxes for Order #${currentOrderId}...`);
+        appendLog('separator');
+        executeCommand(`{{ url('/admin/orders') }}/${currentOrderId}/run-delete-mailboxes`);
+    }
+
+    // Execute command with SSE streaming  
+    function executeCommand(url) {
 
         // Use fetch with streaming response
-        const url = `{{ url('/admin/orders') }}/${currentOrderId}/run-fix-mailboxes`;
-        
         fetch(url, {
             method: 'GET',
             headers: {
@@ -429,6 +493,10 @@
             stats.activeDomains = data.activeDomains;
             document.getElementById('activeDomainsCount').textContent = stats.activeDomains;
         }
+        if (data.deleted !== undefined) {
+            stats.deleted = data.deleted;
+            document.getElementById('deletedCount').textContent = stats.deleted;
+        }
     }
 
     // Handle command completion
@@ -499,6 +567,7 @@
     function updateUI(state) {
         runBtn.disabled = isRunning;
         stopBtn.disabled = !isRunning;
+        deleteBtn.disabled = isRunning;
         
         // Remove all classes first
         statusBadge.classList.remove('bg-secondary', 'bg-success', 'bg-danger', 'bg-warning', 'bg-info', 'bg-primary', 'running');
@@ -541,10 +610,12 @@
     // Reset state
     function resetState() {
         retryCount = 0;
-        stats = { created: 0, skipped: 0, failed: 0, activeDomains: 0 };
+        currentMode = 'create';
+        stats = { created: 0, skipped: 0, failed: 0, activeDomains: 0, deleted: 0 };
         retryCountEl.textContent = '0 / 3';
         document.getElementById('createdCount').textContent = '0';
         document.getElementById('skippedCount').textContent = '0';
+        document.getElementById('deletedCount').textContent = '0';
         document.getElementById('failedCount').textContent = '0';
         document.getElementById('activeDomainsCount').textContent = '0';
         updateProgress(0);

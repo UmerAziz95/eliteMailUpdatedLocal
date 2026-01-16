@@ -4061,5 +4061,140 @@ class OrderController extends Controller
         }
         flush();
     }
+
+    /**
+     * Run the delete mailboxes command for an order and stream output via SSE
+     * 
+     * @param int $orderId
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function runDeleteMailboxesCommand($orderId)
+    {
+        $order = Order::find($orderId);
+        
+        if (!$order) {
+            return response()->json(['error' => 'Order not found'], 404);
+        }
+
+        // Set up SSE headers
+        return response()->stream(function () use ($orderId, $order) {
+            // Disable output buffering
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Send initial message
+            $this->sendSSE(['type' => 'log', 'level' => 'warning', 'message' => "⚠️ Starting mailbox deletion for Order #{$orderId}"]);
+            $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Order Status: {$order->status_manage_by_admin}"]);
+            $this->sendSSE(['type' => 'progress', 'percent' => 5]);
+            
+            try {
+                // Run the artisan command and capture output
+                $exitCode = \Artisan::call('order:delete-mailboxes', [
+                    'order_id' => $orderId
+                ]);
+                
+                // Get the output
+                $output = \Artisan::output();
+                
+                // Parse and send output line by line
+                $lines = explode("\n", $output);
+                $totalLines = count($lines);
+                $currentLine = 0;
+                
+                $stats = [
+                    'deleted' => 0,
+                    'failed' => 0
+                ];
+                
+                foreach ($lines as $line) {
+                    $currentLine++;
+                    $trimmedLine = trim($line);
+                    
+                    if (empty($trimmedLine)) {
+                        continue;
+                    }
+                    
+                    // Parse statistics from output
+                    if (preg_match('/Deleted from Mailin\.ai:\s*(\d+)/i', $trimmedLine, $matches)) {
+                        $stats['deleted'] = (int)$matches[1];
+                        $this->sendSSE(['type' => 'stats', 'deleted' => $stats['deleted']]);
+                    }
+                    
+                    if (preg_match('/Failed deletions:\s*(\d+)/i', $trimmedLine, $matches)) {
+                        $stats['failed'] = (int)$matches[1];
+                        $this->sendSSE(['type' => 'stats', 'failed' => $stats['failed']]);
+                    }
+                    
+                    // Count individual deletions
+                    if (preg_match('/✓ Deleted from Mailin/i', $trimmedLine)) {
+                        $stats['deleted']++;
+                        $this->sendSSE(['type' => 'stats', 'deleted' => $stats['deleted']]);
+                    }
+                    
+                    // Determine log level
+                    $level = 'info';
+                    if (strpos($trimmedLine, '✓') !== false || preg_match('/Deleted from Mailin/i', $trimmedLine)) {
+                        $level = 'success';
+                    } elseif (strpos($trimmedLine, '✗') !== false || preg_match('/error|failed/i', $trimmedLine)) {
+                        $level = 'error';
+                    } elseif (strpos($trimmedLine, '⚠') !== false || preg_match('/warning|No mailbox/i', $trimmedLine)) {
+                        $level = 'warning';
+                    }
+                    
+                    // Send log line
+                    $this->sendSSE(['type' => 'log', 'level' => $level, 'message' => $trimmedLine]);
+                    
+                    // Update progress
+                    $progress = min(95, 5 + (($currentLine / $totalLines) * 90));
+                    $this->sendSSE(['type' => 'progress', 'percent' => round($progress)]);
+                    
+                    // Small delay to prevent overwhelming the browser
+                    usleep(10000); // 10ms
+                }
+                
+                // Send completion message
+                $success = $exitCode === 0;
+                
+                $this->sendSSE([
+                    'type' => 'complete',
+                    'success' => $success,
+                    'needsRetry' => false,
+                    'exitCode' => $exitCode
+                ]);
+                
+                $this->sendSSE(['type' => 'progress', 'percent' => 100]);
+                
+                // Log activity
+                ActivityLogService::log(
+                    'order_mailboxes_deleted',
+                    "Manual mailbox deletion executed for Order #{$orderId}",
+                    $order,
+                    [
+                        'exit_code' => $exitCode,
+                        'stats' => $stats,
+                        'order_status' => $order->status_manage_by_admin
+                    ],
+                    Auth::id()
+                );
+                
+            } catch (\Exception $e) {
+                $this->sendSSE(['type' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
+                $this->sendSSE(['type' => 'complete', 'success' => false, 'needsRetry' => false]);
+                
+                Log::error('Error running delete mailboxes command', [
+                    'order_id' => $orderId,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+            
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
 }
 

@@ -370,6 +370,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/orders/{orderId}/change-status', [AdminOrderController::class, 'changeStatus'])->name('orders.change-status');
         Route::post('/orders/{orderId}/change-provider-type', [AdminOrderController::class, 'changeProviderType'])->name('orders.change-provider-type');
         Route::get('/orders/{orderId}/run-fix-mailboxes', [AdminOrderController::class, 'runFixMailboxesCommand'])->name('orders.run-fix-mailboxes');
+        Route::get('/orders/{orderId}/run-delete-mailboxes', [AdminOrderController::class, 'runDeleteMailboxesCommand'])->name('orders.run-delete-mailboxes');
 
         // Shared Orders routes
         Route::get('/shared-order-requests', [AdminOrderController::class, 'sharedOrderRequests'])->name('orders.shared-order-requests');
