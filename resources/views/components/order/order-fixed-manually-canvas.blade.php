@@ -16,32 +16,34 @@
     <div class="offcanvas-body p-0">
         <div class="container-fluid h-100 d-flex flex-column">
             <!-- Control Panel -->
-            <div class="row py-3 px-3" style="background: var(--secondary-color); border-bottom: 1px solid var(--input-border);">
+            <div class="row py-3 px-4" style="background: var(--secondary-color); border-bottom: 1px solid var(--input-border);">
                 <div class="col-12">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <button type="button" id="runFixCommand" class="btn btn-success">
-                                <i class="fa-solid fa-play me-1"></i> Run Command
+                        <!-- Action Buttons Group -->
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" id="runFixCommand" class="btn m-btn px-4">
+                                <i class="fa-solid fa-envelope-circle-check me-2"></i> Create Mailboxes
                             </button>
-                            <button type="button" id="stopFixCommand" class="btn btn-danger" disabled>
+                            <button type="button" id="stopFixCommand" class="btn cancel-btn px-3" disabled>
                                 <i class="fa-solid fa-stop me-1"></i> Stop
                             </button>
-                            <button type="button" id="clearFixLogs" class="btn btn-outline-secondary">
-                                <i class="fa-solid fa-eraser me-1"></i> Clear Logs
+                            <button type="button" id="clearFixLogs" class="btn c-btn px-3">
+                                <i class="fa-solid fa-eraser me-1"></i> Clear
                             </button>
-                            <div class="vr mx-2"></div>
-                            <button type="button" id="deleteMailboxesBtn" class="btn btn-outline-danger">
+                            <div style="width: 1px; height: 28px; background: var(--input-border); margin: 0 8px;"></div>
+                            <button type="button" id="deleteMailboxesBtn" class="btn cancel-btn px-3">
                                 <i class="fa-solid fa-trash-alt me-1"></i> Delete Mailboxes
                             </button>
                         </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="autoRetryToggle" checked>
-                                <label class="form-check-label" for="autoRetryToggle">Auto Retry</label>
+                        <!-- Options Group -->
+                        <div class="d-flex align-items-center gap-4">
+                            <div class="form-check form-switch" style="margin-bottom: 0;">
+                                <input class="form-check-input" type="checkbox" id="autoRetryToggle" checked style="cursor: pointer;">
+                                <label class="form-check-label" for="autoRetryToggle" style="cursor: pointer; color: var(--light-color);">Auto Retry</label>
                             </div>
                             <div class="d-flex align-items-center gap-2">
-                                <span class="text-muted">Retry Count:</span>
-                                <span id="retryCount" class="badge bg-info">0 / 3</span>
+                                <span style="color: var(--extra-light); font-size: 13px;">Attempts:</span>
+                                <span id="retryCount" class="badge" style="background: var(--second-primary);">0 / 3</span>
                             </div>
                         </div>
                     </div>
