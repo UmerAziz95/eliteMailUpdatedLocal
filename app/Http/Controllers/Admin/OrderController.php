@@ -3958,7 +3958,13 @@ class OrderController extends Controller
                         $this->sendSSE(['type' => 'stats', 'created' => $stats['created']]);
                     }
                     
-                    if (preg_match('/Skipping|skipped/i', $trimmedLine)) {
+                    // Count skipped mailboxes - extract number from summary or count individual skips
+                    if (preg_match('/Mailboxes skipped.*?:\s*(\d+)/i', $trimmedLine, $matches)) {
+                        // Summary line like "Mailboxes skipped (already exist): 9"
+                        $stats['skipped'] = (int)$matches[1];
+                        $this->sendSSE(['type' => 'stats', 'skipped' => $stats['skipped']]);
+                    } elseif (preg_match('/^Skipping \(exists/i', $trimmedLine)) {
+                        // Individual skip line like "Skipping (exists in DB): email@domain.com"
                         $stats['skipped']++;
                         $this->sendSSE(['type' => 'stats', 'skipped' => $stats['skipped']]);
                     }
