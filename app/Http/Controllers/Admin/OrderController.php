@@ -331,6 +331,11 @@ class OrderController extends Controller
                                 <i class="fa-solid fa-history"></i> &nbsp;Log View
                             </a>
                         </li>
+                        <li>
+                            <a href="javascript:;" class="dropdown-item order-fixed-manually" data-order-id="' . $order->id . '">
+                                <i class="fa-solid fa-wrench text-warning"></i> &nbsp;Order Fixed Manually
+                            </a>
+                        </li>
                     </ul>
                 </div>';
 
@@ -3920,6 +3925,173 @@ class OrderController extends Controller
                 'message' => 'Error processing CSV file: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Run the fix mailboxes command for an order and stream output via SSE
+     * 
+     * @param int $orderId
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function runFixMailboxesCommand($orderId)
+    {
+        $order = Order::find($orderId);
+        
+        if (!$order) {
+            return response()->json(['error' => 'Order not found'], 404);
+        }
+
+        // Set up SSE headers
+        return response()->stream(function () use ($orderId, $order) {
+            // Disable output buffering
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Send initial message
+            $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Starting mailbox creation for Order #{$orderId}"]);
+            $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Order Status: {$order->status_manage_by_admin}"]);
+            $this->sendSSE(['type' => 'progress', 'percent' => 5]);
+            
+            try {
+                // Run the artisan command and capture output
+                $exitCode = \Artisan::call('mailin:create-mailboxes-for-active-domains', [
+                    'order_id' => $orderId
+                ]);
+                
+                // Get the output
+                $output = \Artisan::output();
+                
+                // Parse and send output line by line
+                $lines = explode("\n", $output);
+                $totalLines = count($lines);
+                $currentLine = 0;
+                
+                $stats = [
+                    'created' => 0,
+                    'skipped' => 0,
+                    'failed' => 0,
+                    'activeDomains' => 0
+                ];
+                
+                $needsRetry = false;
+                
+                foreach ($lines as $line) {
+                    $currentLine++;
+                    $trimmedLine = trim($line);
+                    
+                    if (empty($trimmedLine)) {
+                        continue;
+                    }
+                    
+                    // Parse statistics from output
+                    if (preg_match('/Active domains:\s*(\d+)/', $trimmedLine, $matches)) {
+                        $stats['activeDomains'] = (int)$matches[1];
+                        $this->sendSSE(['type' => 'stats', 'activeDomains' => $stats['activeDomains']]);
+                    }
+                    
+                    if (preg_match('/Created:\s*(\d+)/', $trimmedLine, $matches) || 
+                        preg_match('/Saved\s+(\d+)\s+new\s+mailboxes/', $trimmedLine, $matches)) {
+                        $stats['created'] = (int)$matches[1];
+                        $this->sendSSE(['type' => 'stats', 'created' => $stats['created']]);
+                    }
+                    
+                    if (preg_match('/Skipping|skipped/i', $trimmedLine)) {
+                        $stats['skipped']++;
+                        $this->sendSSE(['type' => 'stats', 'skipped' => $stats['skipped']]);
+                    }
+                    
+                    if (preg_match('/Error|Failed|failed/i', $trimmedLine) && !preg_match('/error_message/i', $trimmedLine)) {
+                        $stats['failed']++;
+                        $this->sendSSE(['type' => 'stats', 'failed' => $stats['failed']]);
+                    }
+                    
+                    // Check if retry is needed
+                    if (preg_match('/mailboxes missing|incomplete|not all mailboxes|NOT changed/i', $trimmedLine)) {
+                        $needsRetry = true;
+                    }
+                    
+                    // Determine log level
+                    $level = 'info';
+                    if (strpos($trimmedLine, '✓') !== false || preg_match('/success|completed|COMPLETED/i', $trimmedLine)) {
+                        $level = 'success';
+                    } elseif (strpos($trimmedLine, '✗') !== false || preg_match('/error|failed/i', $trimmedLine)) {
+                        $level = 'error';
+                    } elseif (strpos($trimmedLine, '⚠') !== false || preg_match('/warning|skipping|missing/i', $trimmedLine)) {
+                        $level = 'warning';
+                    }
+                    
+                    // Send log line
+                    $this->sendSSE(['type' => 'log', 'level' => $level, 'message' => $trimmedLine]);
+                    
+                    // Update progress
+                    $progress = min(95, 5 + (($currentLine / $totalLines) * 90));
+                    $this->sendSSE(['type' => 'progress', 'percent' => round($progress)]);
+                    
+                    // Small delay to prevent overwhelming the browser
+                    usleep(10000); // 10ms
+                }
+                
+                // Send completion message
+                $success = $exitCode === 0 && $stats['failed'] === 0;
+                
+                // Reload order to check if it was completed
+                $order->refresh();
+                $orderCompleted = $order->status_manage_by_admin === 'completed';
+                
+                $this->sendSSE([
+                    'type' => 'complete',
+                    'success' => $success,
+                    'needsRetry' => $needsRetry && !$orderCompleted,
+                    'orderStatus' => $order->status_manage_by_admin,
+                    'exitCode' => $exitCode
+                ]);
+                
+                $this->sendSSE(['type' => 'progress', 'percent' => 100]);
+                
+                // Log activity
+                ActivityLogService::log(
+                    'order_fixed_manually',
+                    "Manual mailbox creation executed for Order #{$orderId}",
+                    $order,
+                    [
+                        'exit_code' => $exitCode,
+                        'stats' => $stats,
+                        'order_status' => $order->status_manage_by_admin
+                    ],
+                    Auth::id()
+                );
+                
+            } catch (\Exception $e) {
+                $this->sendSSE(['type' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
+                $this->sendSSE(['type' => 'complete', 'success' => false, 'needsRetry' => false]);
+                
+                Log::error('Error running fix mailboxes command', [
+                    'order_id' => $orderId,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+            
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
+     * Send SSE event
+     */
+    private function sendSSE($data)
+    {
+        echo "data: " . json_encode($data) . "\n\n";
+        
+        if (ob_get_level()) {
+            ob_flush();
+        }
+        flush();
     }
 }
 

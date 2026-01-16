@@ -89,24 +89,41 @@ class CreateMailboxesJob implements ShouldQueue
                 return;
             }
 
-            // Extract prefix variants
+            // Extract prefix variants with details for name extraction
             $prefixVariants = [];
+            $prefixVariantsRaw = [];
             if ($reorderInfo->prefix_variants) {
                 if (is_string($reorderInfo->prefix_variants)) {
                     $decoded = json_decode($reorderInfo->prefix_variants, true);
                     if (is_array($decoded)) {
-                        // Extract values from associative array like {"prefix_variant_1": "user.dev", "prefix_variant_2": "user.test"}
-                        $prefixVariants = array_values($decoded);
+                        // Keep the associative array format like {"prefix_variant_1": "user.dev", "prefix_variant_2": "user.test"}
+                        $prefixVariantsRaw = $decoded;
                     } else {
-                        // Comma-separated string
-                        $prefixVariants = array_map('trim', explode(',', $reorderInfo->prefix_variants));
+                        // Comma-separated string - convert to associative format
+                        $parts = array_map('trim', explode(',', $reorderInfo->prefix_variants));
+                        foreach ($parts as $index => $prefix) {
+                            $prefixVariantsRaw['prefix_variant_' . ($index + 1)] = $prefix;
+                        }
                     }
                 } elseif (is_array($reorderInfo->prefix_variants)) {
-                    $prefixVariants = array_values($reorderInfo->prefix_variants);
+                    $prefixVariantsRaw = $reorderInfo->prefix_variants;
                 }
             }
 
-            if (empty($prefixVariants)) {
+            // Extract prefix_variants_details for first_name/last_name
+            $prefixVariantsDetails = [];
+            if ($reorderInfo->prefix_variants_details) {
+                if (is_string($reorderInfo->prefix_variants_details)) {
+                    $decoded = json_decode($reorderInfo->prefix_variants_details, true);
+                    if (is_array($decoded)) {
+                        $prefixVariantsDetails = $decoded;
+                    }
+                } elseif (is_array($reorderInfo->prefix_variants_details)) {
+                    $prefixVariantsDetails = $reorderInfo->prefix_variants_details;
+                }
+            }
+
+            if (empty($prefixVariantsRaw)) {
                 Log::channel('mailin-ai')->warning('No prefix variants found for mailbox creation', [
                     'action' => 'create_mailboxes_job',
                     'order_id' => $this->orderId,
@@ -119,9 +136,22 @@ class CreateMailboxesJob implements ShouldQueue
             $mailboxIndex = 0;
 
             foreach ($domains as $domain) {
-                foreach ($prefixVariants as $prefix) {
+                foreach ($prefixVariantsRaw as $prefixKey => $prefix) {
                     $username = $prefix . '@' . $domain;
-                    $name = $prefix; // Use prefix as name per requirements
+                    
+                    // Get proper name from prefix_variants_details (matching CreateMailboxesForActiveDomainsCommand logic)
+                    $variantDetails = $prefixVariantsDetails[$prefixKey] ?? null;
+
+                    if ($variantDetails && (isset($variantDetails['first_name']) || isset($variantDetails['last_name']))) {
+                        $firstName = trim($variantDetails['first_name'] ?? '');
+                        $lastName = trim($variantDetails['last_name'] ?? '');
+                        $name = trim($firstName . ' ' . $lastName);
+                        if (empty($name)) {
+                            $name = $prefix;
+                        }
+                    } else {
+                        $name = $prefix;
+                    }
                     
                     // Generate password using same logic as CSV export
                     // Use orderId + index to ensure uniqueness

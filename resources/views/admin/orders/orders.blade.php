@@ -1677,6 +1677,9 @@
     </div>
 </div>
 
+<!-- Order Fixed Manually Canvas -->
+@include('components.order.order-fixed-manually-canvas')
+
 <!-- Customized Note Modal -->
 <div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel"
     aria-hidden="true">
