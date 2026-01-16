@@ -2948,40 +2948,6 @@ class OrderController extends Controller
                             $password = $details['password'] ?? '';
                         }
                         
-                        // If no details found, try to parse prefix intelligently
-                        if (empty($firstName) && empty($lastName)) {
-                            // If prefix contains a dot (e.g., "mitsu.bee"), split by dot
-                            if (strpos($prefix, '.') !== false) {
-                                $parts = explode('.', $prefix, 2);
-                                $firstName = ucfirst(str_replace('.', '', $parts[0]));
-                                $lastName = ucfirst(str_replace('.', '', $parts[1]));
-                            }
-                            // Try to find capital letter in the middle for compound names
-                            elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]+.*)$/', $prefix, $matches)) {
-                                $firstName = $matches[1];
-                                $lastName = $matches[2];
-                            }
-                            // If prefix has PascalCase short form (e.g., RyanL -> Ryan, L)
-                            elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]*)$/', $prefix, $matches)) {
-                                $firstName = $matches[1];
-                                $lastName = $matches[2] ?: $matches[1];
-                            }
-                            // If it starts with lowercase and has uppercase
-                            elseif (preg_match('/^([a-z]+)([A-Z].*)$/', $prefix, $matches)) {
-                                $firstName = ucfirst($matches[1]);
-                                $lastName = $matches[2];
-                            }
-                            // Single word - use as both first and last name
-                            else {
-                                $firstName = ucfirst($prefix);
-                                $lastName = ucfirst($prefix);
-                            }
-                        }
-                        
-                        // // Remove any remaining dots from names
-                        // $firstName = str_replace('.', '', $firstName);
-                        // $lastName = str_replace('.', '', $lastName);
-                        
                         // Generate password if not found in details
                         if (empty($password)) {
                             $password = $this->customEncrypt($order->id);
