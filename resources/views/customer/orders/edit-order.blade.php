@@ -3024,14 +3024,54 @@ $(document).ready(function() {
             originalTotalInboxes = parseInt(orderInfo.total_inboxes) || 0;
         }
 
-        // If current inboxes are less than original, show confirmation dialog
+        // Minimum inbox threshold: total_inboxes - 3
+        const minimumRequiredInboxes = Math.max(0, originalTotalInboxes - 3);
+        const missingInboxes = originalTotalInboxes - currentTotalInboxes;
+
+        // If current inboxes are less than original, check thresholds
         if (originalTotalInboxes > 0 && currentTotalInboxes < originalTotalInboxes) {
+            
+            // Case 1: More than 3 inboxes short - ONLY allow draft (no submit option)
+            if (currentTotalInboxes < minimumRequiredInboxes) {
+                Swal.fire({
+                    title: 'Cannot Submit Order',
+                    html: `
+                        <div style="text-align: left;">
+                            <p><strong style="color: #dc3545;">You must add at least ${minimumRequiredInboxes} inboxes to submit this order.</strong></p>
+                            <hr>
+                            <p><i class="fa-solid fa-inbox"></i> <strong>Required Minimum:</strong> ${minimumRequiredInboxes} inboxes</p>
+                            <p><i class="fa-solid fa-check-circle"></i> <strong>Currently Added:</strong> ${currentTotalInboxes} inboxes</p>
+                            <p><i class="fa-solid fa-exclamation-triangle" style="color: #ffc107;"></i> <strong>Missing:</strong> ${missingInboxes} inboxes</p>
+                            <hr>
+                            <p class="mb-0"><small>Please add more domains or save as draft to continue later.</small></p>
+                        </div>
+                    `,
+                    icon: 'error',
+                    showCancelButton: true,
+                    showConfirmButton: true,
+                    confirmButtonText: '<i class="fa-solid fa-file-pen"></i> Save as Draft',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#6c757d',
+                    cancelButtonColor: '#dc3545'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Save as draft only
+                        $('#is_draft').val('1');
+                        submitForm();
+                    }
+                    // If cancelled, do nothing
+                });
+                return false;
+            }
+            
+            // Case 2: Within 3 inboxes tolerance - show both draft and continue options
             Swal.fire({
                 title: 'Incomplete Order',
                 html: `
                     <p>You haven't finished adding all of your domains.</p>
                     <p><strong>Planned Total:</strong> ${originalTotalInboxes} inboxes</p>
                     <p><strong>Currently Used:</strong> ${currentTotalInboxes} inboxes</p>
+                    <p><strong>Missing:</strong> ${missingInboxes} inboxes</p>
                     <p>Are you sure you want to continue?</p>
                 `,
                 icon: 'warning',

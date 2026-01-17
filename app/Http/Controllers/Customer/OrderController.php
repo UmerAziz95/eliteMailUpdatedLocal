@@ -39,25 +39,25 @@ class OrderController extends Controller
     {
         $this->statuses = Status::pluck('badge', 'name')->toArray();
     }
-    
+
     public function index()
     {
-        $plans = Plan::all();        
+        $plans = Plan::all();
         // Get order statistics for authenticated user
         $userId = auth()->id();
         $orders = Order::where('user_id', $userId);
-        
+
         $totalOrders = $orders->count();
-        
+
         // Get orders by admin status
         $pendingOrders = Order::where('user_id', $userId)
             ->where('status_manage_by_admin', 'pending')
             ->count();
-            
+
         $completedOrders = Order::where('user_id', $userId)
             ->where('status_manage_by_admin', 'completed')
             ->count();
-            
+
         $inProgressOrders = Order::where('user_id', $userId)
             ->where('status_manage_by_admin', 'in-progress')
             ->count();
@@ -76,7 +76,7 @@ class OrderController extends Controller
         $draftOrders = Order::where('user_id', $userId)
             ->where('status_manage_by_admin', 'draft')
             ->count();
-            
+
         // Calculate percentage changes (last week vs previous week)
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
         $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
@@ -84,21 +84,21 @@ class OrderController extends Controller
         $lastWeekOrders = Order::where('user_id', $userId)
             ->whereBetween('created_at', $lastWeek)
             ->count();
-            
+
         $previousWeekOrders = Order::where('user_id', $userId)
             ->whereBetween('created_at', $previousWeek)
             ->count();
 
-        $percentageChange = $previousWeekOrders > 0 
-            ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
+        $percentageChange = $previousWeekOrders > 0
+            ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100
             : 0;
         $statuses = $this->statuses;
         $plans = [];
         return view('customer.orders.orders', compact(
-            'plans', 
-            'totalOrders', 
-            'pendingOrders', 
-            'completedOrders', 
+            'plans',
+            'totalOrders',
+            'pendingOrders',
+            'completedOrders',
             'inProgressOrders',
             'percentageChange',
             'statuses',
@@ -109,32 +109,32 @@ class OrderController extends Controller
         ));
     }
 
-    
+
     // edit
     public function edit($id)
     {
         $order = Order::with(['plan', 'reorderInfo', 'platformCredentials'])->findOrFail($id);
-        
+
         // Check if order status allows editing
         $allowedStatuses = ['draft', 'reject'];
         if (!in_array(strtolower($order->status_manage_by_admin), $allowedStatuses)) {
             return redirect()->route('customer.orders')
                 ->with('error', 'Order cannot be edited. Only orders with Draft or Reject status can be modified.');
         }
-        
+
         $plan = $order->plan;
         $hostingPlatforms = HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get();
         $sendingPlatforms = \App\Models\SendingPlatform::get();
-        
+
         // Get domain transfer errors for display
         $domainTransferErrors = \App\Models\DomainTransfer::where('order_id', $order->id)
             ->where('status', 'pending')
             ->where('name_server_status', 'failed')
             ->whereNotNull('error_message')
             ->get();
-        
+
         // dd($hostingPlatforms);
         return view('customer.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order', 'domainTransferErrors'));
     }
@@ -147,7 +147,7 @@ class OrderController extends Controller
         $sendingPlatforms = \App\Models\SendingPlatform::get();
 
         $plan = null; // No plan selected initially, will be determined based on inboxes
-        if($id){
+        if ($id) {
             $plan = Plan::findOrFail($id);
         } else {
             // If no plan is selected, default to the first plan
@@ -183,7 +183,7 @@ class OrderController extends Controller
         //     'coupon_code' => ''
         // ]);
         return view('customer.orders.open-chargebee', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
-        
+
         // return view('customer.orders.new-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
     }
     public function reorder(Request $request, $order_id)
@@ -194,7 +194,7 @@ class OrderController extends Controller
             ->orderBy('sort_order')
             ->get();
         $sendingPlatforms = \App\Models\SendingPlatform::get();
-            
+
         return view('customer.orders.reorder', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
     }
 
@@ -202,23 +202,23 @@ class OrderController extends Controller
     {
         $startDate = Carbon::createFromTimestamp($startTimestamp);
         $currentDate = Carbon::now();
-        
+
         // Calculate how many billing periods have passed
-        $diffUnit = match($billingPeriodUnit) {
+        $diffUnit = match ($billingPeriodUnit) {
             'month' => $startDate->diffInMonths($currentDate),
             'year' => $startDate->diffInYears($currentDate),
             'week' => $startDate->diffInWeeks($currentDate),
             'day' => $startDate->diffInDays($currentDate),
             default => 0
         };
-        
+
         // Calculate how many complete billing periods have occurred
         $completePeriods = floor($diffUnit / $billingPeriod);
         // Add one more period to get the next billing date
         $totalPeriods = $completePeriods + 1;
-        
+
         // Calculate next billing date from start date
-        return match($billingPeriodUnit) {
+        return match ($billingPeriodUnit) {
             'month' => $startDate->copy()->addMonths($totalPeriods * $billingPeriod),
             'year' => $startDate->copy()->addYears($totalPeriods * $billingPeriod),
             'week' => $startDate->copy()->addWeeks($totalPeriods * $billingPeriod),
@@ -229,23 +229,24 @@ class OrderController extends Controller
 
     private function formatTimestampToReadable($timestamp)
     {
-        if (!$timestamp) return 'N/A';
-        
+        if (!$timestamp)
+            return 'N/A';
+
         // If input is already a Carbon instance
         if ($timestamp instanceof \Carbon\Carbon) {
             return $timestamp->format('F d, Y');
         }
-        
+
         // If input is a datetime string
         if (is_string($timestamp) && strtotime($timestamp) !== false) {
             return Carbon::parse($timestamp)->format('F d, Y');
         }
-        
+
         // If input is a timestamp
         if (is_numeric($timestamp)) {
             return Carbon::createFromTimestamp($timestamp)->format('F d, Y');
         }
-        
+
         return 'N/A';
     }
 
@@ -260,28 +261,28 @@ class OrderController extends Controller
             $subscriptionMeta = json_decode($order->subscription->meta ?? '{}', true);
         }
         $nextBillingInfo = [];
-        
+
         if ($order->subscription) {
             $subscription = $subscriptionMeta['subscription'] ?? [];
             $startDate = $order->subscription->start_date;
             $endDate = $order->subscription->end_date;
-            
+
             $periodStart = Carbon::parse($startDate);
             $periodEnd = $endDate ? Carbon::parse($endDate) : Carbon::now();
-            
+
             // Get the billing period and unit from metadata
             $billingPeriod = $subscription['billing_period'] ?? 1;
             $billingPeriodUnit = $subscription['billing_period_unit'] ?? 'month';
-            
+
             // Calculate period based on billing unit
-            $period = match($billingPeriodUnit) {
+            $period = match ($billingPeriodUnit) {
                 'month' => $periodStart->diffInMonths($periodEnd),
                 'year' => $periodStart->diffInYears($periodEnd),
                 'week' => $periodStart->diffInWeeks($periodEnd),
                 'day' => $periodStart->diffInDays($periodEnd),
                 default => $periodStart->diffInDays($periodEnd)
             };
-            
+
             $nextBillingInfo = [
                 'status' => $order->subscription->status,
                 'billing_period' => $billingPeriod,
@@ -315,7 +316,7 @@ class OrderController extends Controller
                 ->where('orders.user_id', auth()->id());
 
             // Apply plan filter if provided
-            if ($request->has('plan_id') && $request->plan_id !== '' && $request->plan_id != null) {   
+            if ($request->has('plan_id') && $request->plan_id !== '' && $request->plan_id != null) {
                 $orders->where('orders.plan_id', $request->plan_id);
             }
 
@@ -329,19 +330,19 @@ class OrderController extends Controller
             }
 
             if ($request->has('email') && $request->email != '') {
-                $orders->whereHas('user', function($query) use ($request) {
+                $orders->whereHas('user', function ($query) use ($request) {
                     $query->where('email', 'like', "%{$request->email}%");
                 });
             }
 
             if ($request->has('domain') && $request->domain != '') {
-                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                $orders->whereHas('reorderInfo', function ($query) use ($request) {
                     $query->where('forwarding_url', 'like', "%{$request->domain}%");
                 });
             }
-             
+
             if ($request->has('totalInboxes') && $request->totalInboxes != '') {
-                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                $orders->whereHas('reorderInfo', function ($query) use ($request) {
                     $query->whereRaw('(
                         CASE 
                             WHEN domains IS NOT NULL AND domains != "" THEN 
@@ -356,7 +357,7 @@ class OrderController extends Controller
             if ($request->has('for_import') && $request->for_import) {
                 // Only show orders with reorder info for import
                 $orders->whereHas('reorderInfo');
-                
+
                 // Exclude current order if editing
                 if ($request->has('exclude_current') && $request->exclude_current) {
                     $orders->where('orders.id', '!=', $request->exclude_current);
@@ -373,34 +374,34 @@ class OrderController extends Controller
 
             return DataTables::of($orders)
                 ->addColumn('action', function ($order) use ($request) {
-    if ($request->has('for_import') && $request->for_import) {
-        return '<button class="btn btn-sm btn-primary import-order-btn" data-order-id="' . $order->id . '" title="Import this order data">
+                    if ($request->has('for_import') && $request->for_import) {
+                        return '<button class="btn btn-sm btn-primary import-order-btn" data-order-id="' . $order->id . '" title="Import this order data">
                     <i class="fa-solid fa-file-import"></i> Import
                 </button>';
-    } else {
-        $hasRejectedPanels = $order->orderPanels()->where('status', 'rejected')->exists();
-        if($order->subscription->status == 'cancelled') {
-            $hasRejectedPanels = false;
-        }
-        // <button class="p-0 bg-transparent border-0"
-        //     type="button"
-        //     data-bs-toggle="dropdown"
-        //     aria-expanded="false">
-
-        //     <div class="actions d-flex align-items-center justify-content-between position-relative">
-        //         <div class="board d-flex justify-content-start ps-2" style="background-color: var(--secondary-color); height: 18px;">
-        //             <span class="text-white">Click</span>
-        //         </div>
-
-        //         <div class="action-icon '.$pulse_effect.' "
-        //             style="position: absolute; left: 0; top: -1px; z-index: 2; background-color: orange; height: 20px; width: 20px; border-radius: 50px; display: flex; align-items: center; justify-content: center;">
-        //             <i class="fa-solid fa-chevron-right text-dark font-bold"></i>
-        //         </div>
-
-        //     </div>
-        // </button>
-        $pulse_effect = in_array(strtolower($order->status_manage_by_admin), ['draft', 'reject']) ? 'pulse-effect' : '';        
-            return '<div class="dropdown">
+                    } else {
+                        $hasRejectedPanels = $order->orderPanels()->where('status', 'rejected')->exists();
+                        if ($order->subscription->status == 'cancelled') {
+                            $hasRejectedPanels = false;
+                        }
+                        // <button class="p-0 bg-transparent border-0"
+                        //     type="button"
+                        //     data-bs-toggle="dropdown"
+                        //     aria-expanded="false">
+    
+                        //     <div class="actions d-flex align-items-center justify-content-between position-relative">
+                        //         <div class="board d-flex justify-content-start ps-2" style="background-color: var(--secondary-color); height: 18px;">
+                        //             <span class="text-white">Click</span>
+                        //         </div>
+    
+                        //         <div class="action-icon '.$pulse_effect.' "
+                        //             style="position: absolute; left: 0; top: -1px; z-index: 2; background-color: orange; height: 20px; width: 20px; border-radius: 50px; display: flex; align-items: center; justify-content: center;">
+                        //             <i class="fa-solid fa-chevron-right text-dark font-bold"></i>
+                        //         </div>
+    
+                        //     </div>
+                        // </button>
+                        $pulse_effect = in_array(strtolower($order->status_manage_by_admin), ['draft', 'reject']) ? 'pulse-effect' : '';
+                        return '<div class="dropdown">
                 <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fa-solid fa-ellipsis-vertical"></i>
                 </button>
@@ -409,19 +410,19 @@ class OrderController extends Controller
                         ' . (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['draft']) ? '' :
                             '<li><a class="dropdown-item" href="' . route('customer.orders.view', $order->id) . '">
                                 <i class="fa-solid fa-eye"></i> View</a></li>') .
-                        (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['draft']) ?
-                            '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
+                            (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['draft']) ?
+                                '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
                                 <i class="fa-solid fa-pen-to-square"></i> Edit Order</a></li>' : '') .
-                        (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['reject']) ?
-                            '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
+                            (in_array(strtolower($order->status_manage_by_admin ?? 'n/a'), ['reject']) ?
+                                '<li><a class="dropdown-item" href="' . route('customer.order.edit', $order->id) . '">
                                 <i class="fa-solid fa-tools"></i> Fix Order</a></li>' : '') .
-                        ($hasRejectedPanels ?
-                            '<li><a class="dropdown-item" href="' . route('customer.orders.fix-domains', $order->id) . '">
+                            ($hasRejectedPanels ?
+                                '<li><a class="dropdown-item" href="' . route('customer.orders.fix-domains', $order->id) . '">
                                 <i class="fa-solid fa-tools"></i> Fix Order</a></li>' : '') .
-                    '</ul>
+                            '</ul>
                 </div>';
-                }
-            })
+                    }
+                })
 
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d F, Y') : '';
@@ -433,7 +434,7 @@ class OrderController extends Controller
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                     $statusKey = $status;
                     $statusClass = $this->statuses[$statusKey] ?? 'secondary';
-                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">'
                         . ucfirst($status) . '</span>';
                 })
                 ->addColumn('domains_preview', function ($order) {
@@ -448,7 +449,7 @@ class OrderController extends Controller
                     $statusKey = $status;
                     // dd($order->status_manage_by_admin, $statusKey);
                     $statusClass = $this->statuses[$statusKey] ?? 'secondary';
-                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">'
                         . ucfirst($status) . '</span>';
                 })
                 ->addColumn('domain_forwarding_url', function ($order) {
@@ -462,14 +463,14 @@ class OrderController extends Controller
                     return $order->plan ? $order->plan->name : 'N/A';
                 })
                 ->addColumn('total_inboxes', function ($order) {
-                    if(!$order->reorderInfo || $order->reorderInfo->isEmpty()) {
+                    if (!$order->reorderInfo || $order->reorderInfo->isEmpty()) {
                         return 'N/A';
                     }
-                    
+
                     $reorderInfo = $order->reorderInfo->first();
                     $domains = $reorderInfo->domains ?? '';
                     $inboxesPerDomain = $reorderInfo->inboxes_per_domain ?? 1;
-                    
+
                     // Parse domains and count them
                     $domainsArray = [];
                     $lines = preg_split('/\r\n|\r|\n/', $domains);
@@ -483,23 +484,23 @@ class OrderController extends Controller
                             }
                         }
                     }
-                    
+
                     $totalDomains = count($domainsArray);
                     $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
-                    
+
                     return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 'N/A');
                 })
-                ->filterColumn('domain_forwarding_url', function($query, $keyword) {
-                    $query->whereHas('reorderInfo', function($q) use ($keyword) {
+                ->filterColumn('domain_forwarding_url', function ($query, $keyword) {
+                    $query->whereHas('reorderInfo', function ($q) use ($keyword) {
                         $q->where('forwarding_url', 'like', "%{$keyword}%");
                     });
                 })
-                ->filterColumn('plan_name', function($query, $keyword) {
-                    $query->whereHas('plan', function($q) use ($keyword) {
+                ->filterColumn('plan_name', function ($query, $keyword) {
+                    $query->whereHas('plan', function ($q) use ($keyword) {
                         $q->where('name', 'like', "%{$keyword}%");
                     });
                 })
-                ->orderColumn('email', function($query, $direction) {
+                ->orderColumn('email', function ($query, $direction) {
                     $query->orderBy(
                         User::select('email')
                             ->whereColumn('users.id', 'orders.user_id')
@@ -508,7 +509,7 @@ class OrderController extends Controller
                         $direction
                     );
                 })
-                ->orderColumn('domain_forwarding_url', function($query, $direction) {
+                ->orderColumn('domain_forwarding_url', function ($query, $direction) {
                     $query->orderBy(
                         User::select('domain_forwarding_url')
                             ->whereColumn('users.id', 'orders.user_id')
@@ -517,7 +518,7 @@ class OrderController extends Controller
                         $direction
                     );
                 })
-                ->orderColumn('plan_name', function($query, $direction) {
+                ->orderColumn('plan_name', function ($query, $direction) {
                     $query->orderBy(
                         Plan::select('name')
                             ->whereColumn('plans.id', 'orders.plan_id')
@@ -526,7 +527,7 @@ class OrderController extends Controller
                         $direction
                     );
                 })
-                ->rawColumns(['action','status'])
+                ->rawColumns(['action', 'status'])
                 ->make(true);
         } catch (Exception $e) {
             Log::error('Error in getOrders', [
@@ -540,7 +541,7 @@ class OrderController extends Controller
             ], 500);
         }
     }
-    
+
     public function store(Request $request)
     {
         try {
@@ -623,25 +624,26 @@ class OrderController extends Controller
                 'profile_picture_link.url' => 'Profile picture link must be a valid URL',
                 'email_persona_picture_link.url' => 'Email persona picture link must be a valid URL'
             ]);
-            
+
             $is_draft = $request->is_draft ?? 0;
             // If is_draft is set to 1, set status to draft, otherwise pending
             $status = $is_draft == 1 ? 'draft' : 'pending';
-            
+
             // Get requested plan to check provider_type
             $plan = Plan::findOrFail($request->plan_id);
-            
+
             // Prepare data for Mailin.ai mailbox creation job (if needed)
+            // IMPORTANT: Only set up automation if NOT saving as draft
             $shouldDispatchMailboxJob = false;
             $mailboxJobData = null;
-            
-            if (config('mailin_ai.automation_enabled') === true && $plan->provider_type === 'Private SMTP' && ($request->hosting_platform == 'spaceship' || $request->hosting_platform == 'namecheap')) {
+
+            if ($is_draft != 1 && config('mailin_ai.automation_enabled') === true && $plan->provider_type === 'Private SMTP' && ($request->hosting_platform == 'spaceship' || $request->hosting_platform == 'namecheap')) {
                 // Extract domains from request for mailbox job
                 $mailboxDomainNames = array_map(
                     'trim',
                     array_filter(preg_split('/[\r\n,]+/', $request->domains))
                 );
-                
+
                 // Extract prefix variants for mailbox job
                 $mailboxPrefixVariants = [];
                 $inboxesPerDomainForJob = (int) $request->inboxes_per_domain;
@@ -651,7 +653,7 @@ class OrderController extends Controller
                         $mailboxPrefixVariants[] = trim($request->prefix_variants[$prefixKey]);
                     }
                 }
-                
+
                 if (!empty($mailboxDomainNames) && !empty($mailboxPrefixVariants)) {
                     $shouldDispatchMailboxJob = true;
                     $mailboxJobData = [
@@ -668,7 +670,7 @@ class OrderController extends Controller
             $inboxesPerDomain = (int) $request->inboxes_per_domain;
             $prefixVariants = $request->prefix_variants ?? [];
             $prefixVariantsDetails = $request->prefix_variants_details ?? [];
-            
+
             // Validate required prefix variants based on inboxes_per_domain
             for ($i = 1; $i <= $inboxesPerDomain; $i++) {
                 $prefixKey = "prefix_variant_{$i}";
@@ -678,7 +680,7 @@ class OrderController extends Controller
                         'errors' => ['prefix_variants.prefix_variant_1' => ['The first prefix variant is required.']]
                     ], 422);
                 }
-                
+
                 // Validate format if value exists
                 if (!empty($prefixVariants[$prefixKey])) {
                     if (!preg_match('/^[a-zA-Z0-9._-]+$/', $prefixVariants[$prefixKey])) {
@@ -688,7 +690,7 @@ class OrderController extends Controller
                         ], 422);
                     }
                 }
-                
+
                 // Validate prefix variants details for required variants
                 if (!empty($prefixVariants[$prefixKey])) {
                     if (empty($prefixVariantsDetails[$prefixKey]['first_name'])) {
@@ -697,21 +699,21 @@ class OrderController extends Controller
                             'errors' => ["prefix_variants_details.{$prefixKey}.first_name" => ['First name is required for this prefix variant.']]
                         ], 422);
                     }
-                    
+
                     if (empty($prefixVariantsDetails[$prefixKey]['last_name'])) {
                         return response()->json([
                             'success' => false,
                             'errors' => ["prefix_variants_details.{$prefixKey}.last_name" => ['Last name is required for this prefix variant.']]
                         ], 422);
                     }
-                    
+
                     // if (empty($prefixVariantsDetails[$prefixKey]['profile_link'])) {
                     //     return response()->json([
                     //         'success' => false,
                     //         'errors' => ["prefix_variants_details.{$prefixKey}.profile_link" => ['Profile link is required for this prefix variant.']]
                     //     ], 422);
                     // }
-                    
+
                     // // Validate URL format for profile link
                     // if (!filter_var($prefixVariantsDetails[$prefixKey]['profile_link'], FILTER_VALIDATE_URL)) {
                     //     return response()->json([
@@ -721,28 +723,28 @@ class OrderController extends Controller
                     // }
                 }
             }
-            
+
             // persona_password set 123
             $request->persona_password = '123';
             // Calculate number of domains and total inboxes
             $domains = array_filter(preg_split('/[\r\n,]+/', $request->domains));
             $domainCount = count($domains);
             $calculatedTotalInboxes = $domainCount * $request->inboxes_per_domain;
-            
+
             // Store session data if validation passes
             // $request->session()->put('order_info', $request->all());
             // set new plan_id on session order_info
             // $request->session()->put('order_info.plan_id', $request->plan_id);
             $message = 'Order information saved successfully.';
-            
+
             // for edit order
-            if($request->edit_id && $request->order_id){
+            if ($request->edit_id && $request->order_id) {
                 $temp_order = Order::with('reorderInfo')->findOrFail($request->order_id);
-                
+
                 // Check if order status allows editing (same as edit method)
                 $allowedStatuses = ['draft', 'reject'];
                 $currentStatus = strtolower($temp_order->status_manage_by_admin);
-                
+
                 if (!in_array($currentStatus, $allowedStatuses)) {
                     Log::warning('Order edit blocked - invalid status', [
                         'order_id' => $temp_order->id,
@@ -750,7 +752,7 @@ class OrderController extends Controller
                         'user_id' => auth()->id(),
                         'allowed_statuses' => $allowedStatuses
                     ]);
-                    
+
                     return response()->json([
                         'success' => false,
                         'message' => 'Order cannot be edited. Only orders with Draft or Reject status can be modified.',
@@ -762,9 +764,9 @@ class OrderController extends Controller
                         'can_edit' => false
                     ], 422);
                 }
-                
+
                 $TOTAL_INBOXES = $temp_order->reorderInfo->first()->total_inboxes;
-                
+
                 // Validate against order's total_inboxes limit
                 if ($TOTAL_INBOXES > 0 && $calculatedTotalInboxes > $TOTAL_INBOXES) {
                     return response()->json([
@@ -784,22 +786,24 @@ class OrderController extends Controller
                 // Set status based on whether total_inboxes equals calculated total from request domains
                 // $status = ($TOTAL_INBOXES == $calculatedTotalInboxes) ? 'pending' : 'draft';
                 // $status = ($currentInboxes == $maxInboxes) ? 'pending' : 'draft';
-            
-                
+
+
                 // Update order status
                 // Update order status
                 $order->update([
                     'status_manage_by_admin' => $status,
                 ]);
-                
+
                 // Save or update platform credentials if Spaceship is selected
                 if ($request->hosting_platform === 'spaceship') {
                     // Validate that all required fields are present
-                    if (!empty($request->spaceship_api_key) && 
+                    if (
+                        !empty($request->spaceship_api_key) &&
                         !empty($request->spaceship_api_secret_key) &&
                         !empty($request->platform_login) &&
-                        !empty($request->platform_password)) {
-                        
+                        !empty($request->platform_password)
+                    ) {
+
                         \App\Models\PlatformCredential::updateOrCreate(
                             [
                                 'order_id' => $order->id,
@@ -816,14 +820,16 @@ class OrderController extends Controller
                         );
                     }
                 }
-                
+
                 // Save or update platform credentials if Namecheap is selected
                 if ($request->hosting_platform === 'namecheap') {
                     // Validate that all required fields are present
                     // Use platform_login (username) for both ApiUser and UserName
-                    if (!empty($request->platform_login) && 
-                        !empty($request->namecheap_api_key)) {
-                        
+                    if (
+                        !empty($request->platform_login) &&
+                        !empty($request->namecheap_api_key)
+                    ) {
+
                         \App\Models\PlatformCredential::updateOrCreate(
                             [
                                 'order_id' => $order->id,
@@ -839,12 +845,12 @@ class OrderController extends Controller
                     }
                 }
                 // Don't override 'completed' status (from successful mailbox creation)
-                if($order->assigned_to && $status != 'draft' && $status != 'completed') {
+                if ($order->assigned_to && $status != 'draft' && $status != 'completed') {
                     $order->update([
                         'status_manage_by_admin' => 'in-progress',
                     ]);
                 }
-                
+
                 // Handle Mailin.ai automation if enabled and order status is draft/pending
                 // Note: Mailin.ai automation for order editing will be implemented later
                 // Currently, domain purchase automation only runs during new order creation
@@ -861,9 +867,9 @@ class OrderController extends Controller
                 // }
                 // Get the current session data
                 $orderInfo = $request->session()->get('order_info', []);
-                
+
                 // Update session with reorder info data (preserve new form input over old data)
-                if($order->reorderInfo && !$order->reorderInfo->isEmpty()) {
+                if ($order->reorderInfo && !$order->reorderInfo->isEmpty()) {
                     $reorderInfo = $order->reorderInfo->first();
                     // update data on table ReorderInfo
                     ReorderInfo::where('id', $reorderInfo->id)->update([
@@ -899,12 +905,12 @@ class OrderController extends Controller
                         'additional_info' => $request->additional_info,
                         'coupon_code' => $request->coupon_code,
                     ]);
-                   $message = 'Order information updated successfully.';
-                   // Create a new activity log using the custom log service
+                    $message = 'Order information updated successfully.';
+                    // Create a new activity log using the custom log service
                     ActivityLogService::log(
                         'customer-order-update',
-                        'Order updated: '. $order->id,
-                        $order, 
+                        'Order updated: ' . $order->id,
+                        $order,
                         [
                             'user_id' => $request->user_id,
                             'plan_id' => $request->plan_id,
@@ -942,7 +948,7 @@ class OrderController extends Controller
                     // Get user information
                     $user = User::findOrFail($request->user_id);
                     $reorderInfo = $order->reorderInfo->first();
-                    
+
                     // Send notification to the customer
                     try {
                         Mail::to($user->email)
@@ -958,7 +964,7 @@ class OrderController extends Controller
                             'context' => 'Customer\\OrderController::editOrder'
                         ]);
                     }
-                    
+
                     // dd(config('mail.admin_address', 'admin@example.com'));
                     // Send notification to admin - COMMENTED OUT: Admin email not sent when customer edits order
                     // try {
@@ -974,9 +980,9 @@ class OrderController extends Controller
                     //         'context' => 'Customer\\OrderController::editOrder'
                     //     ]);
                     // }
-                    
+
                     // Check if the order has an assigned contractor
-                    if ($order->assigned_to ) {
+                    if ($order->assigned_to) {
                         // Get the assigned contractor
                         $contractor = User::find($order->assigned_to);
                         // dd($contractor);
@@ -1011,9 +1017,10 @@ class OrderController extends Controller
                     // Continue execution - don't let email failure stop the process
                 }
             }
-            
+
             // Dispatch mailbox creation job if needed (after order is created/updated)
-            if ($shouldDispatchMailboxJob && isset($order) && $order) {
+            // IMPORTANT: Skip automation if order is being saved as draft
+            if ($shouldDispatchMailboxJob && isset($order) && $order && $is_draft != 1) {
                 try {
                     \App\Jobs\MailinAi\CreateMailboxesOnOrderJob::dispatch(
                         $order->id,
@@ -1022,7 +1029,7 @@ class OrderController extends Controller
                         $mailboxJobData['user_id'],
                         $mailboxJobData['provider_type']
                     );
-                    
+
 
                     Log::channel('mailin-ai')->info('Mailbox creation job dispatched', [
                         'action' => 'dispatch_mailbox_job',
@@ -1039,14 +1046,14 @@ class OrderController extends Controller
                     // Don't fail the request if job dispatch fails
                 }
             }
-            
+
             // status is pending then pannelCreationAndOrderSplitOnPannels
-            if($status == 'pending'){
+            if ($status == 'pending') {
                 // panel creation
                 // $this->pannelCreationAndOrderSplitOnPannels($order);
             }
             // Create order tracking record at the end
-            if($request->edit_id && $request->order_id && $order->provider_type !== 'Private SMTP') {
+            if ($request->edit_id && $request->order_id && $order->provider_type !== 'Private SMTP') {
                 // For existing orders, update or create tracking record
                 $order->orderTracking()->updateOrCreate(
                     ['order_id' => $order->id],
@@ -1057,7 +1064,7 @@ class OrderController extends Controller
                         'status' => 'pending', // Set status to pending for new orders
                     ]
                 );
-                
+
                 Log::info('Order tracking record updated for edited order', [
                     'order_id' => $order->id,
                     'status' => $status,
@@ -1065,7 +1072,7 @@ class OrderController extends Controller
                     'inboxes_per_domain' => $request->inboxes_per_domain
                 ]);
             }
-            
+
             // First check 
             return response()->json([
                 'success' => true,
@@ -1091,7 +1098,7 @@ class OrderController extends Controller
             ], 422);
         }
     }
-    
+
     /**
      * Run panel capacity check after successful order update
      */
@@ -1103,37 +1110,37 @@ class OrderController extends Controller
                 'order_id' => 'nullable|integer',
                 'user_id' => 'nullable|integer'
             ]);
-            
+
             Log::info('Panel capacity check requested via AJAX', [
                 'order_id' => $request->input('order_id'),
                 'user_id' => $request->input('user_id'),
                 'authenticated_user' => auth()->id(),
                 'timestamp' => now()
             ]);
-            
+
             // Run the artisan command
             Artisan::call('panels:check-capacity');
-            
+
             // Get the command output
             $output = Artisan::output();
-            
+
             Log::info('Panel capacity check completed successfully', [
                 'output' => $output
             ]);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Panel capacity check completed successfully',
                 'output' => $output
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to run panel capacity check: ' . $e->getMessage(), [
                 'order_id' => $request->input('order_id'),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to run panel capacity check',
@@ -1155,24 +1162,24 @@ class OrderController extends Controller
                 ]);
                 return;
             }
-            
+
             // Wrap everything in a database transaction for consistency
             DB::beginTransaction();
-            
+
             // Get the reorder info for this order
             $reorderInfo = $order->reorderInfo()->first();
-            
+
             if (!$reorderInfo) {
                 Log::warning("No reorder info found for order #{$order->id}");
                 DB::rollBack();
                 return;
             }
-            
+
             // Calculate total space needed
             $domains = array_filter(preg_split('/[\r\n,]+/', $reorderInfo->domains));
             $domainCount = count($domains);
             $totalSpaceNeeded = $domainCount * $reorderInfo->inboxes_per_domain;
-            
+
             Log::info("Panel creation started for order #{$order->id}", [
                 'total_space_needed' => $totalSpaceNeeded,
                 'domain_count' => $domainCount,
@@ -1184,7 +1191,7 @@ class OrderController extends Controller
             } else {
                 // Try to find existing panel with sufficient space
                 $suitablePanel = $this->findSuitablePanel($totalSpaceNeeded);
-                
+
                 if ($suitablePanel) {
                     // Assign entire order to this panel
                     $this->assignDomainsToPanel($suitablePanel, $order, $reorderInfo, $domains, $totalSpaceNeeded, 1);
@@ -1194,10 +1201,10 @@ class OrderController extends Controller
                     $this->handleOrderSplitAcrossAvailablePanels($order, $reorderInfo, $domains, $totalSpaceNeeded);
                 }
             }
-            
+
             DB::commit();
             Log::info("Panel creation completed successfully for order #{$order->id}");
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Panel creation failed for order #{$order->id}", [
@@ -1207,7 +1214,7 @@ class OrderController extends Controller
             throw $e;
         }
     }
-    
+
     /**
      * Create new panel(s) - first check for existing unused 1790 panels before creating new ones
      */
@@ -1219,7 +1226,7 @@ class OrderController extends Controller
         } else {
             // First check if there's an existing 1790 panel with sufficient space
             $existing1790Panel = $this->findExisting1790Panel($spaceNeeded);
-            
+
             if ($existing1790Panel) {
                 // Use existing 1790 panel instead of creating new one
                 $this->assignDomainsToPanel($existing1790Panel, $order, $reorderInfo, $domains, $spaceNeeded, 1);
@@ -1232,27 +1239,27 @@ class OrderController extends Controller
             }
         }
     }
-    
+
     /**
      * Split large orders across multiple new panels
-    */
+     */
 
     private function splitOrderAcrossMultiplePanels($order, $reorderInfo, $domains, $totalSpaceNeeded)
     {
         $remainingSpace = $totalSpaceNeeded;
         $splitNumber = 1;
         $domainsProcessed = 0;
-        
+
         while ($remainingSpace > 0 && $domainsProcessed < count($domains) && $splitNumber <= 20) { // Safety check to prevent infinite loops
             $spaceForThisPanel = min(1790, $remainingSpace);
-            
+
             // Calculate maximum domains that can fit in this panel without exceeding capacity
             $maxDomainsForThisPanel = floor($spaceForThisPanel / $reorderInfo->inboxes_per_domain);
-            
+
             // Ensure we don't process more domains than remaining
             $remainingDomains = count($domains) - $domainsProcessed;
             $domainsForThisPanel = min($maxDomainsForThisPanel, $remainingDomains);
-            
+
             Log::info("Panel split calculation", [
                 'split_number' => $splitNumber,
                 'space_for_panel' => $spaceForThisPanel,
@@ -1262,16 +1269,16 @@ class OrderController extends Controller
                 'domains_for_this_panel' => $domainsForThisPanel,
                 'domains_processed_so_far' => $domainsProcessed
             ]);
-            
+
             // Extract domains for this panel
             $domainsToAssign = array_slice($domains, $domainsProcessed, $domainsForThisPanel);
             $actualSpaceUsed = count($domainsToAssign) * $reorderInfo->inboxes_per_domain;
-            
+
             $panel = null;
 
             // Always check for existing 1790 panels first before creating new ones
             $existing1790Panel = $this->findExisting1790Panel($actualSpaceUsed);
-            
+
             if ($existing1790Panel) {
                 $panel = $existing1790Panel;
                 Log::info("Using existing 1790 panel #{$panel->id} (split #{$splitNumber})", [
@@ -1286,7 +1293,7 @@ class OrderController extends Controller
                     ->where('remaining_limit', '>=', $actualSpaceUsed)
                     ->orderBy('remaining_limit', 'desc')
                     ->first();
-                
+
                 if ($existingPanel) {
                     $panel = $existingPanel;
                     Log::info("Using existing panel #{$panel->id} (split #{$splitNumber}) - no 1790 panel available", [
@@ -1297,7 +1304,7 @@ class OrderController extends Controller
                     ]);
                 }
             }
-            
+
             // If no suitable existing panel found, create new 1790 panel
             if (!$panel) {
                 $panel = $this->createSinglePanel(1790);
@@ -1307,28 +1314,28 @@ class OrderController extends Controller
                     'reason' => 'no_existing_panel_with_sufficient_space'
                 ]);
             }
-            
+
             // Assign domains to this panel
             $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domainsToAssign, $actualSpaceUsed, $splitNumber);
-            
+
             Log::info("Assigned to panel #{$panel->id} (split #{$splitNumber}) for order #{$order->id}", [
                 'space_used' => $actualSpaceUsed,
                 'domains_count' => count($domainsToAssign),
                 'remaining_space' => $remainingSpace - $actualSpaceUsed,
                 'panel_type' => $panel->wasRecentlyCreated ? 'new' : 'existing'
             ]);
-            
+
             $remainingSpace -= $actualSpaceUsed;
             $domainsProcessed += count($domainsToAssign);
             $splitNumber++;
         }
-        
+
         // Check if all domains have been processed
         $totalDomainsToProcess = count($domains);
         if ($domainsProcessed < $totalDomainsToProcess) {
             $remainingDomains = array_slice($domains, $domainsProcessed);
             $remainingSpace = count($remainingDomains) * $reorderInfo->inboxes_per_domain;
-            
+
             Log::warning("Some domains were not processed, creating additional panel", [
                 'order_id' => $order->id,
                 'domains_processed' => $domainsProcessed,
@@ -1336,12 +1343,12 @@ class OrderController extends Controller
                 'remaining_domains' => count($remainingDomains),
                 'remaining_space' => $remainingSpace
             ]);
-            
+
             // Create additional panel for remaining domains
             $panel = $this->createSinglePanel(1790);
             $this->assignDomainsToPanel($panel, $order, $reorderInfo, $remainingDomains, $remainingSpace, $splitNumber);
         }
-        
+
         if ($remainingSpace > 0) {
             Log::warning("Still have remaining space after panel creation", [
                 'order_id' => $order->id,
@@ -1349,7 +1356,7 @@ class OrderController extends Controller
             ]);
         }
     }
-    
+
     /**
      * Handle intelligent splitting across existing available panels
      */
@@ -1360,7 +1367,7 @@ class OrderController extends Controller
             ->where('remaining_limit', '>', 0)
             ->orderBy('remaining_limit', 'desc')
             ->get();
-        
+
         if ($availablePanels->isEmpty()) {
             // No available panels, create new one
             $panel = $this->createSinglePanel(1790);
@@ -1368,28 +1375,29 @@ class OrderController extends Controller
             Log::info("No available panels found, created new panel #{$panel->id} for order #{$order->id}");
             return;
         }
-        
+
         $remainingSpace = $totalSpaceNeeded;
         $domainsProcessed = 0;
         $splitNumber = 1;
-        
+
         foreach ($availablePanels as $panel) {
-            if ($remainingSpace <= 0) break;
-            
+            if ($remainingSpace <= 0)
+                break;
+
             $availableSpace = $panel->remaining_limit;
             $spaceToUse = min($availableSpace, $remainingSpace);
-            
+
             // Calculate maximum domains that can fit in available space without exceeding capacity
             $maxDomainsForSpace = floor($spaceToUse / $reorderInfo->inboxes_per_domain);
-            
+
             // Ensure we don't process more domains than remaining
             $remainingDomains = count($domains) - $domainsProcessed;
             $domainsToAssign = min($maxDomainsForSpace, $remainingDomains);
-            
+
             // Extract domains for this panel
             $domainSlice = array_slice($domains, $domainsProcessed, $domainsToAssign);
             $actualSpaceUsed = count($domainSlice) * $reorderInfo->inboxes_per_domain;
-            
+
             // Only proceed if we can actually use this panel
             if ($actualSpaceUsed <= $availableSpace && count($domainSlice) > 0) {
                 $this->assignDomainsToPanel($panel, $order, $reorderInfo, $domainSlice, $actualSpaceUsed, $splitNumber);
@@ -1399,19 +1407,19 @@ class OrderController extends Controller
                     'panel_remaining_before' => $availableSpace,
                     'panel_remaining_after' => $availableSpace - $actualSpaceUsed
                 ]);
-                
+
                 $remainingSpace -= $actualSpaceUsed;
                 $domainsProcessed += count($domainSlice);
                 $splitNumber++;
             }
         }
-        
+
         // Check if all domains have been processed
         $totalDomainsToProcess = count($domains);
         if ($domainsProcessed < $totalDomainsToProcess) {
             $remainingDomains = array_slice($domains, $domainsProcessed);
             $remainingSpace = count($remainingDomains) * $reorderInfo->inboxes_per_domain;
-            
+
             Log::info("Processing remaining domains not assigned to existing panels", [
                 'order_id' => $order->id,
                 'domains_processed' => $domainsProcessed,
@@ -1419,7 +1427,7 @@ class OrderController extends Controller
                 'remaining_domains' => count($remainingDomains),
                 'remaining_space' => $remainingSpace
             ]);
-            
+
             if (!empty($remainingDomains)) {
                 $panel = $this->createSinglePanel(1790);
                 $this->assignDomainsToPanel($panel, $order, $reorderInfo, $remainingDomains, $remainingSpace, $splitNumber);
@@ -1429,7 +1437,7 @@ class OrderController extends Controller
                 ]);
             }
         }
-        
+
         // Legacy check for remaining space (should be covered by domain check above)
         if ($remainingSpace > 0 && $domainsProcessed >= $totalDomainsToProcess) {
             Log::warning("Remaining space detected but all domains processed - this should not happen", [
@@ -1440,7 +1448,7 @@ class OrderController extends Controller
             ]);
         }
     }
-    
+
     /**
      * Find suitable existing panel with sufficient space
      */
@@ -1451,7 +1459,7 @@ class OrderController extends Controller
             ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
             ->first();
     }
-    
+
     /**
      * Find existing 1790 panel with sufficient space
      */
@@ -1463,7 +1471,7 @@ class OrderController extends Controller
             ->orderBy('remaining_limit', 'desc') // Use panel with most available space first for efficiency
             ->first();
     }
-    
+
     /**
      * Create a single panel with specified capacity
      */
@@ -1478,11 +1486,11 @@ class OrderController extends Controller
             'is_active' => true,
             'created_by' => 'system'
         ]);
-        
+
         Log::info("Created new panel #{$panel->id} with capacity {$capacity}");
         return $panel;
     }
-    
+
     /**
      * Assign domains to a specific panel and create all necessary records
      */
@@ -1499,7 +1507,7 @@ class OrderController extends Controller
                 'status' => 'unallocated',
                 'note' => "Auto-assigned split #{$splitNumber} - {$spaceToAssign} inboxes across " . count($domainsToAssign) . " domains"
             ]);
-            
+
             // Create order_panel_split record
             OrderPanelSplit::create([
                 'panel_id' => $panel->id,
@@ -1508,14 +1516,14 @@ class OrderController extends Controller
                 'inboxes_per_domain' => $reorderInfo->inboxes_per_domain,
                 'domains' => $domainsToAssign
             ]);
-            
+
             // Update panel remaining capacity
             $panel->decrement('remaining_limit', $spaceToAssign);
             // Ensure remaining_limit never goes below 0
             if ($panel->remaining_limit < 0) {
                 $panel->update(['remaining_limit' => 0]);
             }
-            
+
             Log::info("Successfully assigned domains to panel", [
                 'panel_id' => $panel->id,
                 'order_id' => $order->id,
@@ -1524,7 +1532,7 @@ class OrderController extends Controller
                 'domains_count' => count($domainsToAssign),
                 'panel_remaining_limit' => $panel->remaining_limit - $spaceToAssign
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error("Failed to assign domains to panel", [
                 'panel_id' => $panel->id,
@@ -1627,14 +1635,14 @@ class OrderController extends Controller
     private function getOrderCounts()
     {
         $userId = auth()->id();
-        
+
         return [
             'totalOrders' => Order::where('user_id', $userId)->count(),
             'pendingOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'pending')->count(),
             'completedOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'completed')->count(),
             'inProgressOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'in-progress')->count(),
             'expiredOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'expired')->count(),
-            'rejectOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'reject')->count(), 
+            'rejectOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'reject')->count(),
             'cancelledOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'cancelled')->count(),
             'draftOrders' => Order::where('user_id', $userId)->where('status_manage_by_admin', 'draft')->count()
         ];
@@ -1660,7 +1668,7 @@ class OrderController extends Controller
                     if (!$order->reorderInfo || !$order->reorderInfo->first()) {
                         return 'N/A';
                     }
-                    
+
                     $domains = $order->reorderInfo->first()->domains ?? '';
                     return $domains;
                 })
@@ -1668,11 +1676,11 @@ class OrderController extends Controller
                     if (!$order->reorderInfo || !$order->reorderInfo->first()) {
                         return 0;
                     }
-                    
+
                     $reorderInfo = $order->reorderInfo->first();
                     $domains = $reorderInfo->domains ?? '';
                     $inboxesPerDomain = $reorderInfo->inboxes_per_domain ?? 1;
-                    
+
                     // Parse domains and count them
                     $domainsArray = [];
                     $lines = preg_split('/\r\n|\r|\n/', $domains);
@@ -1686,16 +1694,16 @@ class OrderController extends Controller
                             }
                         }
                     }
-                    
+
                     $totalDomains = count($domainsArray);
                     $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
-                    
+
                     return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 0);
                 })
                 ->addColumn('status_badge', function ($order) {
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                     $statusClass = $this->statuses[$status] ?? 'secondary';
-                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">'
                         . ucfirst($status) . '</span>';
                 })
                 ->addColumn('created_at_formatted', function ($order) {
@@ -1771,7 +1779,7 @@ class OrderController extends Controller
     /**
      * Show the domains fixing interface for rejected order panels
      */
-     
+
     public function showFixDomains($orderId)
     {
         try {
@@ -1839,9 +1847,9 @@ class OrderController extends Controller
      */
     public function updateFixedDomains(Request $request, $orderId)
     {
-        
+
         try {
-            
+
             $order = Order::with(['orderPanels.orderPanelSplits', 'reorderInfo'])
                 ->where('id', $orderId)
                 ->where('user_id', auth()->id())
@@ -1876,9 +1884,18 @@ class OrderController extends Controller
 
                 // Collect platform configuration fields that were submitted
                 $platformFields = [
-                    'forwarding_url', 'hosting_platform', 'sending_platform',
-                    'platform_login', 'platform_password', 'sequencer_login', 'sequencer_password',
-                    'backup_codes', 'bison_url', 'bison_workspace', 'other_platform', 'access_tutorial'
+                    'forwarding_url',
+                    'hosting_platform',
+                    'sending_platform',
+                    'platform_login',
+                    'platform_password',
+                    'sequencer_login',
+                    'sequencer_password',
+                    'backup_codes',
+                    'bison_url',
+                    'bison_workspace',
+                    'other_platform',
+                    'access_tutorial'
                 ];
 
                 foreach ($platformFields as $field) {
@@ -1898,12 +1915,12 @@ class OrderController extends Controller
 
             // Collect all updated domains for merging into reorder_info
             $allUpdatedDomains = [];
-            
+
             foreach ($request->panel_splits as $splitId => $splitData) {
                 $split = OrderPanelSplit::where('id', $splitId)
-                    ->whereHas('orderPanel', function($query) use ($orderId) {
+                    ->whereHas('orderPanel', function ($query) use ($orderId) {
                         $query->where('order_id', $orderId)
-                              ->where('status', 'rejected');
+                            ->where('status', 'rejected');
                     })
                     ->first();
 
@@ -1948,7 +1965,7 @@ class OrderController extends Controller
             }
 
             // Get all remaining split domains that weren't updated (non-rejected panels)
-            $allOrderSplits = OrderPanelSplit::whereHas('orderPanel', function($query) use ($orderId) {
+            $allOrderSplits = OrderPanelSplit::whereHas('orderPanel', function ($query) use ($orderId) {
                 $query->where('order_id', $orderId);
             })->get();
 
@@ -1968,14 +1985,14 @@ class OrderController extends Controller
             if ($order->reorderInfo && $order->reorderInfo->isNotEmpty()) {
                 $reorderInfo = $order->reorderInfo->first();
                 $reorderInfo->update(['domains' => $allDomains]);
-                
+
                 Log::info("Updated reorder_info domains for order #{$order->id}", [
                     'total_domains' => $totalDomainsCount,
                     'updated_splits' => count($request->panel_splits)
                 ]);
             }
 
-             // Create notifications
+            // Create notifications
             Notification::create([
                 'user_id' => $order->user_id,
                 'type' => 'order_panel_status_change',
@@ -1983,7 +2000,7 @@ class OrderController extends Controller
                 'message' => 'Your order #' . $order->id . ' status has been changed to pending ',
                 'data' => [
                     'order_id' => $order->id,
-                    'order_panel_id' =>  $split->orderPanel->id,
+                    'order_panel_id' => $split->orderPanel->id,
                     'old_status' => "Rejected",
                     'new_status' => "Pending",
                     'reason' => 'Domains updated by customer',
@@ -1999,7 +2016,7 @@ class OrderController extends Controller
                 'message' => 'Order #' . $order->id . ' status changed to pending ',
                 'data' => [
                     'order_id' => $order->id,
-                    'order_panel_id' =>  $split->orderPanel->id,
+                    'order_panel_id' => $split->orderPanel->id,
                     'old_status' => "Rejected",
                     'new_status' => "Pending",
                     'reason' => 'Domains updated by customer',
@@ -2022,6 +2039,6 @@ class OrderController extends Controller
             ]);
         }
     }
-    
+
 }
 
