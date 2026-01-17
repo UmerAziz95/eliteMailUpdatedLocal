@@ -1730,6 +1730,9 @@ class PlanController extends Controller
                         if (isset($invoiceData['paid_at']) && $subscriptionId) {
                             $subscription = UserSubscription::where('chargebee_subscription_id', $subscriptionId)->first();
                             if ($subscription) {
+                                // Define paidAtDate for fallback usage
+                                $paidAtDate = Carbon::createFromTimestamp($invoiceData['paid_at']);
+                                
                                 try {
                                     // Retrieve subscription from ChargeBee to get actual billing dates
                                     $chargebeeSubscription = \ChargeBee\ChargeBee\Models\Subscription::retrieve($subscriptionId);
