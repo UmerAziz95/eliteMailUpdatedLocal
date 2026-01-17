@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Models\Subscription as UserSubscription;
 use App\Models\Order;
 use App\Models\OrderPanel;
+use App\Models\OrderPanelSplit;
 use App\Models\User;
 use App\Models\DomainRemovalTask;
 use App\Models\OrderEmail;
 use App\Models\SmtpProviderSplit;
+use App\Models\UsedEmailsInOrder;
 use App\Mail\SubscriptionCancellationMail;
 use App\Services\ActivityLogService;
 use App\Services\MailinAiService;
@@ -361,7 +363,7 @@ class OrderCancelledService
 
     /**
      * Delete all mailboxes for an order from Mailin.ai
-     * Only executes if MAILIN_AI_AUTOMATION_ENABLED is true and provider_type is "Private SMTP"
+     * Routes to provider-specific methods based on order provider type
      * 
      * @param Order $order The order to delete mailboxes for
      * @return void
@@ -369,114 +371,31 @@ class OrderCancelledService
     public function deleteOrderMailboxes(Order $order)
     {
         try {
-            // Check if Mailin.ai automation is enabled and provider type is Private SMTP
+            // Check if Mailin.ai automation is enabled
             $automationEnabled = config('mailin_ai.automation_enabled', false);
-            $providerType = $order->provider_type;
             
-            if (!$automationEnabled || $providerType !== 'Private SMTP') {
-                Log::info("Skipping Mailin.ai mailbox deletion - conditions not met", [
+            if (!$automationEnabled) {
+                Log::info("Skipping Mailin.ai mailbox deletion - automation not enabled", [
                     'action' => 'delete_order_mailboxes',
                     'order_id' => $order->id,
                     'automation_enabled' => $automationEnabled,
-                    'provider_type' => $providerType,
                 ]);
                 return;
             }
 
-            // Get all OrderEmail records for this order that have Mailin.ai mailbox IDs
-            $orderEmails = OrderEmail::where('order_id', $order->id)
-                ->whereNotNull('mailin_mailbox_id')
-                ->get();
-
-            if ($orderEmails->isEmpty()) {
-                Log::info("No Mailin.ai mailboxes found to delete for order", [
+            $providerType = $order->provider_type;
+            
+            // Route to provider-specific deletion methods
+            if (in_array(strtolower($providerType ?? ''), ['private smtp', 'smtp'])) {
+                $this->deleteSmtpOrderMailboxes($order);
+            } elseif (in_array($providerType, ['Google', 'Microsoft 365'])) {
+                $this->deleteGoogle365OrderMailboxes($order);
+            } else {
+                Log::info("Skipping Mailin.ai mailbox deletion - unsupported provider type", [
                     'action' => 'delete_order_mailboxes',
                     'order_id' => $order->id,
+                    'provider_type' => $providerType,
                 ]);
-                return;
-            }
-
-            Log::info("Deleting Mailin.ai mailboxes for cancelled order", [
-                'action' => 'delete_order_mailboxes',
-                'order_id' => $order->id,
-                'mailbox_count' => $orderEmails->count(),
-            ]);
-
-            // Get active provider credentials (or fallback to config)
-            $activeProvider = SmtpProviderSplit::getActiveProvider();
-            $credentials = $activeProvider ? $activeProvider->getCredentials() : null;
-            $mailinService = new MailinAiService($credentials);
-            $deletedCount = 0;
-            $failedCount = 0;
-            $errors = [];
-
-            foreach ($orderEmails as $orderEmail) {
-                try {
-                    $result = $mailinService->deleteMailbox($orderEmail->mailin_mailbox_id);
-                    
-                    if ($result['success']) {
-                        $deletedCount++;
-                        
-                        // Delete the OrderEmail record from database after successful deletion from Mailin.ai
-                        $orderEmail->delete();
-                        
-                        Log::channel('mailin-ai')->info('Mailbox deleted successfully from Mailin.ai and database during order cancellation', [
-                            'action' => 'delete_order_mailboxes',
-                            'order_id' => $order->id,
-                            'order_email_id' => $orderEmail->id,
-                            'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
-                            'email' => $orderEmail->email,
-                        ]);
-                    } else {
-                        $failedCount++;
-                        $errors[] = "Mailbox ID {$orderEmail->mailin_mailbox_id}: " . ($result['message'] ?? 'Unknown error');
-                        
-                        Log::channel('mailin-ai')->warning('Mailbox deletion from Mailin.ai failed, keeping OrderEmail record', [
-                            'action' => 'delete_order_mailboxes',
-                            'order_id' => $order->id,
-                            'order_email_id' => $orderEmail->id,
-                            'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
-                            'email' => $orderEmail->email,
-                            'error' => $result['message'] ?? 'Unknown error',
-                        ]);
-                    }
-                } catch (\Exception $e) {
-                    $failedCount++;
-                    $errors[] = "Mailbox ID {$orderEmail->mailin_mailbox_id}: " . $e->getMessage();
-                    
-                    Log::channel('mailin-ai')->error('Failed to delete mailbox during order cancellation', [
-                        'action' => 'delete_order_mailboxes',
-                        'order_id' => $order->id,
-                        'order_email_id' => $orderEmail->id,
-                        'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
-                        'email' => $orderEmail->email,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            Log::info("Mailin.ai mailbox deletion completed for cancelled order", [
-                'action' => 'delete_order_mailboxes',
-                'order_id' => $order->id,
-                'total_mailboxes' => $orderEmails->count(),
-                'deleted_count' => $deletedCount,
-                'failed_count' => $failedCount,
-                'errors' => $errors,
-            ]);
-
-            // Log activity for mailbox deletion
-            if ($deletedCount > 0) {
-                ActivityLogService::log(
-                    'order-mailboxes-deleted',
-                    "Deleted {$deletedCount} Mailin.ai mailbox(es) for cancelled order",
-                    $order,
-                    [
-                        'order_id' => $order->id,
-                        'deleted_count' => $deletedCount,
-                        'failed_count' => $failedCount,
-                        'errors' => $errors,
-                    ]
-                );
             }
 
         } catch (\Exception $e) {
@@ -487,6 +406,910 @@ class OrderCancelledService
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+        }
+    }
+
+    /**
+     * Delete mailboxes for SMTP orders
+     * 
+     * @param Order $order The order to delete mailboxes for
+     * @return void
+     */
+    private function deleteSmtpOrderMailboxes(Order $order)
+    {
+        try {
+            // Get all OrderEmail records for this order that have Mailin.ai mailbox IDs
+            $orderEmails = OrderEmail::where('order_id', $order->id)
+                ->whereNotNull('mailin_mailbox_id')
+                ->get();
+
+            if ($orderEmails->isEmpty()) {
+                Log::info("No Mailin.ai mailboxes found to delete for SMTP order", [
+                    'action' => 'delete_smtp_order_mailboxes',
+                    'order_id' => $order->id,
+                ]);
+                return;
+            }
+
+            // Collect all email addresses
+            $allEmailAddresses = $orderEmails->pluck('email')->unique()->values();
+
+            // Log emails fetched (with count and full list) - BEFORE deletion
+            Log::info("Fetched emails for deletion from SMTP order", [
+                'order_id' => $order->id,
+                'provider_type' => $order->provider_type,
+                'total_emails_count' => $allEmailAddresses->count(),
+                'emails_from_order_emails_count' => $orderEmails->count(),
+                'emails' => $allEmailAddresses->toArray(), // Full list of emails to be deleted
+            ]);
+
+            // Store emails in used_emails_in_order table - BEFORE deletion
+            $usedEmailsRecord = UsedEmailsInOrder::create([
+                'order_id' => $order->id,
+                'emails' => $allEmailAddresses->toArray(),
+                'count' => $allEmailAddresses->count(),
+            ]);
+
+            Log::info("Stored emails in used_emails_in_order table before deletion", [
+                'order_id' => $order->id,
+                'provider_type' => $order->provider_type,
+                'used_emails_record_id' => $usedEmailsRecord->id,
+                'emails_count' => $usedEmailsRecord->count,
+            ]);
+
+            Log::info("Starting mailbox deletion for SMTP order", [
+                'order_id' => $order->id,
+                'provider_type' => $order->provider_type,
+                'total_emails' => $allEmailAddresses->count(),
+                'emails_stored_in_used_emails_table' => true,
+            ]);
+
+            // Get active provider credentials (or fallback to config)
+            $activeProvider = SmtpProviderSplit::getActiveProvider();
+            $credentials = $activeProvider ? $activeProvider->getCredentials() : null;
+            $mailinService = new MailinAiService($credentials);
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+            $emailsChecked = [];
+            $emailsDeleted = [];
+            $emailsFailed = [];
+
+            Log::info("Starting to check emails on Mailin.ai for SMTP order", [
+                'order_id' => $order->id,
+                'provider_type' => $order->provider_type,
+                'total_emails_to_check' => $orderEmails->count(),
+            ]);
+
+            foreach ($orderEmails as $orderEmail) {
+                $email = $orderEmail->email;
+                $emailsChecked[] = $email;
+
+                Log::info("Checking email on Mailin.ai", [
+                    'order_id' => $order->id,
+                    'email' => $email,
+                    'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
+                ]);
+
+                try {
+                    Log::info("Attempting to delete mailbox from Mailin.ai", [
+                        'order_id' => $order->id,
+                        'email' => $email,
+                        'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
+                    ]);
+
+                    $result = $mailinService->deleteMailbox($orderEmail->mailin_mailbox_id);
+                    
+                    if ($result['success']) {
+                        $deletedCount++;
+                        $emailsDeleted[] = $email;
+                        
+                        // Delete the OrderEmail record from database after successful deletion from Mailin.ai
+                        $orderEmail->delete();
+                        
+                        Log::info('Mailbox deleted successfully from Mailin.ai and database', [
+                            'action' => 'delete_smtp_order_mailboxes',
+                            'order_id' => $order->id,
+                            'order_email_id' => $orderEmail->id,
+                            'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
+                            'email' => $email,
+                        ]);
+                    } else {
+                        $failedCount++;
+                        $emailsFailed[] = $email;
+                        $errors[] = "Mailbox ID {$orderEmail->mailin_mailbox_id}: " . ($result['message'] ?? 'Unknown error');
+                        
+                        Log::warning('Mailbox deletion from Mailin.ai failed, keeping OrderEmail record', [
+                            'action' => 'delete_smtp_order_mailboxes',
+                            'order_id' => $order->id,
+                            'order_email_id' => $orderEmail->id,
+                            'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
+                            'email' => $orderEmail->email,
+                            'error' => $result['message'] ?? 'Unknown error',
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;                      
+                    $emailsFailed[] = $email;
+                    $errors[] = "Mailbox ID {$orderEmail->mailin_mailbox_id}: " . $e->getMessage();
+                    
+                    Log::error('Exception occurred while deleting mailbox from Mailin.ai', [
+                        'action' => 'delete_smtp_order_mailboxes',
+                        'order_id' => $order->id,
+                        'order_email_id' => $orderEmail->id,
+                        'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
+                        'email' => $email,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                }
+            }
+
+            Log::info("SMTP order mailbox deletion completed", [
+                'order_id' => $order->id,
+                'provider_type' => $order->provider_type,
+                'total_emails' => $orderEmails->count(),
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'emails_stored_in_used_emails_table_id' => $usedEmailsRecord->id,
+            ]);
+
+            // Log detailed lists
+            if (!empty($emailsChecked)) {
+                Log::info("List of all emails checked on Mailin.ai for SMTP order", [
+                    'order_id' => $order->id,
+                    'emails_checked_count' => count($emailsChecked),
+                    'emails_checked' => $emailsChecked,
+                ]);
+            }
+
+            if (!empty($emailsDeleted)) {
+                Log::info("List of emails successfully deleted from Mailin.ai for SMTP order", [
+                    'order_id' => $order->id,
+                    'emails_deleted_count' => count($emailsDeleted),
+                    'emails_deleted' => $emailsDeleted,
+                ]);
+            }
+
+            if (!empty($emailsFailed)) {
+                Log::warning("List of emails that failed to delete from Mailin.ai for SMTP order", [
+                    'order_id' => $order->id,
+                    'emails_failed_count' => count($emailsFailed),
+                    'emails_failed' => $emailsFailed,
+                ]);
+            }
+
+            // Log activity for mailbox deletion
+            if ($deletedCount > 0) {
+                ActivityLogService::log(
+                    'order-mailboxes-deleted',
+                    "Deleted {$deletedCount} Mailin.ai mailbox(es) for cancelled SMTP order",
+                    $order,
+                    [
+                        'order_id' => $order->id,
+                        'provider_type' => $order->provider_type,
+                        'deleted_count' => $deletedCount,
+                        'failed_count' => $failedCount,
+                        'errors' => $errors,
+                        'used_emails_record_id' => $usedEmailsRecord->id,
+                    ]
+                );
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error deleting SMTP order mailboxes during order cancellation', [
+                'action' => 'delete_smtp_order_mailboxes',
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * Delete mailboxes for Google/365 orders (with panels and splits)
+     * 
+     * @param Order $order The order to delete mailboxes for
+     * @return void
+     */
+    private function deleteGoogle365OrderMailboxes(Order $order)
+    {
+        try {
+            // Get all panels for the order with eager-loaded splits
+            $orderPanels = OrderPanel::where('order_id', $order->id)
+                ->with('orderPanelSplits')
+                ->get();
+
+            if ($orderPanels->isEmpty()) {
+                Log::info("No panels found for Google/365 order", [
+                    'action' => 'delete_google365_order_mailboxes',
+                    'order_id' => $order->id,
+                ]);
+                return;
+            }
+
+            // Collect all emails from all splits (following exportCsvSplitDomainsSmartById pattern)
+            $allEmails = collect();
+            $splitIdsWithCustomizedEmails = collect();
+
+            foreach ($orderPanels as $panel) {
+                // Get ALL split IDs for this panel at once
+                $splitIds = $panel->orderPanelSplits->pluck('id');
+                
+                if ($splitIds->isEmpty()) {
+                    continue;
+                }
+
+                // Fetch emails for ALL splits at once (same as exportSmartZip)
+                $panelEmails = OrderEmail::whereIn('order_split_id', $splitIds)->get();
+                
+                if ($panelEmails->isNotEmpty()) {
+                    $allEmails = $allEmails->merge($panelEmails);
+                    $splitIdsWithCustomizedEmails = $splitIdsWithCustomizedEmails->merge($splitIds);
+                }
+            }
+
+            // Generate emails for splits without customized data
+            $generatedEmails = $this->generateEmailsForSplitsWithoutCustomizedData($orderPanels, $order, $splitIdsWithCustomizedEmails);
+
+            // Collect all email addresses (from order_emails and generated)
+            $allEmailAddresses = $allEmails->pluck('email')
+                ->merge($generatedEmails->pluck('email'))
+                ->unique()
+                ->values();
+
+            // Log emails fetched (with count and full list) - BEFORE deletion
+            Log::info("Fetched emails for deletion from Google/365 order", [
+                'order_id' => $order->id,
+                'provider_type' => $order->provider_type,
+                'total_emails_count' => $allEmailAddresses->count(),
+                'emails_from_order_emails_count' => $allEmails->count(),
+                'generated_emails_count' => $generatedEmails->count(),
+                'emails' => $allEmailAddresses->toArray(), // Full list of emails to be deleted
+                'panels_count' => $orderPanels->count(),
+            ]);
+
+            // Store emails in used_emails_in_order table - BEFORE deletion
+            $usedEmailsRecord = UsedEmailsInOrder::create([
+                'order_id' => $order->id,
+                'emails' => $allEmailAddresses->toArray(),
+                'count' => $allEmailAddresses->count(),
+            ]);
+
+            Log::info("Stored emails in used_emails_in_order table before deletion", [
+                'order_id' => $order->id,
+                'provider_type' => $order->provider_type,
+                'used_emails_record_id' => $usedEmailsRecord->id,
+                'emails_count' => $usedEmailsRecord->count,
+            ]);
+
+            Log::info("Starting mailbox deletion for Google/365 order", [
+                'order_id' => $order->id,
+                'provider_type' => $order->provider_type,
+                'panels_count' => $orderPanels->count(),
+                'total_emails' => $allEmailAddresses->count(),
+                'emails_stored_in_used_emails_table' => true,
+            ]);
+
+            // Get active provider credentials (or fallback to config)
+            $activeProvider = SmtpProviderSplit::getActiveProvider();
+            $credentials = $activeProvider ? $activeProvider->getCredentials() : null;
+            $mailinService = new MailinAiService($credentials);
+
+            $deletedCount = 0;
+            $failedCount = 0;
+            $notFoundCount = 0;
+            $lookupFailedCount = 0;
+            $errors = [];
+            $emailsChecked = [];
+            $emailsNotFound = [];
+            $emailsFound = [];
+            $emailsDeleted = [];
+            $emailsLookupFailed = [];
+
+            Log::info("Starting to check emails on Mailin.ai for Google/365 order", [
+                'order_id' => $order->id,
+                'provider_type' => $order->provider_type,
+                'total_emails_to_check' => $allEmailAddresses->count(),
+            ]);
+
+            // Process emails from order_emails table (with or without mailin_mailbox_id)
+            foreach ($allEmails as $orderEmail) {
+                $email = $orderEmail->email;
+                $emailsChecked[] = $email;
+
+                Log::info("Checking email on Mailin.ai", [
+                    'order_id' => $order->id,
+                    'email' => $email,
+                    'has_mailin_mailbox_id' => !empty($orderEmail->mailin_mailbox_id),
+                    'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
+                ]);
+
+                $result = $this->processEmailForDeletion($orderEmail, $mailinService, $order);
+                
+                if ($result['success']) {
+                    $deletedCount++;
+                    $emailsDeleted[] = $email;
+                    $emailsFound[] = $email;
+                    
+                    Log::info("Email successfully deleted from Mailin.ai", [
+                        'order_id' => $order->id,
+                        'email' => $email,
+                    ]);
+                } elseif ($result['not_found']) {
+                    $notFoundCount++;
+                    $emailsNotFound[] = $email;
+                    
+                    Log::info("Email not found on Mailin.ai", [
+                        'order_id' => $order->id,
+                        'email' => $email,
+                    ]);
+                } elseif ($result['lookup_failed']) {
+                    $lookupFailedCount++;
+                    $emailsLookupFailed[] = $email;
+                    
+                    Log::warning("Failed to lookup email on Mailin.ai", [
+                        'order_id' => $order->id,
+                        'email' => $email,
+                        'error' => $result['error'] ?? 'Unknown error',
+                    ]);
+                } else {
+                    $failedCount++;
+                    $errors[] = $result['error'] ?? 'Unknown error';
+                    
+                    Log::error("Failed to delete email from Mailin.ai", [
+                        'order_id' => $order->id,
+                        'email' => $email,
+                        'error' => $result['error'] ?? 'Unknown error',
+                    ]);
+                }
+            }
+
+            // Process generated emails (not in order_emails table)
+            foreach ($generatedEmails as $generatedEmail) {
+                $email = $generatedEmail->email;
+                $emailsChecked[] = $email;
+
+                Log::info("Checking generated email on Mailin.ai", [
+                    'order_id' => $order->id,
+                    'email' => $email,
+                    'domain' => $generatedEmail->domain,
+                    'prefix' => $generatedEmail->prefix,
+                ]);
+
+                $result = $this->processGeneratedEmailForDeletion($generatedEmail, $mailinService, $order);
+                
+                if ($result['success']) {
+                    $deletedCount++;
+                    $emailsDeleted[] = $email;
+                    $emailsFound[] = $email;
+                    
+                    Log::info("Generated email successfully deleted from Mailin.ai", [
+                        'order_id' => $order->id,
+                        'email' => $email,
+                    ]);
+                } elseif ($result['not_found']) {
+                    $notFoundCount++;
+                    $emailsNotFound[] = $email;
+                    
+                    Log::info("Generated email not found on Mailin.ai", [
+                        'order_id' => $order->id,
+                        'email' => $email,
+                    ]);
+                } elseif ($result['lookup_failed']) {
+                    $lookupFailedCount++;
+                    $emailsLookupFailed[] = $email;
+                    
+                    Log::warning("Failed to lookup generated email on Mailin.ai", [
+                        'order_id' => $order->id,
+                        'email' => $email,
+                        'error' => $result['error'] ?? 'Unknown error',
+                    ]);
+                } else {
+                    $failedCount++;
+                    $errors[] = $result['error'] ?? 'Unknown error';
+                    
+                    Log::error("Failed to delete generated email from Mailin.ai", [
+                        'order_id' => $order->id,
+                        'email' => $email,
+                        'error' => $result['error'] ?? 'Unknown error',
+                    ]);
+                }
+            }
+
+            // Log summary with detailed lists
+            Log::info("Google/365 order mailbox deletion completed", [
+                'order_id' => $order->id,
+                'provider_type' => $order->provider_type,
+                'total_emails' => $allEmailAddresses->count(),
+                'total_emails_checked' => count($emailsChecked),
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'not_found_count' => $notFoundCount,
+                'lookup_failed_count' => $lookupFailedCount,
+                'emails_stored_in_used_emails_table_id' => $usedEmailsRecord->id,
+            ]);
+
+            // Log detailed lists
+            if (!empty($emailsChecked)) {
+                Log::info("List of all emails checked on Mailin.ai", [
+                    'order_id' => $order->id,
+                    'emails_checked_count' => count($emailsChecked),
+                    'emails_checked' => $emailsChecked,
+                ]);
+            }
+
+            if (!empty($emailsFound)) {
+                Log::info("List of emails found on Mailin.ai", [
+                    'order_id' => $order->id,
+                    'emails_found_count' => count($emailsFound),
+                    'emails_found' => $emailsFound,
+                ]);
+            }
+
+            if (!empty($emailsNotFound)) {
+                Log::info("List of emails NOT found on Mailin.ai", [
+                    'order_id' => $order->id,
+                    'emails_not_found_count' => count($emailsNotFound),
+                    'emails_not_found' => $emailsNotFound,
+                ]);
+            }
+
+            if (!empty($emailsDeleted)) {
+                Log::info("List of emails successfully deleted from Mailin.ai", [
+                    'order_id' => $order->id,
+                    'emails_deleted_count' => count($emailsDeleted),
+                    'emails_deleted' => $emailsDeleted,
+                ]);
+            }
+
+            if (!empty($emailsLookupFailed)) {
+                Log::warning("List of emails with lookup failures on Mailin.ai", [
+                    'order_id' => $order->id,
+                    'emails_lookup_failed_count' => count($emailsLookupFailed),
+                    'emails_lookup_failed' => $emailsLookupFailed,
+                ]);
+            }
+
+            // Log activity for mailbox deletion
+            if ($deletedCount > 0) {
+                ActivityLogService::log(
+                    'order-mailboxes-deleted',
+                    "Deleted {$deletedCount} Mailin.ai mailbox(es) for cancelled Google/365 order",
+                    $order,
+                    [
+                        'order_id' => $order->id,
+                        'provider_type' => $order->provider_type,
+                        'deleted_count' => $deletedCount,
+                        'failed_count' => $failedCount,
+                        'not_found_count' => $notFoundCount,
+                        'lookup_failed_count' => $lookupFailedCount,
+                        'errors' => $errors,
+                        'used_emails_record_id' => $usedEmailsRecord->id,
+                    ]
+                );
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error deleting Google/365 order mailboxes during order cancellation', [
+                'action' => 'delete_google365_order_mailboxes',
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * Generate emails for splits without customized data
+     * 
+     * @param \Illuminate\Support\Collection $orderPanels
+     * @param Order $order
+     * @param \Illuminate\Support\Collection $splitIdsWithCustomizedEmails
+     * @return \Illuminate\Support\Collection
+     */
+    private function generateEmailsForSplitsWithoutCustomizedData($orderPanels, Order $order, $splitIdsWithCustomizedEmails)
+    {
+        $generatedEmails = collect();
+        $reorderInfo = $order->reorderInfo->first();
+
+        if (!$reorderInfo) {
+            return $generatedEmails;
+        }
+
+        // Extract prefix variants
+        $prefixVariants = $this->extractPrefixVariants($reorderInfo);
+
+        foreach ($orderPanels as $panel) {
+            foreach ($panel->orderPanelSplits as $split) {
+                // Skip splits that have customized emails
+                if ($splitIdsWithCustomizedEmails->contains($split->id)) {
+                    continue;
+                }
+
+                // Extract domains from split
+                $domains = $this->extractDomainsFromSplit($split);
+
+                if (empty($domains) || empty($prefixVariants)) {
+                    continue;
+                }
+
+                // Generate emails for this split
+                foreach ($domains as $domain) {
+                    foreach ($prefixVariants as $prefix) {
+                        $email = $prefix . '@' . $domain;
+                        $generatedEmails->push((object)[
+                            'email' => $email,
+                            'domain' => $domain,
+                            'prefix' => $prefix,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return $generatedEmails;
+    }
+
+    /**
+     * Extract prefix variants from reorder info
+     * 
+     * @param object $reorderInfo
+     * @return array
+     */
+    private function extractPrefixVariants($reorderInfo)
+    {
+        $prefixVariants = [];
+
+        if ($reorderInfo && $reorderInfo->prefix_variants) {
+            if (is_string($reorderInfo->prefix_variants)) {
+                $decoded = json_decode($reorderInfo->prefix_variants, true);
+                if (is_array($decoded)) {
+                    // It's a JSON object like {"prefix_variant_1": "Ryan", "prefix_variant_2": "RyanL"}
+                    $prefixVariants = array_values($decoded);
+                } else {
+                    // It's a comma-separated string
+                    $prefixVariants = explode(',', $reorderInfo->prefix_variants);
+                    $prefixVariants = array_map('trim', $prefixVariants);
+                }
+            } elseif (is_array($reorderInfo->prefix_variants)) {
+                // Already an array, extract values if it's associative
+                $prefixVariants = array_values($reorderInfo->prefix_variants);
+            }
+        }
+
+        // Default prefixes if none found
+        if (empty($prefixVariants)) {
+            $prefixVariants = ['info', 'contact'];
+        }
+
+        return array_filter($prefixVariants);
+    }
+
+    /**
+     * Extract domains from split
+     * 
+     * @param OrderPanelSplit $split
+     * @return array
+     */
+    private function extractDomainsFromSplit(OrderPanelSplit $split)
+    {
+        $domains = [];
+
+        if ($split->domains) {
+            // Handle both JSON string and array
+            $domainsData = is_string($split->domains) 
+                ? json_decode($split->domains, true) 
+                : $split->domains;
+
+            if (is_array($domainsData)) {
+                foreach ($domainsData as $domain) {
+                    if (is_array($domain) && isset($domain['domain'])) {
+                        $domains[] = $domain['domain'];
+                    } elseif (is_string($domain)) {
+                        $domains[] = $domain;
+                    }
+                }
+            }
+        }
+
+        return array_filter($domains);
+    }
+
+    /**
+     * Process a single email from order_emails table for deletion
+     * 
+     * @param OrderEmail $orderEmail
+     * @param MailinAiService $mailinService
+     * @param Order $order
+     * @return array
+     */
+    private function processEmailForDeletion(OrderEmail $orderEmail, MailinAiService $mailinService, Order $order)
+    {
+        $mailboxId = $orderEmail->mailin_mailbox_id;
+        $email = $orderEmail->email;
+
+        // If no mailbox ID, try to lookup
+        if (!$mailboxId) {
+            Log::info("Email has no mailbox ID, attempting lookup on Mailin.ai", [
+                'order_id' => $order->id,
+                'order_email_id' => $orderEmail->id,
+                'email' => $email,
+            ]);
+
+            $lookupResult = $this->lookupMailboxIdByEmail($mailinService, $email);
+            
+            if ($lookupResult['success'] && $lookupResult['mailbox_id']) {
+                $mailboxId = $lookupResult['mailbox_id'];
+                
+                Log::info("Mailbox ID found via lookup, updating OrderEmail record", [
+                    'order_id' => $order->id,
+                    'order_email_id' => $orderEmail->id,
+                    'email' => $email,
+                    'mailbox_id' => $mailboxId,
+                ]);
+
+                // Optionally update OrderEmail record with found ID
+                $orderEmail->update(['mailin_mailbox_id' => $mailboxId]);
+            } else {
+                // Check if it's a "not found" vs "lookup failed"
+                if (isset($lookupResult['not_found']) && $lookupResult['not_found']) {
+                    return [
+                        'success' => false,
+                        'not_found' => true,
+                        'error' => $lookupResult['message'] ?? 'Mailbox not found on Mailin.ai',
+                    ];
+                }
+
+                return [
+                    'success' => false,
+                    'lookup_failed' => true,
+                    'error' => $lookupResult['message'] ?? 'Failed to lookup mailbox ID',
+                ];
+            }
+        } else {
+            Log::info("Email has existing mailbox ID, proceeding with deletion", [
+                'order_id' => $order->id,
+                'order_email_id' => $orderEmail->id,
+                'email' => $email,
+                'mailbox_id' => $mailboxId,
+            ]);
+        }
+
+        // Delete mailbox from Mailin.ai
+        try {
+            Log::info("Attempting to delete mailbox from Mailin.ai", [
+                'order_id' => $order->id,
+                'order_email_id' => $orderEmail->id,
+                'email' => $email,
+                'mailbox_id' => $mailboxId,
+            ]);
+
+            $result = $mailinService->deleteMailbox($mailboxId);
+
+            if ($result['success']) {
+                // Delete OrderEmail record after successful deletion
+                $orderEmail->delete();
+
+                Log::info('Mailbox deleted successfully from Mailin.ai and database', [
+                    'action' => 'process_email_for_deletion',
+                    'order_id' => $order->id,
+                    'order_email_id' => $orderEmail->id,
+                    'mailin_mailbox_id' => $mailboxId,
+                    'email' => $email,
+                ]);
+
+                return ['success' => true];
+            } else {
+                Log::warning('Mailbox deletion from Mailin.ai failed', [
+                    'action' => 'process_email_for_deletion',
+                    'order_id' => $order->id,
+                    'order_email_id' => $orderEmail->id,
+                    'mailin_mailbox_id' => $mailboxId,
+                    'email' => $email,
+                    'error' => $result['message'] ?? 'Unknown error',
+                ]);
+
+                return [
+                    'success' => false,
+                    'error' => $result['message'] ?? 'Unknown error',
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception occurred while deleting mailbox from Mailin.ai', [
+                'action' => 'process_email_for_deletion',
+                'order_id' => $order->id,
+                'order_email_id' => $orderEmail->id,
+                'mailin_mailbox_id' => $mailboxId,
+                'email' => $email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Process a generated email (not in order_emails table) for deletion
+     * 
+     * @param object $generatedEmail
+     * @param MailinAiService $mailinService
+     * @param Order $order
+     * @return array
+     */
+    private function processGeneratedEmailForDeletion($generatedEmail, MailinAiService $mailinService, Order $order)
+    {
+        $email = $generatedEmail->email;
+
+        Log::info("Processing generated email for deletion (not in order_emails table)", [
+            'order_id' => $order->id,
+            'email' => $email,
+            'domain' => $generatedEmail->domain ?? null,
+            'prefix' => $generatedEmail->prefix ?? null,
+        ]);
+
+        // Lookup mailbox ID by email
+        $lookupResult = $this->lookupMailboxIdByEmail($mailinService, $email);
+
+        if (!$lookupResult['success'] || !$lookupResult['mailbox_id']) {
+            if (isset($lookupResult['not_found']) && $lookupResult['not_found']) {
+                return [
+                    'success' => false,
+                    'not_found' => true,
+                    'error' => $lookupResult['message'] ?? 'Mailbox not found on Mailin.ai',
+                ];
+            }
+
+            return [
+                'success' => false,
+                'lookup_failed' => true,
+                'error' => $lookupResult['message'] ?? 'Failed to lookup mailbox ID',
+            ];
+        }
+
+        $mailboxId = $lookupResult['mailbox_id'];
+
+        Log::info("Mailbox ID found for generated email, proceeding with deletion", [
+            'order_id' => $order->id,
+            'email' => $email,
+            'mailbox_id' => $mailboxId,
+        ]);
+
+        // Delete mailbox from Mailin.ai
+        try {
+            Log::info("Attempting to delete generated mailbox from Mailin.ai", [
+                'order_id' => $order->id,
+                'email' => $email,
+                'mailbox_id' => $mailboxId,
+            ]);
+
+            $result = $mailinService->deleteMailbox($mailboxId);
+
+            if ($result['success']) {
+                Log::info('Generated mailbox deleted successfully from Mailin.ai', [
+                    'action' => 'process_generated_email_for_deletion',
+                    'order_id' => $order->id,
+                    'mailin_mailbox_id' => $mailboxId,
+                    'email' => $email,
+                ]);
+
+                return ['success' => true];
+            } else {
+                Log::warning('Generated mailbox deletion from Mailin.ai failed', [
+                    'action' => 'process_generated_email_for_deletion',
+                    'order_id' => $order->id,
+                    'mailin_mailbox_id' => $mailboxId,
+                    'email' => $email,
+                    'error' => $result['message'] ?? 'Unknown error',
+                ]);
+
+                return [
+                    'success' => false,
+                    'error' => $result['message'] ?? 'Unknown error',
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception occurred while deleting generated mailbox from Mailin.ai', [
+                'action' => 'process_generated_email_for_deletion',
+                'order_id' => $order->id,
+                'mailin_mailbox_id' => $mailboxId,
+                'email' => $email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Lookup mailbox ID by email address
+     * 
+     * @param MailinAiService $mailinService
+     * @param string $email
+     * @return array
+     */
+    private function lookupMailboxIdByEmail(MailinAiService $mailinService, string $email)
+    {
+        try {
+            Log::info("Looking up mailbox ID on Mailin.ai by email", [
+                'action' => 'lookup_mailbox_id_by_email',
+                'email' => $email,
+            ]);
+
+            $result = $mailinService->getMailboxesByName($email, 10);
+
+            Log::info("Mailin.ai lookup response received", [
+                'action' => 'lookup_mailbox_id_by_email',
+                'email' => $email,
+                'success' => $result['success'] ?? false,
+                'mailboxes_count' => isset($result['mailboxes']) ? count($result['mailboxes']) : 0,
+            ]);
+
+            if ($result['success'] && !empty($result['mailboxes'])) {
+                // Find exact match
+                foreach ($result['mailboxes'] as $mailbox) {
+                    if (isset($mailbox['name']) && strtolower($mailbox['name']) === strtolower($email)) {
+                        Log::info("Exact match found for email on Mailin.ai", [
+                            'action' => 'lookup_mailbox_id_by_email',
+                            'email' => $email,
+                            'mailbox_id' => $mailbox['id'] ?? null,
+                            'mailbox_name' => $mailbox['name'] ?? null,
+                        ]);
+
+                        return [
+                            'success' => true,
+                            'mailbox_id' => $mailbox['id'] ?? null,
+                        ];
+                    }
+                }
+
+                // If no exact match, return first mailbox (might be a partial match)
+                if (isset($result['mailboxes'][0]['id'])) {
+                    Log::info("Partial match found for email on Mailin.ai (using first result)", [
+                        'action' => 'lookup_mailbox_id_by_email',
+                        'email' => $email,
+                        'mailbox_id' => $result['mailboxes'][0]['id'],
+                        'mailbox_name' => $result['mailboxes'][0]['name'] ?? null,
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'mailbox_id' => $result['mailboxes'][0]['id'],
+                    ];
+                }
+            }
+
+            Log::info("Email not found on Mailin.ai", [
+                'action' => 'lookup_mailbox_id_by_email',
+                'email' => $email,
+                'result_success' => $result['success'] ?? false,
+            ]);
+
+            return [
+                'success' => false,
+                'not_found' => true,
+                'message' => 'Mailbox not found on Mailin.ai',
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to lookup mailbox ID by email on Mailin.ai', [
+                'action' => 'lookup_mailbox_id_by_email',
+                'email' => $email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
         }
     }
 }

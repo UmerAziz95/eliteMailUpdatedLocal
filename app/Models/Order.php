@@ -230,6 +230,14 @@ class Order extends Model
     {
         return $this->hasMany(DomainTransfer::class);
     }
+
+    /**
+     * Get used emails record for this order (emails that were deleted from Mailin.ai)
+     */
+    public function usedEmailsInOrder()
+    {
+        return $this->hasOne(UsedEmailsInOrder::class);
+    }
     
 
 }
