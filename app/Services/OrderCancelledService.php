@@ -389,7 +389,18 @@ class OrderCancelledService
             if (in_array(strtolower($providerType ?? ''), ['private smtp', 'smtp'])) {
                 $this->deleteSmtpOrderMailboxes($order);
             } elseif (in_array($providerType, ['Google', 'Microsoft 365'])) {
-                $this->deleteGoogle365OrderMailboxes($order);
+                // Execute command in background for Google/365 orders (batch processing)
+                \Illuminate\Support\Facades\Artisan::queue('mailboxes:delete-google/Microsoft365', [
+                    'order_id' => $order->id,
+                    '--batch-size' => 50,
+                    '--offset' => 0
+                ]);
+                
+                Log::info('Google/365 mailbox deletion queued for background processing', [
+                    'action' => 'delete_order_mailboxes',
+                    'order_id' => $order->id,
+                    'provider_type' => $providerType,
+                ]);
             } else {
                 Log::info("Skipping Mailin.ai mailbox deletion - unsupported provider type", [
                     'action' => 'delete_order_mailboxes',
@@ -608,23 +619,47 @@ class OrderCancelledService
 
     /**
      * Delete mailboxes for Google/365 orders (with panels and splits)
+     * Supports batch processing when called from command
      * 
-     * @param Order $order The order to delete mailboxes for
-     * @return void
+     * @param Order|int $order The order object or order ID
+     * @param int|null $batchSize Number of mailboxes to process per batch (null = process all)
+     * @param int $offset Starting offset for batch processing
+     * @return array|null Results array if batch processing, void if processing all
      */
-    private function deleteGoogle365OrderMailboxes(Order $order)
+    public function deleteGoogle365OrderMailboxes($order, ?int $batchSize = null, int $offset = 0)
     {
         try {
+            // Handle both Order object and order ID
+            if (is_int($order)) {
+                $order = Order::with(['reorderInfo'])->findOrFail($order);
+            }
+            $orderId = $order->id;
+            $isBatchMode = $batchSize !== null;
+
             // Get all panels for the order with eager-loaded splits
-            $orderPanels = OrderPanel::where('order_id', $order->id)
+            $orderPanels = OrderPanel::where('order_id', $orderId)
                 ->with('orderPanelSplits')
                 ->get();
 
             if ($orderPanels->isEmpty()) {
                 Log::info("No panels found for Google/365 order", [
                     'action' => 'delete_google365_order_mailboxes',
-                    'order_id' => $order->id,
+                    'order_id' => $orderId,
+                    'offset' => $offset,
                 ]);
+                
+                if ($isBatchMode) {
+                    return [
+                        'processed' => 0,
+                        'deleted' => 0,
+                        'failed' => 0,
+                        'not_found' => 0,
+                        'lookup_failed' => 0,
+                        'has_more' => false,
+                        'next_offset' => $offset,
+                        'total_remaining' => 0,
+                    ];
+                }
                 return;
             }
 
@@ -658,38 +693,90 @@ class OrderCancelledService
                 ->unique()
                 ->values();
 
-            // Log emails fetched (with count and full list) - BEFORE deletion
-            Log::info("Fetched emails for deletion from Google/365 order", [
-                'order_id' => $order->id,
-                'provider_type' => $order->provider_type,
-                'total_emails_count' => $allEmailAddresses->count(),
-                'emails_from_order_emails_count' => $allEmails->count(),
-                'generated_emails_count' => $generatedEmails->count(),
-                'emails' => $allEmailAddresses->toArray(), // Full list of emails to be deleted
-                'panels_count' => $orderPanels->count(),
-            ]);
+            $totalCount = $allEmailAddresses->count();
 
             // Store emails in used_emails_in_order table - BEFORE deletion
-            $usedEmailsRecord = UsedEmailsInOrder::create([
-                'order_id' => $order->id,
-                'emails' => $allEmailAddresses->toArray(),
-                'count' => $allEmailAddresses->count(),
-            ]);
+            // In batch mode, only store on first batch (offset = 0)
+            if (!$isBatchMode || $offset === 0) {
+                // Check if record already exists (for batch mode)
+                $existingRecord = $isBatchMode ? UsedEmailsInOrder::where('order_id', $orderId)->first() : null;
+                
+                if (!$existingRecord) {
+                    $usedEmailsRecord = UsedEmailsInOrder::create([
+                        'order_id' => $orderId,
+                        'emails' => $allEmailAddresses->toArray(),
+                        'count' => $totalCount,
+                    ]);
 
-            Log::info("Stored emails in used_emails_in_order table before deletion", [
-                'order_id' => $order->id,
-                'provider_type' => $order->provider_type,
-                'used_emails_record_id' => $usedEmailsRecord->id,
-                'emails_count' => $usedEmailsRecord->count,
-            ]);
+                    Log::info("Stored emails in used_emails_in_order table before deletion", [
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
+                        'provider_type' => $order->provider_type,
+                        'used_emails_record_id' => $usedEmailsRecord->id,
+                        'emails_count' => $usedEmailsRecord->count,
+                    ]);
+                } else {
+                    Log::info("Used emails record already exists, skipping creation", [
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
+                        'existing_record_id' => $existingRecord->id,
+                    ]);
+                    $usedEmailsRecord = $existingRecord;
+                }
 
-            Log::info("Starting mailbox deletion for Google/365 order", [
-                'order_id' => $order->id,
-                'provider_type' => $order->provider_type,
-                'panels_count' => $orderPanels->count(),
-                'total_emails' => $allEmailAddresses->count(),
-                'emails_stored_in_used_emails_table' => true,
-            ]);
+                // Log emails fetched (with count and full list) - BEFORE deletion
+                Log::info("Fetched emails for deletion from Google/365 order", [
+                    'action' => 'delete_google365_order_mailboxes',
+                    'order_id' => $orderId,
+                    'provider_type' => $order->provider_type,
+                    'total_emails_count' => $totalCount,
+                    'emails_from_order_emails_count' => $allEmails->count(),
+                    'generated_emails_count' => $generatedEmails->count(),
+                    'emails' => $allEmailAddresses->toArray(), // Full list of emails to be deleted
+                    'panels_count' => $orderPanels->count(),
+                    'batch_mode' => $isBatchMode,
+                ]);
+
+                Log::info("Starting mailbox deletion for Google/365 order", [
+                    'action' => 'delete_google365_order_mailboxes',
+                    'order_id' => $orderId,
+                    'provider_type' => $order->provider_type,
+                    'panels_count' => $orderPanels->count(),
+                    'total_emails' => $totalCount,
+                    'batch_mode' => $isBatchMode,
+                    'batch_size' => $batchSize,
+                    'emails_stored_in_used_emails_table' => true,
+                ]);
+            }
+
+            // Apply batch limits if in batch mode
+            if ($isBatchMode) {
+                $emailsToProcess = $allEmailAddresses->slice($offset, $batchSize);
+                
+                if ($emailsToProcess->isEmpty()) {
+                    Log::info("No emails in batch range", [
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
+                        'offset' => $offset,
+                        'batch_size' => $batchSize,
+                        'total_count' => $totalCount,
+                    ]);
+                    
+                    return [
+                        'processed' => 0,
+                        'deleted' => 0,
+                        'failed' => 0,
+                        'not_found' => 0,
+                        'lookup_failed' => 0,
+                        'has_more' => false,
+                        'next_offset' => $offset,
+                        'total_remaining' => 0,
+                    ];
+                }
+            } else {
+                // Process all emails in non-batch mode
+                $emailsToProcess = $allEmailAddresses;
+            }
 
             // Get active provider credentials (or fallback to config)
             $activeProvider = SmtpProviderSplit::getActiveProvider();
@@ -708,18 +795,29 @@ class OrderCancelledService
             $emailsLookupFailed = [];
 
             Log::info("Starting to check emails on Mailin.ai for Google/365 order", [
-                'order_id' => $order->id,
+                'action' => 'delete_google365_order_mailboxes',
+                'order_id' => $orderId,
                 'provider_type' => $order->provider_type,
-                'total_emails_to_check' => $allEmailAddresses->count(),
+                'total_emails_to_check' => $isBatchMode ? $emailsToProcess->count() : $totalCount,
+                'batch_mode' => $isBatchMode,
+                'offset' => $offset,
             ]);
 
             // Process emails from order_emails table (with or without mailin_mailbox_id)
+            // In batch mode, only process emails in the current batch
             foreach ($allEmails as $orderEmail) {
                 $email = $orderEmail->email;
+                
+                // Skip if not in current batch
+                if ($isBatchMode && !$emailsToProcess->contains($email)) {
+                    continue;
+                }
+                
                 $emailsChecked[] = $email;
 
                 Log::info("Checking email on Mailin.ai", [
-                    'order_id' => $order->id,
+                    'action' => 'delete_google365_order_mailboxes',
+                    'order_id' => $orderId,
                     'email' => $email,
                     'has_mailin_mailbox_id' => !empty($orderEmail->mailin_mailbox_id),
                     'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
@@ -733,7 +831,8 @@ class OrderCancelledService
                     $emailsFound[] = $email;
                     
                     Log::info("Email successfully deleted from Mailin.ai", [
-                        'order_id' => $order->id,
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
                         'email' => $email,
                     ]);
                 } elseif ($result['not_found']) {
@@ -741,7 +840,8 @@ class OrderCancelledService
                     $emailsNotFound[] = $email;
                     
                     Log::info("Email not found on Mailin.ai", [
-                        'order_id' => $order->id,
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
                         'email' => $email,
                     ]);
                 } elseif ($result['lookup_failed']) {
@@ -749,7 +849,8 @@ class OrderCancelledService
                     $emailsLookupFailed[] = $email;
                     
                     Log::warning("Failed to lookup email on Mailin.ai", [
-                        'order_id' => $order->id,
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
                         'email' => $email,
                         'error' => $result['error'] ?? 'Unknown error',
                     ]);
@@ -758,7 +859,8 @@ class OrderCancelledService
                     $errors[] = $result['error'] ?? 'Unknown error';
                     
                     Log::error("Failed to delete email from Mailin.ai", [
-                        'order_id' => $order->id,
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
                         'email' => $email,
                         'error' => $result['error'] ?? 'Unknown error',
                     ]);
@@ -766,12 +868,20 @@ class OrderCancelledService
             }
 
             // Process generated emails (not in order_emails table)
+            // In batch mode, only process emails in the current batch
             foreach ($generatedEmails as $generatedEmail) {
                 $email = $generatedEmail->email;
+                
+                // Skip if not in current batch
+                if ($isBatchMode && !$emailsToProcess->contains($email)) {
+                    continue;
+                }
+                
                 $emailsChecked[] = $email;
 
                 Log::info("Checking generated email on Mailin.ai", [
-                    'order_id' => $order->id,
+                    'action' => 'delete_google365_order_mailboxes',
+                    'order_id' => $orderId,
                     'email' => $email,
                     'domain' => $generatedEmail->domain,
                     'prefix' => $generatedEmail->prefix,
@@ -785,7 +895,8 @@ class OrderCancelledService
                     $emailsFound[] = $email;
                     
                     Log::info("Generated email successfully deleted from Mailin.ai", [
-                        'order_id' => $order->id,
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
                         'email' => $email,
                     ]);
                 } elseif ($result['not_found']) {
@@ -793,7 +904,8 @@ class OrderCancelledService
                     $emailsNotFound[] = $email;
                     
                     Log::info("Generated email not found on Mailin.ai", [
-                        'order_id' => $order->id,
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
                         'email' => $email,
                     ]);
                 } elseif ($result['lookup_failed']) {
@@ -801,7 +913,8 @@ class OrderCancelledService
                     $emailsLookupFailed[] = $email;
                     
                     Log::warning("Failed to lookup generated email on Mailin.ai", [
-                        'order_id' => $order->id,
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
                         'email' => $email,
                         'error' => $result['error'] ?? 'Unknown error',
                     ]);
@@ -810,95 +923,170 @@ class OrderCancelledService
                     $errors[] = $result['error'] ?? 'Unknown error';
                     
                     Log::error("Failed to delete generated email from Mailin.ai", [
-                        'order_id' => $order->id,
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
                         'email' => $email,
                         'error' => $result['error'] ?? 'Unknown error',
                     ]);
                 }
             }
 
-            // Log summary with detailed lists
+            // Calculate next batch info for batch mode
+            if ($isBatchMode) {
+                $nextOffset = $offset + $batchSize;
+                $hasMore = $nextOffset < $totalCount;
+                $totalRemaining = max(0, $totalCount - $nextOffset);
+
+                Log::info("Batch processing completed", [
+                    'action' => 'delete_google365_order_mailboxes',
+                    'order_id' => $orderId,
+                    'offset' => $offset,
+                    'processed' => $emailsToProcess->count(),
+                    'deleted' => $deletedCount,
+                    'failed' => $failedCount,
+                    'not_found' => $notFoundCount,
+                    'lookup_failed' => $lookupFailedCount,
+                    'has_more' => $hasMore,
+                    'next_offset' => $hasMore ? $nextOffset : $offset,
+                    'total_remaining' => $totalRemaining,
+                ]);
+
+                // Log activity for mailbox deletion (only on last batch)
+                if (!$hasMore && $deletedCount > 0) {
+                    ActivityLogService::log(
+                        'order-mailboxes-deleted',
+                        "Deleted mailboxes for cancelled Google/365 order (batch processing)",
+                        $order,
+                        [
+                            'order_id' => $orderId,
+                            'provider_type' => $order->provider_type,
+                            'deleted_count' => $deletedCount,
+                            'failed_count' => $failedCount,
+                            'not_found_count' => $notFoundCount,
+                            'lookup_failed_count' => $lookupFailedCount,
+                            'errors' => $errors,
+                        ]
+                    );
+                }
+
+                return [
+                    'processed' => $emailsToProcess->count(),
+                    'deleted' => $deletedCount,
+                    'failed' => $failedCount,
+                    'not_found' => $notFoundCount,
+                    'lookup_failed' => $lookupFailedCount,
+                    'has_more' => $hasMore,
+                    'next_offset' => $hasMore ? $nextOffset : $offset,
+                    'total_remaining' => $totalRemaining,
+                ];
+            }
+
+            // Log summary with detailed lists (non-batch mode)
             Log::info("Google/365 order mailbox deletion completed", [
-                'order_id' => $order->id,
+                'action' => 'delete_google365_order_mailboxes',
+                'order_id' => $orderId,
                 'provider_type' => $order->provider_type,
-                'total_emails' => $allEmailAddresses->count(),
+                'total_emails' => $totalCount,
                 'total_emails_checked' => count($emailsChecked),
                 'deleted_count' => $deletedCount,
                 'failed_count' => $failedCount,
                 'not_found_count' => $notFoundCount,
                 'lookup_failed_count' => $lookupFailedCount,
-                'emails_stored_in_used_emails_table_id' => $usedEmailsRecord->id,
+                'emails_stored_in_used_emails_table_id' => $usedEmailsRecord->id ?? null,
             ]);
 
-            // Log detailed lists
-            if (!empty($emailsChecked)) {
-                Log::info("List of all emails checked on Mailin.ai", [
-                    'order_id' => $order->id,
-                    'emails_checked_count' => count($emailsChecked),
-                    'emails_checked' => $emailsChecked,
-                ]);
-            }
+            // Log detailed lists (only in non-batch mode to avoid excessive logging)
+            if (!$isBatchMode) {
+                if (!empty($emailsChecked)) {
+                    Log::info("List of all emails checked on Mailin.ai", [
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
+                        'emails_checked_count' => count($emailsChecked),
+                        'emails_checked' => $emailsChecked,
+                    ]);
+                }
 
-            if (!empty($emailsFound)) {
-                Log::info("List of emails found on Mailin.ai", [
-                    'order_id' => $order->id,
-                    'emails_found_count' => count($emailsFound),
-                    'emails_found' => $emailsFound,
-                ]);
-            }
+                if (!empty($emailsFound)) {
+                    Log::info("List of emails found on Mailin.ai", [
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
+                        'emails_found_count' => count($emailsFound),
+                        'emails_found' => $emailsFound,
+                    ]);
+                }
 
-            if (!empty($emailsNotFound)) {
-                Log::info("List of emails NOT found on Mailin.ai", [
-                    'order_id' => $order->id,
-                    'emails_not_found_count' => count($emailsNotFound),
-                    'emails_not_found' => $emailsNotFound,
-                ]);
-            }
+                if (!empty($emailsNotFound)) {
+                    Log::info("List of emails NOT found on Mailin.ai", [
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
+                        'emails_not_found_count' => count($emailsNotFound),
+                        'emails_not_found' => $emailsNotFound,
+                    ]);
+                }
 
-            if (!empty($emailsDeleted)) {
-                Log::info("List of emails successfully deleted from Mailin.ai", [
-                    'order_id' => $order->id,
-                    'emails_deleted_count' => count($emailsDeleted),
-                    'emails_deleted' => $emailsDeleted,
-                ]);
-            }
+                if (!empty($emailsDeleted)) {
+                    Log::info("List of emails successfully deleted from Mailin.ai", [
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
+                        'emails_deleted_count' => count($emailsDeleted),
+                        'emails_deleted' => $emailsDeleted,
+                    ]);
+                }
 
-            if (!empty($emailsLookupFailed)) {
-                Log::warning("List of emails with lookup failures on Mailin.ai", [
-                    'order_id' => $order->id,
-                    'emails_lookup_failed_count' => count($emailsLookupFailed),
-                    'emails_lookup_failed' => $emailsLookupFailed,
-                ]);
-            }
+                if (!empty($emailsLookupFailed)) {
+                    Log::warning("List of emails with lookup failures on Mailin.ai", [
+                        'action' => 'delete_google365_order_mailboxes',
+                        'order_id' => $orderId,
+                        'emails_lookup_failed_count' => count($emailsLookupFailed),
+                        'emails_lookup_failed' => $emailsLookupFailed,
+                    ]);
+                }
 
-            // Log activity for mailbox deletion
-            if ($deletedCount > 0) {
-                ActivityLogService::log(
-                    'order-mailboxes-deleted',
-                    "Deleted {$deletedCount} Mailin.ai mailbox(es) for cancelled Google/365 order",
-                    $order,
-                    [
-                        'order_id' => $order->id,
-                        'provider_type' => $order->provider_type,
-                        'deleted_count' => $deletedCount,
-                        'failed_count' => $failedCount,
-                        'not_found_count' => $notFoundCount,
-                        'lookup_failed_count' => $lookupFailedCount,
-                        'errors' => $errors,
-                        'used_emails_record_id' => $usedEmailsRecord->id,
-                    ]
-                );
+                // Log activity for mailbox deletion (non-batch mode)
+                if ($deletedCount > 0) {
+                    ActivityLogService::log(
+                        'order-mailboxes-deleted',
+                        "Deleted {$deletedCount} Mailin.ai mailbox(es) for cancelled Google/365 order",
+                        $order,
+                        [
+                            'order_id' => $orderId,
+                            'provider_type' => $order->provider_type,
+                            'deleted_count' => $deletedCount,
+                            'failed_count' => $failedCount,
+                            'not_found_count' => $notFoundCount,
+                            'lookup_failed_count' => $lookupFailedCount,
+                            'errors' => $errors,
+                            'used_emails_record_id' => $usedEmailsRecord->id ?? null,
+                        ]
+                    );
+                }
             }
 
         } catch (\Exception $e) {
             Log::error('Error deleting Google/365 order mailboxes during order cancellation', [
                 'action' => 'delete_google365_order_mailboxes',
-                'order_id' => $order->id,
+                'order_id' => is_int($order) ? $order : $order->id,
+                'offset' => $offset,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+            
+            if ($isBatchMode) {
+                return [
+                    'processed' => 0,
+                    'deleted' => 0,
+                    'failed' => 0,
+                    'not_found' => 0,
+                    'lookup_failed' => 0,
+                    'has_more' => false,
+                    'next_offset' => $offset,
+                    'total_remaining' => 0,
+                    'error' => $e->getMessage(),
+                ];
+            }
         }
     }
+
 
     /**
      * Generate emails for splits without customized data
