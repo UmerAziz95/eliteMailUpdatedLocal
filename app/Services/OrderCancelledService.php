@@ -105,16 +105,24 @@ class OrderCancelledService
                 }
 
                 $order = Order::where('chargebee_subscription_id', $chargebee_subscription_id)->first();
+                $mailboxDeletionInProgress = false;
+                
                 if ($order) {
-                    $order->update([
-                        'status_manage_by_admin' => 'cancelled',
-                    ]);
-                    Log::info("Updated order record to cancelled: Order ID {$order->id}, User ID {$user_id}");
+                    // For Google/365 orders with force cancel, status will be set to 'cancellation-in-process' in deleteOrderMailboxes
+                    // For other orders or EOBC, set to 'cancelled' immediately
+                    $isGoogle365ForceCancel = $force_cancel && in_array($order->provider_type, ['Google', 'Microsoft 365']);
+                    
+                    if (!$isGoogle365ForceCancel) {
+                        $order->update([
+                            'status_manage_by_admin' => 'cancelled',
+                        ]);
+                        Log::info("Updated order record to cancelled: Order ID {$order->id}, User ID {$user_id}");
+                    }
                     
                     // Delete mailboxes from Mailin.ai immediately only for Force Cancel
                     // For EOBC, mailboxes should remain active until subscription end date
                     if ($force_cancel) {
-                        $this->deleteOrderMailboxes($order);
+                        $mailboxDeletionInProgress = $this->deleteOrderMailboxes($order);
                     } else {
                         Log::info("Skipping immediate mailbox deletion for EOBC cancellation - mailboxes will remain active until subscription end date", [
                             'action' => 'cancel_subscription',
@@ -226,11 +234,19 @@ class OrderCancelledService
                     ]);
                 }
                 Log::info("Subscription cancellation process completed for ChargeBee ID {$chargebee_subscription_id}, User ID {$user_id}");
+                
+                $message = 'Subscription cancelled successfully';
+                if ($mailboxDeletionInProgress) {
+                    $message = 'Subscription cancellation is in process. Mailbox deletion is running in the background.';
+                }
+                
                 return [
                     'success' => true,
-                    'message' => 'Subscription cancelled successfully',
+                    'message' => $message,
                     'order_id' => $order ? $order->id : null,
                     'cancellation_reason' => $reason,
+                    'mailbox_deletion_in_progress' => $mailboxDeletionInProgress ?? false,
+                    'order_status' => $order ? $order->status_manage_by_admin : null,
                 ];
             }
             Log::error("Failed to cancel subscription in ChargeBee: {$chargebee_subscription_id}, Status: " . $result->subscription()->status);
@@ -389,18 +405,31 @@ class OrderCancelledService
             if (in_array(strtolower($providerType ?? ''), ['private smtp', 'smtp'])) {
                 $this->deleteSmtpOrderMailboxes($order);
             } elseif (in_array($providerType, ['Google', 'Microsoft 365'])) {
-                // Execute command in background for Google/365 orders (batch processing)
-                \Illuminate\Support\Facades\Artisan::queue('mailboxes:delete-google/Microsoft365', [
-                    'order_id' => $order->id,
-                    '--batch-size' => 50,
-                    '--offset' => 0
+                // Update status to 'cancellation-in-process' before dispatching job
+                $order->update([
+                    'status_manage_by_admin' => 'cancellation-in-process',
                 ]);
                 
-                Log::info('Google/365 mailbox deletion queued for background processing', [
+                Log::info('Updated order status to cancellation-in-process before mailbox deletion', [
                     'action' => 'delete_order_mailboxes',
                     'order_id' => $order->id,
                     'provider_type' => $providerType,
                 ]);
+                
+                // Dispatch job for Google/365 orders (batch processing)
+                \App\Jobs\MailinAi\DeleteGoogle365MailboxesJob::dispatch(
+                    $order->id,
+                    50, // batch size
+                    0    // offset
+                );
+                
+                Log::info('Google/365 mailbox deletion job dispatched for background processing', [
+                    'action' => 'delete_order_mailboxes',
+                    'order_id' => $order->id,
+                    'provider_type' => $providerType,
+                ]);
+                
+                return true; // Indicate that mailbox deletion is in progress
             } else {
                 Log::info("Skipping Mailin.ai mailbox deletion - unsupported provider type", [
                     'action' => 'delete_order_mailboxes',

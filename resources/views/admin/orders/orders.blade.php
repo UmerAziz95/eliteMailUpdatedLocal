@@ -4153,7 +4153,7 @@
                             <p class="text-white small mb-0">Customer: ${orderInfo.customer_name || 'N/A'} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
                         <div class="d-flex gap-2">
-                            ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' ? `
+                            ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' && orderInfo?.status !== 'cancellation-in-process' ? `
                                 <button class="btn btn-warning btn-sm px-3 py-2" 
                                         onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
                                         style="font-size: 13px;">
@@ -4256,7 +4256,7 @@
                         <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                     </div>
                     <div class="d-flex gap-2">
-                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' ? `
+                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' && orderInfo?.status !== 'cancellation-in-process' ? `
                             <button class="btn btn-warning btn-sm px-3 py-2" 
                                     onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
                                     style="font-size: 13px;">
