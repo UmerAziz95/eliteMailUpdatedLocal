@@ -150,9 +150,9 @@ class Kernel extends ConsoleKernel
                         ->runInBackground()
                         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
-                // Check for unverified completed orders every hour
+                // Check for unverified completed orders twice daily (every 12 hours)
                 $schedule->command('orders:check-unverified-completed')
-                        ->hourly()
+                        ->cron('0 */12 * * *')
                         ->withoutOverlapping()
                         ->runInBackground()
                         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
