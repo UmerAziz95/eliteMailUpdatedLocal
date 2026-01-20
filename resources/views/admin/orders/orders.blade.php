@@ -6145,5 +6145,84 @@
         $(this).removeData('order-id');
     });
 
+    // Handle verify order button click
+    $(document).on('click', '.verify-order-btn', function(e) {
+        e.preventDefault();
+        const orderId = $(this).data('order-id');
+        
+        if (!orderId) {
+            toastr.error('Invalid order data');
+            return;
+        }
+
+        // Show SweetAlert confirmation
+        Swal.fire({
+            title: 'Verify Order?',
+            html: `Are you sure you want to verify <strong>Order #${orderId}</strong>?<br><br>This action will mark the order as verified.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Verify Order',
+            cancelButtonText: 'Cancel',
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Verifying...',
+                    text: 'Please wait while we verify the order.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    allowEnterKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Make AJAX call to verify order
+                $.ajax({
+                    url: `{{ route('admin.orders.verify', ':id') }}`.replace(':id', orderId),
+                    type: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                        'Accept': 'application/json'
+                    },
+                    success: function(response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Order Verified!',
+                            html: `Order <strong>#${orderId}</strong> has been verified successfully.`,
+                            confirmButtonColor: '#28a745',
+                            timer: 2000,
+                            timerProgressBar: true
+                        }).then(() => {
+                            // Refresh all DataTables
+                            refreshAllDataTables();
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Failed to verify order';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else if (xhr.status === 403) {
+                            errorMessage = 'You do not have permission to verify orders.';
+                        } else if (xhr.status === 400) {
+                            errorMessage = xhr.responseJSON?.message || 'Order is already verified.';
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Verification Failed',
+                            text: errorMessage,
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                });
+            }
+        });
+    });
+
 </script>
 @endpush

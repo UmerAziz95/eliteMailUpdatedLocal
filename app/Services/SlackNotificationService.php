@@ -334,6 +334,54 @@ class SlackNotificationService
     }
 
     /**
+     * Send order verification notification to Slack
+     *
+     * @param \App\Models\Order $order
+     * @return bool
+     */
+    public static function sendOrderVerificationNotification($order)
+    {
+        $data = [
+            'order_id' => $order->id,
+            'order_name' => 'Order #' . $order->id,
+            'customer_name' => $order->user ? $order->user->name : 'Unknown',
+            'customer_email' => $order->user ? $order->user->email : 'Unknown',
+            'contractor_name' => $order->assignedTo ? $order->assignedTo->name : 'Unassigned',
+            'verified_by' => auth()->user() ? auth()->user()->name : 'System',
+            'verified_at' => now()->format('Y-m-d H:i:s T'),
+            'completed_at' => $order->completed_at ? $order->completed_at->format('Y-m-d H:i:s T') : 'N/A',
+            'provider_type' => $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null)
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-verification', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
+     * Send unverified completed order notification to Slack
+     *
+     * @param \App\Models\Order $order
+     * @return bool
+     */
+    public static function sendUnverifiedOrderNotification($order)
+    {
+        $data = [
+            'order_id' => $order->id,
+            'order_name' => 'Order #' . $order->id,
+            'customer_name' => $order->user ? $order->user->name : 'Unknown',
+            'customer_email' => $order->user ? $order->user->email : 'Unknown',
+            'contractor_name' => $order->assignedTo ? $order->assignedTo->name : 'Unassigned',
+            'completed_at' => $order->completed_at ? $order->completed_at->format('Y-m-d H:i:s T') : 'N/A',
+            'provider_type' => $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null)
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-unverified', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
      * Send order assignment notification to Slack
      *
      * @param \App\Models\Order $order
@@ -1776,6 +1824,134 @@ class SlackNotificationService
                     'attachments' => [
                         [
                             'color' => '#28a745',
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'order-verification':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Email',
+                        'value' => $data['customer_email'] ?? 'N/A',
+                        'short' => true
+                    ],
+                ];
+                
+                // For Private SMTP: Show "Assigned To: Automation", otherwise show "Contractor Name"
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
+                        'title' => 'Contractor Name',
+                        'value' => $data['contractor_name'] ?? 'Unassigned',
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Verified By',
+                    'value' => $data['verified_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Verified At',
+                    'value' => $data['verified_at'] ?? 'N/A',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Completed At',
+                    'value' => $data['completed_at'] ?? 'N/A',
+                    'short' => true
+                ];
+                
+                return [
+                    'text' => "✅ *Order Verified*",
+                    'attachments' => [
+                        [
+                            'color' => '#28a745',
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'order-unverified':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Email',
+                        'value' => $data['customer_email'] ?? 'N/A',
+                        'short' => true
+                    ],
+                ];
+                
+                // For Private SMTP: Show "Assigned To: Automation", otherwise show "Contractor Name"
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
+                        'title' => 'Contractor Name',
+                        'value' => $data['contractor_name'] ?? 'Unassigned',
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Completed At',
+                    'value' => $data['completed_at'] ?? 'N/A',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Status',
+                    'value' => '⚠️ Completed but Not Verified',
+                    'short' => true
+                ];
+                
+                return [
+                    'text' => "⚠️ *Unverified Completed Order*",
+                    'attachments' => [
+                        [
+                            'color' => '#ffc107',
                             'fields' => $fields,
                             'footer' => $appName . ' Slack Integration',
                             'ts' => time()

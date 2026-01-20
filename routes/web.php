@@ -345,6 +345,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/{id}/split/view', [AdminOrderController::class, 'splitView'])->name('orders.split.view');
         Route::get('/orders/{orderId}/splits', [AdminOrderController::class, 'getOrderSplits'])->name('orders.splits');
         Route::post('/update-order-status', [AdminOrderController::class, 'updateOrderStatus'])->name('orders.updateOrderStatus');
+        Route::post('/orders/{id}/verify', [AdminOrderController::class, 'verifyOrder'])->name('orders.verify');
         Route::post('/orders/panel/status/process', [AdminOrderController::class, 'processPanelStatus'])->name('order.panel.status.process');
         Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderEmailController::class, 'getPanelEmails']);

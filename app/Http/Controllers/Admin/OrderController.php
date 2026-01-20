@@ -336,6 +336,14 @@ class OrderController extends Controller
                                 <i class="fa-solid fa-wrench text-warning"></i> &nbsp;Order Fixed Manually
                             </a>
                         </li>
+                        '. ($order->is_verified == 0 && auth()->user()->hasPermissionTo('Verify Order') ? '
+                        <li>
+                            <a href="javascript:void(0);"
+                                class="dropdown-item text-success verify-order-btn"
+                                data-order-id="' . $order->id . '">
+                                <i class="fa-solid fa-circle-check"></i> &nbsp;Verify Order
+                            </a>
+                        </li>' : '' ) . '
                     </ul>
                 </div>';
 
@@ -371,13 +379,30 @@ class OrderController extends Controller
                     return $order->created_at ? $order->created_at->format('d M, Y') : '';
                 })
                 ->editColumn('status', function ($order) {
+
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
-                    $statusKey = $status;
-                    // dd($order->status_manage_by_admin, $statusKey);
-                    $statusClass = $this->statuses[$statusKey] ?? 'secondary';
-                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
-                        . ucfirst($status) . '</span>';
-                })
+                    $statusClass = $this->statuses[$status] ?? 'secondary';
+                
+                    $verificationIcon = '';
+                
+                    if ($status === 'completed') {
+                        if ((int) $order->is_verified === 1) {
+                            $verificationIcon = '<i class="fa-solid fa-circle-check text-success" title="Verified"></i>';
+                        } else {
+                            $verificationIcon = '<i class="fa-solid fa-circle-xmark text-danger" title="Not Verified"></i>';
+                        }
+                    }
+                
+                    return '
+                        <div class="d-inline-flex align-items-center gap-1">
+                            <span class="py-1 px-2 text-nowrap text-' . $statusClass . '
+                                border border-' . $statusClass . ' rounded-2 bg-transparent">
+                                ' . ucfirst($status) . '
+                            </span>
+                            ' . ($verificationIcon ? '<span>' . $verificationIcon . '</span>' : '') . '
+                        </div>
+                    ';
+                })                
                 ->addColumn('name', function ($order) {
                     return $order->user ? $order->user->name : 'N/A';
                 })
@@ -486,6 +511,77 @@ class OrderController extends Controller
         $order->save();
     
         return response()->json(['success' => true, 'message' => 'Status updated']);
+    }
+
+    public function verifyOrder(Request $request, $id)
+    {
+        try {
+            $order = Order::findOrFail($id);
+
+            // Check if order is already verified
+            if ($order->is_verified == 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order #' . $order->id . ' is already verified.'
+                ], 400);
+            }
+
+            // Check permission
+            if (!auth()->user()->hasPermissionTo('Verify Order')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to verify orders.'
+                ], 403);
+            }
+
+            // Update the order verification status
+            $order->is_verified = 1;
+            $order->save();
+
+            // Log the verification action
+            if (class_exists(\App\Services\ActivityLogService::class)) {
+                \App\Services\ActivityLogService::log(
+                    'order_verified',
+                    'Order #' . $order->id . ' has been verified',
+                    $order,
+                    [
+                        'order_id' => $order->id,
+                        'admin_user' => Auth::id(),
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->header('User-Agent')
+                    ],
+                    Auth::id()
+                );
+            }
+
+            // Send Slack notification
+            try {
+                \App\Services\SlackNotificationService::sendOrderVerificationNotification($order);
+                \Log::channel('slack_notifications')->info('Order verification notification sent', [
+                    'order_id' => $order->id
+                ]);
+            } catch (\Exception $e) {
+                \Log::channel('slack_notifications')->error('Failed to send order verification notification', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order #' . $order->id . ' has been verified successfully.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error verifying order: ' . $e->getMessage(), [
+                'order_id' => $id,
+                'error' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error verifying order: ' . $e->getMessage()
+            ], 500);
+        }
     }
     
 

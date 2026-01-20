@@ -149,6 +149,13 @@ class Kernel extends ConsoleKernel
                         ->withoutOverlapping()
                         ->runInBackground()
                         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
+                // Check for unverified completed orders every hour
+                $schedule->command('orders:check-unverified-completed')
+                        ->hourly()
+                        ->withoutOverlapping()
+                        ->runInBackground()
+                        ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
         }
                 
 
