@@ -80,3 +80,11 @@ New Seeder for smtp provider credential and splits
 
 php artisan db:seed --class=SmtpProviderSplitSeeder
 
+
+# for order verification run migration to add column to order table
+
+php artisan migrate
+path=database/migrations/2026_01_20_080458_add_is_verified_to_orders_table.php
+
+## FOR new permissions call seeder (Verify Order is added as new permission)
+php artisan db:seed --class=PermissionsTableSeeder
