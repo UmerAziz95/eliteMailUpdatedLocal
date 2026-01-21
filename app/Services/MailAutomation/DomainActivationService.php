@@ -87,20 +87,52 @@ class DomainActivationService
             return $results;
         }
 
+        // Get prefix variants from order for mailbox comparison
+        $reorderInfo = $order->reorderInfo->first();
+        $prefixVariantsRaw = $reorderInfo ? ($reorderInfo->prefix_variants ?? []) : [];
+        // Extract just the prefix values (array may be associative like ['prefix_variant_1' => 'john'])
+        $prefixVariants = array_filter(array_values($prefixVariantsRaw));
+
         // Process each domain
         foreach ($split->domains ?? [] as $domain) {
             try {
-                // CHECK 1: Does mailbox already exist? → REJECT
+                // CHECK 1: Do SAME mailboxes already exist? (check by prefix variants) → REJECT
                 $existingMailboxes = $provider->getMailboxesByDomain($domain);
-                if (!empty($existingMailboxes['mailboxes'])) {
-                    $this->rejectOrder($order, "Mailboxes already exist for domain: {$domain}");
-                    return [
-                        'rejected' => true,
-                        'reason' => "Mailboxes already exist for domain: {$domain}",
-                        'active' => $results['active'],
-                        'transferred' => $results['transferred'],
-                        'failed' => $results['failed'],
-                    ];
+                if (!empty($existingMailboxes['mailboxes']) && !empty($prefixVariants)) {
+                    // Extract existing email prefixes
+                    $existingPrefixes = [];
+                    foreach ($existingMailboxes['mailboxes'] as $mb) {
+                        $email = $mb['email'] ?? $mb['username'] ?? '';
+                        if (strpos($email, '@') !== false) {
+                            $existingPrefixes[] = strtolower(explode('@', $email)[0]);
+                        }
+                    }
+
+                    // Check if any of our prefix variants already exist
+                    $conflictingMailboxes = [];
+                    foreach ($prefixVariants as $prefix) {
+                        if (in_array(strtolower(trim($prefix)), $existingPrefixes)) {
+                            $conflictingMailboxes[] = $prefix . '@' . $domain;
+                        }
+                    }
+
+                    Log::channel('mailin-ai')->debug('Mailbox conflict check', [
+                        'domain' => $domain,
+                        'order_prefixes' => $prefixVariants,
+                        'existing_prefixes' => $existingPrefixes,
+                        'conflicts' => $conflictingMailboxes,
+                    ]);
+
+                    if (!empty($conflictingMailboxes)) {
+                        $this->rejectOrder($order, "Same mailboxes already exist: " . implode(', ', $conflictingMailboxes));
+                        return [
+                            'rejected' => true,
+                            'reason' => "Same mailboxes already exist: " . implode(', ', $conflictingMailboxes),
+                            'active' => $results['active'],
+                            'transferred' => $results['transferred'],
+                            'failed' => $results['failed'],
+                        ];
+                    }
                 }
 
                 // CHECK 2: Is domain active?

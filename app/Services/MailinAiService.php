@@ -28,7 +28,7 @@ class MailinAiService
             $this->baseUrl = $credentials['base_url'] ?: config('mailin_ai.base_url');
             $this->email = $credentials['email'];
             $this->password = $credentials['password'];
-            
+
             Log::channel('mailin-ai')->debug('MailinAiService initialized with split table credentials', [
                 'action' => 'constructor',
                 'has_base_url' => !empty($credentials['base_url']),
@@ -39,13 +39,13 @@ class MailinAiService
             $this->baseUrl = config('mailin_ai.base_url');
             $this->email = config('mailin_ai.email');
             $this->password = config('mailin_ai.password');
-            
+
             Log::channel('mailin-ai')->debug('MailinAiService initialized with config fallback', [
                 'action' => 'constructor',
                 'has_credentials' => !empty($credentials),
             ]);
         }
-        
+
         $this->deviceName = config('mailin_ai.device_name', 'project inbox');
         $this->timeout = config('mailin_ai.timeout', 30);
     }
@@ -61,7 +61,7 @@ class MailinAiService
             // Check if we have a cached token
             $cacheKey = 'mailin_ai_token';
             $cachedToken = Cache::get($cacheKey);
-            
+
             if ($cachedToken) {
                 Log::channel('mailin-ai')->info('Using cached Mailin.ai token', [
                     'action' => 'authenticate',
@@ -135,7 +135,7 @@ class MailinAiService
                 return $token;
             } else {
                 $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
-                
+
                 Log::channel('mailin-ai')->error('Mailin.ai authentication failed', [
                     'action' => 'authenticate',
                     'status_code' => $statusCode,
@@ -186,7 +186,7 @@ class MailinAiService
     {
         Cache::forget('mailin_ai_token');
         $this->token = null;
-        
+
         Log::channel('mailin-ai')->info('Mailin.ai token cleared', [
             'action' => 'clear_token',
         ]);
@@ -205,7 +205,7 @@ class MailinAiService
     public function makeRequest($method, $endpoint, $data = [], $maxRetries = 3)
     {
         $token = $this->getToken();
-        
+
         if (!$token) {
             throw new \Exception('Failed to authenticate with Mailin.ai API');
         }
@@ -291,13 +291,13 @@ class MailinAiService
             if ($statusCode === 429) {
                 $responseBody = $response->json();
                 $errorMessage = $responseBody['message'] ?? 'Too Many Attempts.';
-                
+
                 // Calculate exponential backoff delay: 2^retryCount * baseDelay seconds
                 $delay = pow(2, $retryCount) * $baseDelay;
-                
+
                 // Cap delay at 60 seconds to avoid extremely long waits
                 $delay = min($delay, 60);
-                
+
                 if ($retryCount < $maxRetries) {
                     Log::channel('mailin-ai')->warning('Mailin.ai API returned 429 (rate limit), retrying with exponential backoff', [
                         'action' => 'make_request',
@@ -307,7 +307,7 @@ class MailinAiService
                         'delay_seconds' => $delay,
                         'error_message' => $errorMessage,
                     ]);
-                    
+
                     // Wait before retrying
                     sleep($delay);
                     $retryCount++;
@@ -320,7 +320,7 @@ class MailinAiService
                         'retry_attempts' => $retryCount,
                         'error_message' => $errorMessage,
                     ]);
-                    
+
                     throw new \Exception('Mailin.ai API rate limit exceeded. ' . $errorMessage . ' Please try again later.');
                 }
             }
@@ -367,7 +367,7 @@ class MailinAiService
             Log::channel('mailin-ai')->info('Creating mailboxes via Mailin.ai API', [
                 'action' => 'create_mailboxes',
                 'mailbox_count' => count($mailboxes),
-                'mailboxes' => array_map(function($mb) {
+                'mailboxes' => array_map(function ($mb) {
                     return [
                         'username' => $mb['username'] ?? 'missing',
                         'name' => $mb['name'] ?? 'missing',
@@ -435,14 +435,14 @@ class MailinAiService
                 if (is_array($responseBody)) {
                     // First try to get error from message or error fields
                     $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? $errorMessage;
-                    
+
                     // Check for nested error messages in data
                     if (isset($responseBody['data']) && is_array($responseBody['data'])) {
                         if (isset($responseBody['data']['message'])) {
                             $errorMessage = $responseBody['data']['message'];
                         }
                     }
-                    
+
                     // Extract error messages from errors array (Laravel validation format)
                     if (isset($responseBody['errors']) && is_array($responseBody['errors'])) {
                         $errorMessages = [];
@@ -464,15 +464,15 @@ class MailinAiService
                 } else {
                     $errorMessage = 'HTTP ' . $statusCode . ' with empty response body';
                 }
-                
+
                 // Check if error is about domain not being registered
                 $domainNotRegistered = false;
                 $unregisteredDomains = [];
-                
+
                 // Check if error is about mailboxes already being registered
                 $mailboxesAlreadyExist = false;
                 $existingMailboxEmails = [];
-                
+
                 if (isset($responseBody['errors']) && is_array($responseBody['errors'])) {
                     foreach ($responseBody['errors'] as $field => $messages) {
                         if (is_array($messages)) {
@@ -504,13 +504,13 @@ class MailinAiService
                         }
                     }
                 }
-                
+
                 // Also check main error message
                 if (preg_match("/domain '([^']+)' is not registered/i", $errorMessage, $matches)) {
                     $domainNotRegistered = true;
                     $unregisteredDomains[] = $matches[1];
                 }
-                
+
                 // Check main error message for "already registered" and extract email
                 if (preg_match("/mailbox '([^']+)' is already registered to your account/i", $errorMessage, $matches)) {
                     $mailboxesAlreadyExist = true;
@@ -518,7 +518,7 @@ class MailinAiService
                 } elseif (preg_match("/already registered to your account/i", $errorMessage)) {
                     $mailboxesAlreadyExist = true;
                 }
-                
+
                 // If all mailboxes already exist, treat as success (they're already on Mailin.ai)
                 if ($mailboxesAlreadyExist && !$domainNotRegistered) {
                     Log::channel('mailin-ai')->info('Mailboxes already exist on Mailin.ai - treating as success', [
@@ -526,11 +526,11 @@ class MailinAiService
                         'status_code' => $statusCode,
                         'mailbox_count' => count($mailboxes),
                         'existing_mailbox_emails' => $existingMailboxEmails,
-                        'mailbox_usernames' => array_map(function($mb) {
+                        'mailbox_usernames' => array_map(function ($mb) {
                             return $mb['username'] ?? 'unknown';
                         }, $mailboxes),
                     ]);
-                    
+
                     // Return success response without UUID (mailboxes already exist)
                     return [
                         'success' => true,
@@ -541,7 +541,7 @@ class MailinAiService
                         'response' => $responseBody,
                     ];
                 }
-                
+
                 Log::channel('mailin-ai')->error('Mailin.ai mailbox creation failed', [
                     'action' => 'create_mailboxes',
                     'status_code' => $statusCode,
@@ -552,7 +552,7 @@ class MailinAiService
                     'unregistered_domains' => $unregisteredDomains,
                     'mailboxes_already_exist' => $mailboxesAlreadyExist,
                     'mailbox_count' => count($mailboxes),
-                    'mailbox_usernames' => array_map(function($mb) {
+                    'mailbox_usernames' => array_map(function ($mb) {
                         return $mb['username'] ?? 'unknown';
                     }, $mailboxes),
                 ]);
@@ -562,7 +562,7 @@ class MailinAiService
                     $domainsList = implode(', ', array_unique($unregisteredDomains));
                     throw new \Exception('Failed to create mailboxes via Mailin.ai: Domain not registered. Domains: ' . $domainsList . '. Error: ' . $errorMessage);
                 }
-                
+
                 throw new \Exception('Failed to create mailboxes via Mailin.ai: ' . $errorMessage);
             }
 
@@ -572,7 +572,7 @@ class MailinAiService
             if ($e->response) {
                 $errorMessage .= '. Status: ' . $e->response->status() . '. Body: ' . substr($e->response->body(), 0, 500);
             }
-            
+
             Log::channel('mailin-ai')->error('Mailin.ai mailbox creation HTTP exception', [
                 'action' => 'create_mailboxes',
                 'error' => $errorMessage,
@@ -640,13 +640,13 @@ class MailinAiService
             } else {
                 // Build comprehensive error message - check multiple sources
                 $errorMessage = 'Unknown error';
-                
+
                 if (isset($responseBody['message'])) {
                     $errorMessage = $responseBody['message'];
                 } elseif (isset($responseBody['error'])) {
                     $errorMessage = $responseBody['error'];
                 }
-                
+
                 // Extract error messages from 'errors' array (Laravel validation format)
                 if (isset($responseBody['errors']) && is_array($responseBody['errors'])) {
                     $errorMessages = [];
@@ -663,14 +663,14 @@ class MailinAiService
                         $errorMessage = implode('. ', $errorMessages);
                     }
                 }
-                
+
                 // Check if domain already exists in the account - this is not a failure
                 // The domain is already registered, so treat it as success
                 $errorMessageLower = strtolower($errorMessage);
                 $domainAlreadyExists = str_contains($errorMessageLower, 'domain already exists in your account')
                     || str_contains($errorMessageLower, 'already exists in your account')
                     || str_contains($errorMessageLower, 'domain is already registered');
-                
+
                 if ($domainAlreadyExists) {
                     Log::channel('mailin-ai')->info('Domain already exists in Mailin.ai account - treating as success', [
                         'action' => 'transfer_domain',
@@ -687,7 +687,7 @@ class MailinAiService
                         'response' => $responseBody,
                     ];
                 }
-                
+
                 Log::channel('mailin-ai')->error('Mailin.ai domain transfer failed', [
                     'action' => 'transfer_domain',
                     'domain_name' => $domainName,
@@ -701,10 +701,10 @@ class MailinAiService
 
         } catch (\Exception $e) {
             // Check if it's a rate limit error
-            $isRateLimitError = str_contains($e->getMessage(), 'rate limit') 
+            $isRateLimitError = str_contains($e->getMessage(), 'rate limit')
                 || str_contains($e->getMessage(), 'Too Many Attempts')
                 || str_contains($e->getMessage(), '429');
-            
+
             Log::channel('mailin-ai')->error('Mailin.ai domain transfer exception', [
                 'action' => 'transfer_domain',
                 'domain_name' => $domainName,
@@ -712,12 +712,12 @@ class MailinAiService
                 'is_rate_limit' => $isRateLimitError,
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             // Re-throw with a specific exception type for rate limits
             if ($isRateLimitError) {
                 throw new \Exception('Rate limit exceeded while transferring domain: ' . $domainName . '. ' . $e->getMessage(), 429, $e);
             }
-            
+
             throw $e;
         }
     }
@@ -761,7 +761,7 @@ class MailinAiService
                 ];
             } else {
                 $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
-                
+
                 Log::channel('mailin-ai')->error('Failed to get mailbox job status', [
                     'action' => 'get_mailbox_job_status',
                     'job_id' => $jobId,
@@ -821,7 +821,7 @@ class MailinAiService
                 ];
             } else {
                 $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
-                
+
                 Log::channel('mailin-ai')->error('Failed to delete mailbox from Mailin.ai', [
                     'action' => 'delete_mailbox',
                     'mailbox_id' => $mailboxId,
@@ -839,7 +839,7 @@ class MailinAiService
             if ($e->response) {
                 $errorMessage .= '. Status: ' . $e->response->status() . '. Body: ' . substr($e->response->body(), 0, 500);
             }
-            
+
             Log::channel('mailin-ai')->error('Mailin.ai mailbox deletion HTTP exception', [
                 'action' => 'delete_mailbox',
                 'mailbox_id' => $mailboxId,
@@ -891,15 +891,27 @@ class MailinAiService
             $responseBody = $response->json();
 
             if ($response->successful() && isset($responseBody['data']) && is_array($responseBody['data'])) {
+                // Filter mailboxes to only include those that exactly match the domain
+                // API 'name' param does text search, may return partial matches
+                $filteredMailboxes = [];
+                foreach ($responseBody['data'] as $mb) {
+                    $email = $mb['email'] ?? $mb['username'] ?? '';
+                    // Check if email ends with @domain (exact domain match)
+                    if (str_ends_with(strtolower($email), '@' . strtolower($domainName))) {
+                        $filteredMailboxes[] = $mb;
+                    }
+                }
+
                 Log::channel('mailin-ai')->info('Mailboxes fetched successfully', [
                     'action' => 'get_mailboxes_by_domain',
                     'domain_name' => $domainName,
-                    'mailbox_count' => count($responseBody['data']),
+                    'api_mailbox_count' => count($responseBody['data']),
+                    'filtered_mailbox_count' => count($filteredMailboxes),
                 ]);
 
                 return [
                     'success' => true,
-                    'mailboxes' => $responseBody['data'],
+                    'mailboxes' => $filteredMailboxes,
                 ];
             } else {
                 // If API doesn't return data array, try alternative response format
@@ -1041,7 +1053,7 @@ class MailinAiService
             } else {
                 // Domain not found in API response
                 $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
-                
+
                 // 404 means domain not found in Mailin.ai system yet (normal for newly transferred domains)
                 if ($statusCode === 404) {
                     Log::channel('mailin-ai')->info('Domain not found in Mailin.ai system yet (may still be transferring)', [
@@ -1061,7 +1073,7 @@ class MailinAiService
                         'not_found' => true,
                     ];
                 }
-                
+
                 Log::channel('mailin-ai')->warning('Domain not found in API response', [
                     'action' => 'check_domain_status',
                     'domain_name' => $domainName,
@@ -1080,11 +1092,11 @@ class MailinAiService
         } catch (\Exception $e) {
             // Check if it's a network/connection error
             $errorMessage = $e->getMessage();
-            $isNetworkError = str_contains($errorMessage, 'Could not resolve host') 
+            $isNetworkError = str_contains($errorMessage, 'Could not resolve host')
                 || str_contains($errorMessage, 'cURL error 6')
                 || str_contains($errorMessage, 'Connection timed out')
                 || str_contains($errorMessage, 'Network is unreachable');
-            
+
             if ($isNetworkError) {
                 // Network/DNS errors - log but don't fail completely
                 Log::channel('mailin-ai')->warning('Network error checking domain status (will retry later)', [
@@ -1092,7 +1104,7 @@ class MailinAiService
                     'domain_name' => $domainName,
                     'error' => $errorMessage,
                 ]);
-                
+
                 return [
                     'success' => false,
                     'domain_name' => $domainName,
@@ -1103,7 +1115,7 @@ class MailinAiService
                     'network_error' => true,
                 ];
             }
-            
+
             // For other exceptions, log and throw
             Log::channel('mailin-ai')->error('Domain status check exception', [
                 'action' => 'check_domain_status',
