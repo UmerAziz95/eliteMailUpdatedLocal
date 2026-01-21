@@ -179,9 +179,21 @@ class MailboxCreationService
             ];
         }
 
-        // Store in JSON column
+        // Fetch mailbox IDs from provider after creation
+        $createdMailboxes = $provider->getMailboxesByDomain($domain);
+        $mailboxIdMap = [];
+
+        if (!empty($createdMailboxes['mailboxes'])) {
+            foreach ($createdMailboxes['mailboxes'] as $mb) {
+                $email = $mb['email'] ?? $mb['username'] ?? '';
+                $mailboxIdMap[$email] = $mb['id'] ?? null;
+            }
+        }
+
+        // Store in JSON column with mailbox IDs
         foreach ($mailboxDataMap as $prefixKey => $data) {
             $data['status'] = 'active';
+            $data['mailbox_id'] = $mailboxIdMap[$data['mailbox']] ?? null;
             $split->addMailbox($domain, $prefixKey, $data);
         }
 

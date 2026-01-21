@@ -52,12 +52,14 @@ class OrderProviderSplit extends Model
      * 
      * @param string $domain Domain name
      * @param string $status Status: 'active', 'pending', 'failed'
+     * @param int|null $domainId Domain ID from provider API
      */
-    public function setDomainStatus(string $domain, string $status): void
+    public function setDomainStatus(string $domain, string $status, ?int $domainId = null): void
     {
         $statuses = $this->domain_statuses ?? [];
         $statuses[$domain] = [
             'status' => $status,
+            'domain_id' => $domainId ?? ($statuses[$domain]['domain_id'] ?? null),
             'updated_at' => now()->toISOString(),
         ];
         $this->domain_statuses = $statuses;

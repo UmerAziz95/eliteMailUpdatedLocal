@@ -108,10 +108,12 @@ class DomainActivationService
 
                 if ($status['success'] && $status['status'] === 'active') {
                     $results['active'][] = $domain;
-                    $split->setDomainStatus($domain, 'active');
+                    $domainId = $status['data']['id'] ?? $status['domain_id'] ?? null;
+                    $split->setDomainStatus($domain, 'active', $domainId);
 
                     Log::channel('mailin-ai')->info('Domain is active', [
                         'domain' => $domain,
+                        'domain_id' => $domainId,
                         'provider' => $split->provider_slug,
                         'order_id' => $order->id,
                     ]);
