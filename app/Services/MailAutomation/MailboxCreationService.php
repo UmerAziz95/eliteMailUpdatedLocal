@@ -183,17 +183,34 @@ class MailboxCreationService
         $createdMailboxes = $provider->getMailboxesByDomain($domain);
         $mailboxIdMap = [];
 
+        Log::channel('mailin-ai')->debug('Mapping mailbox IDs', [
+            'domain' => $domain,
+            'api_response_count' => count($createdMailboxes['mailboxes'] ?? []),
+            'created_mailboxes_preview' => array_slice($createdMailboxes['mailboxes'] ?? [], 0, 3),
+        ]);
+
         if (!empty($createdMailboxes['mailboxes'])) {
             foreach ($createdMailboxes['mailboxes'] as $mb) {
                 $email = $mb['email'] ?? $mb['username'] ?? '';
-                $mailboxIdMap[$email] = $mb['id'] ?? null;
+                // Use lowercase for reliable matching
+                $mailboxIdMap[strtolower($email)] = $mb['id'] ?? null;
             }
         }
 
         // Store in JSON column with mailbox IDs
         foreach ($mailboxDataMap as $prefixKey => $data) {
             $data['status'] = 'active';
-            $data['mailbox_id'] = $mailboxIdMap[$data['mailbox']] ?? null;
+            $targetEmail = strtolower($data['mailbox']);
+            $data['mailbox_id'] = $mailboxIdMap[$targetEmail] ?? null;
+
+            if (empty($data['mailbox_id'])) {
+                Log::channel('mailin-ai')->warning('Could not find mailbox ID for email', [
+                    'email' => $data['mailbox'],
+                    'target_lookup' => $targetEmail,
+                    'available_map_keys' => array_keys($mailboxIdMap),
+                ]);
+            }
+
             $split->addMailbox($domain, $prefixKey, $data);
         }
 
