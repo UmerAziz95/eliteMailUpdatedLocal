@@ -179,8 +179,36 @@ class MailboxCreationService
             ];
         }
 
-        // Fetch mailbox IDs from provider after creation
-        $createdMailboxes = $provider->getMailboxesByDomain($domain);
+        // Fetch mailbox IDs from provider after creation with retry
+        $maxRetries = 5;
+        $retryCount = 0;
+        $createdMailboxes = [];
+
+        do {
+            if ($retryCount > 0) {
+                // Wait 2 seconds before retry
+                sleep(2);
+            }
+
+            $createdMailboxes = $provider->getMailboxesByDomain($domain);
+            $foundCount = count($createdMailboxes['mailboxes'] ?? []);
+
+            // Wait until we find at least as many mailboxes as we just created
+            // This prevents partial ID saving if the API returns them one by one
+            if ($foundCount >= count($mailboxes)) {
+                break;
+            }
+
+            Log::channel('mailin-ai')->info('Waiting for all mailboxes to appear in API...', [
+                'domain' => $domain,
+                'attempt' => $retryCount + 1,
+                'found_count' => $foundCount,
+                'expected_at_least' => count($mailboxes),
+            ]);
+
+            $retryCount++;
+        } while ($retryCount < $maxRetries);
+
         $mailboxIdMap = [];
 
         Log::channel('mailin-ai')->debug('Mapping mailbox IDs', [
