@@ -194,6 +194,9 @@ class DomainActivationService
     /**
      * Transfer domain to provider
      */
+    /**
+     * Transfer domain to provider
+     */
     private function transferDomain(Order $order, SmtpProviderInterface $provider, string $domain): array
     {
         $transferResult = $provider->transferDomain($domain);
@@ -205,7 +208,21 @@ class DomainActivationService
         // Update nameservers on hosting platform
         $nameServers = $transferResult['name_servers'] ?? [];
         if (!empty($nameServers)) {
-            $this->updateNameservers($order, $domain, $nameServers);
+            try {
+                $this->updateNameservers($order, $domain, $nameServers);
+            } catch (\Exception $e) {
+                // If nameserver update fails, we must reject the order because domain activation will fail
+                $reason = "Nameserver update failed for {$domain}: " . $e->getMessage();
+                $this->rejectOrder($order, $reason);
+
+                return [
+                    'success' => false,
+                    'message' => $reason,
+                    'active' => [],
+                    'transferred' => [],
+                    'failed' => [$domain]
+                ];
+            }
         }
 
         return $transferResult;
@@ -213,6 +230,7 @@ class DomainActivationService
 
     /**
      * Update nameservers via hosting platform
+     * @throws \Exception
      */
     private function updateNameservers(Order $order, string $domain, array $nameServers): void
     {
@@ -225,12 +243,16 @@ class DomainActivationService
         }
     }
 
+    /**
+     * @throws \Exception
+     */
     private function updateSpaceshipNameservers(Order $order, string $domain, array $ns): void
     {
         try {
             $credential = $order->getPlatformCredential('spaceship');
-            if (!$credential)
-                return;
+            if (!$credential) {
+                throw new \Exception('Spaceship credentials not found');
+            }
 
             $service = new SpaceshipService();
             $service->updateNameservers(
@@ -244,15 +266,20 @@ class DomainActivationService
                 'domain' => $domain,
                 'error' => $e->getMessage(),
             ]);
+            throw $e;
         }
     }
 
+    /**
+     * @throws \Exception
+     */
     private function updateNamecheapNameservers(Order $order, string $domain, array $ns): void
     {
         try {
             $credential = $order->getPlatformCredential('namecheap');
-            if (!$credential)
-                return;
+            if (!$credential) {
+                throw new \Exception('Namecheap credentials not found');
+            }
 
             $service = new NamecheapService();
             $service->updateNameservers(
@@ -266,6 +293,7 @@ class DomainActivationService
                 'domain' => $domain,
                 'error' => $e->getMessage(),
             ]);
+            throw $e;
         }
     }
 
