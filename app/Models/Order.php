@@ -50,7 +50,7 @@ class Order extends Model
         'shared_note',
         'reassignment_note'
     ];
-    
+
     // status_manage_by_admin
     public function setStatusManageByAdminAttribute($value)
     {
@@ -103,7 +103,7 @@ class Order extends Model
         if (!$this->helpers_ids || empty($this->helpers_ids)) {
             return collect();
         }
-        
+
         return User::whereIn('id', $this->helpers_ids)->get();
     }
 
@@ -138,16 +138,16 @@ class Order extends Model
 
         $endTime = $this->completed_at ?? now();
         $totalTime = $endTime->diffInSeconds($this->timer_started_at);
-        
+
         // Subtract total paused seconds
         $pausedTime = $this->total_paused_seconds ?? 0;
-        
+
         // If currently paused, add current pause duration
         if (!is_null($this->timer_paused_at)) {
             $currentPauseDuration = now()->diffInSeconds($this->timer_paused_at);
             $pausedTime += $currentPauseDuration;
         }
-        
+
         return max(0, $totalTime - $pausedTime);
     }
 
@@ -157,7 +157,7 @@ class Order extends Model
     public function getEffectiveWorkingTimeFormatted()
     {
         $seconds = $this->getEffectiveWorkingTimeSeconds();
-        
+
         if ($seconds < 60) {
             return $seconds . ' seconds';
         } elseif ($seconds < 3600) {
@@ -168,7 +168,7 @@ class Order extends Model
             $hours = floor($seconds / 3600);
             $minutes = floor(($seconds % 3600) / 60);
             $remainingSeconds = $seconds % 60;
-            
+
             $result = $hours . ' hours';
             if ($minutes > 0) {
                 $result .= ' ' . $minutes . ' minutes';
@@ -176,7 +176,7 @@ class Order extends Model
             if ($remainingSeconds > 0) {
                 $result .= ' ' . $remainingSeconds . ' seconds';
             }
-            
+
             return $result;
         }
     }
@@ -194,16 +194,16 @@ class Order extends Model
      */
     public function isTimerRunning()
     {
-        return !is_null($this->timer_started_at) && 
-               is_null($this->timer_paused_at) && 
-               is_null($this->completed_at);
+        return !is_null($this->timer_started_at) &&
+            is_null($this->timer_paused_at) &&
+            is_null($this->completed_at);
     }
 
     public function domainHealthChecks()
     {
         return $this->hasMany(DomainHealthCheck::class);
     }
-    
+
     /**
      * Get platform credentials for this order.
      */
@@ -238,6 +238,14 @@ class Order extends Model
     {
         return $this->hasOne(UsedEmailsInOrder::class);
     }
-    
+
+    /**
+     * Get provider splits for this order (mail automation)
+     */
+    public function orderProviderSplits()
+    {
+        return $this->hasMany(OrderProviderSplit::class);
+    }
+
 
 }

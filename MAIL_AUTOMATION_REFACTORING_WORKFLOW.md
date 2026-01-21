@@ -64,7 +64,7 @@ app/
 │   ├── SmtpProviderRepository.php
 │   ├── OrderRepository.php
 │   ├── DomainTransferRepository.php
-│   └── OrderEmailRepository.php
+│   
 ├── Services/
 │   ├── MailAutomation/
 │   │   ├── MailAutomationOrchestrator.php

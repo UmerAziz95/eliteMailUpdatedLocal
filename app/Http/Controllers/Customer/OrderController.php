@@ -1018,11 +1018,12 @@ class OrderController extends Controller
                 }
             }
 
-            // Dispatch mailbox creation job if needed (after order is created/updated)
+            // Dispatch mail automation job if needed (after order is created/updated)
+            // Uses new two-step flow: activate domains → create mailboxes when all active
             // IMPORTANT: Skip automation if order is being saved as draft
             if ($shouldDispatchMailboxJob && isset($order) && $order && $is_draft != 1) {
                 try {
-                    \App\Jobs\MailinAi\CreateMailboxesOnOrderJob::dispatch(
+                    \App\Jobs\MailAutomation\ProcessMailAutomationJob::dispatch(
                         $order->id,
                         $mailboxJobData['domains'],
                         $mailboxJobData['prefix_variants'],
@@ -1030,16 +1031,15 @@ class OrderController extends Controller
                         $mailboxJobData['provider_type']
                     );
 
-
-                    Log::channel('mailin-ai')->info('Mailbox creation job dispatched', [
-                        'action' => 'dispatch_mailbox_job',
+                    Log::channel('mailin-ai')->info('Mail automation job dispatched', [
+                        'action' => 'dispatch_mail_automation_job',
                         'order_id' => $order->id,
                         'domain_count' => count($mailboxJobData['domains']),
                         'prefix_count' => count($mailboxJobData['prefix_variants']),
                     ]);
                 } catch (\Exception $e) {
-                    Log::channel('mailin-ai')->error('Failed to dispatch mailbox creation job', [
-                        'action' => 'dispatch_mailbox_job',
+                    Log::channel('mailin-ai')->error('Failed to dispatch mail automation job', [
+                        'action' => 'dispatch_mail_automation_job',
                         'order_id' => isset($order) ? $order->id : null,
                         'error' => $e->getMessage(),
                     ]);
