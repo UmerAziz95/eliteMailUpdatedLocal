@@ -147,7 +147,7 @@ class MailboxCreationService
             $lastName = trim($details['last_name'] ?? '');
             $name = trim($firstName . ' ' . $lastName) ?: $prefix;
             $username = $prefix . '@' . $domain;
-            $password = $this->generatePassword($order->id, $index);
+            $password = $this->generatePassword($order->id);
 
             $mailboxes[] = [
                 'username' => $username,
