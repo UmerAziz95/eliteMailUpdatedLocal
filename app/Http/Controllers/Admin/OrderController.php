@@ -336,7 +336,7 @@ class OrderController extends Controller
                                 <i class="fa-solid fa-wrench text-warning"></i> &nbsp;Order Fixed Manually
                             </a>
                         </li>
-                        '. ($order->is_verified == 0 && auth()->user()->hasPermissionTo('Verify Order') ? '
+                        '. ($order->status_manage_by_admin === 'completed' && $order->is_verified == 0 && auth()->user()->hasPermissionTo('Verify Order') ? '
                         <li>
                             <a href="javascript:void(0);"
                                 class="dropdown-item text-success verify-order-btn"

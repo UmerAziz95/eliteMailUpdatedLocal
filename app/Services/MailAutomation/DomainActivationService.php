@@ -55,6 +55,12 @@ class DomainActivationService
      */
     public function activateDomainsForSplit(Order $order, OrderProviderSplit $split): array
     {
+        // Check provider type
+        if ($split->provider_slug === 'premiuminboxes') {
+            return $this->activateDomainsForPremiumInboxes($order, $split);
+        }
+
+        // Existing Mailin.ai logic
         $results = [
             'rejected' => false,
             'reason' => null,
@@ -295,6 +301,218 @@ class DomainActivationService
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Handle PremiumInboxes order creation
+     * 
+     * @param Order $order
+     * @param OrderProviderSplit $split
+     * @return array ['rejected' => bool, 'reason' => string|null, 'active' => array, 'transferred' => array, 'failed' => array]
+     */
+    private function activateDomainsForPremiumInboxes(Order $order, OrderProviderSplit $split): array
+    {
+        $providerConfig = SmtpProviderSplit::getBySlug('premiuminboxes');
+        if (!$providerConfig) {
+            Log::channel('mailin-ai')->error('PremiumInboxes provider not found', [
+                'order_id' => $order->id,
+            ]);
+            return [
+                'rejected' => false,
+                'reason' => null,
+                'active' => [],
+                'transferred' => [],
+                'failed' => $split->domains ?? [],
+            ];
+        }
+
+        $credentials = $providerConfig->getCredentials();
+        if (!$credentials) {
+            Log::channel('mailin-ai')->error('PremiumInboxes credentials not configured', [
+                'order_id' => $order->id,
+            ]);
+            return [
+                'rejected' => false,
+                'reason' => null,
+                'active' => [],
+                'transferred' => [],
+                'failed' => $split->domains ?? [],
+            ];
+        }
+
+        $provider = $this->createProvider('premiuminboxes', $credentials);
+
+        // Authenticate
+        if (!$provider->authenticate()) {
+            Log::channel('mailin-ai')->error('PremiumInboxes authentication failed', [
+                'order_id' => $order->id,
+            ]);
+            return [
+                'rejected' => false,
+                'reason' => null,
+                'active' => [],
+                'transferred' => [],
+                'failed' => $split->domains ?? [],
+            ];
+        }
+
+        // Prepare persona from order/reorderInfo
+        $reorderInfo = $order->reorderInfo()->first();
+        $user = $order->user;
+        
+        $firstName = $reorderInfo->first_name ?? $user->first_name ?? 'User';
+        $lastName = $reorderInfo->last_name ?? $user->last_name ?? '';
+        
+        // Get prefix variants
+        $prefixVariants = $reorderInfo->prefix_variants ?? [];
+        if (is_string($prefixVariants)) {
+            $prefixVariants = json_decode($prefixVariants, true) ?? [];
+        }
+        $prefixVariants = array_values(array_filter($prefixVariants));
+        
+        // Build persona variations from prefix variants
+        $variations = [];
+        foreach ($prefixVariants as $prefix) {
+            if (!empty($prefix)) {
+                $variations[] = trim($prefix);
+            }
+        }
+        
+        $persona = [
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'variations' => $variations,
+        ];
+
+        // Generate email password
+        $emailPassword = $this->generatePassword($order->id, 1);
+        
+        // Create client_order_id: "order-{order_id}-premiuminboxes"
+        $clientOrderId = "order-{$order->id}-premiuminboxes";
+
+        // Get sequencer config if available
+        $sequencer = null;
+        if ($reorderInfo && $reorderInfo->sequencer_login && $reorderInfo->sequencer_password) {
+            $sequencer = [
+                'platform' => $reorderInfo->sending_platform ?? 'instantly',
+                'email' => $reorderInfo->sequencer_login,
+                'password' => $reorderInfo->sequencer_password,
+            ];
+        }
+
+        // Create order with PremiumInboxes
+        $result = $provider->createOrderWithDomains(
+            $split->domains ?? [],
+            $prefixVariants,
+            $persona,
+            $emailPassword,
+            $clientOrderId,
+            $sequencer
+        );
+
+        if ($result['success']) {
+            // Save order_id to split
+            $split->update([
+                'external_order_id' => $result['order_id'],
+                'client_order_id' => $clientOrderId,
+                'order_status' => $result['status'],
+            ]);
+
+            // Update domain statuses
+            foreach ($split->domains ?? [] as $domain) {
+                $split->setDomainStatus($domain, 'pending'); // ns_validation_pending
+            }
+
+            // Extract nameservers and update hosting provider
+            $nameServers = $result['name_servers'] ?? [];
+            if (!empty($nameServers)) {
+                // Update nameservers for all domains in the split
+                foreach ($split->domains ?? [] as $domain) {
+                    try {
+                        $this->updateNameservers($order, $domain, $nameServers);
+                    } catch (\Exception $e) {
+                        // If nameserver update fails, we must reject the order
+                        $reason = "Nameserver update failed for {$domain}: " . $e->getMessage();
+                        $this->rejectOrder($order, $reason);
+                        
+                        return [
+                            'rejected' => true,
+                            'reason' => $reason,
+                            'active' => [],
+                            'transferred' => [],
+                            'failed' => $split->domains ?? [],
+                        ];
+                    }
+                }
+            }
+
+            Log::channel('mailin-ai')->info('PremiumInboxes order created successfully', [
+                'order_id' => $order->id,
+                'premiuminboxes_order_id' => $result['order_id'],
+                'client_order_id' => $clientOrderId,
+                'domain_count' => count($split->domains ?? []),
+            ]);
+
+            return [
+                'rejected' => false,
+                'reason' => null,
+                'active' => [],
+                'transferred' => $split->domains ?? [],
+                'failed' => [],
+            ];
+        }
+
+        // Order creation failed
+        Log::channel('mailin-ai')->error('PremiumInboxes order creation failed', [
+            'order_id' => $order->id,
+            'error' => $result['message'] ?? 'Unknown error',
+        ]);
+
+        return [
+            'rejected' => true,
+            'reason' => $result['message'] ?? 'Failed to create PremiumInboxes order',
+            'active' => [],
+            'transferred' => [],
+            'failed' => $split->domains ?? [],
+        ];
+    }
+
+    /**
+     * Generate password for email accounts
+     * 
+     * @param int $orderId Order ID
+     * @param int $index Index for password variation
+     * @return string Generated password
+     */
+    private function generatePassword(int $orderId, int $index = 0): string
+    {
+        $upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $lowerCase = 'abcdefghijklmnopqrstuvwxyz';
+        $numbers = '0123456789';
+        $specialChars = '!@#$%^&*';
+
+        mt_srand($orderId + $index);
+
+        $password = '';
+        $password .= $upperCase[mt_rand(0, strlen($upperCase) - 1)];
+        $password .= $lowerCase[mt_rand(0, strlen($lowerCase) - 1)];
+        $password .= $numbers[mt_rand(0, strlen($numbers) - 1)];
+        $password .= $specialChars[mt_rand(0, strlen($specialChars) - 1)];
+
+        $allChars = $upperCase . $lowerCase . $numbers . $specialChars;
+        for ($i = 4; $i < 8; $i++) {
+            $password .= $allChars[mt_rand(0, strlen($allChars) - 1)];
+        }
+
+        $passwordArray = str_split($password);
+        for ($i = count($passwordArray) - 1; $i > 0; $i--) {
+            $j = mt_rand(0, $i);
+            $temp = $passwordArray[$i];
+            $passwordArray[$i] = $passwordArray[$j];
+            $passwordArray[$j] = $temp;
+        }
+
+        return implode('', $passwordArray);
     }
 
     /**

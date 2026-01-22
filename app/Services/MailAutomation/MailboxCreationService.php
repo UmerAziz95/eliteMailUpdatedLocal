@@ -80,6 +80,12 @@ class MailboxCreationService
         array $prefixVariants,
         array $prefixVariantsDetails
     ): array {
+        // Check if PremiumInboxes
+        if ($split->provider_slug === 'premiuminboxes') {
+            return $this->fetchMailboxesFromPremiumInboxes($order, $split, $prefixVariants);
+        }
+
+        // Existing Mailin.ai logic
         $results = [
             'created' => [],
             'failed' => [],
@@ -120,6 +126,126 @@ class MailboxCreationService
         }
 
         return $results;
+    }
+
+    /**
+     * For PremiumInboxes, mailboxes are already created
+     * We just need to fetch them from the order
+     */
+    private function fetchMailboxesFromPremiumInboxes(
+        Order $order,
+        OrderProviderSplit $split,
+        array $prefixVariants
+    ): array {
+        $results = [
+            'created' => [],
+            'failed' => [],
+        ];
+
+        if (!$split->external_order_id) {
+            Log::channel('mailin-ai')->error('PremiumInboxes order ID not found', [
+                'order_id' => $order->id,
+                'split_id' => $split->id,
+            ]);
+            return $results;
+        }
+
+        $providerConfig = SmtpProviderSplit::getBySlug('premiuminboxes');
+        if (!$providerConfig) {
+            Log::channel('mailin-ai')->error('PremiumInboxes provider not found', [
+                'order_id' => $order->id,
+            ]);
+            return $results;
+        }
+
+        $credentials = $providerConfig->getCredentials();
+        $provider = $this->createProvider('premiuminboxes', $credentials);
+        $provider->setOrderId($split->external_order_id);
+
+        if (!$provider->authenticate()) {
+            Log::channel('mailin-ai')->error('PremiumInboxes authentication failed', [
+                'order_id' => $order->id,
+            ]);
+            return $results;
+        }
+
+        // Check order status from split
+        if ($split->order_status !== 'active') {
+            Log::channel('mailin-ai')->warning('PremiumInboxes order not active yet', [
+                'order_id' => $order->id,
+                'premiuminboxes_order_id' => $split->external_order_id,
+                'status' => $split->order_status ?? 'unknown',
+            ]);
+            return $results;
+        }
+
+        // Fetch mailboxes for each domain
+        foreach ($split->domains ?? [] as $domain) {
+            $mailboxesResult = $provider->getMailboxesByDomain($domain);
+            
+            if ($mailboxesResult['success']) {
+                foreach ($mailboxesResult['mailboxes'] as $mailbox) {
+                    // Extract prefix key from email (e.g., "john@domain.com" -> "john")
+                    $emailPrefix = explode('@', $mailbox['email'])[0] ?? '';
+                    $prefixKey = $this->findPrefixKey($emailPrefix, $prefixVariants);
+
+                    // Map to our format
+                    $mailboxData = [
+                        'id' => $mailbox['id'],
+                        'name' => $emailPrefix, // Use prefix as name
+                        'mailbox' => $mailbox['email'],
+                        'password' => $mailbox['password'] ?? null,
+                        'status' => $mailbox['status'] ?? 'active',
+                    ];
+
+                    // Store in split
+                    $split->addMailbox($domain, $prefixKey, $mailboxData);
+
+                    $results['created'][] = $mailbox['email'];
+                }
+
+                Log::channel('mailin-ai')->info('PremiumInboxes mailboxes fetched for domain', [
+                    'order_id' => $order->id,
+                    'domain' => $domain,
+                    'mailbox_count' => count($mailboxesResult['mailboxes']),
+                ]);
+            } else {
+                $results['failed'][] = [
+                    'domain' => $domain,
+                    'error' => $mailboxesResult['message'] ?? 'Failed to fetch mailboxes',
+                ];
+            }
+        }
+
+        return $results;
+    }
+
+
+    /**
+     * Find prefix key from email prefix
+     */
+    private function findPrefixKey(string $emailPrefix, array $prefixVariants): string
+    {
+        // Try to find exact match
+        foreach ($prefixVariants as $key => $prefix) {
+            if (is_numeric($key)) {
+                $variantKey = 'prefix_variant_' . ($key + 1);
+            } else {
+                $variantKey = $key;
+            }
+            
+            if ($prefix === $emailPrefix) {
+                return $variantKey;
+            }
+        }
+
+        // If no exact match, use the first variant key or default
+        if (!empty($prefixVariants)) {
+            $firstKey = array_key_first($prefixVariants);
+            return is_numeric($firstKey) ? 'prefix_variant_' . ($firstKey + 1) : $firstKey;
+        }
+
+        return 'prefix_variant_1';
     }
 
     /**

@@ -17,6 +17,7 @@ class SmtpProviderSplit extends Model
         'api_endpoint',
         'email',
         'password',
+        'api_secret',
         'additional_config',
         'split_percentage',
         'priority',
@@ -79,11 +80,24 @@ class SmtpProviderSplit extends Model
      * Get provider credentials for API usage
      * Returns array with baseUrl, email, password, or null if not configured
      * 
-     * @return array|null ['base_url' => string, 'email' => string, 'password' => string]
+     * @return array|null ['base_url' => string, 'email' => string, 'password' => string, 'api_key' => string]
      */
     public function getCredentials()
     {
-        // Check if provider has credentials configured
+        // For PremiumInboxes, only password (API key) is required
+        if ($this->slug === 'premiuminboxes') {
+            if (empty($this->password)) {
+                return null;
+            }
+
+            return [
+                'base_url' => $this->api_endpoint ?: null,
+                'api_key' => $this->password, // API key stored in password field
+                'password' => $this->password, // Also include as password for compatibility
+            ];
+        }
+
+        // For other providers (Mailin.ai), email and password are required
         if (empty($this->email) || empty($this->password)) {
             return null;
         }

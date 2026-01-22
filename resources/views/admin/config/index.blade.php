@@ -754,48 +754,85 @@
                                                 </div>
                                             </div>
                                             
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="email-{{ $provider->slug }}" class="form-label">
-                                                        <i class="ti ti-mail me-1"></i>
-                                                        Email *
-                                                    </label>
-                                                    <input type="email" 
-                                                           class="form-control" 
-                                                           id="email-{{ $provider->slug }}" 
-                                                           name="providers[{{ $provider->id }}][email]" 
-                                                           placeholder="Enter Email" 
-                                                           value="{{ $provider->email ?? '' }}"
-                                                           required>
-                                                    <small class="form-text text-muted">
-                                                        Email for {{ $provider->name }} authentication
-                                                    </small>
-                                                    <div class="validation-error" id="email-error-{{ $provider->slug }}" style="display: none;"></div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="password-{{ $provider->slug }}" class="form-label">
-                                                        <i class="ti ti-lock me-1"></i>
-                                                        Password *
-                                                    </label>
-                                                    <div class="password-wrapper">
-                                                        <input type="password" 
-                                                               class="form-control" 
-                                                               id="password-{{ $provider->slug }}" 
-                                                               name="providers[{{ $provider->id }}][password]" 
-                                                               placeholder="Enter Password" 
-                                                               value="{{ $provider->password ?? '' }}"
-                                                               required>
-                                                        <i class="fa-regular fa-eye password-toggle"></i>
+                                            @if($provider->slug === 'premiuminboxes')
+                                                {{-- PremiumInboxes: Show API Secret Key only --}}
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label for="api_secret-{{ $provider->slug }}" class="form-label">
+                                                            <i class="ti ti-key me-1"></i>
+                                                            API Secret Key *
+                                                        </label>
+                                                        <div class="password-wrapper">
+                                                            <input type="password" 
+                                                                   class="form-control" 
+                                                                   id="api_secret-{{ $provider->slug }}" 
+                                                                   name="providers[{{ $provider->id }}][api_secret]" 
+                                                                   placeholder="Enter API Secret Key" 
+                                                                   value="{{ $provider->api_secret ?? '' }}"
+                                                                   required>
+                                                            <i class="fa-regular fa-eye password-toggle"></i>
+                                                        </div>
+                                                        <small class="form-text text-muted">
+                                                            API Secret Key for PremiumInboxes authentication
+                                                        </small>
+                                                        <div class="validation-error" id="api_secret-error-{{ $provider->slug }}" style="display: none;"></div>
                                                     </div>
-                                                    <small class="form-text text-muted">
-                                                        Password for {{ $provider->name }} authentication
-                                                    </small>
-                                                    <div class="validation-error" id="password-error-{{ $provider->slug }}" style="display: none;"></div>
                                                 </div>
-                                            </div>
+                                                
+                                                {{-- Hidden email and password fields for PremiumInboxes (not used but required by validation) --}}
+                                                <input type="hidden" 
+                                                       id="email-{{ $provider->slug }}" 
+                                                       name="providers[{{ $provider->id }}][email]" 
+                                                       value="">
+                                                <input type="hidden" 
+                                                       id="password-{{ $provider->slug }}" 
+                                                       name="providers[{{ $provider->id }}][password]" 
+                                                       value="">
+                                            @else
+                                                {{-- Other providers: Show Email and Password --}}
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label for="email-{{ $provider->slug }}" class="form-label">
+                                                            <i class="ti ti-mail me-1"></i>
+                                                            Email *
+                                                        </label>
+                                                        <input type="email" 
+                                                               class="form-control" 
+                                                               id="email-{{ $provider->slug }}" 
+                                                               name="providers[{{ $provider->id }}][email]" 
+                                                               placeholder="Enter Email" 
+                                                               value="{{ $provider->email ?? '' }}"
+                                                               required>
+                                                        <small class="form-text text-muted">
+                                                            Email for {{ $provider->name }} authentication
+                                                        </small>
+                                                        <div class="validation-error" id="email-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label for="password-{{ $provider->slug }}" class="form-label">
+                                                            <i class="ti ti-lock me-1"></i>
+                                                            Password *
+                                                        </label>
+                                                        <div class="password-wrapper">
+                                                            <input type="password" 
+                                                                   class="form-control" 
+                                                                   id="password-{{ $provider->slug }}" 
+                                                                   name="providers[{{ $provider->id }}][password]" 
+                                                                   placeholder="Enter Password" 
+                                                                   value="{{ $provider->password ?? '' }}"
+                                                                   required>
+                                                            <i class="fa-regular fa-eye password-toggle"></i>
+                                                        </div>
+                                                        <small class="form-text text-muted">
+                                                            Password for {{ $provider->name }} authentication
+                                                        </small>
+                                                        <div class="validation-error" id="password-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                    </div>
+                                                </div>
+                                            @endif
                                             
                                             <div class="col-md-3">
                                                 <div class="form-group">
@@ -1263,7 +1300,7 @@
         // Fetch fresh data from the server
         fetch(fetchRoute, {
             method: 'GET',
-            headers: {
+            headers: { 
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 'X-Requested-With': 'XMLHttpRequest',
@@ -2006,15 +2043,28 @@
                 const priorityValue = providerFormEl.find(`#priority-${slug}`).val();
                 const priority = priorityValue !== '' && !isNaN(priorityValue) ? parseInt(priorityValue) : null;
                 
-                providers.push({
+                // Build provider data based on provider type
+                const providerData = {
                     id: providerId,
                     api_endpoint: providerFormEl.find(`#api_endpoint-${slug}`).val() || null,
-                    email: providerFormEl.find(`#email-${slug}`).val() || '',
-                    password: providerFormEl.find(`#password-${slug}`).val() || '',
                     split_percentage: parseFloat(providerFormEl.find(`#split_percentage-${slug}`).val() || 0),
                     priority: priority,
                     is_active: statusSwitch.is(':checked') ? true : false,
-                });
+                };
+
+                if (slug === 'premiuminboxes') {
+                    // PremiumInboxes: use api_secret, email and password are empty
+                    providerData.api_secret = providerFormEl.find(`#api_secret-${slug}`).val() || '';
+                    providerData.email = '';
+                    providerData.password = '';
+                } else {
+                    // Other providers: use email and password
+                    providerData.email = providerFormEl.find(`#email-${slug}`).val() || '';
+                    providerData.password = providerFormEl.find(`#password-${slug}`).val() || '';
+                    providerData.api_secret = null;
+                }
+
+                providers.push(providerData);
             });
 
             const submitBtn = form.find('button[type="submit"]');

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Webhook\GhlWorkflowController;
 use App\Http\Controllers\Webhook\ChargebeeWebhookController;
+use App\Http\Controllers\Webhook\PremiumInboxesWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,3 +62,12 @@ Route::get('/chargebee/test', function (Request $request) {
     ]);
 })->name('chargebee.test.webhook');
 
+/*
+|--------------------------------------------------------------------------
+| PremiumInboxes Webhook Routes
+|--------------------------------------------------------------------------
+*/
+
+// PremiumInboxes webhook handler for order events
+Route::post('/premiuminboxes', [PremiumInboxesWebhookController::class, 'handle'])
+    ->name('premiuminboxes.webhook.handle');

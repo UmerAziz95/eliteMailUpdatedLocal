@@ -19,6 +19,10 @@ class OrderProviderSplit extends Model
         'domain_statuses',
         'all_domains_active',
         'priority',
+        'external_order_id',
+        'client_order_id',
+        'order_status',
+        'webhook_received_at',
     ];
 
     protected $casts = [
@@ -29,6 +33,7 @@ class OrderProviderSplit extends Model
         'domain_statuses' => 'array',
         'all_domains_active' => 'boolean',
         'priority' => 'integer',
+        'webhook_received_at' => 'datetime',
     ];
 
     /**

@@ -150,6 +150,30 @@ class ProcessMailAutomationJob implements ShouldQueue
      */
     private function createMailboxes(Order $order): void
     {
+        // Check if order has PremiumInboxes splits
+        $premiumInboxesSplits = OrderProviderSplit::where('order_id', $order->id)
+            ->where('provider_slug', 'premiuminboxes')
+            ->get();
+
+        // For PremiumInboxes, mailboxes are created via order creation
+        // We just need to wait for webhook or poll status
+        // Check if all PremiumInboxes orders are active
+        $allPremiumInboxesActive = true;
+        foreach ($premiumInboxesSplits as $split) {
+            if ($split->order_status !== 'active') {
+                $allPremiumInboxesActive = false;
+                break;
+            }
+        }
+
+        // Only proceed if PremiumInboxes orders are active (or no PremiumInboxes splits)
+        if (!$allPremiumInboxesActive && $premiumInboxesSplits->isNotEmpty()) {
+            Log::channel('mailin-ai')->info('Waiting for PremiumInboxes order activation', [
+                'order_id' => $order->id,
+            ]);
+            return;
+        }
+
         $reorderInfo = $order->reorderInfo->first();
         if (!$reorderInfo) {
             Log::channel('mailin-ai')->error('No reorder info found', ['order_id' => $order->id]);
