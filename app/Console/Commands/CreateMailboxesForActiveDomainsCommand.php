@@ -20,7 +20,8 @@ class CreateMailboxesForActiveDomainsCommand extends Command
      */
     protected $signature = 'mailin:create-mailboxes-for-active-domains 
                             {order_id : The order ID to process}
-                            {--dry-run : Show what would be done without making changes}';
+                            {--dry-run : Show what would be done without making changes}
+                            {--sync-only : Sync existing mailboxes from Mailin.ai to database without creating new ones}';
 
     /**
      * The console command description.
@@ -36,8 +37,10 @@ class CreateMailboxesForActiveDomainsCommand extends Command
     {
         $orderId = $this->argument('order_id');
         $isDryRun = $this->option('dry-run');
+        $isSyncOnly = $this->option('sync-only');
 
-        $this->info("Processing Order #{$orderId}" . ($isDryRun ? ' (DRY RUN)' : ''));
+        $modeLabel = $isDryRun ? ' (DRY RUN)' : ($isSyncOnly ? ' (SYNC ONLY)' : '');
+        $this->info("Processing Order #{$orderId}" . $modeLabel);
 
         // Load order with relationships
         $order = Order::with(['reorderInfo', 'plan', 'user'])->find($orderId);
@@ -251,6 +254,107 @@ class CreateMailboxesForActiveDomainsCommand extends Command
             foreach ($mailboxesToCreate as $mb) {
                 $this->line("  Would create: {$mb['username']}");
             }
+            return 0;
+        }
+
+        // Sync-only mode: fetch existing mailboxes from Mailin.ai and save to database
+        if ($isSyncOnly) {
+            $this->newLine();
+            $this->info("SYNC ONLY - Fetching existing mailboxes from Mailin.ai...");
+            
+            $syncedCount = 0;
+            $notFoundCount = 0;
+            
+            foreach ($activeDomains as $domain) {
+                try {
+                    $fetchResult = $mailinService->getMailboxesByDomain($domain);
+                    if ($fetchResult['success'] && !empty($fetchResult['mailboxes'])) {
+                        // Build lookup map
+                        $mailinMailboxes = [];
+                        foreach ($fetchResult['mailboxes'] as $mb) {
+                            $username = strtolower($mb['username'] ?? $mb['email'] ?? '');
+                            if ($username) {
+                                $mailinMailboxes[$username] = [
+                                    'id' => $mb['id'] ?? null,
+                                    'domain_id' => $mb['domain_id'] ?? $domainIds[$domain] ?? null,
+                                ];
+                            }
+                        }
+                        
+                        // Find matching mailboxes from our expected list and save to database
+                        foreach ($mailboxData as $data) {
+                            if ($data['domain'] !== $domain) {
+                                continue;
+                            }
+                            
+                            $emailLower = strtolower($data['username']);
+                            if (isset($mailinMailboxes[$emailLower])) {
+                                // Mailbox exists on Mailin.ai - save to database
+                                $existing = OrderEmail::where('order_id', $data['order_id'])
+                                    ->where('email', $data['username'])
+                                    ->first();
+                                    
+                                if (!$existing) {
+                                    $fullName = trim($data['first_name'] . ' ' . $data['last_name']);
+                                    if (empty($fullName)) {
+                                        $fullName = $data['prefix'];
+                                    }
+                                    
+                                    OrderEmail::create([
+                                        'order_id' => $data['order_id'],
+                                        'user_id' => $order->user_id,
+                                        'email' => $data['username'],
+                                        'password' => $data['password'],
+                                        'name' => $fullName,
+                                        'first_name' => $data['first_name'],
+                                        'last_name' => $data['last_name'],
+                                        'provider_slug' => 'mailin',
+                                        'mailin_domain_id' => $mailinMailboxes[$emailLower]['domain_id'],
+                                        'mailin_mailbox_id' => $mailinMailboxes[$emailLower]['id'],
+                                    ]);
+                                    $syncedCount++;
+                                    $this->line("  ✓ Synced: {$data['username']}");
+                                } else {
+                                    // Update mailin IDs if missing
+                                    $updates = [];
+                                    if (empty($existing->mailin_mailbox_id) && !empty($mailinMailboxes[$emailLower]['id'])) {
+                                        $updates['mailin_mailbox_id'] = $mailinMailboxes[$emailLower]['id'];
+                                    }
+                                    if (empty($existing->mailin_domain_id) && !empty($mailinMailboxes[$emailLower]['domain_id'])) {
+                                        $updates['mailin_domain_id'] = $mailinMailboxes[$emailLower]['domain_id'];
+                                    }
+                                    if (!empty($updates)) {
+                                        $existing->update($updates);
+                                        $this->line("  ✓ Updated IDs: {$data['username']}");
+                                        $syncedCount++;
+                                    }
+                                }
+                            } else {
+                                $this->warn("  ✗ Not found on Mailin.ai: {$data['username']}");
+                                $notFoundCount++;
+                            }
+                        }
+                    } else {
+                        $this->warn("  Could not fetch mailboxes for {$domain}");
+                    }
+                    
+                    usleep(500000); // 0.5 sec delay between domains
+                } catch (\Exception $e) {
+                    $this->error("  Error fetching mailboxes for {$domain}: {$e->getMessage()}");
+                }
+            }
+            
+            $this->newLine();
+            $this->info("✓ Synced {$syncedCount} mailboxes from Mailin.ai to database");
+            if ($notFoundCount > 0) {
+                $this->warn("  {$notFoundCount} mailboxes not found on Mailin.ai");
+            }
+            
+            // Check and complete order if all mailboxes are synced
+            $this->checkOrderStatus($order, $domains, $inboxesPerDomain, $activeDomains, $inactiveDomains, false);
+            
+            $this->newLine();
+            $this->info("Done!");
             return 0;
         }
 
