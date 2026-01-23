@@ -23,6 +23,7 @@ class OrderProviderSplit extends Model
         'client_order_id',
         'order_status',
         'webhook_received_at',
+        'metadata',
     ];
 
     protected $casts = [
@@ -34,6 +35,7 @@ class OrderProviderSplit extends Model
         'all_domains_active' => 'boolean',
         'priority' => 'integer',
         'webhook_received_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
     /**
@@ -171,6 +173,26 @@ class OrderProviderSplit extends Model
         return static::where('order_id', $orderId)
             ->where('all_domains_active', false)
             ->doesntExist();
+    }
+
+    /**
+     * Get metadata value
+     */
+    public function getMetadata(string $key, $default = null)
+    {
+        $metadata = $this->metadata ?? [];
+        return $metadata[$key] ?? $default;
+    }
+
+    /**
+     * Set metadata value
+     */
+    public function setMetadata(string $key, $value): void
+    {
+        $metadata = $this->metadata ?? [];
+        $metadata[$key] = $value;
+        $this->metadata = $metadata;
+        $this->save();
     }
 }
 
