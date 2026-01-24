@@ -20,17 +20,18 @@ class AdminSettingsController extends Controller
         return view('admin.settings.index');
     }
 
-    public function sysConfing(Request $request){
+    public function sysConfing(Request $request)
+    {
         $configurations = Configuration::getPanelConfigurations();
         $chargebeeConfigs = Configuration::getChargebeeConfigurations();
         $systemConfigs = Configuration::getSystemConfigurations();
         $poolConfigs = Configuration::getPoolConfigurations();
         $providerTypes = Configuration::getProviderTypes();
         $providerSplits = SmtpProviderSplit::get();
-        
+
         // Get backups from last 30 days
         $backups = $this->getBackupFiles();
-        
+
         return view('admin.config.index', compact('configurations', 'chargebeeConfigs', 'systemConfigs', 'poolConfigs', 'providerTypes', 'backups', 'providerSplits'));
     }
 
@@ -41,17 +42,17 @@ class AdminSettingsController extends Controller
     {
         $backupPath = storage_path('app/backup');
         $backups = [];
-        
+
         if (!file_exists($backupPath)) {
             return $backups;
         }
-        
+
         $files = \File::files($backupPath);
         $thirtyDaysAgo = now()->subDays(30)->timestamp;
-        
+
         foreach ($files as $file) {
             $fileTime = $file->getMTime();
-            
+
             // Only include files from last 30 days
             if ($fileTime >= $thirtyDaysAgo) {
                 $backups[] = [
@@ -63,12 +64,12 @@ class AdminSettingsController extends Controller
                 ];
             }
         }
-        
+
         // Sort by timestamp descending (newest first)
-        usort($backups, function($a, $b) {
+        usort($backups, function ($a, $b) {
             return $b['timestamp'] - $a['timestamp'];
         });
-        
+
         return $backups;
     }
 
@@ -78,11 +79,11 @@ class AdminSettingsController extends Controller
     private function formatBytes($bytes, $precision = 2)
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
+
         for ($i = 0; $bytes > 1024; $i++) {
             $bytes /= 1024;
         }
-        
+
         return round($bytes, $precision) . ' ' . $units[$i];
     }
 
@@ -93,14 +94,14 @@ class AdminSettingsController extends Controller
     {
         $filename = $request->input('file');
         $filePath = storage_path('app/backup/' . $filename);
-        
+
         if (!file_exists($filePath)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Backup file not found'
             ], 404);
         }
-        
+
         return response()->download($filePath);
     }
 
@@ -112,16 +113,16 @@ class AdminSettingsController extends Controller
         try {
             $filename = $request->input('file');
             $filePath = storage_path('app/backup/' . $filename);
-            
+
             if (!file_exists($filePath)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Backup file not found'
                 ], 404);
             }
-            
+
             unlink($filePath);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Backup deleted successfully'
@@ -164,13 +165,15 @@ class AdminSettingsController extends Controller
             if ($startDate) {
                 $startTs = Carbon::parse($startDate)->startOfDay()->timestamp;
             }
-        } catch (\Throwable $e) { /* ignore parse error */ }
+        } catch (\Throwable $e) { /* ignore parse error */
+        }
 
         try {
             if ($endDate) {
                 $endTs = Carbon::parse($endDate)->endOfDay()->timestamp;
             }
-        } catch (\Throwable $e) { /* ignore parse error */ }
+        } catch (\Throwable $e) { /* ignore parse error */
+        }
 
         // Defaults: last 30 days
         if (!$startTs && !$endTs) {
@@ -178,12 +181,16 @@ class AdminSettingsController extends Controller
             $endTs = now()->endOfDay()->timestamp;
         } else {
             // Fill missing bound with very wide range
-            if (!$startTs) { $startTs = 0; }
-            if (!$endTs) { $endTs = PHP_INT_MAX; }
+            if (!$startTs) {
+                $startTs = 0;
+            }
+            if (!$endTs) {
+                $endTs = PHP_INT_MAX;
+            }
         }
 
-        $minBytes = is_numeric($sizeMinMb) ? (int)($sizeMinMb * 1024 * 1024) : null;
-        $maxBytes = is_numeric($sizeMaxMb) ? (int)($sizeMaxMb * 1024 * 1024) : null;
+        $minBytes = is_numeric($sizeMinMb) ? (int) ($sizeMinMb * 1024 * 1024) : null;
+        $maxBytes = is_numeric($sizeMaxMb) ? (int) ($sizeMaxMb * 1024 * 1024) : null;
 
         $files = \File::files($backupPath);
         $rows = [];
@@ -211,7 +218,8 @@ class AdminSettingsController extends Controller
         }
 
         // Sort newest first
-        usort($rows, function($a, $b) { return $b['timestamp'] <=> $a['timestamp']; });
+        usort($rows, function ($a, $b) {
+            return $b['timestamp'] <=> $a['timestamp']; });
 
         return response()->json([
             'success' => true,
@@ -225,7 +233,7 @@ class AdminSettingsController extends Controller
     public function getPanelConfigurations()
     {
         $configurations = Configuration::getPanelConfigurations();
-        
+
         return response()->json([
             'success' => true,
             'data' => $configurations
@@ -314,7 +322,7 @@ class AdminSettingsController extends Controller
             ]);
 
             $type = $request->type ?? 'string';
-            
+
             $config = Configuration::updateOrCreate(
                 ['key' => $request->key],
                 [
@@ -411,7 +419,7 @@ class AdminSettingsController extends Controller
     public function getChargebeeConfigurations()
     {
         $configurations = Configuration::getChargebeeConfigurations();
-        
+
         return response()->json([
             'success' => true,
             'data' => $configurations
@@ -470,7 +478,7 @@ class AdminSettingsController extends Controller
     public function getSystemConfigurations()
     {
         $configurations = Configuration::getSystemConfigurations();
-        
+
         return response()->json([
             'success' => true,
             'data' => $configurations
@@ -504,7 +512,7 @@ class AdminSettingsController extends Controller
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $image->move(public_path('storage/system'), $imageName);
                 $configs['SYSTEM_LOGO'] = 'storage/system/' . $imageName;
-            }else{
+            } else {
                 // If no logo uploaded, check if we need to remove existing logo
                 if ($request->input('remove_logo') == '1') {
                     $configs['SYSTEM_LOGO'] = '';
@@ -547,7 +555,7 @@ class AdminSettingsController extends Controller
         $providers = SmtpProviderSplit::orderBy('priority', 'asc')
             ->orderBy('name', 'asc')
             ->get();
-        
+
         return response()->json([
             'success' => true,
             'data' => $providers
@@ -564,8 +572,8 @@ class AdminSettingsController extends Controller
                 'providers' => 'required|array',
                 'providers.*.id' => 'required|exists:smtp_provider_splits,id',
                 'providers.*.api_endpoint' => 'nullable|string|max:500',
-                'providers.*.email' => 'required|email|max:255',
-                'providers.*.password' => 'required|string|max:255',
+                'providers.*.email' => 'nullable|email|max:255',
+                'providers.*.password' => 'nullable|string|max:255',
                 'providers.*.split_percentage' => 'required|numeric|min:0|max:100',
                 'providers.*.priority' => 'required|integer|min:0',
                 'providers.*.is_active' => 'nullable|boolean',
@@ -583,12 +591,12 @@ class AdminSettingsController extends Controller
                 if ($isActive) {
                     $activeTotalPercentage += floatval($providerData['split_percentage'] ?? 0);
                 }
-                
+
                 // Collect priorities for uniqueness check
-                $priority = isset($providerData['priority']) && $providerData['priority'] !== '' 
-                    ? (int) $providerData['priority'] 
+                $priority = isset($providerData['priority']) && $providerData['priority'] !== ''
+                    ? (int) $providerData['priority']
                     : null;
-                
+
                 if ($priority !== null) {
                     $priorities[] = $priority;
                 }
@@ -615,12 +623,12 @@ class AdminSettingsController extends Controller
             // Update each provider
             foreach ($request->providers as $providerData) {
                 $provider = SmtpProviderSplit::findOrFail($providerData['id']);
-                
+
                 // Handle priority - convert to integer, default to 0 if empty or invalid
-                $priority = isset($providerData['priority']) && $providerData['priority'] !== '' 
-                    ? (int) $providerData['priority'] 
+                $priority = isset($providerData['priority']) && $providerData['priority'] !== ''
+                    ? (int) $providerData['priority']
                     : ($provider->priority ?? 0);
-                
+
                 $provider->update([
                     'api_endpoint' => $providerData['api_endpoint'] ?? null,
                     'email' => $providerData['email'] ?? '',
