@@ -206,37 +206,79 @@ class MailrunProviderService implements SmtpProviderInterface
                 ];
             }
 
-            // Check max domains limit
+            // check max domains limit - if greater than 50 we need to batch
             $domains = array_keys($domainMailboxes);
-            if (count($domains) > self::MAX_DOMAINS_ENROLLMENT) {
-                Log::channel('mailin-ai')->warning('Mailrun: Enrollment domain limit exceeded', [
-                    'provided' => count($domains),
-                    'max' => self::MAX_DOMAINS_ENROLLMENT,
+            $batches = array_chunk($domains, self::MAX_DOMAINS_ENROLLMENT);
+            $uuids = [];
+            $allProcessedDomains = [];
+
+            if (count($batches) > 1) {
+                Log::channel('mailin-ai')->info('Mailrun: Large enrollment, processing in batches', [
+                    'total_domains' => count($domains),
+                    'total_batches' => count($batches),
                 ]);
-                // Process first batch only
-                $domains = array_slice($domains, 0, self::MAX_DOMAINS_ENROLLMENT);
             }
 
-            // Build enrollment request
-            $enrollmentDomains = [];
-            foreach ($domains as $domain) {
-                $senders = $domainMailboxes[$domain] ?? [];
-                $enrollmentDomains[] = [
-                    'domain' => $domain,
-                    'senderPermutationOverride' => $senders,
-                ];
+            foreach ($batches as $index => $batchDomains) {
+                // Build enrollment request for this batch
+                $enrollmentDomains = [];
+                foreach ($batchDomains as $domain) {
+                    $senders = $domainMailboxes[$domain] ?? [];
+                    $enrollmentDomains[] = [
+                        'domain' => $domain,
+                        'senderPermutationOverride' => $senders,
+                    ];
+                }
+
+                // Step 3: Begin Enrollment for batch with local retry
+                $batchSuccess = false;
+                $enrollResult = [];
+                $retryCount = 0;
+                $maxBatchRetries = 2; // Retry twice (total 3 attempts)
+
+                while (!$batchSuccess && $retryCount <= $maxBatchRetries) {
+                    if ($retryCount > 0) {
+                        Log::channel('mailin-ai')->warning("Mailrun: Retrying batch " . ($index + 1) . " (Attempt " . ($retryCount + 1) . ")");
+                        // Exponential backoff: 3s, 6s
+                        sleep(3 * $retryCount);
+                    }
+
+                    $enrollResult = $this->beginEnrollment($enrollmentDomains, count($mailboxes) / count($domains));
+
+                    if ($enrollResult['success']) {
+                        $batchSuccess = true;
+                    } else {
+                        $retryCount++;
+                        Log::channel('mailin-ai')->error("Mailrun: Batch " . ($index + 1) . " failed attempt " . $retryCount . ": " . ($enrollResult['message'] ?? 'Unknown error'));
+                    }
+                }
+
+                if (!$batchSuccess) {
+                    Log::channel('mailin-ai')->error("Mailrun: Batch " . ($index + 1) . " failed after retries. Aborting all.", [
+                        'error' => $enrollResult['message'] ?? 'Unknown error',
+                    ]);
+
+                    // If ANY batch fails definitively, fail the whole process.
+                    // This allows the external scheduler to retry the whole order later.
+                    return $enrollResult;
+                }
+
+                $uuid = $enrollResult['uuid'] ?? $enrollResult['id'] ?? null;
+                if ($uuid) {
+                    $uuids[] = $uuid;
+                }
+                $allProcessedDomains = array_merge($allProcessedDomains, $batchDomains);
+
+                // Rate limit spacing between batches if needed (20 calls/hour for beginEnrollment)
+                // Just add a small safety delay
+                if ($index < count($batches) - 1) {
+                    sleep(2);
+                }
             }
 
-            // Step 3: Begin Enrollment
-            $enrollResult = $this->beginEnrollment($enrollmentDomains, count($mailboxes) / count($domains));
-
-            if (!$enrollResult['success']) {
-                return $enrollResult;
-            }
-
-            Log::channel('mailin-ai')->info('Mailrun: Enrollment initiated', [
-                'domains' => $domains,
-                'mailbox_count' => count($mailboxes),
+            Log::channel('mailin-ai')->info('Mailrun: Enrollment initiated for all batches', [
+                'uuids' => $uuids,
+                'domain_count' => count($allProcessedDomains),
             ]);
 
             // NOTE: Enrollment is async and can take up to 2 hours
@@ -245,8 +287,9 @@ class MailrunProviderService implements SmtpProviderInterface
             return [
                 'success' => true,
                 'message' => 'Enrollment initiated. Check status periodically.',
-                'domains' => $domains,
-                'uuid' => $enrollResult['uuid'] ?? null,
+                'domains' => $allProcessedDomains,
+                'uuids' => $uuids, // Return array of UUIDs
+                'uuid' => $uuids[0] ?? null, // Backwards compatibility (first UUID)
                 'async' => true,
             ];
 
@@ -523,10 +566,10 @@ class MailrunProviderService implements SmtpProviderInterface
     public function beginEnrollment(array $domains, int $aliasCount = 10): array
     {
         try {
-            // Enforce limit
+            // Validation warning only - actual chunking happens in createMailboxes
             if (count($domains) > self::MAX_DOMAINS_ENROLLMENT) {
-                $domains = array_slice($domains, 0, self::MAX_DOMAINS_ENROLLMENT);
-                Log::channel('mailin-ai')->warning('Mailrun: Enrollment limited to max domains', [
+                Log::channel('mailin-ai')->warning('Mailrun: beginEnrollment called with > 50 domains! Should use createMailboxes for auto-chunking.', [
+                    'count' => count($domains),
                     'max' => self::MAX_DOMAINS_ENROLLMENT,
                 ]);
             }
@@ -543,7 +586,7 @@ class MailrunProviderService implements SmtpProviderInterface
             $response = $this->makeRequest('POST', '/affiliate/enrollment/begin', $payload);
 
             if (!$response->successful()) {
-                $error = $response->json('message') ?? $response->body();
+                $error = $response->json('message') ?? $response->json('error') ?? $response->body();
                 return [
                     'success' => false,
                     'message' => "Enrollment begin failed: {$error}",
@@ -687,6 +730,8 @@ class MailrunProviderService implements SmtpProviderInterface
     private function makeRequest(string $method, string $endpoint, array $data = []): \Illuminate\Http\Client\Response
     {
         $url = rtrim($this->baseUrl, '/') . $endpoint;
+        $maxRetries = 3;
+        $retryDelay = 2000; // start with 2 seconds
 
         Log::channel('mailin-ai')->debug('Mailrun: API request', [
             'method' => $method,
@@ -694,26 +739,24 @@ class MailrunProviderService implements SmtpProviderInterface
             'has_data' => !empty($data),
         ]);
 
-        $request = Http::withHeaders([
+        return Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->apiToken,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
-        ])->timeout($this->timeout);
-
-        $response = match (strtoupper($method)) {
-            'GET' => $request->get($url, $data),
-            'POST' => $request->post($url, $data),
-            'PUT' => $request->put($url, $data),
-            'DELETE' => $request->delete($url, $data),
-            default => throw new \InvalidArgumentException("Unsupported HTTP method: {$method}"),
-        };
-
-        Log::channel('mailin-ai')->debug('Mailrun: API response', [
-            'endpoint' => $endpoint,
-            'status' => $response->status(),
-            'success' => $response->successful(),
-        ]);
-
-        return $response;
+        ])
+            ->timeout($this->timeout)
+            ->retry($maxRetries, $retryDelay, function ($exception, $request) {
+                // Retry on 429 Too Many Requests or 5xx Server Errors
+                if ($exception instanceof \Illuminate\Http\Client\RequestException && $exception->response) {
+                    $status = $exception->response->status();
+                    if ($status === 429) {
+                        Log::channel('mailin-ai')->warning('Mailrun: Rate limit hit (429), retrying...');
+                        return true;
+                    }
+                    return $status >= 500;
+                }
+                return false;
+            })
+            ->send($method, $url, ['json' => $data]);
     }
 }

@@ -41,16 +41,18 @@ class MailboxCreationService
         $allResults = [];
         $totalCreated = 0;
         $totalFailed = 0;
+        $totalPending = 0;
 
         foreach ($splits as $split) {
             $result = $this->createMailboxesForSplit($order, $split, $prefixVariants, $prefixVariantsDetails);
             $allResults[$split->provider_slug] = $result;
             $totalCreated += count($result['created'] ?? []);
             $totalFailed += count($result['failed'] ?? []);
+            $totalPending += count($result['pending'] ?? []);
         }
 
-        // Complete order if all mailboxes created
-        if ($totalFailed === 0) {
+        // Complete order if all mailboxes created (no failures AND no pending)
+        if ($totalFailed === 0 && $totalPending === 0) {
             $order->update([
                 'status_manage_by_admin' => 'completed',
                 'completed_at' => now(),
@@ -60,14 +62,21 @@ class MailboxCreationService
                 'order_id' => $order->id,
                 'total_mailboxes' => $totalCreated,
             ]);
+        } elseif ($totalPending > 0) {
+            Log::channel('mailin-ai')->info('Order incomplete, pending mailboxes (async enrollment)', [
+                'order_id' => $order->id,
+                'pending_count' => $totalPending,
+                'created_count' => $totalCreated,
+            ]);
         }
 
         return [
-            'success' => $totalFailed === 0,
-            'error' => $totalFailed > 0 ? "Failed to create {$totalFailed} mailboxes" : null,
+            'success' => $totalFailed === 0 && $totalPending === 0, // Success only if FULLY complete
+            'error' => $totalFailed > 0 ? "Failed: $totalFailed" : ($totalPending > 0 ? "Pending: $totalPending" : null),
             'results' => $allResults,
             'total_created' => $totalCreated,
             'total_failed' => $totalFailed,
+            'total_pending' => $totalPending,
         ];
     }
 
