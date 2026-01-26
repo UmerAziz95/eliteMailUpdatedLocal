@@ -95,6 +95,18 @@ class OrderProviderSplit extends Model
     }
 
     /**
+     * Get nameservers for a domain
+     * 
+     * @param string $domain Domain name
+     * @return array Nameservers list
+     */
+    public function getNameservers(string $domain): array
+    {
+        $statuses = $this->domain_statuses ?? [];
+        return $statuses[$domain]['nameservers'] ?? [];
+    }
+
+    /**
      * Check if all domains are active and update flag
      * 
      * @return bool True if all domains are active

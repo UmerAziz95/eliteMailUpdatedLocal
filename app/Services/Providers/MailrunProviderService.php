@@ -361,8 +361,10 @@ class MailrunProviderService implements SmtpProviderInterface
             }
 
             $domainStatus = $statusResult['domains'][$domain] ?? null;
-            $isComplete = ($domainStatus['status'] ?? '') === 'complete'
-                || ($domainStatus['provisioned'] ?? false) === true;
+            $status = strtolower($domainStatus['status'] ?? '');
+            $isComplete = $status === 'complete' || $status === 'success'
+                || ($domainStatus['provisioned'] ?? false) === true
+                || ($domainStatus['enrollmentStep'] ?? '') === 'SetupComplete';
 
             if (!$isComplete) {
                 Log::channel('mailin-ai')->info('Mailrun: Enrollment not yet complete', [
@@ -667,15 +669,33 @@ class MailrunProviderService implements SmtpProviderInterface
             }
 
             $data = $response->json();
+
+            Log::channel('mailin-ai')->debug('Mailrun: Raw enrollment status response', [
+                'data' => $data,
+            ]);
+
             $result = ['success' => true, 'domains' => []];
 
             // Parse response
-            if (isset($data['domains'])) {
-                foreach ($data['domains'] as $domainData) {
-                    $domain = $domainData['domain'] ?? '';
-                    $result['domains'][$domain] = $domainData;
+            // Parse response
+            $list = $data['domains'] ?? $data['domainNameservers'] ?? $data['data'] ?? null;
+
+            // If the root data is a list (indexed array) containing domain objects
+            if (!$list && is_array($data) && isset($data[0]) && (isset($data[0]['domain']) || isset($data[0]['status']))) {
+                $list = $data;
+            }
+
+            if (is_array($list)) {
+                foreach ($list as $domainData) {
+                    if (is_array($domainData) && isset($domainData['domain'])) {
+                        $domain = $domainData['domain'];
+                        $result['domains'][$domain] = $domainData;
+                    }
                 }
-            } elseif (is_array($data)) {
+            }
+
+            // Fallback: iterate top level keys
+            if (empty($result['domains']) && is_array($data)) {
                 foreach ($data as $key => $value) {
                     if (is_string($key) && is_array($value)) {
                         $result['domains'][$key] = $value;
@@ -724,17 +744,59 @@ class MailrunProviderService implements SmtpProviderInterface
             }
 
             $data = $response->json();
+
+            Log::channel('mailin-ai')->debug('Mailrun: Raw provision response', [
+                'data' => $data,
+            ]);
+
             $result = ['success' => true, 'domains' => []];
 
             // Parse response - contains sensitive credentials
-            if (isset($data['domains'])) {
-                foreach ($data['domains'] as $domainData) {
-                    $domain = $domainData['domain'] ?? '';
-                    $result['domains'][$domain] = [
-                        'emails' => $domainData['emails'] ?? $domainData['mailboxes'] ?? [],
-                    ];
+            // Parse response - contains sensitive credentials
+            $list = $data['domains'] ?? $data['domainNameservers'] ?? $data['data'] ?? null;
+
+            // If the root data is a list (indexed array) containing domain objects
+            if (!$list && is_array($data) && isset($data[0]) && (isset($data[0]['domain']) || isset($data[0]['emails']))) {
+                $list = $data;
+            }
+
+            if (is_array($list)) {
+                foreach ($list as $item) {
+                    // Case 1: Item is a domain container with emails list
+                    if (isset($item['domain']) && (isset($item['emails']) || isset($item['mailboxes']))) {
+                        $domain = $item['domain'];
+                        $result['domains'][$domain] = [
+                            'emails' => $item['emails'] ?? $item['mailboxes'] ?? [],
+                        ];
+                    }
+                    // Case 2: Item is a single mailbox object (extract domain from email)
+                    elseif (isset($item['email']) || isset($item['username'])) {
+                        $email = $item['email'] ?? $item['username'];
+                        $parts = explode('@', $email);
+                        if (count($parts) === 2) {
+                            $domain = $parts[1];
+                            if (!isset($result['domains'][$domain]['emails'])) {
+                                $result['domains'][$domain]['emails'] = [];
+                            }
+
+                            // Normalize keys for MailboxCreationService
+                            $normalizedItem = array_merge($item, [
+                                'password' => $item['password'] ?? $item['imapPwd'] ?? $item['smtpPwd'] ?? null,
+                                'smtp_host' => $item['smtp_host'] ?? $item['smtpHost'] ?? null,
+                                'smtp_port' => $item['smtp_port'] ?? $item['smtpPort'] ?? 587,
+                                'imap_host' => $item['imap_host'] ?? $item['imapHost'] ?? null,
+                                'imap_port' => $item['imap_port'] ?? $item['imapPort'] ?? 993,
+                                'mailbox_id' => $item['id'] ?? null,
+                            ]);
+
+                            $result['domains'][$domain]['emails'][] = $normalizedItem;
+                        }
+                    }
                 }
-            } elseif (is_array($data)) {
+            }
+
+            // Fallback
+            if (empty($result['domains']) && is_array($data)) {
                 foreach ($data as $key => $value) {
                     if (is_string($key) && is_array($value)) {
                         $result['domains'][$key] = [
