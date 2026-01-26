@@ -289,10 +289,11 @@ class MailboxCreationService
             }
         }
 
-        // Check if enrollment already initiated (uuid stored in split metadata)
+        // Check if enrollment already initiated (uuid or timestamp stored)
         $enrollmentUuid = $split->getMetadata('mailrun_enrollment_uuid');
+        $enrollmentStartedAt = $split->getMetadata('mailrun_enrollment_started_at');
 
-        if (!$enrollmentUuid) {
+        if (!$enrollmentUuid && !$enrollmentStartedAt) {
             // Start enrollment
             $enrollResult = $provider->createMailboxes($allMailboxes);
 
@@ -310,6 +311,9 @@ class MailboxCreationService
             if ($enrollmentUuid) {
                 $split->setMetadata('mailrun_enrollment_uuid', $enrollmentUuid);
             }
+
+            // Mark as started even if UUID missing to prevent infinite loops
+            $split->setMetadata('mailrun_enrollment_started_at', now()->toISOString());
 
             Log::channel('mailin-ai')->info('Mailrun enrollment initiated', [
                 'order_id' => $order->id,
