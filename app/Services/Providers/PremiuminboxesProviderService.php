@@ -264,10 +264,8 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         // Filter email_accounts by domain
         $emailAccounts = collect($order['data']['email_accounts'] ?? [])
             ->filter(function ($account) use ($domain) {
-            ->filter(function ($account) use ($domain) {
                 return ($account['domain'] ?? '') === $domain;
             })
-            ->map(function ($account) {
             ->map(function ($account) {
                 return [
                     'id' => $account['id'] ?? null,
