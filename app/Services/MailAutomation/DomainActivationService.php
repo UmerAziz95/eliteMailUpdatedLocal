@@ -101,6 +101,16 @@ class DomainActivationService
 
         // Process each domain
         foreach ($split->domains ?? [] as $domain) {
+            // OPTIMIZATION: Check if domain is already active in database
+            if ($split->getDomainStatus($domain) === 'active') {
+                $results['active'][] = $domain;
+                Log::channel('mailin-ai')->debug("Skipping check for already active domain", [
+                    'domain' => $domain,
+                    'order_id' => $order->id
+                ]);
+                continue;
+            }
+
             try {
                 // CHECK 1: Do SAME mailboxes already exist? (check by prefix variants) → REJECT
                 $existingMailboxes = $provider->getMailboxesByDomain($domain);

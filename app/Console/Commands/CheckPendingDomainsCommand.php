@@ -30,9 +30,7 @@ class CheckPendingDomainsCommand extends Command
         // Find orders that are in-progress and have automation splits
         // We look at the Orders table to capture those with pending mailboxes too
         $orderIds = Order::where('status_manage_by_admin', 'in-progress')
-            ->whereHas('orderProviderSplits', function ($query) {
-                $query->where('all_domains_active', false);
-            })
+            ->whereHas('orderProviderSplits')
             ->pluck('id');
 
         if ($orderIds->isEmpty()) {

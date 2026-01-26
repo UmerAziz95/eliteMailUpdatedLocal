@@ -630,6 +630,7 @@ class MailrunProviderService implements SmtpProviderInterface
 
             Log::channel('mailin-ai')->info('Mailrun: Enrollment initiated', [
                 'domain_count' => count($domains),
+                'response_dump' => $response->json(),
             ]);
 
             return [
