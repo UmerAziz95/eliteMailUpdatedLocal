@@ -101,10 +101,10 @@ class DomainActivationService
 
         // Process each domain
         foreach ($split->domains ?? [] as $domain) {
-            // OPTIMIZATION: Check if domain is already active in database
-            if ($split->getDomainStatus($domain) === 'active') {
+            // OPTIMIZATION: Check if domain is already active AND has nameservers saved
+            if ($split->getDomainStatus($domain) === 'active' && !empty($split->getNameservers($domain))) {
                 $results['active'][] = $domain;
-                Log::channel('mailin-ai')->debug("Skipping check for already active domain", [
+                Log::channel('mailin-ai')->debug("Skipping check for already active domain (nameservers present)", [
                     'domain' => $domain,
                     'order_id' => $order->id
                 ]);
@@ -158,6 +158,23 @@ class DomainActivationService
                     $results['active'][] = $domain;
                     $domainId = $status['data']['id'] ?? $status['domain_id'] ?? null;
                     $ns = $status['name_servers'] ?? $status['nameservers'] ?? $status['data']['nameservers'] ?? [];
+
+                    // Fallback: If active but nameservers missing, try explicit fetch if supported
+                    if (empty($ns) && method_exists($provider, 'getNameservers')) {
+                        try {
+                            $nsResult = $provider->getNameservers([$domain]);
+                            if (($nsResult['success'] ?? false) && !empty($nsResult['domains'][$domain]['nameservers'])) {
+                                $ns = $nsResult['domains'][$domain]['nameservers'];
+                                Log::channel('mailin-ai')->info('Fetched missing nameservers via fallback', [
+                                    'domain' => $domain,
+                                    'nameservers' => $ns
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            Log::channel('mailin-ai')->warning('Failed to fetch missing nameservers', ['domain' => $domain, 'error' => $e->getMessage()]);
+                        }
+                    }
+
                     $split->setDomainStatus($domain, 'active', $domainId, $ns);
 
                     Log::channel('mailin-ai')->info('Domain is active', [
