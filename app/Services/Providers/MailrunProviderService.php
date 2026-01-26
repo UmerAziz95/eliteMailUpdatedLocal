@@ -525,14 +525,25 @@ class MailrunProviderService implements SmtpProviderInterface
             $result = ['success' => true, 'domains' => []];
 
             // Handle various response formats
-            if (isset($data['domains'])) {
-                foreach ($data['domains'] as $domainData) {
-                    $domain = $domainData['domain'] ?? '';
-                    $result['domains'][$domain] = [
-                        'nameservers' => $domainData['nameservers'] ?? $domainData['ns'] ?? [],
-                    ];
+            // Handle various response formats
+            // Check for known keys where the list of domains might be
+            $domainList = $data['domains'] ?? $data['domainNameservers'] ?? $data['data'] ?? null;
+
+            if (is_array($domainList)) {
+                foreach ($domainList as $domainData) {
+                    // Try to finding 'domain' key, or if result is keyed by domain name (in parsing below)
+                    // If items are arrays containing 'domain' key
+                    if (is_array($domainData) && isset($domainData['domain'])) {
+                        $domain = $domainData['domain'];
+                        $result['domains'][$domain] = [
+                            'nameservers' => $domainData['nameservers'] ?? $domainData['ns'] ?? [],
+                        ];
+                    }
                 }
-            } elseif (is_array($data)) {
+            }
+
+            // Fallback: iterate top level keys if we didn't extract anything from a list
+            if (empty($result['domains']) && is_array($data)) {
                 foreach ($data as $key => $value) {
                     if (is_string($key) && is_array($value)) {
                         $result['domains'][$key] = [
