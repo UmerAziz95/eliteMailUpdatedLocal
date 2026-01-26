@@ -158,6 +158,7 @@ class MailrunProviderService implements SmtpProviderInterface
             return [
                 'success' => true,
                 'status' => $isActive ? 'active' : 'pending',
+                'name_servers' => $domainStatus['nameservers'] ?? $domainStatus['ns'] ?? [],
                 'data' => $domainStatus,
                 'domain_id' => $domainStatus['id'] ?? null,
             ];

@@ -61,14 +61,23 @@ class OrderProviderSplit extends Model
      * @param string $status Status: 'active', 'pending', 'failed'
      * @param int|null $domainId Domain ID from provider API
      */
-    public function setDomainStatus(string $domain, string $status, ?int $domainId = null): void
+    public function setDomainStatus(string $domain, string $status, ?int $domainId = null, array $nameServers = []): void
     {
         $statuses = $this->domain_statuses ?? [];
-        $statuses[$domain] = [
+        $domainData = [
             'status' => $status,
             'domain_id' => $domainId ?? ($statuses[$domain]['domain_id'] ?? null),
             'updated_at' => now()->toISOString(),
         ];
+
+        if (!empty($nameServers)) {
+            $domainData['nameservers'] = $nameServers;
+        } elseif (isset($statuses[$domain]['nameservers'])) {
+            // Preserve existing nameservers if not provided
+            $domainData['nameservers'] = $statuses[$domain]['nameservers'];
+        }
+
+        $statuses[$domain] = $domainData;
         $this->domain_statuses = $statuses;
         $this->save();
     }
