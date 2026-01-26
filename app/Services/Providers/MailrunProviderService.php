@@ -140,13 +140,36 @@ class MailrunProviderService implements SmtpProviderInterface
             }
 
             $data = $response->json();
-            $domainStatus = $data['domains'][$domain] ?? $data[$domain] ?? null;
+            $domainStatus = null;
 
+            // Handle different response formats (keyed or list)
+            $list = $data['domains'] ?? $data['domainNameservers'] ?? $data['data'] ?? null;
+
+            if (is_array($list)) {
+                foreach ($list as $item) {
+                    if (($item['domain'] ?? '') === $domain) {
+                        $domainStatus = $item;
+                        break;
+                    }
+                }
+                // Fallback: if we requested 1 domain and list has 1 item, assuming it's ours if domain key missing or mismatch (rare)
+                if (!$domainStatus && count($list) === 1 && isset($list[0])) {
+                    $domainStatus = $list[0];
+                }
+            }
+
+            if (!$domainStatus) {
+                // Try direct key access
+                $domainStatus = $data['domains'][$domain] ?? $data[$domain] ?? null;
+            }
+
+            // Determine if nameservers are active
             // Determine if nameservers are active
             $isActive = false;
             if (is_array($domainStatus)) {
                 $isActive = ($domainStatus['status'] ?? '') === 'active'
-                    || ($domainStatus['nameservers_valid'] ?? false) === true;
+                    || ($domainStatus['nameservers_valid'] ?? false) === true
+                    || (($domainStatus['cloudflare-status']['status'] ?? '') === 'active');
             }
 
             Log::channel('mailin-ai')->info('Mailrun: Domain status checked', [
