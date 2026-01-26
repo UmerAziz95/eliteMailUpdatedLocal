@@ -92,8 +92,7 @@ class SmtpProviderSplit extends Model
 
             return [
                 'base_url' => $this->api_endpoint ?: null,
-                'api_key' => $this->password, // API key stored in password field
-                'password' => $this->password, // Also include as password for compatibility
+                'api_key' => $this->api_secret,
             ];
         }
 

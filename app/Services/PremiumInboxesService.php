@@ -37,6 +37,12 @@ class PremiumInboxesService
     public function createOrder(array $orderData): array
     {
         try {
+            Log::channel('mailin-ai')->info('Step 3: API Client - Final Purchase Request Payload', [
+                'action' => 'createOrder',
+                'url' => rtrim($this->baseUrl, '/') . '/purchase',
+                'payload' => $orderData
+            ]);
+
             Log::channel('mailin-ai')->info('Creating PremiumInboxes order', [
                 'action' => 'createOrder',
                 'client_order_id' => $orderData['client_order_id'] ?? 'N/A',
@@ -178,7 +184,7 @@ class PremiumInboxesService
                 'email_account_id' => $emailAccountId,
             ]);
 
-            $result = $this->makeRequest('DELETE', "/email-accounts/{$emailAccountId}");
+            $result = $this->makeRequest('POST', "/email-accounts/{$emailAccountId}/cancel");
 
             return $result;
         } catch (\Exception $e) {
@@ -208,14 +214,14 @@ class PremiumInboxesService
     public function getEmailAccountsByDomain(string $orderId, string $domain): array
     {
         $order = $this->getOrder($orderId);
-        
+
         if (!$order['success']) {
             return [];
         }
 
         $accounts = $order['data']['email_accounts'] ?? [];
-        
-        return array_filter($accounts, function($account) use ($domain) {
+
+        return array_filter($accounts, function ($account) use ($domain) {
             return ($account['domain'] ?? '') === $domain;
         });
     }
@@ -252,11 +258,11 @@ class PremiumInboxesService
         for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
             try {
                 $response = Http::timeout($this->timeout)
-                    ->withHeaders([
-                        'X-API-Key' => $this->apiKey,
-                        'Content-Type' => 'application/json',
-                        'Accept' => 'application/json',
-                    ])
+                            ->withHeaders([
+                                'X-API-Key' => $this->apiKey,
+                                'Content-Type' => 'application/json',
+                                'Accept' => 'application/json',
+                            ])
                     ->{strtolower($method)}($url, !empty($data) ? $data : []);
 
                 $statusCode = $response->status();

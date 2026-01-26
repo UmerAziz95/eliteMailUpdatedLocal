@@ -26,15 +26,15 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
     {
         // PremiumInboxes doesn't need authentication
         // Return API key for consistency with interface
-        $apiKey = $this->credentials['api_key'] ?? $this->credentials['password'] ?? null;
-        
+        $apiKey = $this->credentials['api_key'] ?? null;
+
         if ($apiKey) {
             Log::channel('mailin-ai')->debug('PremiumInboxes authentication (API key)', [
                 'action' => 'authenticate',
                 'api_key_preview' => substr($apiKey, 0, 10) . '...',
             ]);
         }
-        
+
         return $apiKey;
     }
 
@@ -47,7 +47,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
             'domain' => $domain,
             'message' => 'PremiumInboxes requires order creation, not single domain transfer',
         ]);
-        
+
         return [
             'success' => false,
             'message' => 'PremiumInboxes requires order creation, not single domain transfer',
@@ -65,6 +65,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
      * @param string $emailPassword Email password for all mailboxes
      * @param string $clientOrderId Our order reference (e.g., "order-123-premiuminboxes")
      * @param array|null $sequencer Sequencer config: ['platform' => string, 'email' => string, 'password' => string]
+     * @param array $additionalData Additional optional parameters
      * @return array ['success' => bool, 'order_id' => string|null, 'status' => string, 'name_servers' => array, 'domains' => array, 'message' => string|null]
      */
     public function createOrderWithDomains(
@@ -73,25 +74,32 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         array $persona,
         string $emailPassword,
         string $clientOrderId,
-        ?array $sequencer = null
+        ?array $sequencer = null,
+        array $additionalData = []
     ): array {
-        $orderData = [
+        $orderData = array_merge([
             'client_order_id' => $clientOrderId,
             'domains' => $domains,
             'inboxes_per_domain' => count($prefixVariants),
             'persona' => $persona,
             'email_password' => $emailPassword,
-        ];
+        ], $additionalData);
 
         if ($sequencer) {
             $orderData['sequencer'] = $sequencer;
         }
 
+        // Log complete request data as requested
+        Log::channel('mailin-ai')->info('PremiumInboxes Request Payload', [
+            'action' => 'createOrderWithDomains',
+            'order_data' => $orderData,
+        ]);
+
         $result = $this->service->createOrder($orderData);
 
         if ($result['success']) {
             $this->currentOrderId = $result['data']['order_id'] ?? null;
-            
+
             // Extract nameservers from response
             $nameServers = [];
             foreach ($result['data']['domains'] ?? [] as $domainData) {
@@ -130,12 +138,12 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         // PremiumInboxes doesn't have direct domain status check
         // We need order_id to check status
         // This will be called with order context
-        
+
         if (!$this->currentOrderId) {
             Log::channel('mailin-ai')->warning('PremiumInboxes: checkDomainStatus() called without order context', [
                 'domain' => $domain,
             ]);
-            
+
             return [
                 'success' => false,
                 'status' => 'unknown',
@@ -144,7 +152,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         }
 
         $order = $this->service->getOrder($this->currentOrderId);
-        
+
         if (!$order['success']) {
             return [
                 'success' => false,
@@ -193,13 +201,13 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         // For PremiumInboxes, mailboxes are created as part of order creation
         // This method should not be called separately
         // If called, return success with order_id reference
-        
+
         if ($this->currentOrderId) {
             Log::channel('mailin-ai')->info('PremiumInboxes: createMailboxes() called, mailboxes already created in order', [
                 'order_id' => $this->currentOrderId,
                 'mailbox_count' => count($mailboxes),
             ]);
-            
+
             return [
                 'success' => true,
                 'uuid' => $this->currentOrderId,
@@ -224,7 +232,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
             Log::channel('mailin-ai')->warning('PremiumInboxes: getMailboxesByDomain() called without order context', [
                 'domain' => $domain,
             ]);
-            
+
             return [
                 'success' => false,
                 'mailboxes' => [],
@@ -233,7 +241,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         }
 
         $order = $this->service->getOrder($this->currentOrderId);
-        
+
         if (!$order['success']) {
             return [
                 'success' => false,
@@ -244,10 +252,10 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
 
         // Filter email_accounts by domain
         $emailAccounts = collect($order['data']['email_accounts'] ?? [])
-            ->filter(function($account) use ($domain) {
+            ->filter(function ($account) use ($domain) {
                 return ($account['domain'] ?? '') === $domain;
             })
-            ->map(function($account) {
+            ->map(function ($account) {
                 return [
                     'id' => $account['id'] ?? null,
                     'email' => $account['email'] ?? '',
@@ -269,8 +277,8 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
     {
         // PremiumInboxes uses email_account_id (string UUID), not int
         // This method signature needs to be flexible
-        $result = $this->service->cancelEmailAccount((string)$mailboxId);
-        
+        $result = $this->service->cancelEmailAccount((string) $mailboxId);
+
         return [
             'success' => $result['success'] ?? false,
             'message' => $result['error'] ?? 'Mailbox deleted',
@@ -290,9 +298,9 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
     public function isAvailable(): bool
     {
         // Check for api_key (from api_secret field) or password (for backward compatibility)
-        $apiKey = $this->credentials['api_key'] ?? $this->credentials['password'] ?? '';
+        $apiKey = $this->credentials['api_secret'] ?? '';
         $baseUrl = $this->credentials['base_url'] ?? config('premiuminboxes.api_url', 'https://api.piwhitelabel.dev/api/v1');
-        
+
         return !empty($apiKey) && !empty($baseUrl);
     }
 

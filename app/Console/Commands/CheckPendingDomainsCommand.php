@@ -63,7 +63,11 @@ class CheckPendingDomainsCommand extends Command
                 $result = $activationService->activateDomainsForOrder($order);
 
                 if ($result['rejected']) {
-                    $this->warn("  Order rejected: {$result['reason']}");
+                    $reason = $result['reason'];
+                    if (is_array($reason)) {
+                        $reason = json_encode($reason);
+                    }
+                    $this->warn("  Order rejected: {$reason}");
                     continue;
                 }
 

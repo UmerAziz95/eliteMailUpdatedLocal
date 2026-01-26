@@ -705,188 +705,202 @@
                             @endphp
                             
                             @forelse ($providers as $provider)
-                                @php
-                                    if ($provider->is_active) {
-                                        $activeTotalPercentage += floatval($provider->split_percentage ?? 0);
-                                    }
-                                @endphp
-                                <div class="webhook-form provider-split-form" id="form-{{ $provider->slug }}" data-provider-id="{{ $provider->id }}" data-slug="{{ $provider->slug }}">
-                                    <div class="webhook-header">
-                                        <h5 class="webhook-title">
-                                            <i class="ti ti-server me-2"></i>
-                                            {{ $provider->name }}
-                                        </h5>
-                                        <div class="status-toggle">
-                                            <label for="status-{{ $provider->slug }}" class="form-label mb-0">Enable</label>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input status-switch" type="checkbox" role="switch" 
-                                                       id="status-{{ $provider->slug }}" 
-                                                       data-slug="{{ $provider->slug }}"
-                                                       {{ ($provider->is_active ?? true) ? 'checked' : '' }}>
-                                            </div>
-                                            <span class="status-indicator {{ ($provider->is_active ?? true) ? 'enabled' : 'disabled' }}" 
-                                                  id="status-text-{{ $provider->slug }}">
-                                                {{ ($provider->is_active ?? true) ? 'Enabled' : 'Disabled' }}
-                                            </span>
+                            @php
+                                if ($provider->is_active) {
+                                    $activeTotalPercentage += floatval($provider->split_percentage ?? 0);
+                                }
+                            @endphp
+                        
+                            <div class="webhook-form provider-split-form"
+                                    id="form-{{ $provider->slug }}"
+                                    data-provider-id="{{ $provider->id }}"
+                                    data-slug="{{ $provider->slug }}">
+                        
+                                <div class="webhook-header">
+                                    <h5 class="webhook-title">
+                                        <i class="ti ti-server me-2"></i>
+                                        {{ $provider->name }}
+                                    </h5>
+                        
+                                    <div class="status-toggle">
+                                        <label for="status-{{ $provider->slug }}" class="form-label mb-0">Enable</label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input status-switch" type="checkbox" role="switch"
+                                                    id="status-{{ $provider->slug }}"
+                                                    data-slug="{{ $provider->slug }}"
+                                                    {{ ($provider->is_active ?? true) ? 'checked' : '' }}>
                                         </div>
+                        
+                                        <span class="status-indicator {{ ($provider->is_active ?? true) ? 'enabled' : 'disabled' }}"
+                                                id="status-text-{{ $provider->slug }}">
+                                            {{ ($provider->is_active ?? true) ? 'Enabled' : 'Disabled' }}
+                                        </span>
                                     </div>
-
-                                    <form class="provider-settings-form" data-provider-id="{{ $provider->id }}" data-slug="{{ $provider->slug }}">
-                                        @csrf
-                                        <input type="hidden" name="providers[{{ $provider->id }}][id]" value="{{ $provider->id }}">
-                                        
-                                        <div class="row g-3">
+                                </div>
+                        
+                                <form class="provider-settings-form" data-provider-id="{{ $provider->id }}" data-slug="{{ $provider->slug }}">
+                                    @csrf
+                                    <input type="hidden" name="providers[{{ $provider->id }}][id]" value="{{ $provider->id }}">
+                        
+                                    <div class="row g-3">
+                                        {{-- API Endpoint --}}
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="api_endpoint-{{ $provider->slug }}" class="form-label">
+                                                    <i class="ti ti-link me-1"></i>
+                                                    API Endpoint
+                                                </label>
+                                                <input type="url"
+                                                        class="form-control"
+                                                        id="api_endpoint-{{ $provider->slug }}"
+                                                        name="providers[{{ $provider->id }}][api_endpoint]"
+                                                        placeholder="https://api.example.com"
+                                                        value="{{ $provider->api_endpoint ?? '' }}">
+                                                <small class="form-text text-muted">
+                                                    Enter the API endpoint URL for {{ $provider->name }}
+                                                </small>
+                                            </div>
+                                        </div>
+                        
+                                        {{-- Email (Show in ALL cases) --}}
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="email-{{ $provider->slug }}" class="form-label">
+                                                    <i class="ti ti-mail me-1"></i>
+                                                    Email *
+                                                </label>
+                                                <input type="email"
+                                                        class="form-control"
+                                                        id="email-{{ $provider->slug }}"
+                                                        name="providers[{{ $provider->id }}][email]"
+                                                        placeholder="Enter Email"
+                                                        value="{{ $provider->email ?? '' }}"
+                                                        required>
+                                                <small class="form-text text-muted">
+                                                    Email for {{ $provider->name }} authentication
+                                                </small>
+                                                <div class="validation-error" id="email-error-{{ $provider->slug }}" style="display: none;"></div>
+                                            </div>
+                                        </div>
+                        
+                                        @if($provider->slug === 'premiuminboxes')
+                                            {{-- PremiumInboxes: Replace Password with API Secret Key --}}
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="api_endpoint-{{ $provider->slug }}" class="form-label">
-                                                        <i class="ti ti-link me-1"></i>
-                                                        API Endpoint
+                                                    <label for="api_secret-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-key me-1"></i>
+                                                        API Secret Key *
                                                     </label>
-                                                    <input type="url" 
-                                                           class="form-control" 
-                                                           id="api_endpoint-{{ $provider->slug }}" 
-                                                           name="providers[{{ $provider->id }}][api_endpoint]" 
-                                                           placeholder="https://api.example.com" 
-                                                           value="{{ $provider->api_endpoint ?? '' }}">
+                                                    <div class="password-wrapper">
+                                                        <input type="password"
+                                                                class="form-control"
+                                                                id="api_secret-{{ $provider->slug }}"
+                                                                name="providers[{{ $provider->id }}][api_secret]"
+                                                                placeholder="Enter API Secret Key"
+                                                                value="{{ $provider->api_secret ?? '' }}"
+                                                                required>
+                                                        <i class="fa-regular fa-eye password-toggle"></i>
+                                                    </div>
                                                     <small class="form-text text-muted">
-                                                        Enter the API endpoint URL for {{ $provider->name }}
+                                                        API Secret Key for PremiumInboxes authentication
                                                     </small>
+                                                    <div class="validation-error" id="api_secret-error-{{ $provider->slug }}" style="display: none;"></div>
                                                 </div>
                                             </div>
-                                            
-                                            @if($provider->slug === 'premiuminboxes')
-                                                {{-- PremiumInboxes: Show API Secret Key only --}}
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label for="api_secret-{{ $provider->slug }}" class="form-label">
-                                                            <i class="ti ti-key me-1"></i>
-                                                            API Secret Key *
-                                                        </label>
-                                                        <div class="password-wrapper">
-                                                            <input type="password" 
-                                                                   class="form-control" 
-                                                                   id="api_secret-{{ $provider->slug }}" 
-                                                                   name="providers[{{ $provider->id }}][api_secret]" 
-                                                                   placeholder="Enter API Secret Key" 
-                                                                   value="{{ $provider->api_secret ?? '' }}"
-                                                                   required>
-                                                            <i class="fa-regular fa-eye password-toggle"></i>
-                                                        </div>
-                                                        <small class="form-text text-muted">
-                                                            API Secret Key for PremiumInboxes authentication
-                                                        </small>
-                                                        <div class="validation-error" id="api_secret-error-{{ $provider->slug }}" style="display: none;"></div>
-                                                    </div>
-                                                </div>
-                                                
-                                                {{-- Hidden email and password fields for PremiumInboxes (not used but required by validation) --}}
-                                                <input type="hidden" 
-                                                       id="email-{{ $provider->slug }}" 
-                                                       name="providers[{{ $provider->id }}][email]" 
-                                                       value="">
-                                                <input type="hidden" 
-                                                       id="password-{{ $provider->slug }}" 
-                                                       name="providers[{{ $provider->id }}][password]" 
-                                                       value="">
-                                            @else
-                                                {{-- Other providers: Show Email and Password --}}
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label for="email-{{ $provider->slug }}" class="form-label">
-                                                            <i class="ti ti-mail me-1"></i>
-                                                            Email *
-                                                        </label>
-                                                        <input type="email" 
-                                                               class="form-control" 
-                                                               id="email-{{ $provider->slug }}" 
-                                                               name="providers[{{ $provider->id }}][email]" 
-                                                               placeholder="Enter Email" 
-                                                               value="{{ $provider->email ?? '' }}"
-                                                               required>
-                                                        <small class="form-text text-muted">
-                                                            Email for {{ $provider->name }} authentication
-                                                        </small>
-                                                        <div class="validation-error" id="email-error-{{ $provider->slug }}" style="display: none;"></div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label for="password-{{ $provider->slug }}" class="form-label">
-                                                            <i class="ti ti-lock me-1"></i>
-                                                            Password *
-                                                        </label>
-                                                        <div class="password-wrapper">
-                                                            <input type="password" 
-                                                                   class="form-control" 
-                                                                   id="password-{{ $provider->slug }}" 
-                                                                   name="providers[{{ $provider->id }}][password]" 
-                                                                   placeholder="Enter Password" 
-                                                                   value="{{ $provider->password ?? '' }}"
-                                                                   required>
-                                                            <i class="fa-regular fa-eye password-toggle"></i>
-                                                        </div>
-                                                        <small class="form-text text-muted">
-                                                            Password for {{ $provider->name }} authentication
-                                                        </small>
-                                                        <div class="validation-error" id="password-error-{{ $provider->slug }}" style="display: none;"></div>
-                                                    </div>
-                                                </div>
-                                            @endif
-                                            
-                                            <div class="col-md-3">
+                        
+                                            {{-- Keep password hidden (optional safety if backend still expects it) --}}
+                                            <input type="hidden"
+                                                    id="password-{{ $provider->slug }}"
+                                                    name="providers[{{ $provider->id }}][password]"
+                                                    value="">
+                                        @else
+                                            {{-- Other providers: Password --}}
+                                            <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="split_percentage-{{ $provider->slug }}" class="form-label">
-                                                        <i class="ti ti-percentage me-1"></i>
-                                                        Split Percentage (%) *
+                                                    <label for="password-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-lock me-1"></i>
+                                                        Password *
                                                     </label>
-                                                    <input type="number" 
-                                                           class="form-control split-percentage-input" 
-                                                           id="split_percentage-{{ $provider->slug }}" 
-                                                           name="providers[{{ $provider->id }}][split_percentage]" 
-                                                           value="{{ $provider->split_percentage ?? 0 }}"
-                                                           min="0" max="100" step="0.01" required>
+                                                    <div class="password-wrapper">
+                                                        <input type="password"
+                                                                class="form-control"
+                                                                id="password-{{ $provider->slug }}"
+                                                                name="providers[{{ $provider->id }}][password]"
+                                                                placeholder="Enter Password"
+                                                                value="{{ $provider->password ?? '' }}"
+                                                                required>
+                                                        <i class="fa-regular fa-eye password-toggle"></i>
+                                                    </div>
                                                     <small class="form-text text-muted">
-                                                        Percentage of orders for this provider
+                                                        Password for {{ $provider->name }} authentication
                                                     </small>
-                                                    <div class="validation-error" id="percentage-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                    <div class="validation-error" id="password-error-{{ $provider->slug }}" style="display: none;"></div>
                                                 </div>
                                             </div>
-                                            
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label for="priority-{{ $provider->slug }}" class="form-label">
-                                                        <i class="ti ti-sort-ascending me-1"></i>
-                                                        Priority *
-                                                    </label>
-                                                    <input type="number" 
-                                                           class="form-control priority-input" 
-                                                           id="priority-{{ $provider->slug }}" 
-                                                           name="providers[{{ $provider->id }}][priority]" 
-                                                           value="{{ $provider->priority ?? 0 }}"
-                                                           min="0"
-                                                           required>
-                                                    <small class="form-text text-muted">
-                                                        Lower number = higher priority (must be unique)
-                                                    </small>
-                                                    <div class="validation-error" id="priority-error-{{ $provider->slug }}" style="display: none;"></div>
-                                                </div>
+                        
+                                            {{-- Keep api_secret hidden for non-premium providers (optional) --}}
+                                            <input type="hidden"
+                                                    id="api_secret-{{ $provider->slug }}"
+                                                    name="providers[{{ $provider->id }}][api_secret]"
+                                                    value="">
+                                        @endif
+                        
+                                        {{-- Split Percentage --}}
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label for="split_percentage-{{ $provider->slug }}" class="form-label">
+                                                    <i class="ti ti-percentage me-1"></i>
+                                                    Split Percentage (%) *
+                                                </label>
+                                                <input type="number"
+                                                        class="form-control split-percentage-input"
+                                                        id="split_percentage-{{ $provider->slug }}"
+                                                        name="providers[{{ $provider->id }}][split_percentage]"
+                                                        value="{{ $provider->split_percentage ?? 0 }}"
+                                                        min="0" max="100" step="0.01" required>
+                                                <small class="form-text text-muted">
+                                                    Percentage of orders for this provider
+                                                </small>
+                                                <div class="validation-error" id="percentage-error-{{ $provider->slug }}" style="display: none;"></div>
                                             </div>
                                         </div>
-
-                                        <div class="d-flex gap-2 flex-wrap mt-3">
-                                            <button type="submit" class="btn btn-save btn-sm">
-                                                <i class="ti ti-device-floppy me-1"></i> Save Settings
-                                            </button>
+                        
+                                        {{-- Priority --}}
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label for="priority-{{ $provider->slug }}" class="form-label">
+                                                    <i class="ti ti-sort-ascending me-1"></i>
+                                                    Priority *
+                                                </label>
+                                                <input type="number"
+                                                        class="form-control priority-input"
+                                                        id="priority-{{ $provider->slug }}"
+                                                        name="providers[{{ $provider->id }}][priority]"
+                                                        value="{{ $provider->priority ?? 0 }}"
+                                                        min="0"
+                                                        required>
+                                                <small class="form-text text-muted">
+                                                    Lower number = higher priority (must be unique)
+                                                </small>
+                                                <div class="validation-error" id="priority-error-{{ $provider->slug }}" style="display: none;"></div>
+                                            </div>
                                         </div>
-                                    </form>
-                                </div>
+                                    </div>
+                        
+                                    <div class="d-flex gap-2 flex-wrap mt-3">
+                                        <button type="submit" class="btn btn-save btn-sm">
+                                            <i class="ti ti-device-floppy me-1"></i> Save Settings
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
                             @empty
                                 <div class="alert alert-info glassy-alert">
                                     <i class="ti ti-info-circle me-2"></i>
                                     No provider splits configured. Please run the seeder to add providers.
                                 </div>
-                            @endforelse
+                            @endforelse                        
                         </div>
 
                         <!-- Total Percentage Display -->

@@ -359,17 +359,49 @@ class DomainActivationService
         // Prepare persona from order/reorderInfo
         $reorderInfo = $order->reorderInfo()->first();
         $user = $order->user;
-        
-        $firstName = $reorderInfo->first_name ?? $user->first_name ?? 'User';
-        $lastName = $reorderInfo->last_name ?? $user->last_name ?? '';
-        
+
+        // Extract first_name and last_name from the FIRST variant details if available
+        // Fallback to reorderInfo columns, then user columns
+        $firstName = 'User';
+        $lastName = '';
+
+        $prefixVariantsDetails = $reorderInfo->prefix_variants_details ?? [];
+        if (is_string($prefixVariantsDetails)) {
+            $prefixVariantsDetails = json_decode($prefixVariantsDetails, true) ?? [];
+        }
+
+        // Try getting name from first variant details
+        // Details structure is likely ['prefix_variant_1' => ['first_name' => '...', 'last_name' => '...']]
+        $firstVariant = reset($prefixVariantsDetails);
+        if ($firstVariant && isset($firstVariant['first_name'])) {
+            $firstName = $firstVariant['first_name'];
+            $lastName = $firstVariant['last_name'] ?? '';
+        } else {
+            // Fallbacks
+            $firstName = $reorderInfo->first_name ?? $user->first_name ?? 'User';
+            $lastName = $reorderInfo->last_name ?? $user->last_name ?? '';
+        }
+
+        // Fix for "String should have at least 1 character" error
+        if (empty(trim($lastName))) {
+            $lastName = !empty(trim($firstName)) && $firstName !== 'User' ? $firstName : 'Customer';
+        }
+
+        Log::channel('mailin-ai')->info('Preparing PremiumInboxes Persona', [
+            'order_id' => $order->id,
+            'source_first_name' => $reorderInfo->first_name ?? $user->first_name ?? null,
+            'source_last_name' => $reorderInfo->last_name ?? $user->last_name ?? null,
+            'final_first_name' => $firstName,
+            'final_last_name' => $lastName,
+        ]);
+
         // Get prefix variants
         $prefixVariants = $reorderInfo->prefix_variants ?? [];
         if (is_string($prefixVariants)) {
             $prefixVariants = json_decode($prefixVariants, true) ?? [];
         }
         $prefixVariants = array_values(array_filter($prefixVariants));
-        
+
         // Build persona variations from prefix variants
         $variations = [];
         foreach ($prefixVariants as $prefix) {
@@ -377,18 +409,24 @@ class DomainActivationService
                 $variations[] = trim($prefix);
             }
         }
-        
+
         $persona = [
             'first_name' => $firstName,
             'last_name' => $lastName,
             'variations' => $variations,
         ];
 
+        Log::channel('mailin-ai')->info('PremiumInboxes Persona Constructed', [
+            'order_id' => $order->id,
+            'persona' => $persona,
+            'variations_count' => count($variations),
+        ]);
+
         // Generate email password
-        $emailPassword = $this->generatePassword($order->id, 1);
-        
-        // Create client_order_id: "order-{order_id}-premiuminboxes"
-        $clientOrderId = "order-{$order->id}-premiuminboxes";
+        $emailPassword = $this->generatePassword($order->id);
+
+        // Create client_order_id: "PI-order-{order_id}"
+        $clientOrderId = "PI-order-{$order->id}";
 
         // Get sequencer config if available
         $sequencer = null;
@@ -400,14 +438,55 @@ class DomainActivationService
             ];
         }
 
+        // Prepare additional parameters
+        $additionalData = [];
+
+        // Master Inbox - check reorderInfo first
+        if ($reorderInfo && $reorderInfo->master_inbox_confirmation && !empty($reorderInfo->master_inbox_email)) {
+            $additionalData['master_inbox'] = $reorderInfo->master_inbox_email;
+        }
+
+        // Profile Picture - check user profile image
+        if ($user && !empty($user->profile_image)) {
+            // Assuming profile_image contains a URL or path. If path, might need full URL.
+            // Given it's a string column and user request mentioned profile_picture_url,
+            // we'll pass it as is.
+            $additionalData['profile_picture_url'] = $user->profile_image;
+        }
+
+        // Forwarding Domain - check user table
+        if ($user && !empty($user->domain_forwarding_url)) {
+            $additionalData['forwarding_domain'] = $user->domain_forwarding_url;
+        }
+
+        // Additional Info / Notes
+        if (!empty($reorderInfo->additional_info)) {
+            $additionalData['additional_info'] = $reorderInfo->additional_info;
+        }
+
+        Log::channel('mailin-ai')->info('Step 1: DomainActivationService - Calling createOrderWithDomains', [
+            'order_id' => $order->id,
+            'arguments' => [
+                'domains' => $split->domains ?? [],
+                'prefix_variants' => $prefixVariants,
+                'persona' => $persona,
+                'client_order_id' => $clientOrderId,
+                'sequencer' => $sequencer, // CAUTION: Contains password
+                'additional_data' => $additionalData
+            ],
+            'prefix_variants_count' => count($prefixVariants),
+        ]);
+
         // Create order with PremiumInboxes
+        /** @var \App\Services\Providers\PremiuminboxesProviderService $provider */
         $result = $provider->createOrderWithDomains(
             $split->domains ?? [],
             $prefixVariants,
             $persona,
             $emailPassword,
             $clientOrderId,
-            $sequencer
+            $sequencer,
+            $additionalData
         );
 
         if ($result['success']) {
@@ -434,7 +513,7 @@ class DomainActivationService
                         // If nameserver update fails, we must reject the order
                         $reason = "Nameserver update failed for {$domain}: " . $e->getMessage();
                         $this->rejectOrder($order, $reason);
-                        
+
                         return [
                             'rejected' => true,
                             'reason' => $reason,
@@ -463,14 +542,17 @@ class DomainActivationService
         }
 
         // Order creation failed
+        $rawError = $result['message'] ?? 'Unknown error';
+        $errorMessage = is_array($rawError) ? json_encode($rawError) : $rawError;
+
         Log::channel('mailin-ai')->error('PremiumInboxes order creation failed', [
             'order_id' => $order->id,
-            'error' => $result['message'] ?? 'Unknown error',
+            'error' => $errorMessage,
         ]);
 
         return [
             'rejected' => true,
-            'reason' => $result['message'] ?? 'Failed to create PremiumInboxes order',
+            'reason' => $errorMessage,
             'active' => [],
             'transferred' => [],
             'failed' => $split->domains ?? [],
