@@ -129,12 +129,7 @@ class Kernel extends ConsoleKernel
                         ->runInBackground()
                         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
-                // Check domain transfer status every 5 minutes
-                $schedule->command('domain:check-transfer-status')
-                        ->everyFiveMinutes()
-                        ->withoutOverlapping()
-                        ->runInBackground()
-                        ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
 
                 // Delete expired mailboxes for EOBC cancelled subscriptions every hour
                 $schedule->command('mailboxes:delete-expired')

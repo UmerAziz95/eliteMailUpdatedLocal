@@ -147,7 +147,8 @@ class DomainActivationService
                 if ($status['success'] && $status['status'] === 'active') {
                     $results['active'][] = $domain;
                     $domainId = $status['data']['id'] ?? $status['domain_id'] ?? null;
-                    $split->setDomainStatus($domain, 'active', $domainId);
+                    $ns = $status['name_servers'] ?? $status['nameservers'] ?? $status['data']['nameservers'] ?? [];
+                    $split->setDomainStatus($domain, 'active', $domainId, $ns);
 
                     Log::channel('mailin-ai')->info('Domain is active', [
                         'domain' => $domain,
@@ -161,7 +162,8 @@ class DomainActivationService
 
                     if ($transferResult['success']) {
                         $results['transferred'][] = $domain;
-                        $split->setDomainStatus($domain, 'pending');
+                        $ns = $transferResult['name_servers'] ?? [];
+                        $split->setDomainStatus($domain, 'pending', null, $ns);
 
                         Log::channel('mailin-ai')->info('Domain transferred', [
                             'domain' => $domain,
@@ -169,15 +171,33 @@ class DomainActivationService
                             'order_id' => $order->id,
                         ]);
                     } else {
-                        // Transfer failed → REJECT
-                        $this->rejectOrder($order, "Domain transfer failed for: {$domain}. {$transferResult['message']}");
-                        return [
-                            'rejected' => true,
-                            'reason' => "Domain transfer failed for: {$domain}. {$transferResult['message']}",
-                            'active' => $results['active'],
-                            'transferred' => $results['transferred'],
-                            'failed' => array_merge($results['failed'], [$domain]),
-                        ];
+                        // Check if it's a rate limit error or user indicates "rate limit" string
+                        $message = $transferResult['message'] ?? '';
+                        $isRateLimit = str_contains(strtolower($message), 'rate limit')
+                            || str_contains($message, '429')
+                            || str_contains($message, 'Too Many Attempts');
+
+                        if ($isRateLimit) {
+                            Log::channel('mailin-ai')->warning('Domain transfer rate limit exceeded (will retry later)', [
+                                'domain' => $domain,
+                                'error' => $message,
+                                'order_id' => $order->id,
+                            ]);
+
+                            // Do NOT reject order. Mark domain as failed (temporarily) so it can be retried.
+                            $results['failed'][] = $domain;
+                            $split->setDomainStatus($domain, 'failed');
+                        } else {
+                            // Transfer failed critically → REJECT
+                            $this->rejectOrder($order, "Domain transfer failed for: {$domain}. {$transferResult['message']}");
+                            return [
+                                'rejected' => true,
+                                'reason' => "Domain transfer failed for: {$domain}. {$transferResult['message']}",
+                                'active' => $results['active'],
+                                'transferred' => $results['transferred'],
+                                'failed' => array_merge($results['failed'], [$domain]),
+                            ];
+                        }
                     }
                 }
             } catch (\Exception $e) {
@@ -402,6 +422,7 @@ class DomainActivationService
         }
         $prefixVariants = array_values(array_filter($prefixVariants));
 
+
         // Build persona variations from prefix variants
         $variations = [];
         foreach ($prefixVariants as $prefix) {
@@ -409,6 +430,7 @@ class DomainActivationService
                 $variations[] = trim($prefix);
             }
         }
+
 
         $persona = [
             'first_name' => $firstName,
@@ -498,8 +520,13 @@ class DomainActivationService
             ]);
 
             // Update domain statuses
+            $orderDomains = collect($result['domains'] ?? []);
             foreach ($split->domains ?? [] as $domain) {
-                $split->setDomainStatus($domain, 'pending'); // ns_validation_pending
+                // Try to find specific NS for this domain
+                $domainData = $orderDomains->firstWhere('domain', $domain);
+                $domainNs = $domainData['nameservers'] ?? $result['name_servers'] ?? [];
+
+                $split->setDomainStatus($domain, 'pending', null, $domainNs); // ns_validation_pending
             }
 
             // Extract nameservers and update hosting provider
@@ -513,6 +540,7 @@ class DomainActivationService
                         // If nameserver update fails, we must reject the order
                         $reason = "Nameserver update failed for {$domain}: " . $e->getMessage();
                         $this->rejectOrder($order, $reason);
+
 
                         return [
                             'rejected' => true,

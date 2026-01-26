@@ -27,9 +27,13 @@ class CheckPendingDomainsCommand extends Command
         $this->info('Checking orders with pending domains...' . ($isDryRun ? ' (DRY RUN)' : ''));
 
         // Find orders with pending domain activations (in-progress status with splits)
-        $orderIds = OrderProviderSplit::where('all_domains_active', false)
-            ->distinct()
-            ->pluck('order_id');
+        // Find orders that are in-progress and have automation splits
+        // We look at the Orders table to capture those with pending mailboxes too
+        $orderIds = Order::where('status_manage_by_admin', 'in-progress')
+            ->whereHas('orderProviderSplits', function ($query) {
+                $query->where('all_domains_active', false);
+            })
+            ->pluck('id');
 
         if ($orderIds->isEmpty()) {
             $this->info('No orders with pending domains found.');

@@ -41,16 +41,18 @@ class MailboxCreationService
         $allResults = [];
         $totalCreated = 0;
         $totalFailed = 0;
+        $totalPending = 0;
 
         foreach ($splits as $split) {
             $result = $this->createMailboxesForSplit($order, $split, $prefixVariants, $prefixVariantsDetails);
             $allResults[$split->provider_slug] = $result;
             $totalCreated += count($result['created'] ?? []);
             $totalFailed += count($result['failed'] ?? []);
+            $totalPending += count($result['pending'] ?? []);
         }
 
-        // Complete order if all mailboxes created
-        if ($totalFailed === 0) {
+        // Complete order if all mailboxes created (no failures AND no pending)
+        if ($totalFailed === 0 && $totalPending === 0) {
             $order->update([
                 'status_manage_by_admin' => 'completed',
                 'completed_at' => now(),
@@ -60,14 +62,21 @@ class MailboxCreationService
                 'order_id' => $order->id,
                 'total_mailboxes' => $totalCreated,
             ]);
+        } elseif ($totalPending > 0) {
+            Log::channel('mailin-ai')->info('Order incomplete, pending mailboxes (async enrollment)', [
+                'order_id' => $order->id,
+                'pending_count' => $totalPending,
+                'created_count' => $totalCreated,
+            ]);
         }
 
         return [
-            'success' => $totalFailed === 0,
-            'error' => $totalFailed > 0 ? "Failed to create {$totalFailed} mailboxes" : null,
+            'success' => $totalFailed === 0 && $totalPending === 0, // Success only if FULLY complete
+            'error' => $totalFailed > 0 ? "Failed: $totalFailed" : ($totalPending > 0 ? "Pending: $totalPending" : null),
             'results' => $allResults,
             'total_created' => $totalCreated,
             'total_failed' => $totalFailed,
+            'total_pending' => $totalPending,
         ];
     }
 
@@ -83,6 +92,11 @@ class MailboxCreationService
         // Check if PremiumInboxes
         if ($split->provider_slug === 'premiuminboxes') {
             return $this->fetchMailboxesFromPremiumInboxes($order, $split, $prefixVariants);
+        }
+
+        // Check if Mailrun (async enrollment)
+        if ($split->provider_slug === 'mailrun') {
+            return $this->createMailboxesForMailrun($order, $split, $prefixVariants, $prefixVariantsDetails);
         }
 
         // Existing Mailin.ai logic
@@ -182,7 +196,7 @@ class MailboxCreationService
         // Fetch mailboxes for each domain
         foreach ($split->domains ?? [] as $domain) {
             $mailboxesResult = $provider->getMailboxesByDomain($domain);
-            
+
             if ($mailboxesResult['success']) {
                 foreach ($mailboxesResult['mailboxes'] as $mailbox) {
                     // Extract prefix key from email (e.g., "john@domain.com" -> "john")
@@ -220,6 +234,146 @@ class MailboxCreationService
         return $results;
     }
 
+    /**
+     * Create mailboxes for Mailrun provider
+     * Mailrun uses async enrollment - can take up to 2 hours
+     * 
+     * Flow:
+     * 1. Check if enrollment already started (enrollment_uuid stored)
+     * 2. If not, start enrollment via createMailboxes()
+     * 3. Poll status via getMailboxesByDomain() which checks status first
+     * 4. If complete, fetch credentials and store
+     */
+    private function createMailboxesForMailrun(
+        Order $order,
+        OrderProviderSplit $split,
+        array $prefixVariants,
+        array $prefixVariantsDetails
+    ): array {
+        $results = [
+            'created' => [],
+            'failed' => [],
+            'pending' => [],
+        ];
+
+        $providerConfig = SmtpProviderSplit::getBySlug('mailrun');
+        if (!$providerConfig) {
+            Log::channel('mailin-ai')->error('Mailrun provider not found');
+            return $results;
+        }
+
+        $credentials = $providerConfig->getCredentials();
+        $provider = $this->createProvider('mailrun', $credentials);
+
+        if (!$provider->authenticate()) {
+            Log::channel('mailin-ai')->error('Mailrun authentication failed');
+            return $results;
+        }
+
+        // Build mailbox list for all domains
+        $allMailboxes = [];
+        foreach ($split->domains ?? [] as $domain) {
+            foreach ($prefixVariants as $prefixKey => $prefix) {
+                $variantKey = is_numeric($prefixKey) ? 'prefix_variant_' . ($prefixKey + 1) : $prefixKey;
+                $details = $prefixVariantsDetails[$variantKey] ?? [];
+
+                $firstName = trim($details['first_name'] ?? '');
+                $lastName = trim($details['last_name'] ?? '');
+                $name = trim($firstName . ' ' . $lastName) ?: $prefix;
+
+                $allMailboxes[] = [
+                    'username' => $prefix . '@' . $domain,
+                    'name' => $name,
+                    'password' => $this->generatePassword($order->id),
+                ];
+            }
+        }
+
+        // Check if enrollment already initiated (uuid stored in split metadata)
+        $enrollmentUuid = $split->getMetadata('mailrun_enrollment_uuid');
+
+        if (!$enrollmentUuid) {
+            // Start enrollment
+            $enrollResult = $provider->createMailboxes($allMailboxes);
+
+            if (!$enrollResult['success']) {
+                Log::channel('mailin-ai')->error('Mailrun enrollment failed', [
+                    'order_id' => $order->id,
+                    'error' => $enrollResult['message'] ?? 'Unknown error',
+                ]);
+                $results['failed'] = array_column($allMailboxes, 'username');
+                return $results;
+            }
+
+            // Store enrollment UUID for later polling
+            $enrollmentUuid = $enrollResult['uuid'] ?? null;
+            if ($enrollmentUuid) {
+                $split->setMetadata('mailrun_enrollment_uuid', $enrollmentUuid);
+            }
+
+            Log::channel('mailin-ai')->info('Mailrun enrollment initiated', [
+                'order_id' => $order->id,
+                'uuid' => $enrollmentUuid,
+                'mailbox_count' => count($allMailboxes),
+            ]);
+
+            // Enrollment is async - mark as pending, scheduler will poll
+            $results['pending'] = array_column($allMailboxes, 'username');
+            return $results;
+        }
+
+        // Enrollment already started - try to fetch mailboxes (this checks status internally)
+        foreach ($split->domains ?? [] as $domain) {
+            $mailboxesResult = $provider->getMailboxesByDomain($domain);
+
+            if (!$mailboxesResult['success']) {
+                Log::channel('mailin-ai')->warning('Mailrun: Failed to get mailboxes', [
+                    'domain' => $domain,
+                    'message' => $mailboxesResult['message'] ?? 'Unknown error',
+                ]);
+                continue;
+            }
+
+            // Check if still pending
+            if (empty($mailboxesResult['mailboxes']) && ($mailboxesResult['enrollment_status'] ?? 'pending') !== 'complete') {
+                Log::channel('mailin-ai')->info('Mailrun: Enrollment still pending', [
+                    'domain' => $domain,
+                    'status' => $mailboxesResult['enrollment_status'] ?? 'pending',
+                ]);
+                $results['pending'][] = $domain;
+                continue;
+            }
+
+            // Store mailboxes
+            foreach ($mailboxesResult['mailboxes'] as $mailbox) {
+                $emailPrefix = explode('@', $mailbox['email'] ?? $mailbox['username'] ?? '')[0] ?? '';
+                $prefixKey = $this->findPrefixKey($emailPrefix, $prefixVariants);
+
+                $mailboxData = [
+                    'id' => count($results['created']) + 1,
+                    'name' => $mailbox['name'] ?? $emailPrefix,
+                    'mailbox' => $mailbox['email'] ?? $mailbox['username'] ?? '',
+                    'password' => $mailbox['password'] ?? '',
+                    'status' => 'active',
+                    'mailbox_id' => $mailbox['id'] ?? null,
+                    'smtp_host' => $mailbox['smtp_host'] ?? '',
+                    'smtp_port' => $mailbox['smtp_port'] ?? 587,
+                    'imap_host' => $mailbox['imap_host'] ?? '',
+                    'imap_port' => $mailbox['imap_port'] ?? 993,
+                ];
+
+                $split->addMailbox($domain, $prefixKey, $mailboxData);
+                $results['created'][] = $mailboxData['mailbox'];
+            }
+
+            Log::channel('mailin-ai')->info('Mailrun mailboxes stored', [
+                'domain' => $domain,
+                'count' => count($mailboxesResult['mailboxes']),
+            ]);
+        }
+
+        return $results;
+    }
 
     /**
      * Find prefix key from email prefix
@@ -233,7 +387,7 @@ class MailboxCreationService
             } else {
                 $variantKey = $key;
             }
-            
+
             if ($prefix === $emailPrefix) {
                 return $variantKey;
             }

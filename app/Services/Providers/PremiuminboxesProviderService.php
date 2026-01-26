@@ -35,6 +35,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
             ]);
         }
 
+
         return $apiKey;
     }
 
@@ -47,6 +48,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
             'domain' => $domain,
             'message' => 'PremiumInboxes requires order creation, not single domain transfer',
         ]);
+
 
         return [
             'success' => false,
@@ -100,6 +102,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         if ($result['success']) {
             $this->currentOrderId = $result['data']['order_id'] ?? null;
 
+
             // Extract nameservers from response
             $nameServers = [];
             foreach ($result['data']['domains'] ?? [] as $domainData) {
@@ -139,10 +142,12 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         // We need order_id to check status
         // This will be called with order context
 
+
         if (!$this->currentOrderId) {
             Log::channel('mailin-ai')->warning('PremiumInboxes: checkDomainStatus() called without order context', [
                 'domain' => $domain,
             ]);
+
 
             return [
                 'success' => false,
@@ -152,6 +157,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         }
 
         $order = $this->service->getOrder($this->currentOrderId);
+
 
         if (!$order['success']) {
             return [
@@ -188,6 +194,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         return [
             'success' => true,
             'status' => $status,
+            'name_servers' => $domainData['nameservers'] ?? [],
             'data' => [
                 'order_status' => $orderStatus,
                 'ns_status' => $nsStatus,
@@ -202,11 +209,13 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         // This method should not be called separately
         // If called, return success with order_id reference
 
+
         if ($this->currentOrderId) {
             Log::channel('mailin-ai')->info('PremiumInboxes: createMailboxes() called, mailboxes already created in order', [
                 'order_id' => $this->currentOrderId,
                 'mailbox_count' => count($mailboxes),
             ]);
+
 
             return [
                 'success' => true,
@@ -233,6 +242,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
                 'domain' => $domain,
             ]);
 
+
             return [
                 'success' => false,
                 'mailboxes' => [],
@@ -241,6 +251,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         }
 
         $order = $this->service->getOrder($this->currentOrderId);
+
 
         if (!$order['success']) {
             return [
@@ -253,8 +264,10 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         // Filter email_accounts by domain
         $emailAccounts = collect($order['data']['email_accounts'] ?? [])
             ->filter(function ($account) use ($domain) {
+            ->filter(function ($account) use ($domain) {
                 return ($account['domain'] ?? '') === $domain;
             })
+            ->map(function ($account) {
             ->map(function ($account) {
                 return [
                     'id' => $account['id'] ?? null,
@@ -279,6 +292,8 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         // This method signature needs to be flexible
         $result = $this->service->cancelEmailAccount((string) $mailboxId);
 
+        $result = $this->service->cancelEmailAccount((string) $mailboxId);
+
         return [
             'success' => $result['success'] ?? false,
             'message' => $result['error'] ?? 'Mailbox deleted',
@@ -300,6 +315,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
         // Check for api_key (from api_secret field) or password (for backward compatibility)
         $apiKey = $this->credentials['api_secret'] ?? '';
         $baseUrl = $this->credentials['base_url'] ?? config('premiuminboxes.api_url', 'https://api.piwhitelabel.dev/api/v1');
+
 
         return !empty($apiKey) && !empty($baseUrl);
     }

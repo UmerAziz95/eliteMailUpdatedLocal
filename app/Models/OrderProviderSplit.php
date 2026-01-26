@@ -23,6 +23,7 @@ class OrderProviderSplit extends Model
         'client_order_id',
         'order_status',
         'webhook_received_at',
+        'metadata',
     ];
 
     protected $casts = [
@@ -34,6 +35,7 @@ class OrderProviderSplit extends Model
         'all_domains_active' => 'boolean',
         'priority' => 'integer',
         'webhook_received_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
     /**
@@ -59,14 +61,23 @@ class OrderProviderSplit extends Model
      * @param string $status Status: 'active', 'pending', 'failed'
      * @param int|null $domainId Domain ID from provider API
      */
-    public function setDomainStatus(string $domain, string $status, ?int $domainId = null): void
+    public function setDomainStatus(string $domain, string $status, ?int $domainId = null, array $nameServers = []): void
     {
         $statuses = $this->domain_statuses ?? [];
-        $statuses[$domain] = [
+        $domainData = [
             'status' => $status,
             'domain_id' => $domainId ?? ($statuses[$domain]['domain_id'] ?? null),
             'updated_at' => now()->toISOString(),
         ];
+
+        if (!empty($nameServers)) {
+            $domainData['nameservers'] = $nameServers;
+        } elseif (isset($statuses[$domain]['nameservers'])) {
+            // Preserve existing nameservers if not provided
+            $domainData['nameservers'] = $statuses[$domain]['nameservers'];
+        }
+
+        $statuses[$domain] = $domainData;
         $this->domain_statuses = $statuses;
         $this->save();
     }
@@ -171,6 +182,26 @@ class OrderProviderSplit extends Model
         return static::where('order_id', $orderId)
             ->where('all_domains_active', false)
             ->doesntExist();
+    }
+
+    /**
+     * Get metadata value
+     */
+    public function getMetadata(string $key, $default = null)
+    {
+        $metadata = $this->metadata ?? [];
+        return $metadata[$key] ?? $default;
+    }
+
+    /**
+     * Set metadata value
+     */
+    public function setMetadata(string $key, $value): void
+    {
+        $metadata = $this->metadata ?? [];
+        $metadata[$key] = $value;
+        $this->metadata = $metadata;
+        $this->save();
     }
 }
 

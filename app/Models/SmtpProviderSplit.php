@@ -70,7 +70,7 @@ class SmtpProviderSplit extends Model
     {
         // Get active providers ordered by priority
         $activeProviders = self::getActiveProviders();
-        
+
         // For now, return Mailin (first active provider)
         // In future, this will handle split logic
         return $activeProviders->first();
@@ -84,7 +84,19 @@ class SmtpProviderSplit extends Model
      */
     public function getCredentials()
     {
-        // For PremiumInboxes, only password (API key) is required
+        if ($this->slug === 'mailrun') {
+            if (empty($this->password)) {
+                return null;
+            }
+
+            return [
+                'base_url' => $this->api_endpoint ?: null,
+                'api_key' => $this->api_secret,
+                'api_token' => $this->password,
+                'password' => $this->password,
+            ];
+        }
+
         if ($this->slug === 'premiuminboxes') {
             if (empty($this->password)) {
                 return null;
