@@ -4024,6 +4024,9 @@ class OrderController extends Controller
                 ob_end_clean();
             }
 
+            // Increase time limit
+            set_time_limit(0);
+
             // Send initial message
             $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Starting mailbox creation for Order #{$orderId}"]);
             $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Order Status: {$order->status_manage_by_admin}"]);
@@ -4033,32 +4036,55 @@ class OrderController extends Controller
                 // --- Step 1: Activate Domains ---
                 $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => ">>> Step 1: Activating Domains..."]);
 
-                \Artisan::call('mailin:activate-domains', [
-                    'order_id' => $orderId,
-                    '--bypass-check' => true
-                ]);
+                // Run via Process to stream output
+                $phpBinary = PHP_BINARY;
+                $artisanPath = base_path('artisan');
 
-                $outputActivation = \Artisan::output();
-                $this->streamOutputLines($outputActivation);
+                // Prepare environment with potential fix for Windows localhost [2002] error
+                $env = getenv();
+                $dbConnection = config('database.default');
+                // Ensure we get the host from the specific connection config
+                $dbHost = config("database.connections.{$dbConnection}.host");
+
+                if ($dbHost === 'localhost') {
+                    $env['DB_HOST'] = '127.0.0.1';
+                }
+
+                $process1 = new \Symfony\Component\Process\Process(
+                    [$phpBinary, 'artisan', 'mailin:activate-domains', $orderId, '--bypass-check'],
+                    base_path(),
+                    $env
+                );
+                $process1->setTimeout(null);
+
+                $process1->run(function ($type, $buffer) {
+                    $this->streamOutputLines($buffer);
+                });
 
                 $this->sendSSE(['type' => 'progress', 'percent' => 40]);
 
                 // --- Step 2: Create Mailboxes ---
                 $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => ">>> Step 2: Creating Mailboxes..."]);
 
-                // We try to create even if activation said pending, just in case (the command handles checks)
+                $process2 = new \Symfony\Component\Process\Process(
+                    [$phpBinary, 'artisan', 'mailin:create-mailboxes', $orderId],
+                    base_path(),
+                    $env
+                );
+                $process2->setTimeout(null);
 
-                $exitCode = \Artisan::call('mailin:create-mailboxes', [
-                    'order_id' => $orderId
-                ]);
-
-                $outputCreation = \Artisan::output();
-                $this->streamOutputLines($outputCreation);
+                $process2->run(function ($type, $buffer) {
+                    $this->streamOutputLines($buffer);
+                });
 
                 // --- Finalize ---
                 $order->refresh();
+                $exitCode = $process2->getExitCode();
                 $success = ($exitCode === 0) && ($order->status_manage_by_admin === 'completed');
-                $needsRetry = !$success && str_contains($outputCreation, 'Not all domains are active');
+
+                // Check buffer for specific error messages if needed, though streamOutputLines handles display
+                // For needsRetry, we'd need to capture all output or rely on exit code/order status
+                $needsRetry = !$success && stripos($process2->getOutput(), 'Not all domains are active') !== false;
 
                 $this->sendSSE([
                     'type' => 'complete',
