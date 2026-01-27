@@ -778,58 +778,106 @@ class EmailExportService
      * @param int|null $splitId
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
-    public function exportPrivateSmtpCsvFromSplit($order, $splitId = null)
+    public function exportPrivateSmtpCsv($order, $splitId = null)
     {
         try {
-            // 1. Fetch Split
-            $split = null;
+            // 1. Fetch Splits
+            $splits = collect();
             if ($splitId) {
                 $split = OrderProviderSplit::find($splitId);
+                if ($split) {
+                    $splits->push($split);
+                }
             } else {
-                $split = OrderProviderSplit::where('order_id', $order->id)->first();
+                $splits = OrderProviderSplit::where('order_id', $order->id)->get();
             }
 
-            if (!$split) {
+            if ($splits->isEmpty()) {
                 throw new \Exception('Order Provider Split not found.');
             }
 
-            // 2. Get Mailboxes using helper
-            $mailboxes = $split->getAllMailboxes();
-
-            // 3. Fallback: Generate if empty but domains exist?
-            // User requested to use the split table. If mailboxes are empty, we check domains.
-            if (empty($mailboxes)) {
-                $domains = $split->domains ?? [];
-
-                // Decode if string
-                if (is_string($domains)) {
-                    $domains = json_decode($domains, true);
+            // Fetch ReorderInfo for details
+            $reorderInfo = $order->reorderInfo->first();
+            $prefixVariantDetails = [];
+            if ($reorderInfo && $reorderInfo->prefix_variants_details) {
+                if (is_string($reorderInfo->prefix_variants_details)) {
+                    $decoded = json_decode($reorderInfo->prefix_variants_details, true);
+                    if (is_array($decoded)) {
+                        $prefixVariantDetails = $decoded;
+                    }
+                } elseif (is_array($reorderInfo->prefix_variants_details)) {
+                    $prefixVariantDetails = $reorderInfo->prefix_variants_details;
                 }
+            }
 
-                if (!empty($domains)) {
-                    foreach ($domains as $domain) {
-                        $domainName = is_array($domain) ? ($domain['domain'] ?? null) : $domain;
-                        if (!$domainName)
+            $mailboxes = [];
+
+            foreach ($splits as $split) {
+                // 2. Get Mailboxes iterating manually to keep keys
+                $rawMailboxes = $split->mailboxes ?? [];
+
+                if (!empty($rawMailboxes)) {
+                    foreach ($rawMailboxes as $domain => $variants) {
+                        if (!is_array($variants))
                             continue;
 
-                        foreach (['info', 'contact'] as $prefix) {
-                            $mailboxes[] = [
-                                'name' => ucfirst($prefix),
-                                'last_name' => ucfirst($prefix),
-                                'mailbox' => $prefix . '@' . $domainName,
-                                'password' => $this->customEncrypt($order->id)
-                            ];
+                        foreach ($variants as $variantKey => $mailboxData) {
+                            $mailbox = $mailboxData;
+
+                            // Enrich with ReorderInfo details if available
+                            if (isset($prefixVariantDetails[$variantKey])) {
+                                $details = $prefixVariantDetails[$variantKey];
+                                if (!empty($details['first_name'])) {
+                                    $mailbox['first_name'] = $details['first_name'];
+                                }
+                                if (!empty($details['last_name'])) {
+                                    $mailbox['last_name'] = $details['last_name'];
+                                }
+                            }
+
+                            $mailboxes[] = $mailbox;
+                        }
+                    }
+                }
+                // 3. Fallback: Generate if empty but domains exist?
+                else {
+                    $domains = $split->domains ?? [];
+
+                    // Decode if string
+                    if (is_string($domains)) {
+                        $domains = json_decode($domains, true);
+                    }
+
+                    if (!empty($domains)) {
+                        foreach ($domains as $domain) {
+                            $domainName = is_array($domain) ? ($domain['domain'] ?? null) : $domain;
+                            if (!$domainName)
+                                continue;
+
+                            // Fallback generation - might not match variant keys perfectly without more logic, 
+                            // but usually used when data is completely missing.
+                            // We can try to use the first N variants from details if available?
+                            // For now keeping simple 'info'/'contact' as per previous instruction unless requested otherwise.
+                            foreach (['info', 'contact'] as $prefix) {
+                                $mailboxes[] = [
+                                    'name' => ucfirst($prefix),
+                                    'last_name' => ucfirst($prefix),
+                                    'mailbox' => $prefix . '@' . $domainName,
+                                    'password' => $this->customEncrypt($order->id)
+                                ];
+                            }
                         }
                     }
                 }
             }
 
             if (empty($mailboxes)) {
-                throw new \Exception('No mailboxes or domains found in Order Provider Split.');
+                throw new \Exception('No mailboxes or domains found in Order Provider Split(s).');
             }
 
             // 4. Generate CSV
-            $filename = "order_{$order->id}_split_" . ($split->id ?? 'NA') . "_private_smtp_" . date('Y-m-d_His') . ".csv";
+            $splitPart = $splitId ? "split_{$splitId}" : "all_splits";
+            $filename = "order_{$order->id}_{$splitPart}_private_smtp_" . date('Y-m-d_His') . ".csv";
 
             $headers = [
                 'Content-Type' => 'text/csv',
@@ -880,16 +928,16 @@ class EmailExportService
                 fclose($file);
             };
 
-            Log::info('Private SMTP CSV export initiated from Split', [
+            Log::info('Private SMTP CSV export initiated', [
                 'order_id' => $order->id,
-                'split_id' => $split->id,
+                'split_id' => $splitId ?? 'all',
                 'total_emails' => count($mailboxes)
             ]);
 
             return response()->stream($callback, 200, $headers);
 
         } catch (\Exception $e) {
-            Log::error('Error exporting Private SMTP CSV from Split: ' . $e->getMessage());
+            Log::error('Error exporting Private SMTP CSV: ' . $e->getMessage());
             throw $e;
         }
     }

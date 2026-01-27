@@ -2747,7 +2747,7 @@ class OrderController extends Controller
     {
         try {
             $exportService = app(EmailExportService::class);
-            return $exportService->exportPrivateSmtpCsvFromSplit($order, $splitId);
+            return $exportService->exportPrivateSmtpCsv($order, $splitId);
         } catch (\Exception $e) {
             Log::error('Error exporting Private SMTP CSV: ' . $e->getMessage(), [
                 'order_id' => $order->id ?? null,
@@ -2776,144 +2776,8 @@ class OrderController extends Controller
                 return back()->with('error', 'This order is not a Private SMTP or SMTP order.');
             }
 
-            $reorderInfo = $order->reorderInfo->first();
-
-            if (!$reorderInfo) {
-                throw new \Exception('ReorderInfo not found for this order.');
-            }
-
-            // Get domains from reorder_info.domains (comma-separated string)
-            $domainsString = $reorderInfo->domains ?? '';
-            if (empty($domainsString)) {
-                throw new \Exception('No domains found in reorder_info for this order.');
-            }
-
-            // Parse domains (handle comma and newline separated)
-            $domains = array_filter(
-                preg_split('/[\r\n,]+/', $domainsString),
-                function ($domain) {
-                    return !empty(trim($domain));
-                }
-            );
-            $domains = array_map('trim', $domains);
-
-            if (empty($domains)) {
-                throw new \Exception('No valid domains found after parsing.');
-            }
-
-            // Get prefix variants from reorder_info
-            $prefixVariants = [];
-            if ($reorderInfo->prefix_variants) {
-                if (is_string($reorderInfo->prefix_variants)) {
-                    $decoded = json_decode($reorderInfo->prefix_variants, true);
-                    if (is_array($decoded)) {
-                        // Extract values from associative array like {"prefix_variant_1": "john", "prefix_variant_2": "jane"}
-                        $prefixVariants = array_values($decoded);
-                    } else {
-                        // Comma-separated string
-                        $prefixVariants = array_map('trim', explode(',', $reorderInfo->prefix_variants));
-                    }
-                } elseif (is_array($reorderInfo->prefix_variants)) {
-                    $prefixVariants = array_values($reorderInfo->prefix_variants);
-                }
-            }
-
-            // Default prefixes if none found
-            if (empty($prefixVariants)) {
-                $prefixVariants = ['info', 'contact'];
-            }
-
-            // Get prefix variant details for first_name, last_name, password
-            $prefixVariantDetails = [];
-            if ($reorderInfo->prefix_variants_details) {
-                if (is_string($reorderInfo->prefix_variants_details)) {
-                    $decoded = json_decode($reorderInfo->prefix_variants_details, true);
-                    if (is_array($decoded)) {
-                        $prefixVariantDetails = $decoded;
-                    }
-                } elseif (is_array($reorderInfo->prefix_variants_details)) {
-                    $prefixVariantDetails = $reorderInfo->prefix_variants_details;
-                }
-            }
-
-            // Get inboxes per domain
-            $inboxesPerDomain = (int) ($reorderInfo->inboxes_per_domain ?? 1);
-            if ($inboxesPerDomain <= 0) {
-                $inboxesPerDomain = 1;
-            }
-
-            // Limit prefix variants to inboxes_per_domain
-            $prefixVariants = array_slice($prefixVariants, 0, $inboxesPerDomain);
-
-            // Generate CSV filename
-            $filename = "order_{$order->id}_smtp_" . date('Y-m-d_His') . ".csv";
-
-            $headers = [
-                'Content-Type' => 'text/csv',
-                'Content-Disposition' => "attachment; filename=\"$filename\"",
-            ];
-
-            $callback = function () use ($domains, $prefixVariants, $prefixVariantDetails, $order) {
-                $file = fopen('php://output', 'w');
-
-                // Add CSV headers (Google Workspace format)
-                fputcsv($file, [
-                    'First Name',
-                    'Last Name',
-                    'Email Address',
-                    'Password',
-                    'Org Unit Path [Required]'
-                ]);
-
-                $counter = 0;
-                // Generate emails: prefix@domain for each combination
-                foreach ($domains as $domain) {
-                    foreach ($prefixVariants as $index => $prefix) {
-                        $emailAddress = $prefix . '@' . $domain;
-
-                        // Get first and last name from prefix_variants_details
-                        $prefixKey = 'prefix_variant_' . ($index + 1);
-                        $firstName = '';
-                        $lastName = '';
-                        $password = '';
-
-                        if (isset($prefixVariantDetails[$prefixKey])) {
-                            $details = $prefixVariantDetails[$prefixKey];
-                            $firstName = $details['first_name'] ?? '';
-                            $lastName = $details['last_name'] ?? '';
-                            $password = $details['password'] ?? '';
-                        }
-
-                        // Generate password if not found in details
-                        if (empty($password)) {
-                            $password = $this->customEncrypt($order->id);
-                        }
-
-                        // Write CSV row
-                        fputcsv($file, [
-                            $firstName,
-                            $lastName,
-                            $emailAddress,
-                            $password,
-                            '/' // Org Unit Path [Required]
-                        ]);
-
-                        $counter++;
-                    }
-                }
-
-                fclose($file);
-            };
-
-            Log::info('SMTP Order CSV export initiated', [
-                'order_id' => $order->id,
-                'provider_type' => $providerType,
-                'domains_count' => count($domains),
-                'prefix_variants_count' => count($prefixVariants),
-                'total_emails' => count($domains) * count($prefixVariants)
-            ]);
-
-            return response()->stream($callback, 200, $headers);
+            $exportService = app(EmailExportService::class);
+            return $exportService->exportPrivateSmtpCsv($order, null);
 
         } catch (\Exception $e) {
             Log::error('Error exporting SMTP Order CSV: ' . $e->getMessage(), [
