@@ -35,7 +35,6 @@ use App\Services\EmailExportService;
 use App\Services\OrderSplitResetService;
 use App\Services\OrderCapacityService;
 use App\Http\Controllers\Admin\ContractorController as AdminContractorController;
-use App\Utils\MailRunRateLimiter;
 use App\Models\OrderProviderSplit;
 
 class OrderController extends Controller
