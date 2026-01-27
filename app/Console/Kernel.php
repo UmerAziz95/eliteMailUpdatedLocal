@@ -138,12 +138,7 @@ class Kernel extends ConsoleKernel
                         ->runInBackground()
                         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
 
-                // Backfill missing Mailin.ai mailbox IDs every 20 minutes
-                $schedule->command('mailin:backfill-mailbox-ids')
-                        ->cron('*/20 * * * *')
-                        ->withoutOverlapping()
-                        ->runInBackground()
-                        ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
 
                 // Check for unverified completed orders twice daily (every 12 hours)
                 $schedule->command('orders:check-unverified-completed')
