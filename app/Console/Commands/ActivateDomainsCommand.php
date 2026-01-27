@@ -15,7 +15,8 @@ class ActivateDomainsCommand extends Command
      */
     protected $signature = 'mailin:activate-domains 
                             {order_id : The order ID to process}
-                            {--dry-run : Show what would be done without making changes}';
+                            {--dry-run : Show what would be done without making changes}
+                            {--bypass-check : Bypass existing mailbox check}';
 
     /**
      * The console command description.
@@ -29,8 +30,9 @@ class ActivateDomainsCommand extends Command
     {
         $orderId = $this->argument('order_id');
         $isDryRun = $this->option('dry-run');
+        $bypassCheck = $this->option('bypass-check');
 
-        $this->info("Processing Order #{$orderId}" . ($isDryRun ? ' (DRY RUN)' : ''));
+        $this->info("Processing Order #{$orderId}" . ($isDryRun ? ' (DRY RUN)' : '') . ($bypassCheck ? ' (BYPASS CHECK)' : ''));
 
         // Load order
         $order = Order::with(['reorderInfo', 'platformCredentials'])->find($orderId);
@@ -72,7 +74,7 @@ class ActivateDomainsCommand extends Command
         $this->info("Activating domains...");
         $this->newLine();
 
-        $result = $service->activateDomainsForOrder($order);
+        $result = $service->activateDomainsForOrder($order, $bypassCheck);
 
         if ($result['rejected']) {
             $this->error("Order REJECTED: {$result['reason']}");

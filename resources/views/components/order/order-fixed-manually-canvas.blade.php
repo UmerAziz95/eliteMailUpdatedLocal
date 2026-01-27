@@ -23,7 +23,7 @@
                         <!-- Action Buttons Group -->
                         <div class="d-flex align-items-center gap-2">
                             <button type="button" id="runFixCommand" class="btn m-btn px-4">
-                                <i class="fa-solid fa-envelope-circle-check me-2"></i> Create Mailboxes
+                                <i class="fa-solid fa-envelope-circle-check me-2"></i> Run Cmd
                             </button>
                             <button type="button" id="stopFixCommand" class="btn cancel-btn px-3" disabled>
                                 <i class="fa-solid fa-stop me-1"></i> Stop
@@ -82,13 +82,13 @@
                                 This will run the following commands sequentially:
                             </div>
                             <div class="mt-2" style="color: #ff79c6;">
-                                1. php artisan mailin:activate-domains {order_id}
+                                1. Domain Activation Service
                             </div>
                             <div style="color: #aaa; margin-left: 20px;">
                                 • Checks domain status & activates on provider
                             </div>
                             <div class="mt-2" style="color: #ff79c6;">
-                                2. php artisan mailin:create-mailboxes {order_id}
+                                2. Mailbox Creation Service
                             </div>
                             <div style="color: #aaa; margin-left: 20px;">
                                 • Creates mailboxes for active domains

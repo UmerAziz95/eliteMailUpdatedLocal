@@ -4034,7 +4034,8 @@ class OrderController extends Controller
                 $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => ">>> Step 1: Activating Domains..."]);
 
                 \Artisan::call('mailin:activate-domains', [
-                    'order_id' => $orderId
+                    'order_id' => $orderId,
+                    '--bypass-check' => true
                 ]);
 
                 $outputActivation = \Artisan::output();

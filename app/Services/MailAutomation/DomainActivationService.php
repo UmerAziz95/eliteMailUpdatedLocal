@@ -24,13 +24,13 @@ class DomainActivationService
      * @param Order $order
      * @return array ['rejected' => bool, 'reason' => string|null, 'results' => array]
      */
-    public function activateDomainsForOrder(Order $order): array
+    public function activateDomainsForOrder(Order $order, bool $bypassExistingMailboxCheck = false): array
     {
         $splits = OrderProviderSplit::where('order_id', $order->id)->get();
         $allResults = [];
 
         foreach ($splits as $split) {
-            $result = $this->activateDomainsForSplit($order, $split);
+            $result = $this->activateDomainsForSplit($order, $split, $bypassExistingMailboxCheck);
 
             if ($result['rejected']) {
                 return $result;
@@ -53,7 +53,7 @@ class DomainActivationService
      * @param OrderProviderSplit $split
      * @return array ['rejected' => bool, 'reason' => string|null, 'active' => array, 'transferred' => array, 'failed' => array]
      */
-    public function activateDomainsForSplit(Order $order, OrderProviderSplit $split): array
+    public function activateDomainsForSplit(Order $order, OrderProviderSplit $split, bool $bypassExistingMailboxCheck = false): array
     {
         // Check provider type
         if ($split->provider_slug === 'premiuminboxes') {
@@ -114,7 +114,9 @@ class DomainActivationService
             try {
                 // CHECK 1: Do SAME mailboxes already exist? (check by prefix variants) → REJECT
                 $existingMailboxes = $provider->getMailboxesByDomain($domain);
-                if (!empty($existingMailboxes['mailboxes']) && !empty($prefixVariants)) {
+
+                // Only check if NOT bypassing
+                if (!$bypassExistingMailboxCheck && !empty($existingMailboxes['mailboxes']) && !empty($prefixVariants)) {
                     // Extract existing email prefixes
                     $existingPrefixes = [];
                     foreach ($existingMailboxes['mailboxes'] as $mb) {
