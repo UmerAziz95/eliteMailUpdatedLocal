@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\OrderEmail;
 use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
+use App\Models\OrderProviderSplit;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
@@ -21,13 +22,13 @@ class EmailExportService
      * @param object $orderPanelSplit
      * @return \Illuminate\Http\Response
      */
-    
+
     public function exportSmartZip($splitId, $orderPanelId, $order, $orderPanelSplit)
     {
         try {
             // Get all splits for this order panel
             $splitIds = OrderPanel::find($orderPanelId)->orderPanelSplits->pluck('id');
-            
+
             // Check if order_emails data exists with batch_id
             $emailsWithBatch = OrderEmail::whereIn('order_split_id', $splitIds)
                 ->whereNotNull('batch_id')
@@ -62,17 +63,17 @@ class EmailExportService
         try {
             // Get the order panel with its splits
             $orderPanel = OrderPanel::with('orderPanelSplits')->findOrFail($orderPanelId);
-            
+
             // Get space_assigned to determine total batches
             $spaceAssigned = $orderPanel->space_assigned ?? 0;
-            
+
             if ($spaceAssigned == 0) {
                 throw new \Exception('No space assigned for this panel.');
             }
-            
+
             // Calculate total batches needed
             $totalBatches = ceil($spaceAssigned / 200);
-            
+
             // Get emails grouped by batch_id
             $splitIds = $orderPanel->orderPanelSplits->pluck('id');
             $emailsByBatch = OrderEmail::whereIn('order_split_id', $splitIds)
@@ -97,24 +98,24 @@ class EmailExportService
             for ($i = 1; $i <= $totalBatches; $i++) {
                 $batchEmails = $emailsByBatch->get($i, collect());
                 $expectedCount = ($i < $totalBatches) ? 200 : ($spaceAssigned % 200 ?: 200);
-                
+
                 if ($batchEmails->count() > 0) {
                     // Batch has data - export from database
                     $filename = "Batch_{$i}_Customized.csv";
                     $filepath = $tempDir . '/' . $filename;
-                    
+
                     $file = fopen($filepath, 'w');
-                    
+
                     // Add CSV headers based on provider type
                     $headers = $this->getHeadersByProviderType($order->provider_type ?? 'Google');
                     fputcsv($file, $headers);
-                    
+
                     // Add email data from database
                     foreach ($batchEmails as $email) {
                         $row = $this->formatRowByProviderType($email, $order->provider_type ?? 'Google');
                         fputcsv($file, $row);
                     }
-                    
+
                     fclose($file);
                     $csvFiles[] = $filepath;
                 } else {
@@ -122,20 +123,20 @@ class EmailExportService
                     if (!empty($domainEmailData)) {
                         $filename = "Batch_{$i}_Default.csv";
                         $filepath = $tempDir . '/' . $filename;
-                        
+
                         $file = fopen($filepath, 'w');
-                        
+
                         // Add CSV headers based on provider type
                         $headers = $this->getHeadersByProviderType($order->provider_type ?? 'Google');
                         fputcsv($file, $headers);
-                        
+
                         // Add emails from domain generation (up to expectedCount)
                         $emailsToWrite = array_slice($domainEmailData, $domainEmailIndex, $expectedCount);
                         foreach ($emailsToWrite as $email) {
                             $row = $this->formatRowByProviderType($email, $order->provider_type ?? 'Google', true);
                             fputcsv($file, $row);
                         }
-                        
+
                         $domainEmailIndex += count($emailsToWrite);
                         fclose($file);
                         $csvFiles[] = $filepath;
@@ -202,7 +203,7 @@ class EmailExportService
             $prefixVariants = [];
             $prefixVariantDetails = [];
             $reorderInfo = $order->reorderInfo->first();
-            
+
             if ($reorderInfo) {
                 if ($reorderInfo->prefix_variants) {
                     // Handle both string and array formats
@@ -221,7 +222,7 @@ class EmailExportService
                         $prefixVariants = array_values($reorderInfo->prefix_variants);
                     }
                 }
-                
+
                 if ($reorderInfo->prefix_variants_details) {
                     // Handle both JSON string and array formats
                     if (is_string($reorderInfo->prefix_variants_details)) {
@@ -244,10 +245,10 @@ class EmailExportService
             $domains = [];
             if ($orderPanelSplit->domains) {
                 // Handle both JSON string and array
-                $domainsData = is_string($orderPanelSplit->domains) 
-                    ? json_decode($orderPanelSplit->domains, true) 
+                $domainsData = is_string($orderPanelSplit->domains)
+                    ? json_decode($orderPanelSplit->domains, true)
                     : $orderPanelSplit->domains;
-                    
+
                 if (is_array($domainsData)) {
                     foreach ($domainsData as $domain) {
                         if (is_array($domain) && isset($domain['domain'])) {
@@ -269,14 +270,14 @@ class EmailExportService
             foreach ($domains as $domain) {
                 foreach ($prefixVariants as $index => $prefix) {
                     $emailAddress = $prefix . '@' . $domain;
-                    
+
                     $firstName = '';
                     $lastName = '';
-                    
+
                     // PRIORITY 1: Try to get details from prefix_variants_details database column
                     // This contains the correct first_name and last_name for each prefix variant
                     $detailsFound = false;
-                    
+
                     // Try with "prefix_variant_X" key format (1-based)
                     $variantKey = 'prefix_variant_' . ($index + 1);
                     if (isset($prefixVariantDetails[$variantKey])) {
@@ -285,10 +286,10 @@ class EmailExportService
                         $lastName = $details['last_name'] ?? '';
                         $detailsFound = true;
                     }
-                    
+
                     // Try with numeric index (both 0-based and 1-based)
                     if (!$detailsFound && is_numeric($index)) {
-                        $onBasedIndex = (int)$index + 1;
+                        $onBasedIndex = (int) $index + 1;
                         if (isset($prefixVariantDetails[$onBasedIndex])) {
                             $details = $prefixVariantDetails[$onBasedIndex];
                             $firstName = $details['first_name'] ?? '';
@@ -301,7 +302,7 @@ class EmailExportService
                             $detailsFound = true;
                         }
                     }
-                    
+
                     // Try with the prefix itself as key
                     if (!$detailsFound && isset($prefixVariantDetails[$prefix])) {
                         $details = $prefixVariantDetails[$prefix];
@@ -309,7 +310,7 @@ class EmailExportService
                         $lastName = $details['last_name'] ?? '';
                         $detailsFound = true;
                     }
-                    
+
                     // PRIORITY 2: If no database details found or values are empty, 
                     // intelligently parse the prefix itself
                     if (!$detailsFound || (empty($firstName) && empty($lastName))) {
@@ -345,18 +346,18 @@ class EmailExportService
                             $lastName = $prefix;
                         }
                     }
-                    
+
                     // Remove any remaining dots from names
                     $firstName = str_replace('.', '', $firstName);
                     $lastName = str_replace('.', '', $lastName);
-                    
+
                     $emailData[] = [
                         'first_name' => $firstName,
                         'last_name' => $lastName,
                         'email' => $emailAddress,
                         'password' => $this->customEncrypt($order->id),
                     ];
-                    
+
                     $counter++;
                 }
             }
@@ -383,17 +384,17 @@ class EmailExportService
         try {
             // Get the order panel with its splits
             $orderPanel = OrderPanel::with('orderPanelSplits')->findOrFail($orderPanelId);
-            
+
             // Get space_assigned to determine total batches
             $spaceAssigned = $orderPanel->space_assigned ?? 0;
-            
+
             if ($spaceAssigned == 0) {
                 throw new \Exception('No space assigned for this panel.');
             }
-            
+
             // Calculate total batches needed
             $totalBatches = ceil($spaceAssigned / 200);
-            
+
             // Get emails grouped by batch_id
             $splitIds = $orderPanel->orderPanelSplits->pluck('id');
             $emailsByBatch = OrderEmail::whereIn('order_split_id', $splitIds)
@@ -413,23 +414,23 @@ class EmailExportService
             // Generate CSV for each batch
             for ($i = 1; $i <= $totalBatches; $i++) {
                 $batchEmails = $emailsByBatch->get($i, collect());
-                
+
                 if ($batchEmails->count() > 0) {
                     $filename = "Batch_{$i}_Customized.csv";
                     $filepath = $tempDir . '/' . $filename;
-                    
+
                     $file = fopen($filepath, 'w');
-                    
+
                     // Add CSV headers based on provider type
                     $headers = $this->getHeadersByProviderType($order->provider_type ?? 'Google');
                     fputcsv($file, $headers);
-                    
+
                     // Add email data
                     foreach ($batchEmails as $email) {
                         $row = $this->formatRowByProviderType($email, $order->provider_type ?? 'Google');
                         fputcsv($file, $row);
                     }
-                    
+
                     fclose($file);
                     $csvFiles[] = $filepath;
                 }
@@ -513,19 +514,19 @@ class EmailExportService
                 $chunkNumber = $chunkIndex + 1;
                 $filename = "Domain_Chunk_{$chunkNumber}_Default.csv";
                 $filepath = $tempDir . '/' . $filename;
-                
+
                 $file = fopen($filepath, 'w');
-                
+
                 // Add CSV headers based on provider type
                 $headers = $this->getHeadersByProviderType($order->provider_type ?? 'Google');
                 fputcsv($file, $headers);
-                
+
                 // Add email data
                 foreach ($chunk as $email) {
                     $row = $this->formatRowByProviderType($email, $order->provider_type ?? 'Google', true);
                     fputcsv($file, $row);
                 }
-                
+
                 fclose($file);
                 $csvFiles[] = $filepath;
             }
@@ -582,23 +583,23 @@ class EmailExportService
         $lowerCase = 'abcdefghijklmnopqrstuvwxyz';
         $numbers = '0123456789';
         $specialChars = '!@#$%^&*';
-        
+
         // Use order ID as seed for consistent password generation
         mt_srand($orderId);
-        
+
         // Generate password with requirements
         $password = '';
         $password .= $upperCase[mt_rand(0, strlen($upperCase) - 1)]; // 1 uppercase
         $password .= $lowerCase[mt_rand(0, strlen($lowerCase) - 1)]; // 1 lowercase
         $password .= $numbers[mt_rand(0, strlen($numbers) - 1)];     // 1 number
         $password .= $specialChars[mt_rand(0, strlen($specialChars) - 1)]; // 1 special char
-        
+
         // Fill remaining 4 characters with mix of all character types
         $allChars = $upperCase . $lowerCase . $numbers . $specialChars;
         for ($i = 4; $i < 8; $i++) {
             $password .= $allChars[mt_rand(0, strlen($allChars) - 1)];
         }
-        
+
         // Shuffle using seeded random generator
         $passwordArray = str_split($password);
         for ($i = count($passwordArray) - 1; $i > 0; $i--) {
@@ -608,7 +609,7 @@ class EmailExportService
             $passwordArray[$i] = $passwordArray[$j];
             $passwordArray[$j] = $temp;
         }
-        
+
         return implode('', $passwordArray);
     }
 
@@ -622,18 +623,18 @@ class EmailExportService
     {
         try {
             $orderPanel = OrderPanel::with('orderPanelSplits')->findOrFail($orderPanelId);
-            
+
             $spaceAssigned = $orderPanel->space_assigned ?? 0;
-            
+
             if ($spaceAssigned == 0) {
                 return [
                     'success' => false,
                     'message' => 'No space assigned for this panel.'
                 ];
             }
-            
+
             $totalBatches = ceil($spaceAssigned / 200);
-            
+
             $splitIds = $orderPanel->orderPanelSplits->pluck('id');
             $emailsByBatch = OrderEmail::whereIn('order_split_id', $splitIds)
                 ->select('id', 'name', 'last_name', 'email', 'password', 'batch_id')
@@ -645,7 +646,7 @@ class EmailExportService
             for ($i = 1; $i <= $totalBatches; $i++) {
                 $expectedCount = ($i < $totalBatches) ? 200 : ($spaceAssigned % 200 ?: 200);
                 $batchEmails = $emailsByBatch->get($i, collect());
-                
+
                 $batches[] = [
                     'batch_number' => $i,
                     'email_count' => $batchEmails->count(),
@@ -702,7 +703,7 @@ class EmailExportService
                 'Country or region'
             ];
         }
-        
+
         // Default: Google Workspace format
         return [
             'First Name',
@@ -734,11 +735,11 @@ class EmailExportService
             $emailAddress = $email->email ?? '';
             $password = $email->password ?? '';
         }
-        
+
         if ($providerType === 'Microsoft 365') {
             // Extract username from email (part before @)
             $username = strpos($emailAddress, '@') !== false ? substr($emailAddress, 0, strpos($emailAddress, '@')) : $emailAddress;
-            
+
             return [
                 $emailAddress,                       // Username (full email)
                 $firstName,                          // First name
@@ -759,7 +760,7 @@ class EmailExportService
                 ''                                   // Country or region
             ];
         }
-        
+
         // Default: Google Workspace format
         return [
             $firstName,                              // First Name
@@ -768,5 +769,128 @@ class EmailExportService
             $password,                               // Password
             // '/'                                   // Org Unit Path [Required]
         ];
+    }
+
+    /**
+     * Export Private SMTP CSV from OrderProviderSplit
+     * 
+     * @param object $order
+     * @param int|null $splitId
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function exportPrivateSmtpCsvFromSplit($order, $splitId = null)
+    {
+        try {
+            // 1. Fetch Split
+            $split = null;
+            if ($splitId) {
+                $split = OrderProviderSplit::find($splitId);
+            } else {
+                $split = OrderProviderSplit::where('order_id', $order->id)->first();
+            }
+
+            if (!$split) {
+                throw new \Exception('Order Provider Split not found.');
+            }
+
+            // 2. Get Mailboxes using helper
+            $mailboxes = $split->getAllMailboxes();
+
+            // 3. Fallback: Generate if empty but domains exist?
+            // User requested to use the split table. If mailboxes are empty, we check domains.
+            if (empty($mailboxes)) {
+                $domains = $split->domains ?? [];
+
+                // Decode if string
+                if (is_string($domains)) {
+                    $domains = json_decode($domains, true);
+                }
+
+                if (!empty($domains)) {
+                    foreach ($domains as $domain) {
+                        $domainName = is_array($domain) ? ($domain['domain'] ?? null) : $domain;
+                        if (!$domainName)
+                            continue;
+
+                        foreach (['info', 'contact'] as $prefix) {
+                            $mailboxes[] = [
+                                'name' => ucfirst($prefix),
+                                'last_name' => ucfirst($prefix),
+                                'mailbox' => $prefix . '@' . $domainName,
+                                'password' => $this->customEncrypt($order->id)
+                            ];
+                        }
+                    }
+                }
+            }
+
+            if (empty($mailboxes)) {
+                throw new \Exception('No mailboxes or domains found in Order Provider Split.');
+            }
+
+            // 4. Generate CSV
+            $filename = "order_{$order->id}_split_" . ($split->id ?? 'NA') . "_private_smtp_" . date('Y-m-d_His') . ".csv";
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($mailboxes, $order) {
+                $file = fopen('php://output', 'w');
+
+                // Add CSV headers (Google Workspace format)
+                fputcsv($file, [
+                    'First Name',
+                    'Last Name',
+                    'Email Address',
+                    'Password',
+                    'Org Unit Path [Required]'
+                ]);
+
+                foreach ($mailboxes as $mailbox) {
+                    $firstName = $mailbox['first_name'] ?? '';
+                    $lastName = $mailbox['last_name'] ?? '';
+
+                    // Handle joined name format (e.g. "raaj.03 x")
+                    if (empty($firstName) && empty($lastName) && !empty($mailbox['name'])) {
+                        $parts = explode(' ', $mailbox['name'], 2);
+                        $firstName = $parts[0];
+                        $lastName = $parts[1] ?? $firstName; // Use first name as last name if single word found
+                    } else {
+                        // Fallback if no specific format found
+                        $firstName = $firstName ?: ($mailbox['name'] ?? '');
+                    }
+                    $emailAddress = $mailbox['mailbox'] ?? $mailbox['email'] ?? '';
+                    $password = $mailbox['password'] ?? '';
+
+                    if (empty($password)) {
+                        $password = $this->customEncrypt($order->id);
+                    }
+
+                    fputcsv($file, [
+                        $firstName,
+                        $lastName,
+                        $emailAddress,
+                        $password,
+                        '/' // Org Unit Path [Required]
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            Log::info('Private SMTP CSV export initiated from Split', [
+                'order_id' => $order->id,
+                'split_id' => $split->id,
+                'total_emails' => count($mailboxes)
+            ]);
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting Private SMTP CSV from Split: ' . $e->getMessage());
+            throw $e;
+        }
     }
 }
