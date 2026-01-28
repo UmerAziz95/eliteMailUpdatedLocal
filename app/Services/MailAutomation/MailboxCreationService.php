@@ -53,15 +53,31 @@ class MailboxCreationService
 
         // Complete order if all mailboxes created (no failures AND no pending)
         if ($totalFailed === 0 && $totalPending === 0) {
-            $order->update([
-                'status_manage_by_admin' => 'completed',
-                'completed_at' => now(),
-            ]);
+            // Use new validation function to verify all expected mailboxes exist
+            $validation = $this->validateOrderMailboxCompletion($order, $prefixVariants);
 
-            Log::channel('mailin-ai')->info('Order completed after mailbox creation', [
-                'order_id' => $order->id,
-                'total_mailboxes' => $totalCreated,
-            ]);
+            if ($validation['is_complete']) {
+                $order->update([
+                    'status_manage_by_admin' => 'completed',
+                    'completed_at' => now(),
+                ]);
+
+                Log::channel('mailin-ai')->info('Order completed after mailbox creation', [
+                    'order_id' => $order->id,
+                    'total_mailboxes' => $validation['total_created'],
+                    'expected_mailboxes' => $validation['total_expected'],
+                ]);
+            } else {
+                // Mailboxes missing - don't mark as complete
+                Log::channel('mailin-ai')->warning('Order has missing mailboxes - not completing', [
+                    'order_id' => $order->id,
+                    'total_created' => $validation['total_created'],
+                    'total_expected' => $validation['total_expected'],
+                    'pending_count' => $validation['pending_count'],
+                    'pending_mailboxes' => array_map(fn($m) => $m['email'], $validation['pending_mailboxes']),
+                ]);
+                $totalPending = $validation['pending_count'];
+            }
         } elseif ($totalPending > 0) {
             Log::channel('mailin-ai')->info('Order incomplete, pending mailboxes (async enrollment)', [
                 'order_id' => $order->id,
@@ -710,5 +726,166 @@ class MailboxCreationService
         }
 
         return implode('', $passwordArray);
+    }
+
+    /**
+     * Validate if all mailboxes are created for an order before marking as completed
+     * 
+     * @param Order $order
+     * @param array $prefixVariants Array of expected prefixes
+     * @return array ['is_complete' => bool, 'pending_mailboxes' => array, 'summary' => array]
+     */
+    public function validateOrderMailboxCompletion(Order $order, array $prefixVariants): array
+    {
+        $splits = OrderProviderSplit::where('order_id', $order->id)->get();
+
+        $expectedPrefixCount = count($prefixVariants);
+        $totalExpected = 0;
+        $totalCreated = 0;
+        $pendingMailboxes = [];
+        $summary = [
+            'by_provider' => [],
+            'by_domain' => [],
+        ];
+
+        foreach ($splits as $split) {
+            $providerSlug = $split->provider_slug;
+            $domains = $split->domains ?? [];
+            $splitMailboxes = $split->mailboxes ?? [];
+
+            $providerSummary = [
+                'provider' => $providerSlug,
+                'total_domains' => count($domains),
+                'expected_mailboxes' => count($domains) * $expectedPrefixCount,
+                'created_mailboxes' => 0,
+                'pending_domains' => [],
+            ];
+
+            foreach ($domains as $domain) {
+                $domainMailboxes = $splitMailboxes[$domain] ?? [];
+                $createdCount = count($domainMailboxes);
+                $expectedForDomain = $expectedPrefixCount;
+
+                $totalExpected += $expectedForDomain;
+                $totalCreated += $createdCount;
+                $providerSummary['created_mailboxes'] += $createdCount;
+
+                // Check if domain has all expected mailboxes
+                if ($createdCount < $expectedForDomain) {
+                    $missingCount = $expectedForDomain - $createdCount;
+
+                    // Find which prefixes are missing
+                    $createdPrefixes = [];
+                    foreach ($domainMailboxes as $variantKey => $mailboxData) {
+                        $email = $mailboxData['mailbox'] ?? '';
+                        $prefix = explode('@', $email)[0] ?? '';
+                        $createdPrefixes[] = $prefix;
+                    }
+
+                    $expectedPrefixList = array_values($prefixVariants);
+                    $missingPrefixes = array_diff($expectedPrefixList, $createdPrefixes);
+
+                    foreach ($missingPrefixes as $prefix) {
+                        $pendingMailboxes[] = [
+                            'email' => $prefix . '@' . $domain,
+                            'provider' => $providerSlug,
+                            'domain' => $domain,
+                            'prefix' => $prefix,
+                        ];
+                    }
+
+                    $providerSummary['pending_domains'][] = [
+                        'domain' => $domain,
+                        'created' => $createdCount,
+                        'expected' => $expectedForDomain,
+                        'missing' => $missingCount,
+                        'missing_prefixes' => array_values($missingPrefixes),
+                    ];
+
+                    $summary['by_domain'][$domain] = [
+                        'provider' => $providerSlug,
+                        'created' => $createdCount,
+                        'expected' => $expectedForDomain,
+                        'missing' => $missingCount,
+                        'missing_prefixes' => array_values($missingPrefixes),
+                        'created_prefixes' => $createdPrefixes,
+                    ];
+                }
+            }
+
+            $summary['by_provider'][$providerSlug] = $providerSummary;
+        }
+
+        $isComplete = empty($pendingMailboxes);
+
+        // Log validation result
+        if ($isComplete) {
+            Log::channel('mailin-ai')->info('Order mailbox validation: COMPLETE', [
+                'order_id' => $order->id,
+                'total_mailboxes' => $totalCreated,
+                'total_expected' => $totalExpected,
+            ]);
+        } else {
+            Log::channel('mailin-ai')->warning('Order mailbox validation: INCOMPLETE', [
+                'order_id' => $order->id,
+                'total_created' => $totalCreated,
+                'total_expected' => $totalExpected,
+                'pending_count' => count($pendingMailboxes),
+                'pending_mailboxes' => array_map(fn($m) => $m['email'], $pendingMailboxes),
+            ]);
+        }
+
+        return [
+            'is_complete' => $isComplete,
+            'total_expected' => $totalExpected,
+            'total_created' => $totalCreated,
+            'pending_count' => count($pendingMailboxes),
+            'pending_mailboxes' => $pendingMailboxes,
+            'summary' => $summary,
+        ];
+    }
+
+    /**
+     * Check and update order status based on mailbox completion
+     * 
+     * @param Order $order
+     * @param array $prefixVariants
+     * @return array ['status_updated' => bool, 'new_status' => string|null, 'validation' => array]
+     */
+    public function checkAndUpdateOrderStatus(Order $order, array $prefixVariants): array
+    {
+        $validation = $this->validateOrderMailboxCompletion($order, $prefixVariants);
+
+        if ($validation['is_complete']) {
+            // All mailboxes created - mark as completed
+            $order->update([
+                'status_manage_by_admin' => 'completed',
+                'completed_at' => now(),
+            ]);
+
+            Log::channel('mailin-ai')->info('Order status updated to COMPLETED', [
+                'order_id' => $order->id,
+                'total_mailboxes' => $validation['total_created'],
+            ]);
+
+            return [
+                'status_updated' => true,
+                'new_status' => 'completed',
+                'validation' => $validation,
+            ];
+        } else {
+            // Still pending - log details
+            Log::channel('mailin-ai')->warning('Order cannot be completed - mailboxes pending', [
+                'order_id' => $order->id,
+                'pending_count' => $validation['pending_count'],
+                'pending_list' => array_map(fn($m) => $m['email'], $validation['pending_mailboxes']),
+            ]);
+
+            return [
+                'status_updated' => false,
+                'new_status' => null,
+                'validation' => $validation,
+            ];
+        }
     }
 }
