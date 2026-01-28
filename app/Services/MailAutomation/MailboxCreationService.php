@@ -461,6 +461,9 @@ class MailboxCreationService
             $unmatchedReturned = array_diff($returnedPrefixes, $expectedPrefixes);
             $missingExpected = array_diff($expectedPrefixes, $returnedPrefixes);
 
+            // Check for complete mismatch - ALL returned prefixes are wrong
+            $hasCompleteMismatch = empty($matchedPrefixes) && !empty($unmatchedReturned);
+
             if (!empty($unmatchedReturned) || !empty($missingExpected)) {
                 Log::channel('mailin-ai')->warning('Mailrun: Prefix mismatch detected!', [
                     'domain' => $domain,
@@ -468,8 +471,22 @@ class MailboxCreationService
                     'returned_prefixes' => $returnedPrefixes,
                     'unmatched_returned' => array_values($unmatchedReturned),
                     'missing_expected' => array_values($missingExpected),
+                    'complete_mismatch' => $hasCompleteMismatch,
                     'note' => 'Domain may have been enrolled previously with different settings',
                 ]);
+
+                // If complete mismatch (no matching prefixes), skip saving and mark as pending
+                if ($hasCompleteMismatch) {
+                    Log::channel('mailin-ai')->error('Mailrun: Complete prefix mismatch - NOT saving wrong mailboxes', [
+                        'domain' => $domain,
+                        'returned_prefixes' => $returnedPrefixes,
+                        'expected_prefixes' => $expectedPrefixes,
+                    ]);
+
+                    // Add to pending - these mailboxes were NOT saved
+                    $results['pending'][] = $domain;
+                    continue;
+                }
             }
 
             // Check count mismatch
@@ -482,12 +499,27 @@ class MailboxCreationService
                 ]);
             }
 
-            // Store mailboxes with proper unique keys per domain
+            // Store only mailboxes with MATCHING prefixes
             $domainVariantCounter = 1;
             $usedKeys = [];
+            $savedCount = 0;
+            $skippedCount = 0;
 
             foreach ($mailboxesResult['mailboxes'] as $mailbox) {
                 $emailPrefix = explode('@', $mailbox['email'] ?? $mailbox['username'] ?? '')[0] ?? '';
+
+                // Skip mailboxes with unexpected prefixes - don't save wrong data
+                if (!in_array($emailPrefix, $expectedPrefixes)) {
+                    Log::channel('mailin-ai')->warning('Mailrun: Skipping mailbox with wrong prefix - NOT saving', [
+                        'domain' => $domain,
+                        'email' => $mailbox['email'] ?? $mailbox['username'] ?? '',
+                        'prefix' => $emailPrefix,
+                        'expected_prefixes' => $expectedPrefixes,
+                    ]);
+                    $skippedCount++;
+                    continue;
+                }
+
                 $prefixKey = $this->findPrefixKey($emailPrefix, $prefixVariants);
 
                 // If key was already used (duplicate prefix returned by API), generate unique one
@@ -512,21 +544,27 @@ class MailboxCreationService
 
                 $split->addMailbox($domain, $prefixKey, $mailboxData);
                 $results['created'][] = $mailboxData['mailbox'];
+                $savedCount++;
 
                 Log::channel('mailin-ai')->debug('Mailrun: Stored mailbox', [
                     'domain' => $domain,
                     'email' => $mailboxData['mailbox'],
                     'prefixKey' => $prefixKey,
                     'originalPrefix' => $emailPrefix,
-                    'wasExpected' => in_array($emailPrefix, $expectedPrefixes),
                 ]);
             }
 
             Log::channel('mailin-ai')->info('Mailrun mailboxes stored', [
                 'domain' => $domain,
-                'count' => count($mailboxesResult['mailboxes']),
+                'saved_count' => $savedCount,
+                'skipped_count' => $skippedCount,
                 'expected_count' => count($prefixVariants),
             ]);
+
+            // If we saved fewer than expected, mark as pending for missing mailboxes
+            if ($savedCount < count($prefixVariants)) {
+                $results['pending'][] = $domain;
+            }
         }
 
         return $results;
