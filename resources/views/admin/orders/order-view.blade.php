@@ -2,6 +2,14 @@
 
 @section('title', 'Orders')
 @section('content')
+<style>
+    .email-tooltip .tooltip-inner {
+        max-width: 350px;
+        text-align: left;
+        white-space: nowrap;
+        padding: 8px 12px;
+    }
+</style>
 <section class="py-3 overflow-hidden">
     {{-- <div class="d-flex align-items-center justify-content-between">
         <a href="{{ route('admin.orders') }}" class="d-flex align-items-center justify-content-center"
@@ -465,17 +473,20 @@ $(function() {
                                                 $status = is_array($statusData) ? ($statusData['status'] ?? 'pending') : $statusData;
                                                 $status = is_string($status) ? $status : 'pending';
                                                 
-                                                // Count mailboxes - handle both flat arrays and associative arrays
+                                                // Count mailboxes and collect emails for tooltip
                                                 $domainMailboxes = $split['mailboxes'][$domainName] ?? [];
                                                 $mailboxCount = 0;
+                                                $emailList = [];
                                                 if (is_array($domainMailboxes) && !empty($domainMailboxes)) {
-                                                    // Count only if we have actual mailbox data
                                                     foreach ($domainMailboxes as $key => $mbx) {
-                                                        if (is_array($mbx) && !empty($mbx['mailbox'] ?? $mbx['email'] ?? null)) {
+                                                        $email = $mbx['mailbox'] ?? $mbx['email'] ?? null;
+                                                        if (is_array($mbx) && !empty($email)) {
                                                             $mailboxCount++;
+                                                            $emailList[] = $email;
                                                         }
                                                     }
                                                 }
+                                                $tooltipEmails = !empty($emailList) ? implode('<br>', $emailList) : 'No mailboxes created';
                                                 
                                                 // Determine badge color based on status
                                                 $badgeClass = match($status) {
@@ -490,7 +501,7 @@ $(function() {
                                                 <span>{{ $domainName }}</span>
                                                 <div class="d-flex align-items-center gap-2">
                                                     <span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
-                                                    <span class="badge bg-primary" title="Mailboxes created">{{ $mailboxCount }} inboxes</span>
+                                                    <span class="badge bg-primary" style="cursor: pointer;" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" data-bs-custom-class="email-tooltip" title="{!! $tooltipEmails !!}">{{ $mailboxCount }} inboxes</span>
                                                 </div>
                                             </div>
                                         @endforeach
