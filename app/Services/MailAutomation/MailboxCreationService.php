@@ -294,36 +294,120 @@ class MailboxCreationService
         $enrollmentStartedAt = $split->getMetadata('mailrun_enrollment_started_at');
 
         if (!$enrollmentUuid && !$enrollmentStartedAt) {
-            // Start enrollment
-            $enrollResult = $provider->createMailboxes($allMailboxes);
+            // IMPORTANT: Check if domains are already enrolled in Mailrun from previous orders
+            // If they have different prefixes, we'll attempt to re-enroll with the new prefixes
+            $domainsToEnroll = [];
+            $domainsNeedingReEnrollment = [];
 
-            if (!$enrollResult['success']) {
-                Log::channel('mailin-ai')->error('Mailrun enrollment failed', [
+            foreach ($split->domains ?? [] as $domain) {
+                $statusResult = $provider->checkDomainStatus($domain);
+
+                if ($statusResult['success'] && ($statusResult['is_active'] ?? false)) {
+                    // Domain is active in Mailrun - check if it has existing mailboxes
+                    $existingMailboxes = $provider->getMailboxesByDomain($domain);
+
+                    if (!empty($existingMailboxes['mailboxes'])) {
+                        // Domain already has mailboxes - check if they match our prefixes
+                        $existingPrefixes = [];
+                        foreach ($existingMailboxes['mailboxes'] as $mb) {
+                            $email = $mb['email'] ?? $mb['username'] ?? '';
+                            $existingPrefixes[] = explode('@', $email)[0] ?? '';
+                        }
+
+                        $expectedPrefixes = array_values($prefixVariants);
+                        $matchCount = count(array_intersect($existingPrefixes, $expectedPrefixes));
+
+                        if ($matchCount < count($expectedPrefixes)) {
+                            // Mailboxes don't match - attempt re-enrollment with new prefixes
+                            Log::channel('mailin-ai')->warning('Mailrun: Domain enrolled with different prefixes - attempting re-enrollment', [
+                                'domain' => $domain,
+                                'existing_prefixes' => $existingPrefixes,
+                                'requested_prefixes' => $expectedPrefixes,
+                                'order_id' => $order->id,
+                            ]);
+                            // Add to re-enrollment list - we'll call beginEnrollment with new senderPermutationOverride
+                            $domainsNeedingReEnrollment[$domain] = $existingPrefixes;
+                            $domainsToEnroll[] = $domain;
+                        } else {
+                            // Mailboxes match - just fetch them, no need to re-enroll
+                            Log::channel('mailin-ai')->info('Mailrun: Domain already enrolled with matching prefixes', [
+                                'domain' => $domain,
+                            ]);
+                        }
+                    } else {
+                        // Domain is active but no mailboxes yet - safe to enroll
+                        $domainsToEnroll[] = $domain;
+                    }
+                } else {
+                    // Domain not active - safe to enroll
+                    $domainsToEnroll[] = $domain;
+                }
+            }
+
+            // Log re-enrollment attempts
+            if (!empty($domainsNeedingReEnrollment)) {
+                Log::channel('mailin-ai')->info('Mailrun: Attempting to re-enroll domains with new prefixes', [
                     'order_id' => $order->id,
-                    'error' => $enrollResult['message'] ?? 'Unknown error',
+                    'domains_to_reenroll' => array_keys($domainsNeedingReEnrollment),
+                    'requested_prefixes' => array_values($prefixVariants),
                 ]);
-                $results['failed'] = array_column($allMailboxes, 'username');
+            }
+
+            // Only enroll domains that are safe to enroll
+            if (!empty($domainsToEnroll)) {
+                // Filter allMailboxes to only include domains we can enroll
+                $mailboxesToCreate = array_filter($allMailboxes, function ($mb) use ($domainsToEnroll) {
+                    $email = $mb['username'] ?? '';
+                    $domain = explode('@', $email)[1] ?? '';
+                    return in_array($domain, $domainsToEnroll);
+                });
+
+                if (!empty($mailboxesToCreate)) {
+                    $enrollResult = $provider->createMailboxes(array_values($mailboxesToCreate));
+
+                    if (!$enrollResult['success']) {
+                        Log::channel('mailin-ai')->error('Mailrun enrollment failed', [
+                            'order_id' => $order->id,
+                            'error' => $enrollResult['message'] ?? 'Unknown error',
+                        ]);
+                        $results['failed'] = array_merge($results['failed'], array_column($mailboxesToCreate, 'username'));
+                        return $results;
+                    }
+
+                    // Store enrollment UUID for later polling
+                    $enrollmentUuid = $enrollResult['uuid'] ?? null;
+                    if ($enrollmentUuid) {
+                        $split->setMetadata('mailrun_enrollment_uuid', $enrollmentUuid);
+                    }
+
+                    // Mark as started even if UUID missing to prevent infinite loops
+                    $split->setMetadata('mailrun_enrollment_started_at', now()->toISOString());
+
+                    Log::channel('mailin-ai')->info('Mailrun enrollment initiated', [
+                        'order_id' => $order->id,
+                        'uuid' => $enrollmentUuid,
+                        'mailbox_count' => count($mailboxesToCreate),
+                        'domains' => $domainsToEnroll,
+                    ]);
+
+                    // Enrollment is async - mark as pending, scheduler will poll
+                    $results['pending'] = array_column($mailboxesToCreate, 'username');
+                }
+            }
+
+            // If we have failures but nothing pending, return early
+            if (!empty($results['failed']) && empty($results['pending'])) {
                 return $results;
             }
 
-            // Store enrollment UUID for later polling
-            $enrollmentUuid = $enrollResult['uuid'] ?? null;
-            if ($enrollmentUuid) {
-                $split->setMetadata('mailrun_enrollment_uuid', $enrollmentUuid);
+            // If everything was already enrolled (with wrong prefixes), return
+            // Note: now we attempt re-enrollment, so this check isn't needed
+            // But keep for safety in case domainsToEnroll is empty for other reasons
+
+            // If we started enrollment, return pending results
+            if (!empty($results['pending'])) {
+                return $results;
             }
-
-            // Mark as started even if UUID missing to prevent infinite loops
-            $split->setMetadata('mailrun_enrollment_started_at', now()->toISOString());
-
-            Log::channel('mailin-ai')->info('Mailrun enrollment initiated', [
-                'order_id' => $order->id,
-                'uuid' => $enrollmentUuid,
-                'mailbox_count' => count($allMailboxes),
-            ]);
-
-            // Enrollment is async - mark as pending, scheduler will poll
-            $results['pending'] = array_column($allMailboxes, 'username');
-            return $results;
         }
 
         // Enrollment already started - try to fetch mailboxes (this checks status internally)
@@ -348,10 +432,54 @@ class MailboxCreationService
                 continue;
             }
 
-            // Store mailboxes
+            // Validate returned prefixes match requested ones
+            $expectedPrefixes = array_values($prefixVariants);
+            $returnedPrefixes = [];
+            foreach ($mailboxesResult['mailboxes'] as $mb) {
+                $email = $mb['email'] ?? $mb['username'] ?? '';
+                $returnedPrefixes[] = explode('@', $email)[0] ?? '';
+            }
+
+            // Check for prefix mismatch
+            $matchedPrefixes = array_intersect($returnedPrefixes, $expectedPrefixes);
+            $unmatchedReturned = array_diff($returnedPrefixes, $expectedPrefixes);
+            $missingExpected = array_diff($expectedPrefixes, $returnedPrefixes);
+
+            if (!empty($unmatchedReturned) || !empty($missingExpected)) {
+                Log::channel('mailin-ai')->warning('Mailrun: Prefix mismatch detected!', [
+                    'domain' => $domain,
+                    'expected_prefixes' => $expectedPrefixes,
+                    'returned_prefixes' => $returnedPrefixes,
+                    'unmatched_returned' => array_values($unmatchedReturned),
+                    'missing_expected' => array_values($missingExpected),
+                    'note' => 'Domain may have been enrolled previously with different settings',
+                ]);
+            }
+
+            // Check count mismatch
+            if (count($mailboxesResult['mailboxes']) < count($prefixVariants)) {
+                Log::channel('mailin-ai')->warning('Mailrun: Mailbox count mismatch!', [
+                    'domain' => $domain,
+                    'expected_count' => count($prefixVariants),
+                    'returned_count' => count($mailboxesResult['mailboxes']),
+                    'missing_count' => count($prefixVariants) - count($mailboxesResult['mailboxes']),
+                ]);
+            }
+
+            // Store mailboxes with proper unique keys per domain
+            $domainVariantCounter = 1;
+            $usedKeys = [];
+
             foreach ($mailboxesResult['mailboxes'] as $mailbox) {
                 $emailPrefix = explode('@', $mailbox['email'] ?? $mailbox['username'] ?? '')[0] ?? '';
                 $prefixKey = $this->findPrefixKey($emailPrefix, $prefixVariants);
+
+                // If key was already used (duplicate prefix returned by API), generate unique one
+                if (isset($usedKeys[$prefixKey])) {
+                    $prefixKey = 'prefix_variant_' . $domainVariantCounter;
+                }
+                $usedKeys[$prefixKey] = true;
+                $domainVariantCounter++;
 
                 $mailboxData = [
                     'id' => count($results['created']) + 1,
@@ -368,11 +496,20 @@ class MailboxCreationService
 
                 $split->addMailbox($domain, $prefixKey, $mailboxData);
                 $results['created'][] = $mailboxData['mailbox'];
+
+                Log::channel('mailin-ai')->debug('Mailrun: Stored mailbox', [
+                    'domain' => $domain,
+                    'email' => $mailboxData['mailbox'],
+                    'prefixKey' => $prefixKey,
+                    'originalPrefix' => $emailPrefix,
+                    'wasExpected' => in_array($emailPrefix, $expectedPrefixes),
+                ]);
             }
 
             Log::channel('mailin-ai')->info('Mailrun mailboxes stored', [
                 'domain' => $domain,
                 'count' => count($mailboxesResult['mailboxes']),
+                'expected_count' => count($prefixVariants),
             ]);
         }
 
@@ -381,6 +518,9 @@ class MailboxCreationService
 
     /**
      * Find prefix key from email prefix
+     * 
+     * Returns the variant key (e.g., 'prefix_variant_1') if exact match found,
+     * otherwise returns a unique key based on the email prefix to prevent overwrites.
      */
     private function findPrefixKey(string $emailPrefix, array $prefixVariants): string
     {

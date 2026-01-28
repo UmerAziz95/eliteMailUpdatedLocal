@@ -254,6 +254,18 @@ class MailrunProviderService implements SmtpProviderInterface
                     ];
                 }
 
+                // Log what we're about to send
+                Log::channel('mailin-ai')->info('Mailrun: Preparing enrollment batch', [
+                    'batch_index' => $index + 1,
+                    'domains_in_batch' => count($enrollmentDomains),
+                    'aliasCountOverride' => (int) (count($mailboxes) / count($domains)),
+                    'domain_details' => collect($enrollmentDomains)->map(fn($d) => [
+                        'domain' => $d['domain'],
+                        'sender_count' => count($d['senderPermutationOverride']),
+                        'senders' => collect($d['senderPermutationOverride'])->pluck('senderAddress')->toArray(),
+                    ])->toArray(),
+                ]);
+
                 // Step 3: Begin Enrollment for batch with local retry
                 $batchSuccess = false;
                 $enrollResult = [];
@@ -619,6 +631,17 @@ class MailrunProviderService implements SmtpProviderInterface
             if ($this->customerId) {
                 $payload['customerId'] = $this->customerId;
             }
+
+            // Log the exact payload being sent
+            Log::channel('mailin-ai')->debug('Mailrun: beginEnrollment payload', [
+                'domains_count' => count($domains),
+                'aliasCountOverride' => $payload['aliasCountOverride'],
+                'domains_detail' => collect($domains)->map(fn($d) => [
+                    'domain' => $d['domain'] ?? 'unknown',
+                    'senderCount' => count($d['senderPermutationOverride'] ?? []),
+                    'senders' => array_slice($d['senderPermutationOverride'] ?? [], 0, 5), // Show first 5
+                ])->toArray(),
+            ]);
 
             $response = $this->makeRequest('POST', '/affiliate/enrollment/begin', $payload);
 
