@@ -170,6 +170,13 @@ return [
             // 'days' => 14,
             'replace_placeholders' => true,
         ],
+
+        'mailrun' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/mailrun.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
     ],
 
 ];

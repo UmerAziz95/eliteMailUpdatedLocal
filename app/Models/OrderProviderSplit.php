@@ -215,5 +215,49 @@ class OrderProviderSplit extends Model
         $this->metadata = $metadata;
         $this->save();
     }
+
+    /**
+     * Mark mailbox as deleted in JSON
+     * 
+     * @param string $domain Domain name
+     * @param string $prefixKey Prefix variant key
+     * @param int|string|null $mailboxId Provider mailbox ID (optional, for updating)
+     */
+    public function markMailboxAsDeleted(string $domain, string $prefixKey, $mailboxId = null): void
+    {
+        $mailboxes = $this->mailboxes ?? [];
+
+        if (!isset($mailboxes[$domain][$prefixKey])) {
+            return;
+        }
+
+        $mailbox = $mailboxes[$domain][$prefixKey];
+        $mailbox['deleted_at'] = now()->toISOString();
+        
+        // Update mailbox_id if provided
+        if ($mailboxId !== null) {
+            $mailbox['mailbox_id'] = $mailboxId;
+        }
+
+        $mailboxes[$domain][$prefixKey] = $mailbox;
+        $this->mailboxes = $mailboxes;
+        $this->save();
+    }
+
+    /**
+     * Check if mailbox is already deleted
+     * 
+     * @param string $domain Domain name
+     * @param string $prefixKey Prefix variant key
+     * @return bool True if deleted
+     */
+    public function isMailboxDeleted(string $domain, string $prefixKey): bool
+    {
+        $mailboxes = $this->mailboxes ?? [];
+        $mailbox = $mailboxes[$domain][$prefixKey] ?? null;
+
+        return isset($mailbox['deleted_at']);
+    }
+
 }
 

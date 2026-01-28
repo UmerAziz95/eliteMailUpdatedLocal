@@ -14,6 +14,7 @@ use App\Models\UsedEmailsInOrder;
 use App\Mail\SubscriptionCancellationMail;
 use App\Services\ActivityLogService;
 use App\Services\MailinAiService;
+use App\Services\Providers\CreatesProviders;
 use Illuminate\Support\Facades\Mail;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ use Carbon\Carbon;
 
 class OrderCancelledService
 {
+    use CreatesProviders;
     public function cancelSubscription($chargebee_subscription_id, $user_id, $reason, $remove_accounts = false, $force_cancel = false)
     {
         Log::info("Initiating cancellation for ChargeBee ID {$chargebee_subscription_id}, User ID {$user_id}, Force Cancel: " . ($force_cancel ? 'Yes' : 'No'));
@@ -378,20 +380,29 @@ class OrderCancelledService
     }
 
     /**
-     * Delete all mailboxes for an order from Mailin.ai
+     * Delete all mailboxes for an order from providers
      * Routes to provider-specific methods based on order provider type
      * 
      * @param Order $order The order to delete mailboxes for
-     * @return void
+     * @return bool|void Returns true if deletion is in progress (async), void otherwise
      */
     public function deleteOrderMailboxes(Order $order)
     {
         try {
+            // Check if order is already in cancellation process
+            if ($order->status_manage_by_admin === 'cancellation-in-process') {
+                Log::info("Order already in cancellation process, skipping duplicate deletion", [
+                    'action' => 'delete_order_mailboxes',
+                    'order_id' => $order->id,
+                ]);
+                return true; // Indicate that deletion is already in progress
+            }
+
             // Check if Mailin.ai automation is enabled
             $automationEnabled = config('mailin_ai.automation_enabled', false);
             
             if (!$automationEnabled) {
-                Log::info("Skipping Mailin.ai mailbox deletion - automation not enabled", [
+                Log::info("Skipping mailbox deletion - automation not enabled", [
                     'action' => 'delete_order_mailboxes',
                     'order_id' => $order->id,
                     'automation_enabled' => $automationEnabled,
@@ -403,7 +414,17 @@ class OrderCancelledService
             
             // Route to provider-specific deletion methods
             if (in_array(strtolower($providerType ?? ''), ['private smtp', 'smtp'])) {
+                // Check for order_provider_splits first (new multi-provider system)
+                $providerSplits = \App\Models\OrderProviderSplit::where('order_id', $order->id)->get();
+
+                if ($providerSplits->isNotEmpty()) {
+                    // New system: Use order_provider_splits
+                    return $this->deleteMailboxesFromProviderSplits($order, $providerSplits);
+                }
+
+                // Legacy path: no provider splits – delete SMTP order mailboxes directly
                 $this->deleteSmtpOrderMailboxes($order);
+                return;
             } elseif (in_array($providerType, ['Google', 'Microsoft 365'])) {
                 // Update status to 'cancellation-in-process' before dispatching job
                 $order->update([
@@ -431,7 +452,7 @@ class OrderCancelledService
                 
                 return true; // Indicate that mailbox deletion is in progress
             } else {
-                Log::info("Skipping Mailin.ai mailbox deletion - unsupported provider type", [
+                Log::info("Skipping mailbox deletion - unsupported provider type", [
                     'action' => 'delete_order_mailboxes',
                     'order_id' => $order->id,
                     'provider_type' => $providerType,
@@ -440,12 +461,106 @@ class OrderCancelledService
 
         } catch (\Exception $e) {
             // Don't fail the entire cancellation if mailbox deletion fails
-            Log::error('Error deleting Mailin.ai mailboxes during order cancellation', [
+            Log::error('Error deleting mailboxes during order cancellation', [
                 'action' => 'delete_order_mailboxes',
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+        }
+    }
+
+    /**
+     * Delete mailboxes from order_provider_splits (new multi-provider system).
+     * Structure mirrors order creation: one provider per split via createProvider(slug, credentials),
+     * then SmtpProviderInterface::deleteMailboxesFromSplit per provider (Mailin, PremiumInboxes, Mailrun).
+     *
+     * @param Order $order The order to delete mailboxes for
+     * @param \Illuminate\Support\Collection $splits Collection of OrderProviderSplit models
+     * @return bool Returns true if any deletion is in progress (async)
+     */
+    private function deleteMailboxesFromProviderSplits(Order $order, $splits)
+    {
+        try {
+            Log::info("Starting mailbox deletion from order_provider_splits", [
+                'action' => 'delete_mailboxes_from_provider_splits',
+                'order_id' => $order->id,
+                'splits_count' => $splits->count(),
+            ]);
+
+            $hasAsyncOperations = false;
+
+            foreach ($splits as $split) {
+                $providerSlug = $split->provider_slug;
+                
+                Log::info("Processing provider split for deletion", [
+                    'action' => 'delete_mailboxes_from_provider_splits',
+                    'order_id' => $order->id,
+                    'split_id' => $split->id,
+                    'provider_slug' => $providerSlug,
+                ]);
+
+                // Get provider credentials
+                $providerConfig = \App\Models\SmtpProviderSplit::getBySlug($providerSlug);
+                if (!$providerConfig) {
+                    Log::warning('Provider config not found for split', [
+                        'action' => 'delete_mailboxes_from_provider_splits',
+                        'order_id' => $order->id,
+                        'split_id' => $split->id,
+                        'provider_slug' => $providerSlug,
+                    ]);
+                    continue;
+                }
+
+                $credentials = $providerConfig->getCredentials();
+
+                try {
+                    $provider = $this->createProvider($providerSlug, $credentials);
+                    $result = $provider->deleteMailboxesFromSplit($order, $split);
+                    Log::info('Provider split deletion completed', [
+                        'action' => 'delete_mailboxes_from_provider_splits',
+                        'order_id' => $order->id,
+                        'split_id' => $split->id,
+                        'provider_slug' => $providerSlug,
+                        'deleted' => $result['deleted'] ?? 0,
+                        'failed' => $result['failed'] ?? 0,
+                        'skipped' => $result['skipped'] ?? 0,
+                    ]);
+                } catch (\InvalidArgumentException $e) {
+                    Log::warning('Unknown provider slug for deletion', [
+                        'action' => 'delete_mailboxes_from_provider_splits',
+                        'order_id' => $order->id,
+                        'split_id' => $split->id,
+                        'provider_slug' => $providerSlug,
+                        'error' => $e->getMessage(),
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Provider split deletion failed; continuing with other splits', [
+                        'action' => 'delete_mailboxes_from_provider_splits',
+                        'order_id' => $order->id,
+                        'split_id' => $split->id,
+                        'provider_slug' => $providerSlug,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                }
+            }
+
+            Log::info("Completed mailbox deletion from order_provider_splits", [
+                'action' => 'delete_mailboxes_from_provider_splits',
+                'order_id' => $order->id,
+            ]);
+
+            return $hasAsyncOperations;
+
+        } catch (\Exception $e) {
+            Log::error('Error deleting mailboxes from provider splits', [
+                'action' => 'delete_mailboxes_from_provider_splits',
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
         }
     }
 
@@ -1254,7 +1369,7 @@ class OrderCancelledService
                 'email' => $email,
             ]);
 
-            $lookupResult = $this->lookupMailboxIdByEmail($mailinService, $email);
+            $lookupResult = $mailinService->lookupMailboxIdByEmail($email);
             
             if ($lookupResult['success'] && $lookupResult['mailbox_id']) {
                 $mailboxId = $lookupResult['mailbox_id'];
@@ -1370,7 +1485,7 @@ class OrderCancelledService
         ]);
 
         // Lookup mailbox ID by email
-        $lookupResult = $this->lookupMailboxIdByEmail($mailinService, $email);
+        $lookupResult = $mailinService->lookupMailboxIdByEmail($email);
 
         if (!$lookupResult['success'] || !$lookupResult['mailbox_id']) {
             if (isset($lookupResult['not_found']) && $lookupResult['not_found']) {
@@ -1442,90 +1557,6 @@ class OrderCancelledService
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Lookup mailbox ID by email address
-     * 
-     * @param MailinAiService $mailinService
-     * @param string $email
-     * @return array
-     */
-    private function lookupMailboxIdByEmail(MailinAiService $mailinService, string $email)
-    {
-        try {
-            Log::info("Looking up mailbox ID on Mailin.ai by email", [
-                'action' => 'lookup_mailbox_id_by_email',
-                'email' => $email,
-            ]);
-
-            $result = $mailinService->getMailboxesByName($email, 10);
-
-            Log::info("Mailin.ai lookup response received", [
-                'action' => 'lookup_mailbox_id_by_email',
-                'email' => $email,
-                'success' => $result['success'] ?? false,
-                'mailboxes_count' => isset($result['mailboxes']) ? count($result['mailboxes']) : 0,
-            ]);
-
-            if ($result['success'] && !empty($result['mailboxes'])) {
-                // Find exact match
-                foreach ($result['mailboxes'] as $mailbox) {
-                    if (isset($mailbox['name']) && strtolower($mailbox['name']) === strtolower($email)) {
-                        Log::info("Exact match found for email on Mailin.ai", [
-                            'action' => 'lookup_mailbox_id_by_email',
-                            'email' => $email,
-                            'mailbox_id' => $mailbox['id'] ?? null,
-                            'mailbox_name' => $mailbox['name'] ?? null,
-                        ]);
-
-                        return [
-                            'success' => true,
-                            'mailbox_id' => $mailbox['id'] ?? null,
-                        ];
-                    }
-                }
-
-                // If no exact match, return first mailbox (might be a partial match)
-                if (isset($result['mailboxes'][0]['id'])) {
-                    Log::info("Partial match found for email on Mailin.ai (using first result)", [
-                        'action' => 'lookup_mailbox_id_by_email',
-                        'email' => $email,
-                        'mailbox_id' => $result['mailboxes'][0]['id'],
-                        'mailbox_name' => $result['mailboxes'][0]['name'] ?? null,
-                    ]);
-
-                    return [
-                        'success' => true,
-                        'mailbox_id' => $result['mailboxes'][0]['id'],
-                    ];
-                }
-            }
-
-            Log::info("Email not found on Mailin.ai", [
-                'action' => 'lookup_mailbox_id_by_email',
-                'email' => $email,
-                'result_success' => $result['success'] ?? false,
-            ]);
-
-            return [
-                'success' => false,
-                'not_found' => true,
-                'message' => 'Mailbox not found on Mailin.ai',
-            ];
-        } catch (\Exception $e) {
-            Log::error('Failed to lookup mailbox ID by email on Mailin.ai', [
-                'action' => 'lookup_mailbox_id_by_email',
-                'email' => $email,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return [
-                'success' => false,
-                'message' => $e->getMessage(),
             ];
         }
     }
