@@ -96,7 +96,18 @@ class CheckPendingDomainsCommand extends Command
                             $this->info("  ✓ Order completed");
                             $completed++;
                         } else {
-                            $this->warn("  Mailbox creation failed: {$mailboxResult['error']}");
+                            $this->warn("  Mailbox creation incomplete: {$mailboxResult['error']}");
+
+                            // Show pending mailboxes if any
+                            if ($mailboxResult['total_pending'] > 0) {
+                                $validation = $mailboxService->validateOrderMailboxCompletion($order, $prefixVariants);
+                                if (!empty($validation['pending_mailboxes'])) {
+                                    $this->line("  Pending mailboxes:");
+                                    foreach ($validation['pending_mailboxes'] as $pending) {
+                                        $this->line("    - {$pending['email']} ({$pending['provider']})");
+                                    }
+                                }
+                            }
                         }
                     }
                 } else {

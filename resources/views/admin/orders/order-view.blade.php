@@ -2,6 +2,14 @@
 
 @section('title', 'Orders')
 @section('content')
+<style>
+    .email-tooltip .tooltip-inner {
+        max-width: 350px;
+        text-align: left;
+        white-space: nowrap;
+        padding: 8px 12px;
+    }
+</style>
 <section class="py-3 overflow-hidden">
     {{-- <div class="d-flex align-items-center justify-content-between">
         <a href="{{ route('admin.orders') }}" class="d-flex align-items-center justify-content-center"
@@ -447,32 +455,88 @@ $(function() {
                         <div class="d-flex flex-column">
                             <span class="opacity-50">Domains</span>
                             @php
-                            // Get the domains string from the order
-                            $domainsString = $order->reorderInfo->first()->domains;
-
-                            // Split by both newlines and commas
-                            $domainsArray = [];
-
-                            // First split by newlines
-                            $lines = preg_split('/\r\n|\r|\n/', $domainsString);
-
-                            // Then process each line
-                            foreach ($lines as $line) {
-                            if (trim($line)) {
-                            // Split line by commas and add to domains array
-                            $lineItems = explode(',', $line);
-                            foreach ($lineItems as $item) {
-                            if (trim($item)) {
-                            $domainsArray[] = trim($item);
-                            }
-                            }
-                            }
-                            }
+                            $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+                            $isPrivateSMTP = strtolower($providerType ?? '') === 'private smtp';
                             @endphp
+                            
+                            @if($isPrivateSMTP && !empty($orderProviderSplits))
+                                {{-- Show domains from order_provider_splits with status --}}
+                                @foreach($orderProviderSplits as $split)
+                                    <div class="mb-3">
+                                        <span class="badge bg-secondary mb-2">{{ ucfirst($split['provider_slug']) }}</span>
+                                        @foreach($split['domains'] as $domainKey => $domain)
+                                            @php
+                                                // Handle case where domain might be the key or value
+                                                $domainName = is_string($domain) ? $domain : $domainKey;
+                                                $statusData = $split['domain_statuses'][$domainName] ?? 'pending';
+                                                // Ensure status is a string (could be array in some cases)
+                                                $status = is_array($statusData) ? ($statusData['status'] ?? 'pending') : $statusData;
+                                                $status = is_string($status) ? $status : 'pending';
+                                                
+                                                // Count mailboxes and collect emails for tooltip
+                                                $domainMailboxes = $split['mailboxes'][$domainName] ?? [];
+                                                $mailboxCount = 0;
+                                                $emailList = [];
+                                                if (is_array($domainMailboxes) && !empty($domainMailboxes)) {
+                                                    foreach ($domainMailboxes as $key => $mbx) {
+                                                        $email = $mbx['mailbox'] ?? $mbx['email'] ?? null;
+                                                        if (is_array($mbx) && !empty($email)) {
+                                                            $mailboxCount++;
+                                                            $emailList[] = $email;
+                                                        }
+                                                    }
+                                                }
+                                                $tooltipEmails = !empty($emailList) ? implode('<br>', $emailList) : 'No mailboxes created';
+                                                
+                                                // Determine badge color based on status
+                                                $badgeClass = match($status) {
+                                                    'active' => 'bg-success',
+                                                    'pending' => 'bg-warning text-dark',
+                                                    'activating' => 'bg-info',
+                                                    'failed' => 'bg-danger',
+                                                    default => 'bg-secondary'
+                                                };
+                                            @endphp
+                                            <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                                                <span>{{ $domainName }}</span>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
+                                                    <span class="badge bg-primary" style="cursor: pointer;" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" data-bs-custom-class="email-tooltip" title="{!! $tooltipEmails !!}">{{ $mailboxCount }} inboxes</span>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endforeach
+                            @else
+                                {{-- Fallback to original domain display from reorderInfo --}}
+                                @php
+                                // Get the domains string from the order
+                                $domainsString = $order->reorderInfo->first()->domains;
 
-                            @foreach ($domainsArray as $domain)
-                            <span class="d-block">{{ $domain }}</span>
-                            @endforeach
+                                // Split by both newlines and commas
+                                $domainsArray = [];
+
+                                // First split by newlines
+                                $lines = preg_split('/\r\n|\r|\n/', $domainsString);
+
+                                // Then process each line
+                                foreach ($lines as $line) {
+                                if (trim($line)) {
+                                // Split line by commas and add to domains array
+                                $lineItems = explode(',', $line);
+                                foreach ($lineItems as $item) {
+                                if (trim($item)) {
+                                $domainsArray[] = trim($item);
+                                }
+                                }
+                                }
+                                }
+                                @endphp
+
+                                @foreach ($domainsArray as $domain)
+                                <span class="d-block">{{ $domain }}</span>
+                                @endforeach
+                            @endif
                         </div>
                         @if($order->reorderInfo->first()->hosting_platform == 'namecheap')
                         <div class="d-flex flex-column mb-3 mt-3">

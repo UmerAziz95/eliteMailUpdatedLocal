@@ -192,10 +192,22 @@ class ProcessMailAutomationJob implements ShouldQueue
                 'total_created' => $result['total_created'],
             ]);
         } else {
-            Log::channel('mailin-ai')->error('Mailbox creation failed', [
-                'order_id' => $order->id,
-                'error' => $result['error'],
-            ]);
+            // Log detailed pending mailboxes if any
+            if ($result['total_pending'] > 0) {
+                $validation = $mailboxService->validateOrderMailboxCompletion($order, $prefixVariants);
+                Log::channel('mailin-ai')->warning('Mailbox creation incomplete - pending mailboxes', [
+                    'order_id' => $order->id,
+                    'error' => $result['error'],
+                    'total_created' => $result['total_created'],
+                    'total_pending' => $result['total_pending'],
+                    'pending_mailboxes' => array_map(fn($m) => $m['email'], $validation['pending_mailboxes'] ?? []),
+                ]);
+            } else {
+                Log::channel('mailin-ai')->error('Mailbox creation failed', [
+                    'order_id' => $order->id,
+                    'error' => $result['error'],
+                ]);
+            }
         }
     }
 }

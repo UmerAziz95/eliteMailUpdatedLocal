@@ -34,6 +34,9 @@ use App\Services\TextExportService;
 use App\Services\EmailExportService;
 use App\Services\OrderSplitResetService;
 use App\Services\OrderCapacityService;
+use App\Http\Controllers\Admin\ContractorController as AdminContractorController;
+use App\Models\OrderProviderSplit;
+
 class OrderController extends Controller
 {
     private $statuses;
@@ -80,19 +83,19 @@ class OrderController extends Controller
         $lastWeekOrders = $orders->whereBetween('created_at', $lastWeek)->count();
         $previousWeekOrders = $orders->whereBetween('created_at', $previousWeek)->count();
 
-        $percentageChange = $previousWeekOrders > 0 
-            ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
+        $percentageChange = $previousWeekOrders > 0
+            ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100
             : 0;
 
         return view('admin.orders.orders', compact(
-            'plans', 
-            'totalOrders', 
-            'pendingOrders', 
+            'plans',
+            'totalOrders',
+            'pendingOrders',
             'rejectOrders',
             'inProgressOrders',
             'cancelledOrders',
             'completedOrders',
-            'draftOrders', 
+            'draftOrders',
             'percentageChange',
             'statuses',
             'removedOrders'
@@ -106,14 +109,14 @@ class OrderController extends Controller
     {
         $plans = Plan::all();
         $statuses = $this->statuses;
-        
+
         // Get shared orders statistics
         $sharedOrders = Order::where('is_shared', true);
         $totalSharedOrders = $sharedOrders->count();
         $pendingSharedOrders = $sharedOrders->clone()->where('status_manage_by_admin', 'pending')->count();
         $inProgressSharedOrders = $sharedOrders->clone()->where('status_manage_by_admin', 'in-progress')->count();
         $completedSharedOrders = $sharedOrders->clone()->where('status_manage_by_admin', 'completed')->count();
-        
+
         // Calculate percentage change for last week vs previous week
         $lastWeek = [Carbon::now()->subWeek(), Carbon::now()];
         $previousWeek = [Carbon::now()->subWeeks(2), Carbon::now()->subWeek()];
@@ -121,8 +124,8 @@ class OrderController extends Controller
         $lastWeekSharedOrders = $sharedOrders->clone()->whereBetween('created_at', $lastWeek)->count();
         $previousWeekSharedOrders = $sharedOrders->clone()->whereBetween('created_at', $previousWeek)->count();
 
-        $percentageChange = $previousWeekSharedOrders > 0 
-            ? (($lastWeekSharedOrders - $previousWeekSharedOrders) / $previousWeekSharedOrders) * 100 
+        $percentageChange = $previousWeekSharedOrders > 0
+            ? (($lastWeekSharedOrders - $previousWeekSharedOrders) / $previousWeekSharedOrders) * 100
             : 0;
 
         return view('admin.orders.shared_order_requests', compact(
@@ -140,7 +143,7 @@ class OrderController extends Controller
     private function calculateNextBillingDate($currentDate, $billingPeriod, $billingPeriodUnit)
     {
         $date = Carbon::createFromTimestamp($currentDate);
-        
+
         switch ($billingPeriodUnit) {
             case 'month':
                 return $date->addMonths($billingPeriod);
@@ -157,7 +160,8 @@ class OrderController extends Controller
 
     private function formatTimestampToReadable($timestamp)
     {
-        if (!$timestamp) return 'N/A';
+        if (!$timestamp)
+            return 'N/A';
         // Ensure timestamp is an integer
         $timestamp = is_string($timestamp) ? strtotime($timestamp) : $timestamp;
         return Carbon::createFromTimestamp($timestamp)->format('F d, Y');
@@ -165,16 +169,16 @@ class OrderController extends Controller
 
     public function view($id)
     {
-      
+
         $order = Order::with(['subscription', 'user', 'invoice', 'reorderInfo'])->findOrFail($id);
         // Retrieve subscription metadata if available to view subs
         $subscriptionMeta = $order->subscription ? json_decode($order->subscription->meta, true) : null;
         $nextBillingInfo = [];
-        
+
         if (isset($subscriptionMeta['subscription'])) {
             $subscription = $subscriptionMeta['subscription'];
             $currentTermStart = $subscription['current_term_start'];
-            
+
             // Calculate next billing date based on billing period
             $nextBillingDate = $this->calculateNextBillingDate(
                 $currentTermStart,
@@ -191,31 +195,49 @@ class OrderController extends Controller
                 'next_billing_at' => $this->formatTimestampToReadable($nextBillingDate->timestamp)
             ];
         }
-    
-        return view('admin.orders.order-view', compact('order', 'nextBillingInfo'));
+
+        // Get order provider splits for Private SMTP orders
+        $orderProviderSplits = [];
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        if (strtolower($providerType ?? '') === 'private smtp') {
+            $orderProviderSplits = \App\Models\OrderProviderSplit::where('order_id', $order->id)
+                ->get()
+                ->map(function ($split) {
+                    return [
+                        'id' => $split->id,
+                        'provider_slug' => $split->provider_slug,
+                        'domains' => $split->domains ?? [],
+                        'domain_statuses' => $split->domain_statuses ?? [],
+                        'mailboxes' => $split->mailboxes ?? [],
+                    ];
+                })
+                ->toArray();
+        }
+
+        return view('admin.orders.order-view', compact('order', 'nextBillingInfo', 'orderProviderSplits'));
     }
 
     public function edit($id)
     {
         // if order pending or in-progress then only editable
-        if(!in_array(Order::find($id)->status_manage_by_admin, ['pending', 'in-progress'])){
+        if (!in_array(Order::find($id)->status_manage_by_admin, ['pending', 'in-progress'])) {
             return redirect()->route('admin.orders')->with('error', 'Only pending or in-progress orders can be edited.');
         }
         $order = Order::with(['plan', 'reorderInfo'])->findOrFail($id);
-        
+
         $plan = $order->plan;
         $hostingPlatforms = HostingPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get();
         $sendingPlatforms = \App\Models\SendingPlatform::get();
-        
+
         // Get domain transfer errors for display
         $domainTransferErrors = \App\Models\DomainTransfer::where('order_id', $order->id)
             ->where('status', 'pending')
             ->where('name_server_status', 'failed')
             ->whereNotNull('error_message')
             ->get();
-        
+
         return view('admin.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order', 'domainTransferErrors'));
     }
 
@@ -251,7 +273,7 @@ class OrderController extends Controller
             }
 
             if ($request->has('domain') && $request->domain != '') {
-                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                $orders->whereHas('reorderInfo', function ($query) use ($request) {
                     $query->where('forwarding_url', 'like', "%{$request->domain}%");
                 });
             }
@@ -262,7 +284,7 @@ class OrderController extends Controller
             //     });
             // }
             if ($request->has('totalInboxes') && $request->totalInboxes != '') {
-                $orders->whereHas('reorderInfo', function($query) use ($request) {
+                $orders->whereHas('reorderInfo', function ($query) use ($request) {
                     $query->whereRaw('(
                         CASE 
                             WHEN domains IS NOT NULL AND domains != "" THEN 
@@ -336,14 +358,14 @@ class OrderController extends Controller
                                 <i class="fa-solid fa-wrench text-warning"></i> &nbsp;Order Fixed Manually
                             </a>
                         </li>
-                        '. ($order->status_manage_by_admin === 'completed' && $order->is_verified == 0 && auth()->user()->hasPermissionTo('Verify Order') ? '
+                        ' . ($order->status_manage_by_admin === 'completed' && $order->is_verified == 0 && auth()->user()->hasPermissionTo('Verify Order') ? '
                         <li>
                             <a href="javascript:void(0);"
                                 class="dropdown-item text-success verify-order-btn"
                                 data-order-id="' . $order->id . '">
                                 <i class="fa-solid fa-circle-check"></i> &nbsp;Verify Order
                             </a>
-                        </li>' : '' ) . '
+                        </li>' : '') . '
                     </ul>
                 </div>';
 
@@ -361,7 +383,7 @@ class OrderController extends Controller
                             $providerIcon = '<i class="fa-solid fa-envelope text-info me-1" title="SMTP"></i>';
                         }
                     }
-                    
+
                     // Determine icon color based on shared status and helpers assignment
                     $iconColor = 'text-secondary'; // default color
                     if ($order->is_shared) {
@@ -369,7 +391,7 @@ class OrderController extends Controller
                         $hasHelpers = !empty($order->helpers_ids) && is_array($order->helpers_ids) && count($order->helpers_ids) > 0;
                         $iconColor = $hasHelpers ? 'text-success' : 'text-warning';
                     }
-                    
+
                     $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes ' . $iconColor . ' me-2" title="Shared Order"></i>' : '';
                     $share_request_link = '<a href="' . route('admin.orders.shared-order-requests') . '" class="text-primary">' . $sharedIcon . '</a>';
                     $order_view_link = '<a href="' . route('admin.orders.view', $order->id) . '">' . $providerIcon . $order->id . '</a>';
@@ -382,9 +404,9 @@ class OrderController extends Controller
 
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                     $statusClass = $this->statuses[$status] ?? 'secondary';
-                
+
                     $verificationIcon = '';
-                
+
                     if ($status === 'completed') {
                         if ((int) $order->is_verified === 1) {
                             $verificationIcon = '<i class="fa-solid fa-circle-check text-success" title="Verified"></i>';
@@ -392,7 +414,7 @@ class OrderController extends Controller
                             $verificationIcon = '<i class="fa-solid fa-circle-xmark text-danger" title="Not Verified"></i>';
                         }
                     }
-                
+
                     return '
                         <div class="d-inline-flex align-items-center gap-1">
                             <span class="py-1 px-2 text-nowrap text-' . $statusClass . '
@@ -402,7 +424,7 @@ class OrderController extends Controller
                             ' . ($verificationIcon ? '<span>' . $verificationIcon . '</span>' : '') . '
                         </div>
                     ';
-                })                
+                })
                 ->addColumn('name', function ($order) {
                     return $order->user ? $order->user->name : 'N/A';
                 })
@@ -426,11 +448,11 @@ class OrderController extends Controller
                     if (!$order->reorderInfo || !$order->reorderInfo->first()) {
                         return 'N/A';
                     }
-                    
+
                     $reorderInfo = $order->reorderInfo->first();
                     $domains = $reorderInfo->domains ?? '';
                     $inboxesPerDomain = $reorderInfo->inboxes_per_domain ?? 1;
-                    
+
                     // Parse domains and count them
                     $domainsArray = [];
                     $lines = preg_split('/\r\n|\r|\n/', $domains);
@@ -444,10 +466,10 @@ class OrderController extends Controller
                             }
                         }
                     }
-                    
+
                     $totalDomains = count($domainsArray);
                     $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
-                    
+
                     return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 'N/A');
                 })
                 ->addColumn('timer', function ($order) {
@@ -466,7 +488,7 @@ class OrderController extends Controller
                 ->addColumn('contractor_name', function ($order) {
                     return $order->assignedTo ? $order->assignedTo->name : 'Unassigned';
                 })
-                ->rawColumns(['action', 'status', 'timer','id'])
+                ->rawColumns(['action', 'status', 'timer', 'id'])
                 ->make(true);
         } catch (Exception $e) {
             Log::error('Error in getOrders', [
@@ -487,9 +509,9 @@ class OrderController extends Controller
             'order_id' => 'required|exists:orders,id',
             'status_manage_by_admin' => 'required|string',
         ]);
-    
+
         $order = Order::findOrFail($request->order_id);
-    
+
         // Log before updating order status
         ActivityLogService::log(
             'order_status_updated', // Action type
@@ -505,11 +527,11 @@ class OrderController extends Controller
             ],
             Auth::id() // Who performed the action
         );
-    
+
         // Update the order status
         $order->status_manage_by_admin = $request->status_manage_by_admin;
         $order->save();
-    
+
         return response()->json(['success' => true, 'message' => 'Status updated']);
     }
 
@@ -583,7 +605,7 @@ class OrderController extends Controller
             ], 500);
         }
     }
-    
+
 
     public function subscriptionCancelProcess(Request $request)
     {
@@ -592,19 +614,19 @@ class OrderController extends Controller
             'marked_status' => 'required|string',
             'reason' => 'nullable|string',
         ]);
-    
+
         $subscription = Subscription::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
-    
+
         if (!$subscription || $subscription->status !== 'active') {
             return response()->json([
                 'success' => false,
                 'message' => 'No active subscription found.'
             ], 404);
         }
-    
+
         try {
             $order = Order::where('chargebee_subscription_id', $request->chargebee_subscription_id)->first();
-    
+
             if ($order) {
                 $oldStatus = $order->status_manage_by_admin;
                 $newStatus = $request->marked_status;
@@ -612,7 +634,7 @@ class OrderController extends Controller
                     'status_manage_by_admin' => $request->marked_status,
                     'reason' => $request->reason ? $request->reason . " (Reason given by " . Auth::user()->name . ")" : null,
                 ]);
-                $reason =$request->reason;
+                $reason = $request->reason;
                 // Get user details and send email
                 $user = $order->user;
                 try {
@@ -659,14 +681,14 @@ class OrderController extends Controller
                             'context' => 'Admin\\OrderController::changeStatus'
                         ]);
                     }
-                    
+
                     Log::info('Order status change email sent', [
                         'order_id' => $order->id,
                         'assigned_to' => $order->assigned_to
                     ]);
 
                     // send email to assigned contractor
-                    if($order->assigned_to){
+                    if ($order->assigned_to) {
                         $assignedUser = User::find($order->assigned_to);
                         if ($assignedUser) {
                             try {
@@ -700,7 +722,7 @@ class OrderController extends Controller
                         'timestamp' => now()->toDateTimeString()
                     ]);
                 }
-    
+
                 // Log the activity
                 ActivityLogService::log(
                     'subscription_cancelled', // Action Type
@@ -732,15 +754,15 @@ class OrderController extends Controller
                     ]
                 ]);
             }
-    
+
             return response()->json([
                 'success' => true,
                 'message' => 'Order Status Updated Successfully.'
             ]);
-    
+
         } catch (\Exception $e) {
             \Log::error('Error While Updating The Status: ' . $e->getMessage());
-    
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed To Update The Status: ' . $e->getMessage()
@@ -768,15 +790,15 @@ class OrderController extends Controller
     public function indexCard()
     {
         $plans = Plan::where('is_active', true)->get();
-        
+
         // Get orders that are either unassigned or assigned to the current contractor
-        $orders = Order::where(function($query) {
+        $orders = Order::where(function ($query) {
             $query->whereNull('assigned_to')
-                  ->orWhere('assigned_to', auth()->id());
+                ->orWhere('assigned_to', auth()->id());
         });
-        
+
         $totalOrders = $orders->count();
-        
+
         // Get orders by admin status using actual status names from Status model
         $pendingOrders = $orders->clone()->where('status_manage_by_admin', 'pending')->count();
         $completedOrders = $orders->clone()->where('status_manage_by_admin', 'completed')->count();
@@ -793,17 +815,18 @@ class OrderController extends Controller
         $lastWeekOrders = $orders->clone()->whereBetween('created_at', $lastWeek)->count();
         $previousWeekOrders = $orders->clone()->whereBetween('created_at', $previousWeek)->count();
 
-        $percentageChange = $previousWeekOrders > 0 
-            ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100 
+        $percentageChange = $previousWeekOrders > 0
+            ? (($lastWeekOrders - $previousWeekOrders) / $previousWeekOrders) * 100
             : 0;
 
         $statuses = $this->statuses;
         $splitStatuses = $this->splitStatuses;
         $plans = [];
         return view('admin.orders.card.orders', compact(
-            'plans', 
-            'totalOrders', 
-            'pendingOrders',            'completedOrders',
+            'plans',
+            'totalOrders',
+            'pendingOrders',
+            'completedOrders',
             'inProgressOrders',
             'percentageChange',
             'statuses',
@@ -819,9 +842,9 @@ class OrderController extends Controller
     {
         try {
             $query = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel', 'user']);
-                // ->whereHas('orderPanels.userOrderPanelAssignments', function($q) {
-                //     // $q->where('contractor_id', auth()->id());
-                // });
+            // ->whereHas('orderPanels.userOrderPanelAssignments', function($q) {
+            //     // $q->where('contractor_id', auth()->id());
+            // });
 
             // Apply filters if provided
             if ($request->filled('order_id')) {
@@ -829,19 +852,19 @@ class OrderController extends Controller
             }
 
             if ($request->filled('status')) {
-                $query->whereHas('orderPanels', function($q) use ($request) {
+                $query->whereHas('orderPanels', function ($q) use ($request) {
                     $q->where('status', $request->status);
                 });
             }
 
             if ($request->filled('min_inboxes')) {
-                $query->whereHas('reorderInfo', function($q) use ($request) {
+                $query->whereHas('reorderInfo', function ($q) use ($request) {
                     $q->where('total_inboxes', '>=', $request->min_inboxes);
                 });
             }
 
             if ($request->filled('max_inboxes')) {
-                $query->whereHas('reorderInfo', function($q) use ($request) {
+                $query->whereHas('reorderInfo', function ($q) use ($request) {
                     $q->where('total_inboxes', '<=', $request->max_inboxes);
                 });
             }
@@ -853,7 +876,7 @@ class OrderController extends Controller
             // Pagination parameters
             $perPage = $request->get('per_page', 12); // Default 12 orders per page
             $page = $request->get('page', 1);
-            
+
             // Get paginated results
             $paginatedOrders = $query->paginate($perPage, ['*'], 'page', $page);
 
@@ -861,11 +884,11 @@ class OrderController extends Controller
             $ordersData = $paginatedOrders->getCollection()->map(function ($order) {
                 $reorderInfo = $order->reorderInfo->first();
                 $orderPanels = $order->orderPanels;
-                
+
                 // Calculate total domains count from all splits
                 $totalDomainsCount = 0;
                 $totalInboxes = 0;
-                
+
                 foreach ($orderPanels as $orderPanel) {
                     foreach ($orderPanel->orderPanelSplits as $split) {
                         if ($split->domains && is_array($split->domains)) {
@@ -874,9 +897,9 @@ class OrderController extends Controller
                         $totalInboxes += $split->inboxes_per_domain * (is_array($split->domains) ? count($split->domains) : 0);
                     }
                 }
-                
+
                 $inboxesPerDomain = $reorderInfo ? $reorderInfo->inboxes_per_domain : 0;
-                
+
                 // Format splits data for the frontend
                 $splitsData = [];
                 foreach ($orderPanels as $orderPanel) {
@@ -885,7 +908,7 @@ class OrderController extends Controller
                         if ($split->domains && is_array($split->domains)) {
                             $domains = $split->domains;
                         }
-                        
+
                         $splitsData[] = [
                             'id' => $split->id,
                             'order_panel_id' => $orderPanel->id,
@@ -900,7 +923,7 @@ class OrderController extends Controller
                         ];
                     }
                 }
-                
+
                 return [
                     'id' => $order->id,
                     'order_id' => $order->id,
@@ -915,11 +938,11 @@ class OrderController extends Controller
                     ] : null,
                     'total_domains' => $totalDomainsCount,
                     'status' => $order->status_manage_by_admin ?? 'pending',
-                    'status_manage_by_admin' => (function() use ($order) {
+                    'status_manage_by_admin' => (function () use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                         $statusKey = $status;
                         $statusClass = $this->statuses[$statusKey] ?? 'secondary';
-                        return '<span class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent fs-6" style="font-size: 11px !important;">' 
+                        return '<span class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent fs-6" style="font-size: 11px !important;">'
                             . ucfirst($status) . '</span>';
                     })(),
                     'created_at' => $order->created_at,
@@ -928,7 +951,7 @@ class OrderController extends Controller
                     'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
                     'total_paused_seconds' => $order->total_paused_seconds ?? 0,
                     'order_panels_count' => $orderPanels->count(),
-                    'splits_count' => $orderPanels->sum(function($panel) {
+                    'splits_count' => $orderPanels->sum(function ($panel) {
                         return $panel->orderPanelSplits->count();
                     }),
                     'splits' => $splitsData,
@@ -965,20 +988,20 @@ class OrderController extends Controller
         try {
             $order = Order::with(['user', 'reorderInfo', 'orderPanels.orderPanelSplits', 'orderPanels.panel'])
                 ->findOrFail($orderId);
-            
+
             $reorderInfo = $order->reorderInfo->first();
             $orderPanels = $order->orderPanels;
-            
+
             // Format splits data
             $splitsData = [];
-            
+
             foreach ($orderPanels as $orderPanel) {
                 foreach ($orderPanel->orderPanelSplits as $split) {
                     $domains = [];
                     if ($split->domains && is_array($split->domains)) {
                         $domains = $split->domains;
                     }
-                    
+
                     $splitsData[] = [
                         'id' => $split->id,
                         'panel_id' => $orderPanel->panel_id,
@@ -986,7 +1009,7 @@ class OrderController extends Controller
                         'panel_sr_no' => optional($orderPanel->panel)->panel_sr_no ?? $orderPanel->panel_id ?? null,
                         'order_panel_id' => $orderPanel->id,
                         'inboxes_per_domain' => $split->inboxes_per_domain,
-                        'order_panel'=>$orderPanel,
+                        'order_panel' => $orderPanel,
                         'domains' => $domains,
                         'domains_count' => count($domains),
                         'total_inboxes' => $split->inboxes_per_domain * count($domains),
@@ -994,7 +1017,7 @@ class OrderController extends Controller
                         'created_at' => $split->created_at,
                         'customized_note' => $orderPanel->customized_note,
                         'email_count' => OrderEmail::whereIn('order_split_id', [$orderPanel->id])->count(),
-                        
+
                     ];
                 }
             }
@@ -1014,11 +1037,11 @@ class OrderController extends Controller
                     'is_shared' => $order->is_shared ?? false,
                     'helpers_ids' => $order->helpers_ids ?? [],
                     'helpers_names' => $order->helpers_ids ? \App\Models\User::whereIn('id', $order->helpers_ids)->pluck('name')->toArray() : [],
-                    'status_manage_by_admin' => (function() use ($order) {
+                    'status_manage_by_admin' => (function () use ($order) {
                         $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                         $statusKey = $status;
                         $statusClass = $this->statuses[$statusKey] ?? 'secondary';
-                        return '<span style="font-size: 11px !important;" class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                        return '<span style="font-size: 11px !important;" class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">'
                             . ucfirst($status) . '</span>';
                     })(),
                     'provider_type' => $order->provider_type,
@@ -1064,26 +1087,26 @@ class OrderController extends Controller
         // Get the order panel with all necessary relationships including the order
         $orderPanel = OrderPanel::with([
             'order.user',
-            'order.reorderInfo', 
+            'order.reorderInfo',
             'order.plan',
             'orderPanelSplits', // Load the split relationship
-            'order.userOrderPanelAssignments' => function($query) {
+            'order.userOrderPanelAssignments' => function ($query) {
                 $query->with(['orderPanel', 'orderPanelSplit']);
-                    //   ->where('contractor_id', auth()->id());
+                //   ->where('contractor_id', auth()->id());
             }
         ])->findOrFail($order_panel_id);
-        
+
         // Get the order from the panel
         $order = $orderPanel->order;
-        
+
         $order->status2 = strtolower($order->status_manage_by_admin);
         $order->color_status2 = $this->statuses[$order->status2] ?? 'secondary';
-        
+
         // Add split status color to orderPanel
         $orderPanel->split_status_color = $this->splitStatuses[$orderPanel->status ?? 'pending'] ?? 'secondary';
-        
+
         $splitStatuses = $this->splitStatuses;
-        
+
         return view('admin.orders.split-view', compact('order', 'orderPanel', 'splitStatuses'));
     }
 
@@ -1286,7 +1309,7 @@ class OrderController extends Controller
     /**
      * Update order's status_manage_by_admin based on panel status changes
      */
-    
+
     private function updateOrderStatusBasedOnPanelStatus($order, $newPanelStatus)
     {
         // If a panel is set to "in-progress", update order status to "in-progress"
@@ -1295,25 +1318,25 @@ class OrderController extends Controller
                 $order->update(['status_manage_by_admin' => 'in-progress']);
             }
         }
-        
+
         // If a panel is set to "rejected", update order status to "reject"
         if ($newPanelStatus === 'rejected') {
-            
+
             if ($order->status_manage_by_admin !== 'reject') {
                 $order->update(['status_manage_by_admin' => 'reject']);
             }
         }
-        
+
         // If a panel is set to "completed", check if all panels are completed
         if ($newPanelStatus === 'completed') {
             // Get all panels for this order
             $allPanels = OrderPanel::where('order_id', $order->id)->get();
-            
+
             // Check if any panel is rejected
             $hasRejected = $allPanels->contains(function ($panel) {
                 return $panel->status === 'rejected';
             });
-            
+
             // If any panel is rejected, update order status to "reject"
             if ($hasRejected) {
                 if ($order->status_manage_by_admin !== 'reject') {
@@ -1324,16 +1347,16 @@ class OrderController extends Controller
                 $allCompleted = $allPanels->every(function ($panel) {
                     return $panel->status === 'completed';
                 });
-                
+
                 // If all panels are completed, update order status to "completed"
                 // Otherwise, update order status to "in-progress"
                 if ($allCompleted) {
                     if ($order->status_manage_by_admin !== 'completed') {
-                    $order->update(['status_manage_by_admin' => 'completed']);
+                        $order->update(['status_manage_by_admin' => 'completed']);
                     }
                 } else {
                     if ($order->status_manage_by_admin !== 'in-progress') {
-                    $order->update(['status_manage_by_admin' => 'in-progress']);
+                        $order->update(['status_manage_by_admin' => 'in-progress']);
                     }
                 }
             }
@@ -1360,7 +1383,7 @@ class OrderController extends Controller
 
             // Verify the order panel exists
             $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])->find($orderPanelId);
-            
+
             if (!$orderPanel) {
                 return response()->json([
                     'success' => false,
@@ -1380,25 +1403,25 @@ class OrderController extends Controller
 
             // Initialize emails collection
             $emails = collect();
-            
+
             // Try different approaches to get emails
             try {
                 // Method 1: Try with relationship
                 $emails = OrderEmail::query()
                     ->where('order_id', $orderPanel->order_id)
-                    ->whereHas('orderSplit', function($query) use ($orderPanelId) {
+                    ->whereHas('orderSplit', function ($query) use ($orderPanelId) {
                         $query->where('order_panel_id', $orderPanelId);
                     })
                     ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id', 'last_name')
                     ->get();
-                    
+
             } catch (\Exception $relationshipError) {
                 Log::warning('Relationship query failed, trying alternative approach: ' . $relationshipError->getMessage());
-                
+
                 // Method 2: Fallback - Get emails by split IDs
                 if ($orderPanel->orderPanelSplits && $orderPanel->orderPanelSplits->count() > 0) {
                     $splitIds = $orderPanel->orderPanelSplits->pluck('id')->toArray();
-                    
+
                     $emails = OrderEmail::query()
                         ->where('order_id', $orderPanel->order_id)
                         ->whereIn('order_split_id', $splitIds)
@@ -1418,7 +1441,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $emails,
-                'order_panel_id' => (int)$orderPanelId,
+                'order_panel_id' => (int) $orderPanelId,
                 'count' => $emails->count()
             ]);
 
@@ -1452,7 +1475,7 @@ class OrderController extends Controller
 
             // Verify the order panel exists
             $orderPanel = OrderPanel::with(['order', 'orderPanelSplits'])->find($orderPanelId);
-            
+
             if (!$orderPanel) {
                 return response()->json([
                     'success' => false,
@@ -1472,21 +1495,21 @@ class OrderController extends Controller
 
             // First try to get emails through the relationship
             $emails = collect();
-            
+
             try {
                 $emails = OrderEmail::query()
                     ->where('order_id', $orderPanel->order_id)
-                    ->whereHas('orderSplit', function($query) use ($orderPanelId) {
+                    ->whereHas('orderSplit', function ($query) use ($orderPanelId) {
                         $query->where('order_panel_id', $orderPanelId);
                     })
                     ->select('id', 'name', 'email', 'password', 'order_split_id', 'contractor_id')
                     ->get();
             } catch (\Exception $relationshipError) {
                 Log::warning('Relationship query failed, trying alternative approach: ' . $relationshipError->getMessage());
-                
+
                 // Fallback: Get all emails for this order and filter by split
                 $splitIds = $orderPanel->orderPanelSplits->pluck('id')->toArray();
-                
+
                 $emails = OrderEmail::query()
                     ->where('order_id', $orderPanel->order_id)
                     ->whereIn('order_split_id', $splitIds)
@@ -1534,7 +1557,7 @@ class OrderController extends Controller
     //         // Check if contractor has access to this split
     //         $hasAccess = false;
     //         $order = $orderPanelSplit->orderPanel->order;
-            
+
     //         // Allow access if order is unassigned (available for all contractors)
     //         if ($order->assigned_to === null) {
     //             $hasAccess = true;
@@ -1566,7 +1589,7 @@ class OrderController extends Controller
     //                 $domains = array_map('trim', explode(',', $orderPanelSplit->domains));
     //                 $domains = array_filter($domains); // Remove empty values
     //             }
-                
+
     //             // Flatten array if it contains nested arrays or objects
     //             $flatDomains = [];
     //             foreach ($domains as $domain) {
@@ -1660,16 +1683,16 @@ class OrderController extends Controller
     // New Licenses [UPLOAD ONLY],
     // Advanced Protection Program enrollment
 
-/**
+    /**
      * Export CSV file with domains data for a specific order panel split
      */
-    
+
     public function exportCsvSplitDomainsById($splitId)
     {
         try {
             // Find the order panel split
             $orderPanelSplit = OrderPanelSplit::with([
-                'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
+                'orderPanel.order.orderPanels.userOrderPanelAssignments' => function ($query) {
                     $query->where('contractor_id', auth()->id());
                 },
                 'orderPanel.order.reorderInfo',
@@ -1705,7 +1728,7 @@ class OrderController extends Controller
             $prefixVariants = [];
             $prefixVariantDetails = [];
             $reorderInfo = $order->reorderInfo->first();
-            
+
             if ($reorderInfo) {
                 // Get prefix variants
                 if ($reorderInfo->prefix_variants) {
@@ -1718,13 +1741,13 @@ class OrderController extends Controller
                         }
                     }
                 }
-                
+
                 // Get prefix variant details
                 if ($reorderInfo->prefix_variants_details) {
-                    $decodedDetails = is_string($reorderInfo->prefix_variants_details) 
-                        ? json_decode($reorderInfo->prefix_variants_details, true) 
+                    $decodedDetails = is_string($reorderInfo->prefix_variants_details)
+                        ? json_decode($reorderInfo->prefix_variants_details, true)
                         : $reorderInfo->prefix_variants_details;
-                        
+
                     if (is_array($decodedDetails)) {
                         $prefixVariantDetails = $decodedDetails;
                     }
@@ -1746,7 +1769,7 @@ class OrderController extends Controller
                     $domains = array_map('trim', explode(',', $orderPanelSplit->domains));
                     $domains = array_filter($domains); // Remove empty values
                 }
-                
+
                 // Flatten array if it contains nested arrays or objects
                 $flatDomains = [];
                 foreach ($domains as $domain) {
@@ -1778,12 +1801,12 @@ class OrderController extends Controller
                     $prefixKey = 'prefix_variant_' . ($index + 1);
                     $firstName = 'N/A';
                     $lastName = 'N/A';
-                    
+
                     if (isset($prefixVariantDetails[$prefixKey])) {
                         $firstName = $prefixVariantDetails[$prefixKey]['first_name'] ?? 'N/A';
                         $lastName = $prefixVariantDetails[$prefixKey]['last_name'] ?? 'N/A';
                     }
-                    
+
                     $emailData[] = [
                         'domain' => $domain,
                         'email' => $prefix . '@' . $domain,
@@ -1832,12 +1855,12 @@ class OrderController extends Controller
 
                 // // Add empty row for separation
                 // fputcsv($file, []);
-                
+
                 // Add email data headers with additional columns
                 fputcsv($file, [
-                    'First Name', 
+                    'First Name',
                     'Last Name',
-                    'Email address', 
+                    'Email address',
                     'Password',
                     // 'Password Hash Function [UPLOAD ONLY]',
                     'Org Unit Path [Required]',
@@ -1865,13 +1888,13 @@ class OrderController extends Controller
                     // 'New Licenses [UPLOAD ONLY]',
                     // 'Advanced Protection Program enrollment'
                 ]);
-                
+
                 // Add email data with corresponding first/last names for each prefix variant
                 foreach ($emailData as $data) {
                     fputcsv($file, [
                         $data['first_name'], // First Name from prefix variant details
                         $data['last_name'], // Last Name from prefix variant details
-                        $data['email'], 
+                        $data['email'],
                         $data['password'],
                         // '', // Password Hash Function [UPLOAD ONLY]
                         '/', // Org Unit Path [Required]
@@ -1912,7 +1935,7 @@ class OrderController extends Controller
         }
     }
     // Custom encryption function for passwords
-    
+
     private function customEncrypt($orderId)
     {
         // Convert order ID to exactly 8 character password with one uppercase, lowercase, special char, and number
@@ -1920,23 +1943,23 @@ class OrderController extends Controller
         $lowerCase = 'abcdefghijklmnopqrstuvwxyz';
         $numbers = '0123456789';
         $specialChars = '!@#$%^&*';
-        
+
         // Use order ID as seed for consistent password generation
         mt_srand($orderId);
-        
+
         // Generate password with requirements
         $password = '';
         $password .= $upperCase[mt_rand(0, strlen($upperCase) - 1)]; // 1 uppercase
         $password .= $lowerCase[mt_rand(0, strlen($lowerCase) - 1)]; // 1 lowercase
         $password .= $numbers[mt_rand(0, strlen($numbers) - 1)];     // 1 number
         $password .= $specialChars[mt_rand(0, strlen($specialChars) - 1)]; // 1 special char
-        
+
         // Fill remaining 4 characters with mix of all character types
         $allChars = $upperCase . $lowerCase . $numbers . $specialChars;
         for ($i = 4; $i < 8; $i++) {
             $password .= $allChars[mt_rand(0, strlen($allChars) - 1)];
         }
-        
+
         // Shuffle using seeded random generator instead of str_shuffle
         $passwordArray = str_split($password);
         for ($i = count($passwordArray) - 1; $i > 0; $i--) {
@@ -1946,7 +1969,7 @@ class OrderController extends Controller
             $passwordArray[$i] = $passwordArray[$j];
             $passwordArray[$j] = $temp;
         }
-        
+
         return implode('', $passwordArray);
     }
     /**
@@ -1998,7 +2021,7 @@ class OrderController extends Controller
 
                     // Try to get emails with relationship
                     try {
-                        $relationshipEmails = OrderEmail::whereHas('orderSplit', function($query) use ($orderPanelId) {
+                        $relationshipEmails = OrderEmail::whereHas('orderSplit', function ($query) use ($orderPanelId) {
                             $query->where('order_panel_id', $orderPanelId);
                         })->get();
                         $debug['relationship_emails_count'] = $relationshipEmails->count();
@@ -2027,10 +2050,10 @@ class OrderController extends Controller
     {
         try {
             $adminId = auth()->id();
-            
+
             // Find the order
             $order = Order::findOrFail($orderId);
-            
+
             // Check if order is already assigned
             if ($order->assigned_to && $order->assigned_to != $adminId) {
                 return response()->json([
@@ -2038,22 +2061,22 @@ class OrderController extends Controller
                     'message' => 'Order is already assigned to another admin.'
                 ], 400);
             }
-            
+
             // Get all order panels (splits) for this order that are unallocated
             $unallocatedPanels = OrderPanel::where('order_id', $orderId)
                 ->where('status', 'unallocated')
                 ->get();
-            
+
             if ($unallocatedPanels->isEmpty()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No unallocated splits found for this order.'
                 ], 400);
             }
-            
+
             $assignedCount = 0;
             $errors = [];
-            
+
             // Assign each unallocated panel to the admin
             foreach ($unallocatedPanels as $panel) {
                 try {
@@ -2062,33 +2085,33 @@ class OrderController extends Controller
                         'status' => 'allocated',
                         'contractor_id' => $adminId
                     ]);
-                    
+
                     $assignedCount++;
-                    
+
                 } catch (Exception $e) {
                     $errors[] = "Failed to assign panel {$panel->id}: " . $e->getMessage();
                     Log::error("Error assigning panel {$panel->id} to admin {$adminId}: " . $e->getMessage());
                 }
             }
-            
+
             // Assign the order to the current admin
             // Assign the order to the current admin
             $order->assigned_to = $adminId;
             $order->status_manage_by_admin = 'in-progress'; // Set status to in-progress
             $order->save();
-            
+
             // Check remaining unallocated panels
             $remainingUnallocated = OrderPanel::where('order_id', $orderId)
                 ->where('status', 'unallocated')
                 ->count();
-            
-            $message = $assignedCount > 0 
-                ? "Successfully assigned {$assignedCount} split(s) to you!" 
+
+            $message = $assignedCount > 0
+                ? "Successfully assigned {$assignedCount} split(s) to you!"
                 : "No new assignments were made.";
             if (!empty($errors)) {
                 $message .= " However, some errors occurred: " . implode(', ', $errors);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => $message,
@@ -2096,10 +2119,10 @@ class OrderController extends Controller
                 'remaining_unallocated' => $remainingUnallocated,
                 'errors' => $errors
             ]);
-            
+
         } catch (Exception $e) {
             Log::error("Error in assignOrderToMe for order {$orderId}: " . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to assign order: ' . $e->getMessage()
@@ -2152,14 +2175,14 @@ class OrderController extends Controller
                 }
 
                 $order = Order::with('reorderInfo', 'orderPanels.orderPanelSplits')->findOrFail($orderId);
-                
+
                 // Get total inboxes from reorder info
                 $totalInboxes = $order->reorderInfo->first()->total_inboxes ?? 0;
 
                 // Process and validate CSV file
                 $csvFile = $request->file('microsoft_csv');
                 $csvData = $this->processMicrosoftCsv($csvFile, $totalInboxes, $order);
-                
+
                 if (!$csvData['success']) {
                     return response()->json([
                         'success' => false,
@@ -2169,8 +2192,8 @@ class OrderController extends Controller
                 }
             }
 
-            if($newStatus == 'reject' || $newStatus == 'cancelled') {
-                if(!$reason) {
+            if ($newStatus == 'reject' || $newStatus == 'cancelled') {
+                if (!$reason) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Reason is required for reject or cancel status'
@@ -2181,11 +2204,11 @@ class OrderController extends Controller
             if ($newStatus === 'reject' || $newStatus === 'rejected') {
                 $rejectionService = new \App\Services\OrderRejectionService();
                 $result = $rejectionService->rejectOrder($orderId, $adminId, $reason);
-                
+
                 return response()->json($result);
             }
             // if status is cancelled then also remove customer subscriptoins create service
-            if($newStatus === 'cancelled' || $newStatus === 'cancelled_force') {
+            if ($newStatus === 'cancelled' || $newStatus === 'cancelled_force') {
                 $order = Order::findOrFail($orderId);
                 $subscriptionService = new \App\Services\OrderCancelledService();
                 $result = $subscriptionService->cancelSubscription(
@@ -2195,13 +2218,13 @@ class OrderController extends Controller
                     false,
                     $newStatus === 'cancelled_force' ? true : false
                 );
-                
+
                 return response()->json($result);
             }
             // Find the order
             $order = Order::findOrFail($orderId);
             $oldStatus = $order->status_manage_by_admin;
-            
+
             // Don't allow status change if it's the same
             // if ($oldStatus === $newStatus) {
             //     return response()->json([
@@ -2209,10 +2232,10 @@ class OrderController extends Controller
             //         'message' => 'Order is already in the selected status.'
             //     ], 400);
             // }
-            
+
             // Update order status using the correct column
             $order->status_manage_by_admin = $newStatus;
-            
+
             // Set completion timestamp and provider type if status is completed
             if ($newStatus === 'completed') {
                 if (!$order->assigned_to) {
@@ -2221,14 +2244,14 @@ class OrderController extends Controller
                 $order->completed_at = now();
                 $order->provider_type = $providerType;
             }
-            
+
             // Add reason if provided
             if ($reason) {
                 $order->reason = $reason . " (Reason given by " . Auth::user()->name . ")";
             }
-            
+
             $order->save();
-            
+
             // Log the activity
             ActivityLogService::log(
                 'admin_order_status_updated',
@@ -2245,7 +2268,7 @@ class OrderController extends Controller
                 ],
                 $adminId
             );
-            
+
             // Create notification for customer
             Notification::create([
                 'user_id' => $order->user_id,
@@ -2259,7 +2282,7 @@ class OrderController extends Controller
                     'reason' => $reason
                 ]
             ]);
-            
+
             // Send email notifications
             try {
                 $user = $order->user;
@@ -2313,7 +2336,7 @@ class OrderController extends Controller
                 ]);
 
                 // Send email to assigned contractor if exists
-                if($order->assigned_to){
+                if ($order->assigned_to) {
                     $assignedUser = User::find($order->assigned_to);
                     if ($assignedUser) {
                         try {
@@ -2347,7 +2370,7 @@ class OrderController extends Controller
                     'timestamp' => now()->toDateTimeString()
                 ]);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => "Order status successfully changed from '{$oldStatus}' to '{$newStatus}'",
@@ -2358,16 +2381,16 @@ class OrderController extends Controller
                     'reason' => $reason
                 ]
             ]);
-            
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
             ], 422);
-            
+
         } catch (Exception $e) {
             Log::error("Error in changeStatus for order {$orderId}: " . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to change order status: ' . $e->getMessage()
@@ -2394,7 +2417,7 @@ class OrderController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-            
+
             $adminId = Auth::id();
             $newProviderType = $request->input('provider_type');
             $reason = $request->input('reason');
@@ -2403,7 +2426,7 @@ class OrderController extends Controller
             $order = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderTracking'])->findOrFail($orderId);
 
             $oldProviderType = $order->provider_type;
-            
+
             // Don't allow change if it's the same
             if ($oldProviderType === $newProviderType) {
                 return response()->json([
@@ -2422,7 +2445,7 @@ class OrderController extends Controller
                     'data' => $capacityCheck['data'] ?? []
                 ], 422);
             }
-            
+
             $splitResetService = app(OrderSplitResetService::class);
             $splitCleanup = DB::transaction(function () use ($order, $newProviderType, $splitResetService, $adminId, $reason) {
                 // Update provider type
@@ -2452,7 +2475,7 @@ class OrderController extends Controller
                 ],
                 $adminId
             );
-            
+
             // Create notification for customer
             Notification::create([
                 'user_id' => $order->user_id,
@@ -2467,7 +2490,7 @@ class OrderController extends Controller
                     'split_cleanup' => $splitCleanup
                 ]
             ]);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => "Provider type successfully changed from '{$oldProviderType}' to '{$newProviderType}'",
@@ -2478,23 +2501,23 @@ class OrderController extends Controller
                     'reason' => $reason
                 ]
             ]);
-            
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
             ], 422);
-            
+
         } catch (Exception $e) {
             Log::error("Error in changeProviderType for order {$orderId}: " . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to change provider type: ' . $e->getMessage()
             ], 500);
         }
     }
-    
+
 
     /**
      * Get available panels for reassignment
@@ -2504,7 +2527,7 @@ class OrderController extends Controller
         try {
             $reassignmentService = new PanelReassignmentService();
             $result = $reassignmentService->getAvailablePanelsForReassignment($orderId, $orderPanelId);
-            
+
             return response()->json($result);
         } catch (Exception $e) {
             Log::error('Error getting available panels for reassignment', [
@@ -2512,7 +2535,7 @@ class OrderController extends Controller
                 'order_panel_id' => $orderPanelId,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'error' => 'Failed to get available panels: ' . $e->getMessage()
@@ -2592,14 +2615,14 @@ class OrderController extends Controller
         try {
             $reassignmentService = new PanelReassignmentService();
             $result = $reassignmentService->getReassignmentHistory($orderId);
-            
+
             return response()->json($result);
         } catch (Exception $e) {
             Log::error('Error getting reassignment history', [
                 'order_id' => $orderId,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'error' => 'Failed to get reassignment history: ' . $e->getMessage()
@@ -2618,7 +2641,7 @@ class OrderController extends Controller
                 'remove_from_helpers' => 'nullable|in:true,false,1,0',
                 'reassignment_note' => 'nullable|string|max:255'
             ]);
-           Log::channel('slack_notifications')->info("test 1 controller============================".$orderId.'-'. $request->contractor_id);
+            Log::channel('slack_notifications')->info("test 1 controller============================" . $orderId . '-' . $request->contractor_id);
 
             // Convert remove_from_helpers to boolean
             $removeFromHelpers = filter_var($request->remove_from_helpers, FILTER_VALIDATE_BOOLEAN);
@@ -2643,12 +2666,12 @@ class OrderController extends Controller
                 );
 
                 return response()->json([
-                    'success' => true, 
+                    'success' => true,
                     'message' => $result['message']
                 ]);
             } else {
                 return response()->json([
-                    'success' => false, 
+                    'success' => false,
                     'message' => $result['error']
                 ], 400);
             }
@@ -2678,19 +2701,19 @@ class OrderController extends Controller
 
             $order = Order::findOrFail($orderId);
             $contractorId = $request->contractor_id;
-            
+
             // Check if contractor is in helpers_ids array
             $helpers_ids = $order->helpers_ids ?? [];
             $isInHelpers = in_array($contractorId, $helpers_ids);
-            
+
             // Get contractor name for the message
             $contractor = User::find($contractorId);
-            
+
             return response()->json([
                 'success' => true,
                 'is_in_helpers' => $isInHelpers,
                 'contractor_name' => $contractor ? $contractor->name : 'Unknown',
-                'message' => $isInHelpers 
+                'message' => $isInHelpers
                     ? "This contractor is already added as a helper. Reassigning will remove from helpers list."
                     : "Contractor is not in helpers list."
             ]);
@@ -2712,7 +2735,7 @@ class OrderController extends Controller
         try {
             // Find the order panel split
             $orderPanelSplit = OrderPanelSplit::with([
-                'orderPanel.order.orderPanels.userOrderPanelAssignments' => function($query) {
+                'orderPanel.order.orderPanels.userOrderPanelAssignments' => function ($query) {
                     $query->where('contractor_id', auth()->id());
                 },
                 'orderPanel.order.reorderInfo',
@@ -2741,180 +2764,15 @@ class OrderController extends Controller
     private function exportPrivateSmtpCsv($order, $splitId = null)
     {
         try {
-            $reorderInfo = $order->reorderInfo->first();
-            
-            if (!$reorderInfo) {
-                throw new \Exception('ReorderInfo not found for this order.');
-            }
-
-            // Get domains from reorder_info.domains (comma-separated string)
-            $domainsString = $reorderInfo->domains ?? '';
-            if (empty($domainsString)) {
-                throw new \Exception('No domains found in reorder_info for this order.');
-            }
-
-            // Parse domains (handle comma and newline separated)
-            $domains = array_filter(
-                preg_split('/[\r\n,]+/', $domainsString),
-                function($domain) {
-                    return !empty(trim($domain));
-                }
-            );
-            $domains = array_map('trim', $domains);
-
-            if (empty($domains)) {
-                throw new \Exception('No valid domains found after parsing.');
-            }
-
-            // Get prefix variants from reorder_info
-            $prefixVariants = [];
-            if ($reorderInfo->prefix_variants) {
-                if (is_string($reorderInfo->prefix_variants)) {
-                    $decoded = json_decode($reorderInfo->prefix_variants, true);
-                    if (is_array($decoded)) {
-                        // Extract values from associative array like {"prefix_variant_1": "john", "prefix_variant_2": "jane"}
-                        $prefixVariants = array_values($decoded);
-                    } else {
-                        // Comma-separated string
-                        $prefixVariants = array_map('trim', explode(',', $reorderInfo->prefix_variants));
-                    }
-                } elseif (is_array($reorderInfo->prefix_variants)) {
-                    $prefixVariants = array_values($reorderInfo->prefix_variants);
-                }
-            }
-
-            // Default prefixes if none found
-            if (empty($prefixVariants)) {
-                $prefixVariants = ['info', 'contact'];
-            }
-
-            // Get prefix variant details for first_name, last_name, password
-            $prefixVariantDetails = [];
-            if ($reorderInfo->prefix_variants_details) {
-                if (is_string($reorderInfo->prefix_variants_details)) {
-                    $decoded = json_decode($reorderInfo->prefix_variants_details, true);
-                    if (is_array($decoded)) {
-                        $prefixVariantDetails = $decoded;
-                    }
-                } elseif (is_array($reorderInfo->prefix_variants_details)) {
-                    $prefixVariantDetails = $reorderInfo->prefix_variants_details;
-                }
-            }
-
-            // Get inboxes per domain
-            $inboxesPerDomain = (int) ($reorderInfo->inboxes_per_domain ?? 1);
-            if ($inboxesPerDomain <= 0) {
-                $inboxesPerDomain = 1;
-            }
-
-            // Limit prefix variants to inboxes_per_domain
-            $prefixVariants = array_slice($prefixVariants, 0, $inboxesPerDomain);
-
-            // Generate CSV filename
-            $filename = "order_{$order->id}_split_{$splitId}_private_smtp_" . date('Y-m-d_His') . ".csv";
-
-            $headers = [
-                'Content-Type' => 'text/csv',
-                'Content-Disposition' => "attachment; filename=\"$filename\"",
-            ];
-
-            $callback = function () use ($domains, $prefixVariants, $prefixVariantDetails, $order) {
-                $file = fopen('php://output', 'w');
-                
-                // Add CSV headers (Google Workspace format)
-                fputcsv($file, [
-                    'First Name',
-                    'Last Name',
-                    'Email Address',
-                    'Password',
-                    'Org Unit Path [Required]'
-                ]);
-
-                $counter = 0;
-                // Generate emails: prefix@domain for each combination
-                foreach ($domains as $domain) {
-                    foreach ($prefixVariants as $index => $prefix) {
-                        $emailAddress = $prefix . '@' . $domain;
-                        
-                        // Get first and last name from prefix_variants_details
-                        $prefixKey = 'prefix_variant_' . ($index + 1);
-                        $firstName = '';
-                        $lastName = '';
-                        $password = '';
-                        
-                        if (isset($prefixVariantDetails[$prefixKey])) {
-                            $details = $prefixVariantDetails[$prefixKey];
-                            $firstName = $details['first_name'] ?? '';
-                            $lastName = $details['last_name'] ?? '';
-                            $password = $details['password'] ?? '';
-                        }
-                        
-                        // If no details found, try to parse prefix intelligently
-                        if (empty($firstName) && empty($lastName)) {
-                            // If prefix contains a dot (e.g., "mitsu.bee"), split by dot
-                            if (strpos($prefix, '.') !== false) {
-                                $parts = explode('.', $prefix, 2);
-                                $firstName = ucfirst(str_replace('.', '', $parts[0]));
-                                $lastName = ucfirst(str_replace('.', '', $parts[1]));
-                            }
-                            // Try to find capital letter in the middle for compound names
-                            elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]+.*)$/', $prefix, $matches)) {
-                                $firstName = $matches[1];
-                                $lastName = $matches[2];
-                            }
-                            // If prefix has PascalCase short form (e.g., RyanL -> Ryan, L)
-                            elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]*)$/', $prefix, $matches)) {
-                                $firstName = $matches[1];
-                                $lastName = $matches[2] ?: $matches[1];
-                            }
-                            // If it starts with lowercase and has uppercase
-                            elseif (preg_match('/^([a-z]+)([A-Z].*)$/', $prefix, $matches)) {
-                                $firstName = ucfirst($matches[1]);
-                                $lastName = $matches[2];
-                            }
-                            // Single word - use as both first and last name
-                            else {
-                                $firstName = ucfirst($prefix);
-                                $lastName = ucfirst($prefix);
-                            }
-                        }
-                        
-                        // Generate password if not found in details
-                        if (empty($password)) {
-                            $password = $this->customEncrypt($order->id);
-                        }
-                        
-                        // Write CSV row
-                        fputcsv($file, [
-                            $firstName,
-                            $lastName,
-                            $emailAddress,
-                            $password,
-                            '/' // Org Unit Path [Required]
-                        ]);
-                        
-                        $counter++;
-                    }
-                }
-
-                fclose($file);
-            };
-
-            Log::info('Private SMTP CSV export initiated', [
-                'order_id' => $order->id,
-                'split_id' => $splitId ?? 'N/A (no split)',
-                'domains_count' => count($domains),
-                'prefix_variants_count' => count($prefixVariants),
-                'total_emails' => count($domains) * count($prefixVariants)
-            ]);
-
-            return response()->stream($callback, 200, $headers);
-
+            $exportService = app(EmailExportService::class);
+            return $exportService->exportPrivateSmtpCsv($order, $splitId);
         } catch (\Exception $e) {
             Log::error('Error exporting Private SMTP CSV: ' . $e->getMessage(), [
                 'order_id' => $order->id ?? null,
                 'split_id' => $splitId ?? 'N/A (no split)'
             ]);
+            // Attempt fallback or rethrow? 
+            // Just rethrowing as in original.
             throw $e;
         }
     }
@@ -2929,151 +2787,15 @@ class OrderController extends Controller
     {
         try {
             $order = Order::with('reorderInfo')->findOrFail($orderId);
-            
+
             // Check if this is a Private SMTP or SMTP order
             $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
             if (strtolower($providerType ?? '') !== 'private smtp' && strtolower($providerType ?? '') !== 'smtp') {
                 return back()->with('error', 'This order is not a Private SMTP or SMTP order.');
             }
 
-            $reorderInfo = $order->reorderInfo->first();
-            
-            if (!$reorderInfo) {
-                throw new \Exception('ReorderInfo not found for this order.');
-            }
-
-            // Get domains from reorder_info.domains (comma-separated string)
-            $domainsString = $reorderInfo->domains ?? '';
-            if (empty($domainsString)) {
-                throw new \Exception('No domains found in reorder_info for this order.');
-            }
-
-            // Parse domains (handle comma and newline separated)
-            $domains = array_filter(
-                preg_split('/[\r\n,]+/', $domainsString),
-                function($domain) {
-                    return !empty(trim($domain));
-                }
-            );
-            $domains = array_map('trim', $domains);
-
-            if (empty($domains)) {
-                throw new \Exception('No valid domains found after parsing.');
-            }
-
-            // Get prefix variants from reorder_info
-            $prefixVariants = [];
-            if ($reorderInfo->prefix_variants) {
-                if (is_string($reorderInfo->prefix_variants)) {
-                    $decoded = json_decode($reorderInfo->prefix_variants, true);
-                    if (is_array($decoded)) {
-                        // Extract values from associative array like {"prefix_variant_1": "john", "prefix_variant_2": "jane"}
-                        $prefixVariants = array_values($decoded);
-                    } else {
-                        // Comma-separated string
-                        $prefixVariants = array_map('trim', explode(',', $reorderInfo->prefix_variants));
-                    }
-                } elseif (is_array($reorderInfo->prefix_variants)) {
-                    $prefixVariants = array_values($reorderInfo->prefix_variants);
-                }
-            }
-
-            // Default prefixes if none found
-            if (empty($prefixVariants)) {
-                $prefixVariants = ['info', 'contact'];
-            }
-
-            // Get prefix variant details for first_name, last_name, password
-            $prefixVariantDetails = [];
-            if ($reorderInfo->prefix_variants_details) {
-                if (is_string($reorderInfo->prefix_variants_details)) {
-                    $decoded = json_decode($reorderInfo->prefix_variants_details, true);
-                    if (is_array($decoded)) {
-                        $prefixVariantDetails = $decoded;
-                    }
-                } elseif (is_array($reorderInfo->prefix_variants_details)) {
-                    $prefixVariantDetails = $reorderInfo->prefix_variants_details;
-                }
-            }
-
-            // Get inboxes per domain
-            $inboxesPerDomain = (int) ($reorderInfo->inboxes_per_domain ?? 1);
-            if ($inboxesPerDomain <= 0) {
-                $inboxesPerDomain = 1;
-            }
-
-            // Limit prefix variants to inboxes_per_domain
-            $prefixVariants = array_slice($prefixVariants, 0, $inboxesPerDomain);
-
-            // Generate CSV filename
-            $filename = "order_{$order->id}_smtp_" . date('Y-m-d_His') . ".csv";
-
-            $headers = [
-                'Content-Type' => 'text/csv',
-                'Content-Disposition' => "attachment; filename=\"$filename\"",
-            ];
-
-            $callback = function () use ($domains, $prefixVariants, $prefixVariantDetails, $order) {
-                $file = fopen('php://output', 'w');
-                
-                // Add CSV headers (Google Workspace format)
-                fputcsv($file, [
-                    'First Name',
-                    'Last Name',
-                    'Email Address',
-                    'Password',
-                    'Org Unit Path [Required]'
-                ]);
-
-                $counter = 0;
-                // Generate emails: prefix@domain for each combination
-                foreach ($domains as $domain) {
-                    foreach ($prefixVariants as $index => $prefix) {
-                        $emailAddress = $prefix . '@' . $domain;
-                        
-                        // Get first and last name from prefix_variants_details
-                        $prefixKey = 'prefix_variant_' . ($index + 1);
-                        $firstName = '';
-                        $lastName = '';
-                        $password = '';
-                        
-                        if (isset($prefixVariantDetails[$prefixKey])) {
-                            $details = $prefixVariantDetails[$prefixKey];
-                            $firstName = $details['first_name'] ?? '';
-                            $lastName = $details['last_name'] ?? '';
-                            $password = $details['password'] ?? '';
-                        }
-                        
-                        // Generate password if not found in details
-                        if (empty($password)) {
-                            $password = $this->customEncrypt($order->id);
-                        }
-                        
-                        // Write CSV row
-                        fputcsv($file, [
-                            $firstName,
-                            $lastName,
-                            $emailAddress,
-                            $password,
-                            '/' // Org Unit Path [Required]
-                        ]);
-                        
-                        $counter++;
-                    }
-                }
-
-                fclose($file);
-            };
-
-            Log::info('SMTP Order CSV export initiated', [
-                'order_id' => $order->id,
-                'provider_type' => $providerType,
-                'domains_count' => count($domains),
-                'prefix_variants_count' => count($prefixVariants),
-                'total_emails' => count($domains) * count($prefixVariants)
-            ]);
-
-            return response()->stream($callback, 200, $headers);
+            $exportService = app(EmailExportService::class);
+            return $exportService->exportPrivateSmtpCsv($order, null);
 
         } catch (\Exception $e) {
             Log::error('Error exporting SMTP Order CSV: ' . $e->getMessage(), [
@@ -3082,8 +2804,8 @@ class OrderController extends Controller
             return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
     }    /**
-     * Export CSV using existing order_emails data
-     */
+         * Export CSV using existing order_emails data
+         */
     private function exportCsvFromOrderEmails($splitId, $orderEmails)
     {
         try {
@@ -3103,16 +2825,16 @@ class OrderController extends Controller
 
             $callback = function () use ($orderEmails, $orderPanelSplit, $order) {
                 $file = fopen('php://output', 'w');
-                
+
                 // Add CSV headers matching the existing format
                 fputcsv($file, [
-                    'First Name', 
+                    'First Name',
                     'Last Name',
-                    'Email address', 
+                    'Email address',
                     'Password',
                     'Org Unit Path [Required]',
                 ]);
-                
+
                 // Add email data from database
                 foreach ($orderEmails as $orderEmail) {
                     fputcsv($file, [
@@ -3187,15 +2909,15 @@ class OrderController extends Controller
 
             $order = Order::findOrFail($orderId);
             $order->is_shared = !$order->is_shared;
-            
+
             // Save the shared note
             $order->shared_note = $request->input('note');
-            
+
             // Clear helpers_ids when unsharing the order
             if (!$order->is_shared) {
                 $order->helpers_ids = null;
             }
-            
+
             $order->save();
 
             return response()->json([
@@ -3221,7 +2943,7 @@ class OrderController extends Controller
     /**
      * Assign contractors to shared order
      */
-    
+
     public function assignContractors(Request $request, $orderId)
     {
         try {
@@ -3234,7 +2956,7 @@ class OrderController extends Controller
             $contractorCount = User::whereIn('id', $request->contractor_ids)
                 ->where('role_id', 4)
                 ->count();
-            
+
             if ($contractorCount !== count($request->contractor_ids)) {
                 return response()->json([
                     'success' => false,
@@ -3249,10 +2971,10 @@ class OrderController extends Controller
             // Merge new contractor IDs with existing ones
             // $updatedHelperIds = array_unique(array_merge($currentHelperIds, $newContractorIds));
             // if is_shared is false then only assign new contractors
-            if(!$order->is_shared){
+            if (!$order->is_shared) {
                 $order->is_shared = 1;
             }
-            $order->helpers_ids =$newContractorIds;
+            $order->helpers_ids = $newContractorIds;
             $order->save();
 
             ActivityLogService::log(
@@ -3271,7 +2993,7 @@ class OrderController extends Controller
                 $contractorNames = User::whereIn('id', $newContractorIds)
                     ->pluck('name')
                     ->toArray();
-                
+
                 SlackNotificationService::sendContractorAssignmentNotification(
                     $order,
                     $newContractorIds,
@@ -3290,7 +3012,7 @@ class OrderController extends Controller
             Log::error('Error assigning contractors: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error assigning contractors'.$e->getMessage()
+                'message' => 'Error assigning contractors' . $e->getMessage()
             ], 500);
         }
     }
@@ -3310,19 +3032,19 @@ class OrderController extends Controller
                 if ($request->tab === 'requests') {
                     // Requests tab: orders without helpers assigned
                     // Check for null, empty string, empty JSON array, or actual empty array
-                    $query->where(function($q) {
+                    $query->where(function ($q) {
                         $q->whereNull('helpers_ids')
-                          ->orWhere('helpers_ids', '')
-                          ->orWhere('helpers_ids', '[]')
-                          ->orWhere('helpers_ids', 'null');
+                            ->orWhere('helpers_ids', '')
+                            ->orWhere('helpers_ids', '[]')
+                            ->orWhere('helpers_ids', 'null');
                     });
                 } elseif ($request->tab === 'confirmed') {
                     // Confirmed tab: orders with helpers assigned
                     // Must have actual helper IDs (not null, not empty)
                     $query->whereNotNull('helpers_ids')
-                          ->where('helpers_ids', '!=', '')
-                          ->where('helpers_ids', '!=', '[]')
-                          ->where('helpers_ids', '!=', 'null');
+                        ->where('helpers_ids', '!=', '')
+                        ->where('helpers_ids', '!=', '[]')
+                        ->where('helpers_ids', '!=', 'null');
                 }
             }
 
@@ -3337,12 +3059,12 @@ class OrderController extends Controller
 
             if ($request->has('search') && $request->search != '') {
                 $search = $request->search;
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('id', 'like', "%{$search}%")
-                      ->orWhereHas('user', function($userQuery) use ($search) {
-                          $userQuery->where('name', 'like', "%{$search}%")
-                                    ->orWhere('email', 'like', "%{$search}%");
-                      });
+                        ->orWhereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        });
                 });
             }
 
@@ -3373,7 +3095,7 @@ class OrderController extends Controller
                 } else {
                     $order->helpers_names = [];
                 }
-                
+
                 // Ensure plan name is available
                 if ($order->plan) {
                     $order->plan_name = $order->plan->name;
@@ -3383,7 +3105,7 @@ class OrderController extends Controller
                     $order->plan_name = $plan ? $plan->name : 'Unknown Plan';
                     $order->plan = $plan; // Also set the plan object
                 }
-                
+
                 return $order;
             });
 
@@ -3441,7 +3163,7 @@ class OrderController extends Controller
     }
     public function store(Request $request)
     {
-       
+
         try {
             // Validate the request data
             $validated = $request->validate([
@@ -3510,7 +3232,7 @@ class OrderController extends Controller
             $inboxesPerDomain = (int) $request->inboxes_per_domain;
             $prefixVariants = $request->prefix_variants ?? [];
             $prefixVariantsDetails = $request->prefix_variants_details ?? [];
-            
+
             // Validate required prefix variants based on inboxes_per_domain
             for ($i = 1; $i <= $inboxesPerDomain; $i++) {
                 $prefixKey = "prefix_variant_{$i}";
@@ -3520,7 +3242,7 @@ class OrderController extends Controller
                         'errors' => ['prefix_variants.prefix_variant_1' => ['The first prefix variant is required.']]
                     ], 422);
                 }
-                
+
                 // Validate format if value exists
                 if (!empty($prefixVariants[$prefixKey])) {
                     if (!preg_match('/^[a-zA-Z0-9._-]+$/', $prefixVariants[$prefixKey])) {
@@ -3530,7 +3252,7 @@ class OrderController extends Controller
                         ], 422);
                     }
                 }
-                
+
                 // Validate prefix variants details for required variants
                 if (!empty($prefixVariants[$prefixKey])) {
                     if (empty($prefixVariantsDetails[$prefixKey]['first_name'])) {
@@ -3539,21 +3261,21 @@ class OrderController extends Controller
                             'errors' => ["prefix_variants_details.{$prefixKey}.first_name" => ['First name is required for this prefix variant.']]
                         ], 422);
                     }
-                    
+
                     if (empty($prefixVariantsDetails[$prefixKey]['last_name'])) {
                         return response()->json([
                             'success' => false,
                             'errors' => ["prefix_variants_details.{$prefixKey}.last_name" => ['Last name is required for this prefix variant.']]
                         ], 422);
                     }
-                    
+
                     // if (empty($prefixVariantsDetails[$prefixKey]['profile_link'])) {
                     //     return response()->json([
                     //         'success' => false,
                     //         'errors' => ["prefix_variants_details.{$prefixKey}.profile_link" => ['Profile link is required for this prefix variant.']]
                     //     ], 422);
                     // }
-                    
+
                     // // Validate URL format for profile link
                     // if (!filter_var($prefixVariantsDetails[$prefixKey]['profile_link'], FILTER_VALIDATE_URL)) {
                     //     return response()->json([
@@ -3573,15 +3295,15 @@ class OrderController extends Controller
 
             // Get requested plan
             $plan = Plan::findOrFail($request->plan_id);
-            
+
             // Store session data if validation passes
             // $request->session()->put('order_info', $request->all());
             // set new plan_id on session order_info
             // $request->session()->put('order_info.plan_id', $request->plan_id);
             $message = 'Order information saved successfully.';
-            
+
             // for edit order
-            if($request->edit_id && $request->order_id){
+            if ($request->edit_id && $request->order_id) {
                 $temp_order = Order::with('reorderInfo')->findOrFail($request->order_id);
                 $TOTAL_INBOXES = $temp_order->reorderInfo->first()->total_inboxes;
                 $existingDomains = $temp_order->reorderInfo->first()->domains ?? '';
@@ -3610,13 +3332,13 @@ class OrderController extends Controller
                 $order->update([
                     'status_manage_by_admin' => $status,
                 ]);
-                if($order->assigned_to && $status != 'draft') {
+                if ($order->assigned_to && $status != 'draft') {
                     $order->update([
                         'status_manage_by_admin' => 'in-progress',
                     ]);
                 }
                 $orderInfo = $request->session()->get('order_info', []);
-                if($order->reorderInfo && !$order->reorderInfo->isEmpty()) {
+                if ($order->reorderInfo && !$order->reorderInfo->isEmpty()) {
                     $reorderInfo = $order->reorderInfo->first();
                     // update data on table ReorderInfo
                     $updateData = [
@@ -3652,12 +3374,12 @@ class OrderController extends Controller
                         $updateData['domains'] = implode(',', array_filter($domains));
                     }
                     ReorderInfo::where('id', $reorderInfo->id)->update($updateData);
-                   $message = 'Order information updated successfully.';
-                   // Create a new activity log using the custom log service
+                    $message = 'Order information updated successfully.';
+                    // Create a new activity log using the custom log service
                     ActivityLogService::log(
                         'customer-order-update',
-                        'Order updated: '. $order->id,
-                        $order, 
+                        'Order updated: ' . $order->id,
+                        $order,
                         [
                             'user_id' => $request->user_id,
                             'plan_id' => $request->plan_id,
@@ -3695,7 +3417,7 @@ class OrderController extends Controller
                     // Get user information
                     $user = User::findOrFail($request->user_id);
                     $reorderInfo = $order->reorderInfo->first();
-                    
+
                     // Send notification to the customer
                     try {
                         Mail::to($user->email)
@@ -3711,7 +3433,7 @@ class OrderController extends Controller
                             'context' => 'Admin\\OrderController::updateOrderByAdmin'
                         ]);
                     }
-                    
+
                     // dd(config('mail.admin_address', 'admin@example.com'));
                     // Send notification to admin
                     try {
@@ -3727,9 +3449,9 @@ class OrderController extends Controller
                             'context' => 'Admin\\OrderController::updateOrderByAdmin'
                         ]);
                     }
-                    
+
                     // Check if the order has an assigned contractor
-                    if ($order->assigned_to ) {
+                    if ($order->assigned_to) {
                         // Get the assigned contractor
                         $contractor = User::find($order->assigned_to);
                         // dd($contractor);
@@ -3761,12 +3483,12 @@ class OrderController extends Controller
                 }
             }
             // status is pending then pannelCreationAndOrderSplitOnPannels
-            if($status == 'pending'){
+            if ($status == 'pending') {
                 // panel creation
                 // $this->pannelCreationAndOrderSplitOnPannels($order);
             }
             // Create order tracking record at the end
-            if($request->edit_id && $request->order_id) {
+            if ($request->edit_id && $request->order_id) {
                 // For existing orders, update or create tracking record
                 $order->orderTracking()->updateOrCreate(
                     ['order_id' => $order->id],
@@ -3777,7 +3499,7 @@ class OrderController extends Controller
                         'status' => 'pending', // Set status to pending for new orders
                     ]
                 );
-                
+
                 Log::info('Order tracking record updated for edited order', [
                     'order_id' => $order->id,
                     'status' => $status,
@@ -3785,7 +3507,7 @@ class OrderController extends Controller
                     'inboxes_per_domain' => $request->inboxes_per_domain
                 ]);
             }
-            
+
             // First check 
             return response()->json([
                 'success' => true,
@@ -3821,22 +3543,22 @@ class OrderController extends Controller
         try {
             $csvPath = $csvFile->getRealPath();
             $csvData = array_map('str_getcsv', file($csvPath));
-            
+
             // Get header row and data rows
             $header = array_map('trim', array_shift($csvData));
-            
+
             // Validate required columns (case-insensitive)
             $requiredColumns = ['Display name', 'Username', 'Password'];
             $headerLower = array_map('strtolower', $header);
             $requiredLower = array_map('strtolower', $requiredColumns);
-            
+
             $missingColumns = [];
             foreach ($requiredLower as $required) {
                 if (!in_array($required, $headerLower)) {
                     $missingColumns[] = $required;
                 }
             }
-            
+
             if (!empty($missingColumns)) {
                 return [
                     'success' => false,
@@ -3844,7 +3566,7 @@ class OrderController extends Controller
                     'data' => ['required_columns' => $requiredColumns, 'found_columns' => $header]
                 ];
             }
-            
+
             // Validate row count matches expected
             $actualRows = count($csvData);
             if ($actualRows !== $expectedTotalInboxes) {
@@ -3864,18 +3586,22 @@ class OrderController extends Controller
             $usernameIndex = false;
             $passwordIndex = false;
             $licensesIndex = false;
-            
+
             foreach ($header as $index => $col) {
                 $colLower = strtolower(trim($col));
-                if ($colLower === 'display name') $displayNameIndex = $index;
-                if ($colLower === 'username') $usernameIndex = $index;
-                if ($colLower === 'password') $passwordIndex = $index;
-                if ($colLower === 'licenses') $licensesIndex = $index;
+                if ($colLower === 'display name')
+                    $displayNameIndex = $index;
+                if ($colLower === 'username')
+                    $usernameIndex = $index;
+                if ($colLower === 'password')
+                    $passwordIndex = $index;
+                if ($colLower === 'licenses')
+                    $licensesIndex = $index;
             }
 
             // Get order panel splits for batch assignment
             $splits = $order->orderPanels()->with('orderPanelSplits')->get()
-                ->flatMap(function($panel) {
+                ->flatMap(function ($panel) {
                     return $panel->orderPanelSplits;
                 })->sortBy('id');
 
@@ -3991,10 +3717,18 @@ class OrderController extends Controller
      * @param int $orderId
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
+    /**
+     * Run the fix mailboxes command for an order and stream output via SSE
+     * 
+     * @param int $orderId
+     * @param DomainActivationService $activationService
+     * @param MailboxCreationService $mailboxService
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
     public function runFixMailboxesCommand($orderId)
     {
         $order = Order::find($orderId);
-        
+
         if (!$order) {
             return response()->json(['error' => 'Order not found'], 404);
         }
@@ -4005,138 +3739,96 @@ class OrderController extends Controller
             if (ob_get_level()) {
                 ob_end_clean();
             }
-            
+
+            // Increase time limit
+            set_time_limit(0);
+
             // Send initial message
             $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Starting mailbox creation for Order #{$orderId}"]);
             $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Order Status: {$order->status_manage_by_admin}"]);
             $this->sendSSE(['type' => 'progress', 'percent' => 5]);
-            
+
             try {
-                // Run the artisan command and capture output
-                $exitCode = \Artisan::call('mailin:create-mailboxes-for-active-domains', [
-                    'order_id' => $orderId
-                ]);
-                
-                // Get the output
-                $output = \Artisan::output();
-                
-                // Parse and send output line by line
-                $lines = explode("\n", $output);
-                $totalLines = count($lines);
-                $currentLine = 0;
-                
-                $stats = [
-                    'created' => 0,
-                    'skipped' => 0,
-                    'failed' => 0,
-                    'activeDomains' => 0
-                ];
-                
-                $needsRetry = false;
-                
-                foreach ($lines as $line) {
-                    $currentLine++;
-                    $trimmedLine = trim($line);
-                    
-                    if (empty($trimmedLine)) {
-                        continue;
-                    }
-                    
-                    // Parse statistics from output
-                    if (preg_match('/Active domains:\s*(\d+)/', $trimmedLine, $matches)) {
-                        $stats['activeDomains'] = (int)$matches[1];
-                        $this->sendSSE(['type' => 'stats', 'activeDomains' => $stats['activeDomains']]);
-                    }
-                    
-                    if (preg_match('/Created:\s*(\d+)/', $trimmedLine, $matches) || 
-                        preg_match('/Saved\s+(\d+)\s+new\s+mailboxes/', $trimmedLine, $matches)) {
-                        $stats['created'] = (int)$matches[1];
-                        $this->sendSSE(['type' => 'stats', 'created' => $stats['created']]);
-                    }
-                    
-                    // Count skipped mailboxes - extract number from summary or count individual skips
-                    if (preg_match('/Mailboxes skipped.*?:\s*(\d+)/i', $trimmedLine, $matches)) {
-                        // Summary line like "Mailboxes skipped (already exist): 9"
-                        $stats['skipped'] = (int)$matches[1];
-                        $this->sendSSE(['type' => 'stats', 'skipped' => $stats['skipped']]);
-                    } elseif (preg_match('/^Skipping \(exists/i', $trimmedLine)) {
-                        // Individual skip line like "Skipping (exists in DB): email@domain.com"
-                        $stats['skipped']++;
-                        $this->sendSSE(['type' => 'stats', 'skipped' => $stats['skipped']]);
-                    }
-                    
-                    if (preg_match('/Error|Failed|failed/i', $trimmedLine) && !preg_match('/error_message/i', $trimmedLine)) {
-                        $stats['failed']++;
-                        $this->sendSSE(['type' => 'stats', 'failed' => $stats['failed']]);
-                    }
-                    
-                    // Check if retry is needed
-                    if (preg_match('/mailboxes missing|incomplete|not all mailboxes|NOT changed/i', $trimmedLine)) {
-                        $needsRetry = true;
-                    }
-                    
-                    // Determine log level
-                    $level = 'info';
-                    if (strpos($trimmedLine, '✓') !== false || preg_match('/success|completed|COMPLETED/i', $trimmedLine)) {
-                        $level = 'success';
-                    } elseif (strpos($trimmedLine, '✗') !== false || preg_match('/error|failed/i', $trimmedLine)) {
-                        $level = 'error';
-                    } elseif (strpos($trimmedLine, '⚠') !== false || preg_match('/warning|skipping|missing/i', $trimmedLine)) {
-                        $level = 'warning';
-                    }
-                    
-                    // Send log line
-                    $this->sendSSE(['type' => 'log', 'level' => $level, 'message' => $trimmedLine]);
-                    
-                    // Update progress
-                    $progress = min(95, 5 + (($currentLine / $totalLines) * 90));
-                    $this->sendSSE(['type' => 'progress', 'percent' => round($progress)]);
-                    
-                    // Small delay to prevent overwhelming the browser
-                    usleep(10000); // 10ms
+                // --- Step 1: Activate Domains ---
+                $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => ">>> Step 1: Activating Domains..."]);
+
+                // Run via Process to stream output
+                $phpBinary = PHP_BINARY;
+                $artisanPath = base_path('artisan');
+
+                // Prepare environment with potential fix for Windows localhost [2002] error
+                $env = getenv();
+                $dbConnection = config('database.default');
+                // Ensure we get the host from the specific connection config
+                $dbHost = config("database.connections.{$dbConnection}.host");
+
+                if ($dbHost === 'localhost') {
+                    $env['DB_HOST'] = '127.0.0.1';
                 }
-                
-                // Send completion message
-                $success = $exitCode === 0 && $stats['failed'] === 0;
-                
-                // Reload order to check if it was completed
+
+                $process1 = new \Symfony\Component\Process\Process(
+                    [$phpBinary, 'artisan', 'mailin:activate-domains', $orderId, '--bypass-check'],
+                    base_path(),
+                    $env
+                );
+                $process1->setTimeout(null);
+
+                $process1->run(function ($type, $buffer) {
+                    $this->streamOutputLines($buffer);
+                });
+
+                $this->sendSSE(['type' => 'progress', 'percent' => 40]);
+
+                // --- Step 2: Create Mailboxes ---
+                $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => ">>> Step 2: Creating Mailboxes..."]);
+
+                $process2 = new \Symfony\Component\Process\Process(
+                    [$phpBinary, 'artisan', 'mailin:create-mailboxes', $orderId],
+                    base_path(),
+                    $env
+                );
+                $process2->setTimeout(null);
+
+                $process2->run(function ($type, $buffer) {
+                    $this->streamOutputLines($buffer);
+                });
+
+                // --- Finalize ---
                 $order->refresh();
-                $orderCompleted = $order->status_manage_by_admin === 'completed';
-                
+                $exitCode = $process2->getExitCode();
+                $success = ($exitCode === 0) && ($order->status_manage_by_admin === 'completed');
+
+                // Check buffer for specific error messages if needed, though streamOutputLines handles display
+                // For needsRetry, we'd need to capture all output or rely on exit code/order status
+                $needsRetry = !$success && stripos($process2->getOutput(), 'Not all domains are active') !== false;
+
                 $this->sendSSE([
                     'type' => 'complete',
                     'success' => $success,
-                    'needsRetry' => $needsRetry && !$orderCompleted,
+                    'needsRetry' => $needsRetry,
                     'orderStatus' => $order->status_manage_by_admin,
                     'exitCode' => $exitCode
                 ]);
-                
+
                 $this->sendSSE(['type' => 'progress', 'percent' => 100]);
-                
+
                 // Log activity
-                ActivityLogService::log(
-                    'order_fixed_manually',
-                    "Manual mailbox creation executed for Order #{$orderId}",
-                    $order,
-                    [
-                        'exit_code' => $exitCode,
-                        'stats' => $stats,
-                        'order_status' => $order->status_manage_by_admin
-                    ],
-                    Auth::id()
-                );
-                
+                try {
+                    Log::info("Manual fix run for Order #{$orderId}");
+                } catch (\Exception $e) {
+                }
+
             } catch (\Exception $e) {
                 $this->sendSSE(['type' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
                 $this->sendSSE(['type' => 'complete', 'success' => false, 'needsRetry' => false]);
-                
-                Log::error('Error running fix mailboxes command', [
+
+                Log::error('Error running fix mailboxes logic', [
                     'order_id' => $orderId,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
             }
-            
+
         }, 200, [
             'Content-Type' => 'text/event-stream',
             'Cache-Control' => 'no-cache',
@@ -4146,12 +3838,48 @@ class OrderController extends Controller
     }
 
     /**
+     * Helper to parse and stream command output lines
+     */
+    private function streamOutputLines($output)
+    {
+        $lines = explode("\n", $output);
+        foreach ($lines as $line) {
+            $trimmedLine = trim($line);
+            if (empty($trimmedLine))
+                continue;
+
+            $level = 'info';
+            if (strpos($trimmedLine, '✓') !== false || stripos($trimmedLine, 'success') !== false || stripos($trimmedLine, 'created:') !== false) {
+                $level = 'success';
+            } elseif (stripos($trimmedLine, 'error') !== false || stripos($trimmedLine, 'failed') !== false || strpos($trimmedLine, '✗') !== false) {
+                $level = 'error';
+            } elseif (stripos($trimmedLine, 'warning') !== false || stripos($trimmedLine, 'pending') !== false) {
+                $level = 'warning';
+            }
+
+            $this->sendSSE(['type' => 'log', 'level' => $level, 'message' => $trimmedLine]);
+
+            // Extract stats if possible (simple regex)
+            if (preg_match('/Created:\s*(\d+)/i', $trimmedLine, $matches)) {
+                $this->sendSSE(['type' => 'stats', 'created' => (int) $matches[1]]);
+            }
+            if (preg_match('/Active:\s*(\d+)/i', $trimmedLine, $matches) && stripos($trimmedLine, 'Provider') === false) {
+                // Avoid matching "All Active: YES" or similar incorrectly if not careful, but "Active: 5" is typical
+                // The output says "Active: X" indented
+                $this->sendSSE(['type' => 'stats', 'activeDomains' => (int) $matches[1]]);
+            }
+
+            usleep(5000);
+        }
+    }
+
+    /**
      * Send SSE event
      */
     private function sendSSE($data)
     {
         echo "data: " . json_encode($data) . "\n\n";
-        
+
         if (ob_get_level()) {
             ob_flush();
         }
@@ -4167,7 +3895,7 @@ class OrderController extends Controller
     public function runDeleteMailboxesCommand($orderId)
     {
         $order = Order::find($orderId);
-        
+
         if (!$order) {
             return response()->json(['error' => 'Order not found'], 404);
         }
@@ -4178,56 +3906,56 @@ class OrderController extends Controller
             if (ob_get_level()) {
                 ob_end_clean();
             }
-            
+
             // Send initial message
             $this->sendSSE(['type' => 'log', 'level' => 'warning', 'message' => "⚠️ Starting mailbox deletion for Order #{$orderId}"]);
             $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Order Status: {$order->status_manage_by_admin}"]);
             $this->sendSSE(['type' => 'progress', 'percent' => 5]);
-            
+
             try {
                 // Run the artisan command and capture output
                 $exitCode = \Artisan::call('order:delete-mailboxes', [
                     'order_id' => $orderId
                 ]);
-                
+
                 // Get the output
                 $output = \Artisan::output();
-                
+
                 // Parse and send output line by line
                 $lines = explode("\n", $output);
                 $totalLines = count($lines);
                 $currentLine = 0;
-                
+
                 $stats = [
                     'deleted' => 0,
                     'failed' => 0
                 ];
-                
+
                 foreach ($lines as $line) {
                     $currentLine++;
                     $trimmedLine = trim($line);
-                    
+
                     if (empty($trimmedLine)) {
                         continue;
                     }
-                    
+
                     // Parse statistics from output
                     if (preg_match('/Deleted from Mailin\.ai:\s*(\d+)/i', $trimmedLine, $matches)) {
-                        $stats['deleted'] = (int)$matches[1];
+                        $stats['deleted'] = (int) $matches[1];
                         $this->sendSSE(['type' => 'stats', 'deleted' => $stats['deleted']]);
                     }
-                    
+
                     if (preg_match('/Failed deletions:\s*(\d+)/i', $trimmedLine, $matches)) {
-                        $stats['failed'] = (int)$matches[1];
+                        $stats['failed'] = (int) $matches[1];
                         $this->sendSSE(['type' => 'stats', 'failed' => $stats['failed']]);
                     }
-                    
+
                     // Count individual deletions
                     if (preg_match('/✓ Deleted from Mailin/i', $trimmedLine)) {
                         $stats['deleted']++;
                         $this->sendSSE(['type' => 'stats', 'deleted' => $stats['deleted']]);
                     }
-                    
+
                     // Determine log level
                     $level = 'info';
                     if (strpos($trimmedLine, '✓') !== false || preg_match('/Deleted from Mailin/i', $trimmedLine)) {
@@ -4237,30 +3965,30 @@ class OrderController extends Controller
                     } elseif (strpos($trimmedLine, '⚠') !== false || preg_match('/warning|No mailbox/i', $trimmedLine)) {
                         $level = 'warning';
                     }
-                    
+
                     // Send log line
                     $this->sendSSE(['type' => 'log', 'level' => $level, 'message' => $trimmedLine]);
-                    
+
                     // Update progress
                     $progress = min(95, 5 + (($currentLine / $totalLines) * 90));
                     $this->sendSSE(['type' => 'progress', 'percent' => round($progress)]);
-                    
+
                     // Small delay to prevent overwhelming the browser
                     usleep(10000); // 10ms
                 }
-                
+
                 // Send completion message
                 $success = $exitCode === 0;
-                
+
                 $this->sendSSE([
                     'type' => 'complete',
                     'success' => $success,
                     'needsRetry' => false,
                     'exitCode' => $exitCode
                 ]);
-                
+
                 $this->sendSSE(['type' => 'progress', 'percent' => 100]);
-                
+
                 // Log activity
                 ActivityLogService::log(
                     'order_mailboxes_deleted',
@@ -4273,18 +4001,18 @@ class OrderController extends Controller
                     ],
                     Auth::id()
                 );
-                
+
             } catch (\Exception $e) {
                 $this->sendSSE(['type' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
                 $this->sendSSE(['type' => 'complete', 'success' => false, 'needsRetry' => false]);
-                
+
                 Log::error('Error running delete mailboxes command', [
                     'order_id' => $orderId,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
             }
-            
+
         }, 200, [
             'Content-Type' => 'text/event-stream',
             'Cache-Control' => 'no-cache',

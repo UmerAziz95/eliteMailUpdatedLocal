@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderEmail;
 use App\Models\OrderProviderSplit;
 use App\Models\ReorderInfo;
+use App\Models\DomainTransfer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -133,8 +134,15 @@ class MigrateOrdersToProviderSplits extends Command
             ->first();
 
         if ($existingSplit && !$force) {
-            $this->line("  [SKIP] Provider split already exists for Order #{$order->id}");
-            return 'skipped';
+            // Only update if existing split is missing data (mailboxes or domain_statuses are empty)
+            $isMissingData = empty($existingSplit->mailboxes) || empty($existingSplit->domain_statuses);
+
+            if ($isMissingData) {
+                $this->line("  [UPDATE] Provider split incomplete for Order #{$order->id} (Missing Data) - Updating...");
+            } else {
+                $this->line("  [SKIP] Provider split exists and is complete for Order #{$order->id} - Skipping...");
+                return 'skipped';
+            }
         }
 
         // Get domains from reorder_info
@@ -170,12 +178,29 @@ class MigrateOrdersToProviderSplits extends Command
         $this->line("  Mailboxes found: " . $orderEmails->count());
 
         // Build domain statuses
+        $existingStatuses = $existingSplit ? $existingSplit->domain_statuses : [];
         $domainStatuses = [];
         foreach ($domains as $domain) {
+            // Priority 1: Get from DomainTransfer
+            $transfer = DomainTransfer::where('order_id', $order->id)
+                ->where('domain_name', $domain)
+                ->first();
+
+            $nameservers = [];
+            if ($transfer && !empty($transfer->name_servers)) {
+                $nameservers = $transfer->name_servers;
+            } else {
+                // Priority 2: Preserve existing
+                $nameservers = isset($existingStatuses[$domain]['nameservers'])
+                    ? $existingStatuses[$domain]['nameservers']
+                    : [];
+            }
+
             $domainStatuses[$domain] = [
                 'status' => 'active', // Assume active for completed orders
                 'domain_id' => null,
                 'updated_at' => now()->toISOString(),
+                'nameservers' => $nameservers,
             ];
         }
 
@@ -197,8 +222,8 @@ class MigrateOrdersToProviderSplits extends Command
             'split_percentage' => 100,
             'domain_count' => count($domains),
             'domains' => $domains,
-            'mailboxes' => $mailboxes,
-            'domain_statuses' => $domainStatuses,
+            'mailboxes' => empty($mailboxes) ? null : $mailboxes,
+            'domain_statuses' => empty($domainStatuses) ? null : $domainStatuses,
             'all_domains_active' => $allDomainsActive,
             'priority' => 1,
         ];
