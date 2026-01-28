@@ -204,6 +204,80 @@ class PremiumInboxesService
     }
 
     /**
+     * List email accounts by order ID
+     * GET /email-accounts?order_id={order_id}&limit=50&offset=0
+     * Used to pre-fill missing mailbox IDs in split JSON for deletion.
+     *
+     * @param string $orderId PremiumInboxes order ID (UUID)
+     * @param int $limit
+     * @param int $offset
+     * @return array ['success' => bool, 'data' => array, 'error' => string|null, 'email_accounts' => array]
+     */
+    public function listEmailAccountsByOrderId(string $orderId, int $limit = 50, int $offset = 0): array
+    {
+        try {
+            Log::channel('mailin-ai')->info('Listing PremiumInboxes email accounts by order ID', [
+                'action' => 'listEmailAccountsByOrderId',
+                'order_id' => $orderId,
+                'limit' => $limit,
+                'offset' => $offset,
+            ]);
+
+            $result = $this->makeRequest('GET', '/email-accounts', [
+                'order_id' => $orderId,
+                'limit' => $limit,
+                'offset' => $offset,
+            ]);
+
+            if (!$result['success']) {
+                return [
+                    'success' => false,
+                    'data' => null,
+                    'error' => $result['error'] ?? 'Unknown error',
+                    'email_accounts' => [],
+                    'timeout' => str_contains(strtolower($result['error'] ?? ''), 'timeout')
+                        || str_contains(strtolower($result['error'] ?? ''), 'connection'),
+                ];
+            }
+
+            $data = $result['data'] ?? [];
+            $emailAccounts = is_array($data) && isset($data['email_accounts'])
+                ? $data['email_accounts']
+                : (is_array($data) && isset($data['data']) ? $data['data'] : (is_array($data) ? $data : []));
+
+            if (!is_array($emailAccounts)) {
+                $emailAccounts = [];
+            }
+
+            return [
+                'success' => true,
+                'data' => $data,
+                'error' => null,
+                'email_accounts' => $emailAccounts,
+                'timeout' => false,
+            ];
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('PremiumInboxes listEmailAccountsByOrderId exception', [
+                'action' => 'listEmailAccountsByOrderId',
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            $errorMessage = $e->getMessage();
+            $isTimeout = str_contains(strtolower($errorMessage), 'timeout')
+                || str_contains(strtolower($errorMessage), 'connection');
+
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => $errorMessage,
+                'email_accounts' => [],
+                'timeout' => $isTimeout,
+            ];
+        }
+    }
+
+    /**
      * Get email accounts by domain (from order)
      * Helper method - extracts from getOrder()
      * 

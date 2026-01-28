@@ -821,7 +821,31 @@ class MailinAiService
                 ];
             } else {
                 $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
+                
+                // Check if mailbox doesn't exist (404 or 500 with "not found" message)
+                $isNotFound = $statusCode === 404 
+                    || str_contains(strtolower($errorMessage), 'not found')
+                    || str_contains(strtolower($errorMessage), 'no query results')
+                    || str_contains(strtolower($errorMessage), 'does not exist');
 
+                if ($isNotFound) {
+                    // Mailbox doesn't exist - treat as already deleted
+                    Log::channel('mailin-ai')->info('Mailin.ai mailbox not found (already deleted or never existed)', [
+                        'action' => 'delete_mailbox',
+                        'mailbox_id' => $mailboxId,
+                        'status_code' => $statusCode,
+                        'error' => $errorMessage,
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'message' => 'Mailbox not found (already deleted)',
+                        'not_found' => true,
+                        'response' => $responseBody,
+                    ];
+                }
+
+                // Actual error - log and throw
                 Log::channel('mailin-ai')->error('Failed to delete mailbox from Mailin.ai', [
                     'action' => 'delete_mailbox',
                     'mailbox_id' => $mailboxId,
@@ -836,8 +860,37 @@ class MailinAiService
         } catch (\Illuminate\Http\Client\RequestException $e) {
             // Handle HTTP client exceptions (network errors, timeouts, etc.)
             $errorMessage = 'Network error: ' . $e->getMessage();
+            $statusCode = null;
+            $responseBody = null;
+            
             if ($e->response) {
-                $errorMessage .= '. Status: ' . $e->response->status() . '. Body: ' . substr($e->response->body(), 0, 500);
+                $statusCode = $e->response->status();
+                $responseBody = $e->response->json();
+                $errorMessage .= '. Status: ' . $statusCode . '. Body: ' . substr($e->response->body(), 0, 500);
+                
+                // Check if mailbox doesn't exist (404 or 500 with "not found" message)
+                $apiErrorMessage = $responseBody['message'] ?? $responseBody['error'] ?? '';
+                $isNotFound = $statusCode === 404 
+                    || str_contains(strtolower($apiErrorMessage), 'not found')
+                    || str_contains(strtolower($apiErrorMessage), 'no query results')
+                    || str_contains(strtolower($apiErrorMessage), 'does not exist');
+
+                if ($isNotFound) {
+                    // Mailbox doesn't exist - treat as already deleted
+                    Log::channel('mailin-ai')->info('Mailin.ai mailbox not found (already deleted or never existed) - HTTP exception', [
+                        'action' => 'delete_mailbox',
+                        'mailbox_id' => $mailboxId,
+                        'status_code' => $statusCode,
+                        'error' => $apiErrorMessage,
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'message' => 'Mailbox not found (already deleted)',
+                        'not_found' => true,
+                        'response' => $responseBody,
+                    ];
+                }
             }
 
             Log::channel('mailin-ai')->error('Mailin.ai mailbox deletion HTTP exception', [
@@ -845,8 +898,8 @@ class MailinAiService
                 'mailbox_id' => $mailboxId,
                 'error' => $errorMessage,
                 'exception_type' => get_class($e),
-                'response_status' => $e->response ? $e->response->status() : null,
-                'response_body' => $e->response ? $e->response->body() : null,
+                'response_status' => $statusCode,
+                'response_body' => $responseBody,
             ]);
 
             throw new \Exception('Failed to delete mailbox from Mailin.ai: ' . $errorMessage, 0, $e);
@@ -1199,6 +1252,25 @@ class MailinAiService
                     'message' => 'No mailboxes found or unexpected response format',
                 ];
             }
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            // Handle connection timeouts specifically
+            $errorMessage = $e->getMessage();
+            $isTimeout = str_contains(strtolower($errorMessage), 'timeout')
+                || str_contains(strtolower($errorMessage), 'curl error 28');
+
+            Log::channel('mailin-ai')->warning('Connection timeout when fetching mailboxes by email/name', [
+                'action' => 'get_mailboxes_by_name',
+                'email' => $email,
+                'error' => $errorMessage,
+                'is_timeout' => $isTimeout,
+            ]);
+
+            return [
+                'success' => false,
+                'mailboxes' => [],
+                'message' => $errorMessage,
+                'timeout' => $isTimeout,
+            ];
         } catch (\Illuminate\Http\Client\RequestException $e) {
             $errorMessage = 'Network error';
             if ($e->response) {
@@ -1217,16 +1289,99 @@ class MailinAiService
                 'message' => $errorMessage,
             ];
         } catch (\Exception $e) {
+            $errorMessage = $e->getMessage();
+            $isTimeout = str_contains(strtolower($errorMessage), 'timeout')
+                || str_contains(strtolower($errorMessage), 'connection')
+                || str_contains(strtolower($errorMessage), 'curl error 28');
+
             Log::channel('mailin-ai')->error('Failed to fetch mailboxes by email/name', [
                 'action' => 'get_mailboxes_by_name',
                 'email' => $email,
-                'error' => $e->getMessage(),
+                'error' => $errorMessage,
+                'is_timeout' => $isTimeout,
             ]);
 
             return [
                 'success' => false,
                 'mailboxes' => [],
-                'message' => $e->getMessage(),
+                'message' => $errorMessage,
+                'timeout' => $isTimeout,
+            ];
+        }
+    }
+
+    /**
+     * Lookup mailbox ID by email address (single source of truth for Mailin.ai).
+     * Used by MailinProviderService (split deletion) and OrderCancelledService (Google/365 legacy path).
+     *
+     * @param string $email Email address to look up
+     * @return array ['success' => bool, 'mailbox_id' => ?int, 'timeout' => ?bool, 'not_found' => ?bool, 'message' => ?string]
+     */
+    public function lookupMailboxIdByEmail(string $email): array
+    {
+        try {
+            Log::channel('mailin-ai')->info('Looking up mailbox ID by email', [
+                'action' => 'lookup_mailbox_id_by_email',
+                'email' => $email,
+            ]);
+
+            $result = $this->getMailboxesByName($email, 10);
+
+            if (isset($result['timeout']) && $result['timeout']) {
+                return [
+                    'success' => false,
+                    'timeout' => true,
+                    'message' => $result['message'] ?? 'Connection timeout',
+                ];
+            }
+
+            if ($result['success'] && !empty($result['mailboxes'])) {
+                foreach ($result['mailboxes'] as $mailbox) {
+                    if (isset($mailbox['name']) && strtolower($mailbox['name']) === strtolower($email)) {
+                        $mailboxId = $mailbox['id'] ?? null;
+                        Log::channel('mailin-ai')->info('Exact match found for email', [
+                            'action' => 'lookup_mailbox_id_by_email',
+                            'email' => $email,
+                            'mailbox_id' => $mailboxId,
+                        ]);
+                        return ['success' => true, 'mailbox_id' => $mailboxId];
+                    }
+                }
+                if (isset($result['mailboxes'][0]['id'])) {
+                    Log::channel('mailin-ai')->info('Partial match found (using first result)', [
+                        'action' => 'lookup_mailbox_id_by_email',
+                        'email' => $email,
+                        'mailbox_id' => $result['mailboxes'][0]['id'],
+                    ]);
+                    return ['success' => true, 'mailbox_id' => $result['mailboxes'][0]['id']];
+                }
+            }
+
+            Log::channel('mailin-ai')->info('Email not found on Mailin.ai', [
+                'action' => 'lookup_mailbox_id_by_email',
+                'email' => $email,
+            ]);
+            return [
+                'success' => false,
+                'not_found' => true,
+                'message' => 'Mailbox not found on Mailin.ai',
+            ];
+        } catch (\Exception $e) {
+            $errorMessage = $e->getMessage();
+            $isTimeout = str_contains(strtolower($errorMessage), 'timeout')
+                || str_contains(strtolower($errorMessage), 'connection')
+                || str_contains(strtolower($errorMessage), 'curl error 28')
+                || ($e instanceof \Illuminate\Http\Client\ConnectionException);
+            Log::channel('mailin-ai')->error('Failed to lookup mailbox ID by email', [
+                'action' => 'lookup_mailbox_id_by_email',
+                'email' => $email,
+                'error' => $errorMessage,
+                'is_timeout' => $isTimeout,
+            ]);
+            return [
+                'success' => false,
+                'message' => $errorMessage,
+                'timeout' => $isTimeout,
             ];
         }
     }

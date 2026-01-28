@@ -2,6 +2,9 @@
 
 namespace App\Contracts\Providers;
 
+use App\Models\Order;
+use App\Models\OrderProviderSplit;
+
 /**
  * Interface for SMTP provider services
  * All providers (Mailin, Premiuminboxes, Mailrun) must implement this interface
@@ -41,6 +44,16 @@ interface SmtpProviderInterface
      * @return array ['success' => bool, 'message' => string]
      */
     public function deleteMailbox(int $mailboxId): array;
+
+    /**
+     * Delete all mailboxes for this provider from an order provider split.
+     * Updates split JSON (deleted_at, mailbox_id) and calls provider API as needed.
+     *
+     * @param Order $order
+     * @param OrderProviderSplit $split
+     * @return array ['deleted' => int, 'failed' => int, 'skipped' => int]
+     */
+    public function deleteMailboxesFromSplit(Order $order, OrderProviderSplit $split): array;
 
     /**
      * Get mailboxes by domain

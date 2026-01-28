@@ -3,6 +3,9 @@
 namespace App\Services\Providers;
 
 use App\Contracts\Providers\SmtpProviderInterface;
+use App\Models\Order;
+use App\Models\OrderProviderSplit;
+use App\Services\ActivityLogService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -28,6 +31,13 @@ class MailrunProviderService implements SmtpProviderInterface
 {
     private const BASE_URL = 'https://api.mailrun.ai/api';
     private const MAX_DOMAINS_SETUP = 20;
+
+    /**
+     * Set to true when Mailrun provides deletion API documentation.
+     * Then implement external API call in deleteMailboxesFromSplit and deleteMailbox;
+     * keep log keys mailrun_deletion_mode ('api') and mailrun_api_available (true).
+     */
+    private const MAILRUN_DELETION_API_AVAILABLE = false;
     private const MAX_DOMAINS_ENROLLMENT = 50;
     private const ENROLLMENT_POLL_INTERVAL = 15; // minutes
     private const ENROLLMENT_MAX_WAIT = 120; // minutes (2 hours)
@@ -352,6 +362,103 @@ class MailrunProviderService implements SmtpProviderInterface
             'success' => false,
             'message' => 'Mailrun API does not support mailbox deletion',
         ];
+    }
+
+    /**
+     * Delete all Mailrun mailboxes for this order provider split.
+     *
+     * Local-only mode: Mailrun API does not currently support mailbox deletion.
+     * We only mark deleted_at in our split JSON. When Mailrun provides deletion
+     * API documentation, implement the external API call here and:
+     * - Keep the same log context keys (mailrun_deletion_mode, mailrun_api_available, etc.)
+     * - Set mailrun_api_available => true and mailrun_deletion_mode => 'api' in logs
+     * - Use storage/logs/mailrun.log for deletion-related logs (search: mailrun_deletion)
+     */
+    public function deleteMailboxesFromSplit(Order $order, OrderProviderSplit $split): array
+    {
+        $deletedCount = 0;
+        $failedCount = 0;
+        $skippedCount = 0;
+
+        $logContext = [
+            'action' => 'mailrun_deletion',
+            'provider' => 'mailrun',
+            'order_id' => $order->id,
+            'split_id' => $split->id,
+            'mailrun_deletion_mode' => self::MAILRUN_DELETION_API_AVAILABLE ? 'api' : 'local_only',
+            'mailrun_api_available' => self::MAILRUN_DELETION_API_AVAILABLE,
+        ];
+
+        try {
+            $mailboxes = $split->mailboxes ?? [];
+            $totalMailboxes = 0;
+            foreach ($mailboxes as $domain => $domainMailboxes) {
+                $totalMailboxes += is_array($domainMailboxes) ? count($domainMailboxes) : 0;
+            }
+            $logContext['mailbox_count'] = $totalMailboxes;
+            $logContext['domains'] = array_keys($mailboxes);
+
+            Log::channel('mailin-ai')->warning('Mailrun: local-only deletion; external API not available', $logContext);
+
+            foreach ($mailboxes as $domain => $domainMailboxes) {
+                foreach ($domainMailboxes as $prefixKey => $mailbox) {
+                    if (!$split->isMailboxDeleted($domain, $prefixKey)) {
+                        $split->markMailboxAsDeleted($domain, $prefixKey);
+                        $deletedCount++;
+                    } else {
+                        $skippedCount++;
+                    }
+                }
+            }
+
+            $logContext['deleted'] = $deletedCount;
+            $logContext['skipped'] = $skippedCount;
+            $logContext['failed'] = $failedCount;
+
+            Log::channel('mailin-ai')->info('Mailrun: mailboxes marked deleted locally (no external API)', $logContext);
+
+            // Also log to default channel for action-based search (search: mailrun_deletion)
+            Log::info('Mailrun split deletion completed', [
+                'action' => 'delete_mailboxes_from_split',
+                'provider' => 'mailrun',
+                'order_id' => $order->id,
+                'split_id' => $split->id,
+                'mailrun_deletion_mode' => $logContext['mailrun_deletion_mode'],
+                'mailrun_api_available' => $logContext['mailrun_api_available'],
+                'deleted' => $deletedCount,
+                'skipped' => $skippedCount,
+                'failed' => $failedCount,
+            ]);
+
+            if ($deletedCount > 0) {
+                ActivityLogService::log(
+                    'order-mailboxes-deleted',
+                    "Marked Mailrun mailboxes as deleted (local-only; external API not yet available)",
+                    $order,
+                    [
+                        'order_id' => $order->id,
+                        'split_id' => $split->id,
+                        'provider' => 'mailrun',
+                        'note' => 'Mailrun: local-only deletion; external API deletion not supported yet',
+                        'mailrun_deletion_mode' => 'local_only',
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            $logContext['error'] = $e->getMessage();
+            $logContext['trace'] = $e->getTraceAsString();
+            Log::channel('mailin-ai')->error('Mailrun: error during local-only deletion', $logContext);
+            Log::error('Error processing Mailrun mailboxes from split', [
+                'action' => 'delete_mailboxes_from_split',
+                'provider' => 'mailrun',
+                'order_id' => $order->id,
+                'split_id' => $split->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+
+        return ['deleted' => $deletedCount, 'failed' => $failedCount, 'skipped' => $skippedCount];
     }
 
     /**
