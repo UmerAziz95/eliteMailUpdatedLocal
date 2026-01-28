@@ -205,6 +205,14 @@ class EmailExportService
             $reorderInfo = $order->reorderInfo->first();
 
             if ($reorderInfo) {
+                // Debug logging to see what format prefix_variants is in
+                \Log::info('EmailExportService: prefix_variants debug', [
+                    'order_id' => $order->id,
+                    'prefix_variants_raw' => $reorderInfo->prefix_variants,
+                    'prefix_variants_type' => gettype($reorderInfo->prefix_variants),
+                    'prefix_variants_is_array' => is_array($reorderInfo->prefix_variants),
+                ]);
+
                 if ($reorderInfo->prefix_variants) {
                     // Handle both string and array formats
                     if (is_string($reorderInfo->prefix_variants)) {
@@ -223,6 +231,11 @@ class EmailExportService
                     }
                 }
 
+                \Log::info('EmailExportService: prefix_variants parsed', [
+                    'order_id' => $order->id,
+                    'prefixVariants' => $prefixVariants,
+                ]);
+
                 if ($reorderInfo->prefix_variants_details) {
                     // Handle both JSON string and array formats
                     if (is_string($reorderInfo->prefix_variants_details)) {
@@ -238,6 +251,9 @@ class EmailExportService
 
             // Default prefixes if none found
             if (empty($prefixVariants)) {
+                \Log::info('EmailExportService: using default prefixes', [
+                    'order_id' => $order->id,
+                ]);
                 $prefixVariants = ['info', 'contact'];
             }
 
@@ -849,22 +865,51 @@ class EmailExportService
                     }
 
                     if (!empty($domains)) {
+                        // Get actual prefixes from reorderInfo instead of hardcoded values
+                        $prefixes = [];
+                        if ($reorderInfo && $reorderInfo->prefix_variants) {
+                            $prefixData = $reorderInfo->prefix_variants;
+                            if (is_string($prefixData)) {
+                                $prefixData = json_decode($prefixData, true);
+                            }
+                            if (is_array($prefixData)) {
+                                $prefixes = array_values($prefixData);
+                            }
+                        }
+                        // Fallback to default only if no prefixes found
+                        if (empty($prefixes)) {
+                            $prefixes = ['info', 'contact'];
+                        }
+
                         foreach ($domains as $domain) {
                             $domainName = is_array($domain) ? ($domain['domain'] ?? null) : $domain;
                             if (!$domainName)
                                 continue;
 
-                            // Fallback generation - might not match variant keys perfectly without more logic, 
-                            // but usually used when data is completely missing.
-                            // We can try to use the first N variants from details if available?
-                            // For now keeping simple 'info'/'contact' as per previous instruction unless requested otherwise.
-                            foreach (['info', 'contact'] as $prefix) {
-                                $mailboxes[] = [
+                            // Get variant keys for enriching with details
+                            $variantKeys = array_keys(is_array($reorderInfo->prefix_variants) ? $reorderInfo->prefix_variants : []);
+
+                            foreach ($prefixes as $index => $prefix) {
+                                $variantKey = $variantKeys[$index] ?? "prefix_variant_" . ($index + 1);
+                                $mailbox = [
                                     'name' => ucfirst($prefix),
                                     'last_name' => ucfirst($prefix),
                                     'mailbox' => $prefix . '@' . $domainName,
                                     'password' => $this->customEncrypt($order->id)
                                 ];
+
+                                // Enrich with details if available
+                                if (isset($prefixVariantDetails[$variantKey])) {
+                                    $details = $prefixVariantDetails[$variantKey];
+                                    if (!empty($details['first_name'])) {
+                                        $mailbox['first_name'] = $details['first_name'];
+                                    }
+                                    if (!empty($details['last_name'])) {
+                                        $mailbox['last_name'] = $details['last_name'];
+                                    }
+                                }
+
+                                $mailboxes[] = $mailbox;
                             }
                         }
                     }
@@ -911,11 +956,10 @@ class EmailExportService
                     }
                     $emailAddress = $mailbox['mailbox'] ?? $mailbox['email'] ?? '';
                     $password = $mailbox['password'] ?? '';
-
                     if (empty($password)) {
                         $password = $this->customEncrypt($order->id);
                     }
-
+                    
                     fputcsv($file, [
                         $firstName,
                         $lastName,
