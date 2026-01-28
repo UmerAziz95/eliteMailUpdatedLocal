@@ -196,7 +196,25 @@ class OrderController extends Controller
             ];
         }
 
-        return view('admin.orders.order-view', compact('order', 'nextBillingInfo'));
+        // Get order provider splits for Private SMTP orders
+        $orderProviderSplits = [];
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        if (strtolower($providerType ?? '') === 'private smtp') {
+            $orderProviderSplits = \App\Models\OrderProviderSplit::where('order_id', $order->id)
+                ->get()
+                ->map(function ($split) {
+                    return [
+                        'id' => $split->id,
+                        'provider_slug' => $split->provider_slug,
+                        'domains' => $split->domains ?? [],
+                        'domain_statuses' => $split->domain_statuses ?? [],
+                        'mailboxes' => $split->mailboxes ?? [],
+                    ];
+                })
+                ->toArray();
+        }
+
+        return view('admin.orders.order-view', compact('order', 'nextBillingInfo', 'orderProviderSplits'));
     }
 
     public function edit($id)
