@@ -117,6 +117,7 @@ class OrderCancelledService
                     if (!$isGoogle365ForceCancel) {
                         $order->update([
                             'status_manage_by_admin' => 'cancelled',
+                            'reason' => $reason,
                         ]);
                         Log::info("Updated order record to cancelled: Order ID {$order->id}, User ID {$user_id}");
                     }
@@ -124,7 +125,7 @@ class OrderCancelledService
                     // Delete mailboxes from Mailin.ai immediately only for Force Cancel
                     // For EOBC, mailboxes should remain active until subscription end date
                     if ($force_cancel) {
-                        $mailboxDeletionInProgress = $this->deleteOrderMailboxes($order);
+                        $mailboxDeletionInProgress = $this->deleteOrderMailboxes($order, $reason);
                     } else {
                         Log::info("Skipping immediate mailbox deletion for EOBC cancellation - mailboxes will remain active until subscription end date", [
                             'action' => 'cancel_subscription',
@@ -380,13 +381,14 @@ class OrderCancelledService
     }
 
     /**
-     * Delete all mailboxes for an order from providers
-     * Routes to provider-specific methods based on order provider type
-     * 
+     * Delete all mailboxes for an order from providers.
+     * Routes to provider-specific methods based on order provider type.
+     *
      * @param Order $order The order to delete mailboxes for
+     * @param string|null $reason Cancellation reason (stored on order when status is set to cancelled / cancellation-in-process)
      * @return bool|void Returns true if deletion is in progress (async), void otherwise
      */
-    public function deleteOrderMailboxes(Order $order)
+    public function deleteOrderMailboxes(Order $order, $reason = null)
     {
         try {
             // Check if order is already in cancellation process
@@ -426,10 +428,11 @@ class OrderCancelledService
                 $this->deleteSmtpOrderMailboxes($order);
                 return;
             } elseif (in_array($providerType, ['Google', 'Microsoft 365'])) {
-                // Update status to 'cancellation-in-process' before dispatching job
-                $order->update([
+                // Update status to 'cancellation-in-process' before dispatching job; store reason on order
+                $order->update(array_filter([
                     'status_manage_by_admin' => 'cancellation-in-process',
-                ]);
+                    'reason' => $reason,
+                ]));
                 
                 Log::info('Updated order status to cancellation-in-process before mailbox deletion', [
                     'action' => 'delete_order_mailboxes',
