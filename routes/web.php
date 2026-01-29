@@ -591,6 +591,9 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/activity/data', [App\Http\Controllers\AppLogController::class, 'getContractorActivity'])->name('activity.data');
 
     });
+
+    Route::view('/guide', 'guide.functionlity-guide')->name('functionlity-guide');
+    Route::view('/developer-guide', 'guide.developer-guide')->name('developer-guide');
 });
 
 Route::post('admin/profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
@@ -1245,3 +1248,4 @@ Route::get('/clear-session', function () {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 })->name('clear.session');
+
