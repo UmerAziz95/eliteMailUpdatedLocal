@@ -2,622 +2,644 @@
 
 @section('title', 'Orders')
 @section('content')
-<style>
-    .email-tooltip .tooltip-inner {
-        max-width: 350px;
-        text-align: left;
-        white-space: nowrap;
-        padding: 8px 12px;
-    }
-</style>
-<section class="py-3 overflow-hidden">
-    {{-- <div class="d-flex align-items-center justify-content-between">
-        <a href="{{ route('admin.orders') }}" class="d-flex align-items-center justify-content-center"
-            style="height: 30px; width: 30px; border-radius: 50px; background-color: #525252c6;">
-            <i class="fa-solid fa-chevron-left"></i>
-        </a>
-        <a href="{{ route('customer.orders.reorder', ['order_id' => $order->id]) }}" class="c-btn text-decoration-none">
-            <i class="fa-solid fa-cart-plus"></i>
-            Re-order
-        </a>
-    </div> --}}
-
-    @php
-    $defaultImage = 'https://cdn-icons-png.flaticon.com/128/300/300221.png';
-    $defaultProfilePic =
-    'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
-    @endphp
-
-
-    <div class="d-flex align-items-center justify-content-between mt-3">
-        <div>
-            <div style="cursor: pointer; display: inline-flex; align-items: center; margin-bottom: 10px;">
-                <a href="{{ url('/admin/orders') }}"
-                    style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background-color: #2f3349; border-radius: 50%; text-decoration: none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M15 18l-6-6 6-6" />
-                    </svg>
-                </a>
-            </div>
-            <h5 class="mb-3">Order #{{ $order->id ?? 'N/A' }}</h5>
-            <h6><span class="opacity-50 fs-6">Order Date:</span>
-                {{ $order->created_at ? $order->created_at->format('M d, Y') : 'N/A' }}</h6>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-            <div
-                class="border border-{{ $order->status_manage_by_admin == 'cancelled' ? 'warning' : ' success' }} rounded-2 py-1 px-2 text-{{ $order->status_manage_by_admin == 'reject' ? ' warning' : 'success' }} bg-transparent">
-                {{ ucfirst($order->status_manage_by_admin ?? '') }}
-            </div>
-            @php
-                $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
-                $isPrivateSMTP = strtolower($providerType ?? '') === 'private smtp';
-            @endphp
-            @can('Order Reassign')
-                @if(!$isPrivateSMTP)
-                <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
-                    <i class="fa fa-user-edit"></i> Reassign Contractor
-                </button>
-                @endif
-            @endcan
-        </div>
-    </div>
-
-
-    
-    <!-- Reassign Contractor Modal -->
-    <div class="modal fade" id="reassignContractorModal" tabindex="-1" aria-labelledby="reassignContractorModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <form id="reassignContractorForm">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="reassignContractorModalLabel">Reassign Contractor</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    
-                    <div class="modal-body"> 
-                        {{-- {{dd(App\Models\User::whereHas('role')->where('name','Teams Leader')->get())}}   --}}
-                        <div class="mb-3">
-                            <label for="contractorSelect" class="form-label">Select Contractor</label>
-                           <select class="form-select" id="contractorSelect" name="contractor_id" required>
-                        <option value="">-- Select Contractor --</option>
-                        @php
-                            $roleNames = ['Teams Leader', 'contractor']; // add any roles you want
-                            $contractors = App\Models\User::whereHas('role', function($q) use ($roleNames) {
-                                    $q->whereIn('name', $roleNames);
-                                })
-                                ->orWhereHas('roles', function($q) use ($roleNames) { // spatie roles
-                                    $q->whereIn('name', $roleNames);
-                                })
-                                ->get();
-                        @endphp
-
-                        @foreach($contractors as $contractor)
-                            <option value="{{ $contractor->id }}" 
-                                @if($order->assigned_to == $contractor->id) selected @endif>
-                                {{ $contractor->name }} ({{ $contractor->email }})
-                            </option>
-                        @endforeach
-                    </select>
-
-                        </div>
-                            <input type="text" name="reassignment_note" id="reassignment_note" class="form-control" placeholder="Enter reason for reassignment..." required>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Reassign</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-@push('scripts')
-<script>
-$(function() {
-    $('#reassignContractorForm').on('submit', function(e) {
-        e.preventDefault();
-        var contractorId = $('#contractorSelect').val();
-        if (!contractorId) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Please select a contractor',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
+    <style>
+        .email-tooltip .tooltip-inner {
+            max-width: 350px;
+            text-align: left;
+            white-space: nowrap;
+            padding: 8px 12px;
         }
-        // First check if contractor is in helpers
-        $.ajax({
-            url: '/admin/orders/{{ $order->id }}/check-contractor-helpers',
-            method: 'POST',
-            data: {
-                contractor_id: contractorId,
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success && response.is_in_helpers) {
-                    // Show confirmation dialog if contractor is in helpers
-                    Swal.fire({
-                        title: 'Contractor Already in Helpers',
-                        text: `${response.contractor_name} is already added as a helper. Reassigning will remove them from the helpers list. Are you sure you want to continue?`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, reassign!'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            performReassignment(contractorId, true); // Remove from helpers
-                        }
-                    });
-                } else {
-                    // Proceed with normal reassignment
-                    performReassignment(contractorId, false);
-                }
-            },
-            error: function(xhr) {
-                console.error('Error checking contractor helpers:', xhr);
-                // If check fails, proceed with normal reassignment
-                performReassignment(contractorId, false);
-            }
-        });
-    });
+    </style>
+    <section class="py-3 overflow-hidden">
+        {{-- <div class="d-flex align-items-center justify-content-between">
+            <a href="{{ route('admin.orders') }}" class="d-flex align-items-center justify-content-center"
+                style="height: 30px; width: 30px; border-radius: 50px; background-color: #525252c6;">
+                <i class="fa-solid fa-chevron-left"></i>
+            </a>
+            <a href="{{ route('customer.orders.reorder', ['order_id' => $order->id]) }}" class="c-btn text-decoration-none">
+                <i class="fa-solid fa-cart-plus"></i>
+                Re-order
+            </a>
+        </div> --}}
 
-    function performReassignment(contractorId, removeFromHelpers) {
-        $.ajax({
-            url: '/admin/orders/{{ $order->id }}/reassign-contractor',
-            method: 'POST',
-            data: {
-                 contractor_id: contractorId,
-                 remove_from_helpers: removeFromHelpers,
-                 reassignment_note: $('#reassignment_note').val(),
-                _token: '{{ csrf_token() }}'
-            },
-            beforeSend: function() {
-                Swal.fire({
-                    title: 'Reassigning Contractor...',
-                    text: 'Please wait while we process your request',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    showConfirmButton: false,
-                    didOpen: () => {
-                        Swal.showLoading();
+        @php
+            $defaultImage = 'https://cdn-icons-png.flaticon.com/128/300/300221.png';
+            $defaultProfilePic =
+                'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=600';
+        @endphp
+
+
+        <div class="d-flex align-items-center justify-content-between mt-3">
+            <div>
+                <div style="cursor: pointer; display: inline-flex; align-items: center; margin-bottom: 10px;">
+                    <a href="{{ url('/admin/orders') }}"
+                        style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background-color: #2f3349; border-radius: 50%; text-decoration: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                    </a>
+                </div>
+                <h5 class="mb-3">Order #{{ $order->id ?? 'N/A' }}</h5>
+                <h6><span class="opacity-50 fs-6">Order Date:</span>
+                    {{ $order->created_at ? $order->created_at->format('M d, Y') : 'N/A' }}</h6>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div
+                    class="border border-{{ $order->status_manage_by_admin == 'cancelled' ? 'warning' : ' success' }} rounded-2 py-1 px-2 text-{{ $order->status_manage_by_admin == 'reject' ? ' warning' : 'success' }} bg-transparent">
+                    {{ ucfirst($order->status_manage_by_admin ?? '') }}
+                </div>
+                @php
+                    $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+                    $isPrivateSMTP = strtolower($providerType ?? '') === 'private smtp';
+                @endphp
+                @can('Order Reassign')
+                    @if(!$isPrivateSMTP)
+                        <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal"
+                            data-bs-target="#reassignContractorModal">
+                            <i class="fa fa-user-edit"></i> Reassign Contractor
+                        </button>
+                    @endif
+                @endcan
+            </div>
+        </div>
+
+
+
+        <!-- Reassign Contractor Modal -->
+        <div class="modal fade" id="reassignContractorModal" tabindex="-1" aria-labelledby="reassignContractorModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <form id="reassignContractorForm">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="reassignContractorModalLabel">Reassign Contractor</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            {{-- {{dd(App\Models\User::whereHas('role')->where('name','Teams Leader')->get())}} --}}
+                            <div class="mb-3">
+                                <label for="contractorSelect" class="form-label">Select Contractor</label>
+                                <select class="form-select" id="contractorSelect" name="contractor_id" required>
+                                    <option value="">-- Select Contractor --</option>
+                                    @php
+                                        $roleNames = ['Teams Leader', 'contractor']; // add any roles you want
+                                        $contractors = App\Models\User::whereHas('role', function ($q) use ($roleNames) {
+                                            $q->whereIn('name', $roleNames);
+                                        })
+                                            ->orWhereHas('roles', function ($q) use ($roleNames) { // spatie roles
+                                                $q->whereIn('name', $roleNames);
+                                            })
+                                            ->get();
+                                    @endphp
+
+                                    @foreach($contractors as $contractor)
+                                        <option value="{{ $contractor->id }}" @if($order->assigned_to == $contractor->id) selected
+                                        @endif>
+                                            {{ $contractor->name }} ({{ $contractor->email }})
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                            </div>
+                            <input type="text" name="reassignment_note" id="reassignment_note" class="form-control"
+                                placeholder="Enter reason for reassignment..." required>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Reassign</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        @push('scripts')
+            <script>
+                $(function () {
+                    $('#reassignContractorForm').on('submit', function (e) {
+                        e.preventDefault();
+                        var contractorId = $('#contractorSelect').val();
+                        if (!contractorId) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Please select a contractor',
+                                confirmButtonColor: '#3085d6'
+                            });
+                            return;
+                        }
+                        // First check if contractor is in helpers
+                        $.ajax({
+                            url: '/admin/orders/{{ $order->id }}/check-contractor-helpers',
+                            method: 'POST',
+                            data: {
+                                contractor_id: contractorId,
+                                _token: '{{ csrf_token() }}'
+                            },
+                            success: function (response) {
+                                if (response.success && response.is_in_helpers) {
+                                    // Show confirmation dialog if contractor is in helpers
+                                    Swal.fire({
+                                        title: 'Contractor Already in Helpers',
+                                        text: `${response.contractor_name} is already added as a helper. Reassigning will remove them from the helpers list. Are you sure you want to continue?`,
+                                        icon: 'warning',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#3085d6',
+                                        cancelButtonColor: '#d33',
+                                        confirmButtonText: 'Yes, reassign!'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            performReassignment(contractorId, true); // Remove from helpers
+                                        }
+                                    });
+                                } else {
+                                    // Proceed with normal reassignment
+                                    performReassignment(contractorId, false);
+                                }
+                            },
+                            error: function (xhr) {
+                                console.error('Error checking contractor helpers:', xhr);
+                                // If check fails, proceed with normal reassignment
+                                performReassignment(contractorId, false);
+                            }
+                        });
+                    });
+
+                    function performReassignment(contractorId, removeFromHelpers) {
+                        $.ajax({
+                            url: '/admin/orders/{{ $order->id }}/reassign-contractor',
+                            method: 'POST',
+                            data: {
+                                contractor_id: contractorId,
+                                remove_from_helpers: removeFromHelpers,
+                                reassignment_note: $('#reassignment_note').val(),
+                                _token: '{{ csrf_token() }}'
+                            },
+                            beforeSend: function () {
+                                Swal.fire({
+                                    title: 'Reassigning Contractor...',
+                                    text: 'Please wait while we process your request',
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false,
+                                    showConfirmButton: false,
+                                    didOpen: () => {
+                                        Swal.showLoading();
+                                    }
+                                });
+                            },
+                            success: function (response) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: 'Contractor reassigned successfully',
+                                    confirmButtonColor: '#3085d6'
+                                }).then(() => {
+                                    $('#reassignContractorModal').modal('hide');
+                                    location.reload();
+                                });
+                            },
+                            error: function (xhr) {
+                                let msg = xhr.responseJSON?.message || 'Failed to reassign contractor';
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: msg,
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        });
                     }
                 });
-            },
-            success: function(response) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: 'Contractor reassigned successfully',
-                    confirmButtonColor: '#3085d6'
-                }).then(() => {
-                    $('#reassignContractorModal').modal('hide');
-                    location.reload();
-                });
-            },
-            error: function(xhr) {
-                let msg = xhr.responseJSON?.message || 'Failed to reassign contractor';
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: msg,
-                    confirmButtonColor: '#3085d6'
-                });
-            }
-        });
-    }
-});
-</script>
-@endpush
+            </script>
+        @endpush
 
-    <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
-                data-bs-target="#configuration-tab-pane" type="button" role="tab" aria-controls="configuration-tab-pane"
-                aria-selected="true">Configuration</button>
-        </li>
-        <li class="nav-item" role="presentation" style="display: none;">
-            <button class="nav-link fs-6 px-5" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-tab-pane"
-                type="button" role="tab" aria-controls="email-tab-pane" aria-selected="false">Emails</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link fs-6 px-5" id="subscription-tab" data-bs-toggle="tab"
-                data-bs-target="#subscription-tab-pane" type="button" role="tab" aria-controls="subscription-tab-pane"
-                aria-selected="false">Subscription</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link fs-6 px-5" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets-tab-pane"
-                type="button" role="tab" aria-controls="tickets-tab-pane" aria-selected="false">Tickets</button>
-        </li>
-    </ul>
+        <ul class="nav nav-tabs order_view d-flex align-items-center justify-content-between" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fs-6 px-5 active" id="configuration-tab" data-bs-toggle="tab"
+                    data-bs-target="#configuration-tab-pane" type="button" role="tab" aria-controls="configuration-tab-pane"
+                    aria-selected="true">Configuration</button>
+            </li>
+            <li class="nav-item" role="presentation" style="display: none;">
+                <button class="nav-link fs-6 px-5" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-tab-pane"
+                    type="button" role="tab" aria-controls="email-tab-pane" aria-selected="false">Emails</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fs-6 px-5" id="subscription-tab" data-bs-toggle="tab"
+                    data-bs-target="#subscription-tab-pane" type="button" role="tab" aria-controls="subscription-tab-pane"
+                    aria-selected="false">Subscription</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fs-6 px-5" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets-tab-pane"
+                    type="button" role="tab" aria-controls="tickets-tab-pane" aria-selected="false">Tickets</button>
+            </li>
+        </ul>
 
-    <div class="tab-content mt-3" id="myTabContent">
-        <div class="tab-pane fade show active" id="configuration-tab-pane" role="tabpanel"
-            aria-labelledby="configuration-tab" tabindex="0">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card p-3 mb-3">
-                        <h6 class="d-flex align-items-center justify-content-between gap-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="d-flex align-items-center justify-content-center"
-                                    style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                                    <i class="fa-regular fa-envelope"></i>
+        <div class="tab-content mt-3" id="myTabContent">
+            <div class="tab-pane fade show active" id="configuration-tab-pane" role="tabpanel"
+                aria-labelledby="configuration-tab" tabindex="0">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card p-3 mb-3">
+                            <h6 class="d-flex align-items-center justify-content-between gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="d-flex align-items-center justify-content-center"
+                                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                        <i class="fa-regular fa-envelope"></i>
+                                    </div>
+                                    Email configurations
                                 </div>
-                                Email configurations
-                            </div>
-                            @php
-                                $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
-                                $isSmtpOrder = in_array(strtolower($providerType ?? ''), ['private smtp', 'smtp']);
-                            @endphp
-                            @if($isSmtpOrder && optional($order->reorderInfo)->count() > 0)
-                                <a href="{{ route('admin.orders.export.smtp.csv', $order->id) }}" 
-                                   class="btn btn-sm btn-success" 
-                                   title="Download CSV with all email accounts"
-                                   target="_blank">
-                                    <i class="fa-solid fa-download me-1"></i>Download CSV
-                                </a>
-                            @endif
-                        </h6>
-
-                        @if (optional($order->reorderInfo)->count() > 0)
-                        <div class="d-flex align-items-center justify-content-between">
-                            @php
-                            $domains = $order->reorderInfo->first()->domains ?? '';
-                            $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
-
-                            // Parse domains and count them
-                            $domainsArray = [];
-                            $lines = preg_split('/\r\n|\r|\n/', $domains);
-                            foreach ($lines as $line) {
-                            if (trim($line)) {
-                            $lineItems = explode(',', $line);
-                            foreach ($lineItems as $item) {
-                            if (trim($item)) {
-                            $domainsArray[] = trim($item);
-                            }
-                            }
-                            }
-                            }
-
-                            $totalDomains = count($domainsArray);
-                            $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
-                            @endphp
-                            <span>Total Inboxes <br> {{ $calculatedTotalInboxes }} ({{ $totalDomains }} domains × {{
-                                $inboxesPerDomain }})</span>
-                            <span>Inboxes per domain <br>
-                                {{ $order->reorderInfo->first()->inboxes_per_domain ?? '0' }}</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex flex-column">
-                            <span class="opacity-50">Prefix Variants</span>
-                            @php
-                            // Check if new prefix_variants JSON column exists and has data
-                            $prefixVariants = $order->reorderInfo->first()->prefix_variants ?? [];
-                            $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
-
-                            // If new format doesn't exist, fallback to old individual fields
-                            if (empty($prefixVariants)) {
-                            $prefixVariants = [];
-                            if ($order->reorderInfo->first()->prefix_variant_1) {
-                            $prefixVariants['prefix_variant_1'] = $order->reorderInfo->first()->prefix_variant_1;
-                            }
-                            if ($order->reorderInfo->first()->prefix_variant_2) {
-                            $prefixVariants['prefix_variant_2'] = $order->reorderInfo->first()->prefix_variant_2;
-                            }
-                            }
-                            @endphp
-
-                            @for($i = 1; $i <= $inboxesPerDomain; $i++) @php $variantKey="prefix_variant_$i" ;
-                                $variantValue=$prefixVariants[$variantKey] ?? 'N/A' ; @endphp <span>Variant {{ $i }}: {{
-                                $variantValue }}</span>
-                                @endfor
-                        </div>
-                        <div class="d-flex flex-column mt-3">
-                            <span class="opacity-50">Profile Picture URLs</span>
-                            @if($order->reorderInfo->first()->prefix_variants_details)
-                            @foreach($order->reorderInfo->first()->prefix_variants_details as $key => $variant)
-                            <div class="mt-1">
-                                <strong>{{ ucfirst(str_replace('_', ' ', $key)) }}:</strong>
-                                @if(!empty($variant['profile_link']))
-                                <a href="{{ $variant['profile_link'] }}" target="_blank">{{ $variant['profile_link']
-                                    }}</a>
-                                @else
-                                <span>N/A</span>
+                                @php
+                                    $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+                                    $isSmtpOrder = in_array(strtolower($providerType ?? ''), ['private smtp', 'smtp']);
+                                @endphp
+                                @if($isSmtpOrder && optional($order->reorderInfo)->count() > 0)
+                                    <a href="{{ route('admin.orders.export.smtp.csv', $order->id) }}"
+                                        class="btn btn-sm btn-success" title="Download CSV with all email accounts"
+                                        target="_blank">
+                                        <i class="fa-solid fa-download me-1"></i>
+                                    </a>
                                 @endif
-                            </div>
-                            @endforeach
+                            </h6>
+
+                            @if (optional($order->reorderInfo)->count() > 0)
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    @php
+                                                        $domains = $order->reorderInfo->first()->domains ?? '';
+                                                        $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
+
+                                                        // Parse domains and count them
+                                                        $domainsArray = [];
+                                                        $lines = preg_split('/\r\n|\r|\n/', $domains);
+                                                        foreach ($lines as $line) {
+                                                            if (trim($line)) {
+                                                                $lineItems = explode(',', $line);
+                                                                foreach ($lineItems as $item) {
+                                                                    if (trim($item)) {
+                                                                        $domainsArray[] = trim($item);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+
+                                                        $totalDomains = count($domainsArray);
+                                                        $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
+                                                    @endphp
+                                                    <span>Total Inboxes <br> {{ $calculatedTotalInboxes }} ({{ $totalDomains }} domains × {{
+                                $inboxesPerDomain }})</span>
+                                                    <span>Inboxes per domain <br>
+                                                        {{ $order->reorderInfo->first()->inboxes_per_domain ?? '0' }}</span>
+                                                </div>
+                                                <hr>
+                                                <div class="d-flex flex-column">
+                                                    <span class="opacity-50 mb-2">Prefix Variants</span>
+                                                    @php
+                                                        // Check if new prefix_variants JSON column exists and has data
+                                                        $prefixVariants = $order->reorderInfo->first()->prefix_variants ?? [];
+                                                        $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
+
+                                                        // If new format doesn't exist, fallback to old individual fields
+                                                        if (empty($prefixVariants)) {
+                                                            $prefixVariants = [];
+                                                            if ($order->reorderInfo->first()->prefix_variant_1) {
+                                                                $prefixVariants['prefix_variant_1'] = $order->reorderInfo->first()->prefix_variant_1;
+                                                            }
+                                                            if ($order->reorderInfo->first()->prefix_variant_2) {
+                                                                $prefixVariants['prefix_variant_2'] = $order->reorderInfo->first()->prefix_variant_2;
+                                                            }
+                                                        }
+                                                    @endphp
+
+                                                    @for($i = 1; $i <= $inboxesPerDomain; $i++)
+                                                        @php
+                                                            $variantKey = "prefix_variant_$i";
+                                                            $variantValue = $prefixVariants[$variantKey] ?? 'N/A';
+                                                            $variantDetails = $order->reorderInfo->first()->prefix_variants_details[$variantKey] ?? null;
+                                                            $firstName = $variantDetails['first_name'] ?? 'N/A';
+                                                            $lastName = $variantDetails['last_name'] ?? 'N/A';
+                                                        @endphp
+                                                        <div class="border rounded p-2 mb-2" style="background-color: rgba(255,255,255,0.03);">
+                                                            <div class="d-flex align-items-center mb-1">
+                                                                <span class="badge bg-secondary me-2">Variant {{ $i }}</span>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-4">
+                                                                    <small class="opacity-50 d-block">Prefix</small>
+                                                                    <span>{{ $variantValue }}</span>
+                                                                </div>
+                                                                <div class="col-4">
+                                                                    <small class="opacity-50 d-block">First Name</small>
+                                                                    <span>{{ $firstName }}</span>
+                                                                </div>
+                                                                <div class="col-4">
+                                                                    <small class="opacity-50 d-block">Last Name</small>
+                                                                    <span>{{ $lastName }}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @endfor
+                                                </div>
+                                                <div class="d-flex flex-column mt-3">
+                                                    <span class="opacity-50">Profile Picture URLs</span>
+                                                    @if($order->reorderInfo->first()->prefix_variants_details)
+                                                        @foreach($order->reorderInfo->first()->prefix_variants_details as $key => $variant)
+                                                            <div class="mt-1">
+                                                                <strong>{{ ucfirst(str_replace('_', ' ', $key)) }}:</strong>
+                                                                @if(!empty($variant['profile_link']))
+                                                                    <a href="{{ $variant['profile_link'] }}"
+                                                                        target="_blank">{{ $variant['profile_link'] }}</a>
+                                                                @else
+                                                                    <span>N/A</span>
+                                                                @endif
+                                                            </div>
+                                                        @endforeach
+                                                    @else
+                                                        <span>N/A</span>
+                                                    @endif
+                                                </div>
+                                                <div class="d-flex flex-column mt-3">
+                                                    <span class="opacity-50">Master Inbox Email</span>
+                                                    <span>{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
+                                                </div>
                             @else
-                            <span>N/A</span>
+                                <div class="text-muted">No email configuration data available</div>
                             @endif
                         </div>
-                        <!-- <div class="d-flex flex-column mt-3">
-                                    <span class="opacity-50">Profile Picture URL</span>
-                                    <span>{{ $order->reorderInfo->first()->email_persona_picture_link ?? 'N/A' }}</span>
-                                </div> -->
-                        {{-- <div class="d-flex flex-column mt-3">
-                            <span class="opacity-50">Email Persona Password</span>
-                            <span>{{ $order->reorderInfo->first()->email_persona_password ?? 'N/A' }}</span>
-                        </div> --}}
-                        <div class="d-flex flex-column mt-3">
-                            <span class="opacity-50">Master Inbox Email</span>
-                            <span>{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
+
+                        <!-- <div class="card p-3">
+                                                <h6 class="d-flex align-items-center gap-2">
+                                                    <div class="d-flex align-items-center justify-content-center"
+                                                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                                        <i class="fa-solid fa-cart-plus"></i>
+                                                    </div>
+                                                    Products: <span class="text-success">${{ number_format($order->amount ?? 0, 2) }}</span>
+                                                    <span>/Monthly</span>
+                                                </h6>
+
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div>
+                                                        <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
+                                                    </div>
+                                                    <div>
+                                                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                                                        <br>
+                                                        @if (isset($order->meta['product_details']))
+                                                            <span>{{ $order->meta['product_details']['quantity'] ?? '0' }} x
+                                                                ${{ number_format($order->meta['product_details']['unit_price'] ?? 0, 2) }}
+                                                                <small>/monthly</small></span>
+                                                        @else
+                                                            <span>{{ $order->reorderInfo->first()->total_inboxes ?? '0' }} <b>X </b>
+                                                                {{ number_format($order->amount, 2) }} /monthly</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div> -->
+                        <div class="price-display-section card p-3">
+                            @if(isset($order->plan) && $order->plan)
+                                                @php
+                                                    $totalInboxes = optional(optional($order)->reorderInfo)->count() > 0 ?
+                                                        $order->reorderInfo->first()->total_inboxes : 0;
+                                                    $originalPrice = $order->plan->price * $totalInboxes;
+                                                @endphp
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div>
+                                                        <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
+                                                    </div>
+                                                    <div>
+                                                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                                                        <br>
+                                                        <span>({{ $totalInboxes }} x ${{ number_format($order->plan->price, 2) }} <small>/{{
+                                $order->plan->duration }})</small></span>
+                                                    </div>
+                                                </div>
+                                                <h6 class="my-3 small"><span class="theme-text">Original Price:</span> ${{
+                                number_format($originalPrice, 2) }}</h6>
+                                                <!-- <h6><span class="theme-text">Discount:</span> 0%</h6> -->
+                                                <h6 class="small"><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }}
+                                                    <small>/{{ $order->plan->duration }}</small>
+                                                </h6>
+                            @else
+                                <h6><span class="theme-text">Original Price:</span> <small>Select a plan to view price</small>
+                                </h6>
+                                <h6><span class="theme-text">Total:</span> <small>Select a plan to view total</small></h6>
+                            @endif
                         </div>
-                        @else
-                        <div class="text-muted">No email configuration data available</div>
-                        @endif
                     </div>
 
-                    <!-- <div class="card p-3">
+                    <div class="col-md-6">
+                        <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
                             <h6 class="d-flex align-items-center gap-2">
                                 <div class="d-flex align-items-center justify-content-center"
                                     style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                                    <i class="fa-solid fa-cart-plus"></i>
+                                    <i class="fa-solid fa-earth-europe"></i>
                                 </div>
-                                Products: <span class="text-success">${{ number_format($order->amount ?? 0, 2) }}</span>
-                                <span>/Monthly</span>
+                                Domains & Configuration
                             </h6>
 
-                            <div class="d-flex align-items-center gap-3">
-                                <div>
-                                    <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
+                            @if (optional($order->reorderInfo)->count() > 0)
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Hosting Platform</span>
+                                    <span>{{ $order->reorderInfo->first()->hosting_platform }}</span>
                                 </div>
-                                <div>
-                                    <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                                    <br>
-                                    @if (isset($order->meta['product_details']))
-                                        <span>{{ $order->meta['product_details']['quantity'] ?? '0' }} x
-                                            ${{ number_format($order->meta['product_details']['unit_price'] ?? 0, 2) }}
-                                            <small>/monthly</small></span>
+
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Platform Login</span>
+                                    <span>{{ $order->reorderInfo->first()->platform_login }}</span>
+                                </div>
+                                <!-- platform_password -->
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Platform Password</span>
+                                    <span>{{ $order->reorderInfo->first()->platform_password }}</span>
+                                </div>
+
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Domain Forwarding Destination URL</span>
+                                    <span>{{ $order->reorderInfo->first()->forwarding_url }}</span>
+                                </div>
+
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Sending Platform</span>
+                                    <span>{{ $order->reorderInfo->first()->sending_platform }}</span>
+                                </div>
+
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Cold email platform - Login</span>
+                                    <span>{{ $order->reorderInfo->first()->sequencer_login }}</span>
+                                </div>
+                                <!-- Sending plateform Sequencer - Password  -->
+                                <div class="d-flex flex-column mb-3">
+                                    <span class="opacity-50">Cold email platform - Password </span>
+                                    <span>{{ $order->reorderInfo->first()->sequencer_password }}</span>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="opacity-50">Domains</span>
+                                    @php
+                                        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+                                        $isPrivateSMTP = strtolower($providerType ?? '') === 'private smtp';
+                                    @endphp
+
+                                    @if($isPrivateSMTP && !empty($orderProviderSplits))
+                                        {{-- Show domains from order_provider_splits with status --}}
+                                        @foreach($orderProviderSplits as $split)
+                                            <div class="mb-3">
+                                                <span class="badge bg-secondary mb-2">{{ ucfirst($split['provider_slug']) }}</span>
+                                                @foreach($split['domains'] as $domainKey => $domain)
+                                                    @php
+                                                        // Handle case where domain might be the key or value
+                                                        $domainName = is_string($domain) ? $domain : $domainKey;
+                                                        $statusData = $split['domain_statuses'][$domainName] ?? 'pending';
+                                                        // Ensure status is a string (could be array in some cases)
+                                                        $status = is_array($statusData) ? ($statusData['status'] ?? 'pending') : $statusData;
+                                                        $status = is_string($status) ? $status : 'pending';
+
+                                                        // Count mailboxes and collect emails for tooltip
+                                                        $domainMailboxes = $split['mailboxes'][$domainName] ?? [];
+                                                        $mailboxCount = 0;
+                                                        $emailList = [];
+                                                        if (is_array($domainMailboxes) && !empty($domainMailboxes)) {
+                                                            foreach ($domainMailboxes as $key => $mbx) {
+                                                                $email = $mbx['mailbox'] ?? $mbx['email'] ?? null;
+                                                                if (is_array($mbx) && !empty($email)) {
+                                                                    $mailboxCount++;
+                                                                    $emailList[] = $email;
+                                                                }
+                                                            }
+                                                        }
+                                                        $tooltipEmails = !empty($emailList) ? implode('<br>', $emailList) : 'No mailboxes created';
+
+                                                        // Determine badge color based on status
+                                                        $badgeClass = match ($status) {
+                                                            'active' => 'bg-success',
+                                                            'pending' => 'bg-warning text-dark',
+                                                            'activating' => 'bg-info',
+                                                            'failed' => 'bg-danger',
+                                                            default => 'bg-secondary'
+                                                        };
+                                                    @endphp
+                                                    <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                                                        <span>{{ $domainName }}</span>
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
+                                                            <span class="badge bg-primary" style="cursor: pointer;" data-bs-toggle="tooltip"
+                                                                data-bs-placement="left" data-bs-html="true"
+                                                                data-bs-custom-class="email-tooltip"
+                                                                title="{!! $tooltipEmails !!}">{{ $mailboxCount }} inboxes</span>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endforeach
                                     @else
-                                        <span>{{ $order->reorderInfo->first()->total_inboxes ?? '0' }} <b>X </b>
-                                            {{ number_format($order->amount, 2) }} /monthly</span>
+                                        {{-- Fallback to original domain display from reorderInfo --}}
+                                        @php
+                                            // Get the domains string from the order
+                                            $domainsString = $order->reorderInfo->first()->domains;
+
+                                            // Split by both newlines and commas
+                                            $domainsArray = [];
+
+                                            // First split by newlines
+                                            $lines = preg_split('/\r\n|\r|\n/', $domainsString);
+
+                                            // Then process each line
+                                            foreach ($lines as $line) {
+                                                if (trim($line)) {
+                                                    // Split line by commas and add to domains array
+                                                    $lineItems = explode(',', $line);
+                                                    foreach ($lineItems as $item) {
+                                                        if (trim($item)) {
+                                                            $domainsArray[] = trim($item);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        @endphp
+
+                                        @foreach ($domainsArray as $domain)
+                                            <span class="d-block">{{ $domain }}</span>
+                                        @endforeach
                                     @endif
                                 </div>
-                            </div>
-                        </div> -->
-                    <div class="price-display-section card p-3">
-                        @if(isset($order->plan) && $order->plan)
-                        @php
-                        $totalInboxes = optional(optional($order)->reorderInfo)->count() > 0 ?
-                        $order->reorderInfo->first()->total_inboxes : 0;
-                        $originalPrice = $order->plan->price * $totalInboxes;
-                        @endphp
-                        <div class="d-flex align-items-center gap-3">
-                            <div>
-                                <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
-                            </div>
-                            <div>
-                                <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                                <br>
-                                <span>({{ $totalInboxes }} x ${{ number_format($order->plan->price, 2) }} <small>/{{
-                                        $order->plan->duration }})</small></span>
-                            </div>
+                                @if($order->reorderInfo->first()->hosting_platform == 'namecheap')
+                                    <div class="d-flex flex-column mb-3 mt-3">
+                                        <span class="opacity-50">Backup Codes</span>
+                                        @php
+                                            $backupCodes = explode(',', $order->reorderInfo->first()->backup_codes);
+                                        @endphp
+                                        @foreach($backupCodes as $backupCode)
+                                            <span>{{ trim($backupCode) }}</span>
+
+                                        @endforeach
+                                        <span class="opacity-50">Additional Info</span>
+                                        <span>{{ $order->reorderInfo->first()->additional_info ?? '' }}</span>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="text-muted">No configuration information available</div>
+                            @endif
                         </div>
-                        <h6 class="my-3 small"><span class="theme-text">Original Price:</span> ${{
-                            number_format($originalPrice, 2) }}</h6>
-                        <!-- <h6><span class="theme-text">Discount:</span> 0%</h6> -->
-                        <h6 class="small"><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }}
-                            <small>/{{ $order->plan->duration }}</small></h6>
-                        @else
-                        <h6><span class="theme-text">Original Price:</span> <small>Select a plan to view price</small>
-                        </h6>
-                        <h6><span class="theme-text">Total:</span> <small>Select a plan to view total</small></h6>
-                        @endif
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-6">
-                    <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
+            <div class="tab-pane fade" id="email-tab-pane" role="tabpanel" aria-labelledby="email-tab" tabindex="0">
+                <div class="col-12">
+                    <div class="card p-3">
                         <h6 class="d-flex align-items-center gap-2">
                             <div class="d-flex align-items-center justify-content-center"
                                 style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
                                 <i class="fa-solid fa-earth-europe"></i>
                             </div>
-                            Domains & Configuration
+                            Emails
                         </h6>
 
-                        @if (optional($order->reorderInfo)->count() > 0)
-                        <div class="d-flex flex-column mb-3">
-                            <span class="opacity-50">Hosting Platform</span>
-                            <span>{{ $order->reorderInfo->first()->hosting_platform }}</span>
-                        </div>
-
-                        <div class="d-flex flex-column mb-3">
-                            <span class="opacity-50">Platform Login</span>
-                            <span>{{ $order->reorderInfo->first()->platform_login }}</span>
-                        </div>
-                        <!-- platform_password -->
-                        <div class="d-flex flex-column mb-3">
-                            <span class="opacity-50">Platform Password</span>
-                            <span>{{ $order->reorderInfo->first()->platform_password }}</span>
-                        </div>
-
-                        <div class="d-flex flex-column mb-3">
-                            <span class="opacity-50">Domain Forwarding Destination URL</span>
-                            <span>{{ $order->reorderInfo->first()->forwarding_url }}</span>
-                        </div>
-
-                        <div class="d-flex flex-column mb-3">
-                            <span class="opacity-50">Sending Platform</span>
-                            <span>{{ $order->reorderInfo->first()->sending_platform }}</span>
-                        </div>
-
-                        <div class="d-flex flex-column mb-3">
-                            <span class="opacity-50">Cold email platform - Login</span>
-                            <span>{{ $order->reorderInfo->first()->sequencer_login }}</span>
-                        </div>
-                        <!-- Sending plateform Sequencer - Password  -->
-                        <div class="d-flex flex-column mb-3">
-                            <span class="opacity-50">Cold email platform - Password </span>
-                            <span>{{ $order->reorderInfo->first()->sequencer_password }}</span>
-                        </div>
-                        <div class="d-flex flex-column">
-                            <span class="opacity-50">Domains</span>
-                            @php
-                            $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
-                            $isPrivateSMTP = strtolower($providerType ?? '') === 'private smtp';
-                            @endphp
-                            
-                            @if($isPrivateSMTP && !empty($orderProviderSplits))
-                                {{-- Show domains from order_provider_splits with status --}}
-                                @foreach($orderProviderSplits as $split)
-                                    <div class="mb-3">
-                                        <span class="badge bg-secondary mb-2">{{ ucfirst($split['provider_slug']) }}</span>
-                                        @foreach($split['domains'] as $domainKey => $domain)
-                                            @php
-                                                // Handle case where domain might be the key or value
-                                                $domainName = is_string($domain) ? $domain : $domainKey;
-                                                $statusData = $split['domain_statuses'][$domainName] ?? 'pending';
-                                                // Ensure status is a string (could be array in some cases)
-                                                $status = is_array($statusData) ? ($statusData['status'] ?? 'pending') : $statusData;
-                                                $status = is_string($status) ? $status : 'pending';
-                                                
-                                                // Count mailboxes and collect emails for tooltip
-                                                $domainMailboxes = $split['mailboxes'][$domainName] ?? [];
-                                                $mailboxCount = 0;
-                                                $emailList = [];
-                                                if (is_array($domainMailboxes) && !empty($domainMailboxes)) {
-                                                    foreach ($domainMailboxes as $key => $mbx) {
-                                                        $email = $mbx['mailbox'] ?? $mbx['email'] ?? null;
-                                                        if (is_array($mbx) && !empty($email)) {
-                                                            $mailboxCount++;
-                                                            $emailList[] = $email;
-                                                        }
-                                                    }
-                                                }
-                                                $tooltipEmails = !empty($emailList) ? implode('<br>', $emailList) : 'No mailboxes created';
-                                                
-                                                // Determine badge color based on status
-                                                $badgeClass = match($status) {
-                                                    'active' => 'bg-success',
-                                                    'pending' => 'bg-warning text-dark',
-                                                    'activating' => 'bg-info',
-                                                    'failed' => 'bg-danger',
-                                                    default => 'bg-secondary'
-                                                };
-                                            @endphp
-                                            <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
-                                                <span>{{ $domainName }}</span>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
-                                                    <span class="badge bg-primary" style="cursor: pointer;" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true" data-bs-custom-class="email-tooltip" title="{!! $tooltipEmails !!}">{{ $mailboxCount }} inboxes</span>
-                                                </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center gap-3" style="display: none;">
+                                <div style="display: none;">
+                                    <button id="addNewBtn" class="btn btn-primary me-2" style="display: none;">
+                                        <i class="fa-solid fa-plus me-1"></i> Add Email
+                                    </button>
+                                    <button id="saveAllBtn" class="btn btn-success" style="display: none;">
+                                        <i class="fa-solid fa-floppy-disk me-1"></i> Save All
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
+                                <div class="badge rounded-circle bg-primary p-2">
+                                    <i class="fa-solid fa-envelope text-white"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Email Accounts</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span id="totalRowCount" class="fw-bold">0</span>
+                                        <div class="progress" style="width: 100px; height: 6px;">
+                                            <div class="progress-bar bg-primary" id="emailProgressBar" role="progressbar"
+                                                style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                                             </div>
-                                        @endforeach
-                                    </div>
-                                @endforeach
-                            @else
-                                {{-- Fallback to original domain display from reorderInfo --}}
-                                @php
-                                // Get the domains string from the order
-                                $domainsString = $order->reorderInfo->first()->domains;
-
-                                // Split by both newlines and commas
-                                $domainsArray = [];
-
-                                // First split by newlines
-                                $lines = preg_split('/\r\n|\r|\n/', $domainsString);
-
-                                // Then process each line
-                                foreach ($lines as $line) {
-                                if (trim($line)) {
-                                // Split line by commas and add to domains array
-                                $lineItems = explode(',', $line);
-                                foreach ($lineItems as $item) {
-                                if (trim($item)) {
-                                $domainsArray[] = trim($item);
-                                }
-                                }
-                                }
-                                }
-                                @endphp
-
-                                @foreach ($domainsArray as $domain)
-                                <span class="d-block">{{ $domain }}</span>
-                                @endforeach
-                            @endif
-                        </div>
-                        @if($order->reorderInfo->first()->hosting_platform == 'namecheap')
-                        <div class="d-flex flex-column mb-3 mt-3">
-                            <span class="opacity-50">Backup Codes</span>
-                            @php
-                            $backupCodes = explode(',', $order->reorderInfo->first()->backup_codes);
-                            @endphp
-                            @foreach($backupCodes as $backupCode)
-                            <span>{{ trim($backupCode) }}</span>
-
-                            @endforeach
-                            <span class="opacity-50">Additional Info</span>
-                            <span>{{ $order->reorderInfo->first()->additional_info ?? '' }}</span>
-                        </div>
-                        @endif
-                        @else
-                        <div class="text-muted">No configuration information available</div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="email-tab-pane" role="tabpanel" aria-labelledby="email-tab" tabindex="0">
-            <div class="col-12">
-                <div class="card p-3">
-                    <h6 class="d-flex align-items-center gap-2">
-                        <div class="d-flex align-items-center justify-content-center"
-                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                            <i class="fa-solid fa-earth-europe"></i>
-                        </div>
-                        Emails
-                    </h6>
-
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="d-flex align-items-center gap-3" style="display: none;">
-                            <div style="display: none;">
-                                <button id="addNewBtn" class="btn btn-primary me-2" style="display: none;">
-                                    <i class="fa-solid fa-plus me-1"></i> Add Email
-                                </button>
-                                <button id="saveAllBtn" class="btn btn-success" style="display: none;">
-                                    <i class="fa-solid fa-floppy-disk me-1"></i> Save All
-                                </button>
-                            </div>
-                        </div>
-                        <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
-                            <div class="badge rounded-circle bg-primary p-2">
-                                <i class="fa-solid fa-envelope text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0">Email Accounts</h6>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span id="totalRowCount" class="fw-bold">0</span>
-                                    <div class="progress" style="width: 100px; height: 6px;">
-                                        <div class="progress-bar bg-primary" id="emailProgressBar" role="progressbar"
-                                            style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="table-responsive">
-                        <table id="email-configuration" class="display w-100">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Password</th>
-                                    <!-- <th>Action</th> -->
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
+                        <div class="table-responsive">
+                            <table id="email-configuration" class="display w-100">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Password</th>
+                                        <!-- <th>Action</th> -->
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    @push('scripts')
-                    <script>
-                        $(document).ready(function() {
+                        @push('scripts')
+                            <script>
+                                $(document).ready(function () {
                                     // Get the total_inboxes from order configuration
                                     // const totalInboxes = {{ $order->plan && $order->plan->max_inbox ? $order->plan->max_inbox : 0 }};
                                     const totalInboxes = {{ optional($order->reorderInfo->first())->total_inboxes ?? 0 }};
@@ -688,23 +710,23 @@ $(function() {
                                         dom: 'frtip',
                                         autoWidth: false,
                                         columnDefs: [{
-                                                width: '33%',
-                                                targets: 0
-                                            }, // Name column
-                                            {
-                                                width: '33%',
-                                                targets: 1
-                                            }, // Email column
-                                            {
-                                                width: '33%',
-                                                targets: 2
-                                            }, // Password column
+                                            width: '33%',
+                                            targets: 0
+                                        }, // Name column
+                                        {
+                                            width: '33%',
+                                            targets: 1
+                                        }, // Email column
+                                        {
+                                            width: '33%',
+                                            targets: 2
+                                        }, // Password column
                                             // { width: '10%', targets: 3 }  // Action column
                                         ],
                                         responsive: {
                                             details: {
                                                 display: $.fn.dataTable.Responsive.display.modal({
-                                                    header: function(row) {
+                                                    header: function (row) {
                                                         return 'Email Details';
                                                     }
                                                 }),
@@ -713,31 +735,31 @@ $(function() {
                                         },
                                         ajax: {
                                             url: '/admin/orders/{{ $order->id }}/emails',
-                                            dataSrc: function(json) {
+                                            dataSrc: function (json) {
                                                 return json.data || [];
                                             }
                                         },
                                         columns: [{
-                                                data: 'name',
-                                                render: function(data, type, row) {
-                                                    return data || '';
-                                                    // return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter name">`;
-                                                }
-                                            },
-                                            {
-                                                data: 'email',
-                                                render: function(data, type, row) {
-                                                    return data || '';
-                                                    // return `<input type="email" class="form-control email" value="${data || ''}" placeholder="Enter email">`;
-                                                }
-                                            },
-                                            {
-                                                data: 'password',
-                                                render: function(data, type, row) {
-                                                    return data || '';
-                                                    // return `<input type="password" class="form-control password" value="${data || ''}" placeholder="Enter password">`;
-                                                }
+                                            data: 'name',
+                                            render: function (data, type, row) {
+                                                return data || '';
+                                                // return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter name">`;
                                             }
+                                        },
+                                        {
+                                            data: 'email',
+                                            render: function (data, type, row) {
+                                                return data || '';
+                                                // return `<input type="email" class="form-control email" value="${data || ''}" placeholder="Enter email">`;
+                                            }
+                                        },
+                                        {
+                                            data: 'password',
+                                            render: function (data, type, row) {
+                                                return data || '';
+                                                // return `<input type="password" class="form-control password" value="${data || ''}" placeholder="Enter password">`;
+                                            }
+                                        }
                                             // ,
                                             // {
                                             //     data: 'id',
@@ -746,26 +768,26 @@ $(function() {
                                             //     }
                                             // }
                                         ],
-                                        drawCallback: function(settings) {
+                                        drawCallback: function (settings) {
                                             updateRowCount(this.api());
                                             updateAddButtonState(this.api());
                                         }
                                     });
 
                                     // Event listeners
-                                    emailTable.on('draw', function() {
+                                    emailTable.on('draw', function () {
                                         updateRowCount(emailTable);
                                         updateAddButtonState(emailTable);
                                         updateProgressBar(emailTable);
                                     });
 
                                     // Add new row button click handler
-                                    $('#addNewBtn').click(function() {
+                                    $('#addNewBtn').click(function () {
                                         const rowCount = emailTable.rows().count();
                                         if (maxEmails > 0 && rowCount >= maxEmails) {
                                             toastr.error(
                                                 `You can only add up to ${maxEmails} email accounts as per your order configuration.`
-                                                );
+                                            );
                                             return;
                                         }
 
@@ -778,11 +800,11 @@ $(function() {
                                     });
 
                                     // Save all button click handler
-                                    $('#saveAllBtn').click(function() {
+                                    $('#saveAllBtn').click(function () {
                                         const emailsToSave = [];
                                         let isValid = true;
 
-                                        $(emailTable.rows().nodes()).each(function() {
+                                        $(emailTable.rows().nodes()).each(function () {
                                             const row = $(this);
                                             const nameField = row.find('.name');
                                             const emailField = row.find('.email');
@@ -836,23 +858,23 @@ $(function() {
                                                 order_id: '{{ $order->id }}',
                                                 emails: emailsToSave
                                             },
-                                            success: function(response) {
+                                            success: function (response) {
                                                 toastr.success('Emails saved successfully');
                                                 emailTable.ajax.reload();
                                             },
-                                            error: function(xhr) {
+                                            error: function (xhr) {
                                                 if (xhr.responseJSON && xhr.responseJSON.errors) {
                                                     // Loop through each error and mark fields as invalid
-                                                    Object.keys(xhr.responseJSON.errors).forEach(function(key) {
+                                                    Object.keys(xhr.responseJSON.errors).forEach(function (key) {
                                                         // Handle array fields like emails.0.email
                                                         if (key.includes('emails.')) {
                                                             const parts = key.split('.');
                                                             const index = parseInt(parts[
-                                                            1]); // Get the row index as integer
+                                                                1]); // Get the row index as integer
                                                             const field = parts[
-                                                            2]; // Get the field name (email, password, etc.)
+                                                                2]; // Get the field name (email, password, etc.)
                                                             const errorMsg = xhr.responseJSON.errors[key][
-                                                            0]; // Get the first error message
+                                                                0]; // Get the first error message
 
                                                             // Find the input field at the specific row
                                                             const row = $(emailTable.rows().nodes()).eq(index);
@@ -869,7 +891,7 @@ $(function() {
                                                                 if (!feedback.length) {
                                                                     input.after(
                                                                         `<div class="invalid-feedback">${errorMsg}</div>`
-                                                                        );
+                                                                    );
                                                                 } else {
                                                                     feedback.text(errorMsg);
                                                                 }
@@ -885,7 +907,7 @@ $(function() {
                                     });
 
                                     // Delete button click handler
-                                    $('#email-configuration tbody').on('click', '.deleteEmailBtn', function() {
+                                    $('#email-configuration tbody').on('click', '.deleteEmailBtn', function () {
                                         const button = $(this);
                                         const row = button.closest('tr');
                                         const id = button.data('id');
@@ -898,14 +920,14 @@ $(function() {
                                                 headers: {
                                                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                                                 },
-                                                success: function() {
+                                                success: function () {
                                                     toastr.success('Email deleted successfully');
                                                     // Remove just the deleted row instead of reloading the entire table
                                                     emailTable.row(row).remove().draw(false);
                                                     updateRowCount(emailTable);
                                                     updateAddButtonState(emailTable);
                                                 },
-                                                error: function(xhr) {
+                                                error: function (xhr) {
                                                     toastr.error(xhr.responseJSON?.message || 'Error deleting email');
                                                 }
                                             });
@@ -919,179 +941,179 @@ $(function() {
 
                                     // ...existing code for delete button and other functionality...
                                 });
-                    </script>
-                    @endpush
+                            </script>
+                        @endpush
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="tab-pane fade" id="subscription-tab-pane" role="tabpanel" aria-labelledby="subscription-tab"
-            tabindex="0">
-            @if ($order->subscription)
-            <div class="card p-3">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h6 class="d-flex align-items-center gap-2">
-                        <div class="d-flex align-items-center justify-content-center"
-                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                            <i class="fa-solid fa-cart-plus"></i>
-                        </div>
-                        Subscriptions
-                    </h6>
-                    <button
-                        class="py-1 px-2 text-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} rounded-2 border border-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} bg-transparent">
-                        {{ ucfirst($order->subscription->status) }}
-                    </button>
-                </div>
-
-                @if (isset($nextBillingInfo['next_billing_at']) && $nextBillingInfo['next_billing_at'] !== 'N/A')
-                <span>Next Billing</span>
-
-                <div>
-                    <span class="theme-text">Price</span>
-                    <h6>${{ number_format($order->amount, 2) }} <span class="opacity-50">/monthly</span></h6>
-                </div>
-
-                <div>
-                    <span class="theme-text">Date</span>
-                    <h6>{{ $nextBillingInfo['next_billing_at'] }}</h6>
-                </div>
-                @else
-                <span>End Billing Date</span>
-
-                <div>
-                    <span class="theme-text">Price</span>
-                    <h6>${{ number_format($order->amount, 2) }} <span class="opacity-50">/monthly</span></h6>
-                </div>
-
-                <div>
-                    <span class="theme-text">Date</span>
-                    <h6>{{ $nextBillingInfo['current_term_end'] ?? 'N/A' }}</h6>
-                </div>
-                @endif
-
-                {{-- @if ($order->subscription->status == 'active')
-                <div class="d-flex justify-content-end">
-                    <button type="button" data-bs-toggle="modal" data-bs-target="#cancel_subscription"
-                        class="py-1 px-2 text-danger rounded-2 border border-danger bg-transparent">
-                        Cancel Subscription
-                    </button>
-                </div>
-                @endif --}}
-            </div>
-
-            @if (!empty($nextBillingInfo))
-            <!-- <div class="card mt-4">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Subscription Details</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p><strong>Status:</strong> {{ ucfirst($nextBillingInfo['status'] ?? 'N/A') }}</p>
-                                    <p><strong>Billing Period:</strong> {{ $nextBillingInfo['billing_period'] ?? 'N/A' }} {{ $nextBillingInfo['billing_period_unit'] ?? '' }}</p>
-                                    <p><strong>Current Term Start:</strong> {{ $nextBillingInfo['current_term_start'] }}</p>
+            <div class="tab-pane fade" id="subscription-tab-pane" role="tabpanel" aria-labelledby="subscription-tab"
+                tabindex="0">
+                @if ($order->subscription)
+                    <div class="card p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h6 class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center"
+                                    style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                    <i class="fa-solid fa-cart-plus"></i>
                                 </div>
-                                <div class="col-md-6">
-                                    <p><strong>Current Term End:</strong> {{ $nextBillingInfo['current_term_end'] }}</p>
-                                    <p><strong>Next Billing:</strong> {{ $nextBillingInfo['next_billing_at'] }}</p>
-                                </div>
+                                Subscriptions
+                            </h6>
+                            <button
+                                class="py-1 px-2 text-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} rounded-2 border border-{{ $order->subscription->status == 'active' ? 'success' : 'danger' }} bg-transparent">
+                                {{ ucfirst($order->subscription->status) }}
+                            </button>
+                        </div>
+
+                        @if (isset($nextBillingInfo['next_billing_at']) && $nextBillingInfo['next_billing_at'] !== 'N/A')
+                            <span>Next Billing</span>
+
+                            <div>
+                                <span class="theme-text">Price</span>
+                                <h6>${{ number_format($order->amount, 2) }} <span class="opacity-50">/monthly</span></h6>
                             </div>
+
+                            <div>
+                                <span class="theme-text">Date</span>
+                                <h6>{{ $nextBillingInfo['next_billing_at'] }}</h6>
+                            </div>
+                        @else
+                            <span>End Billing Date</span>
+
+                            <div>
+                                <span class="theme-text">Price</span>
+                                <h6>${{ number_format($order->amount, 2) }} <span class="opacity-50">/monthly</span></h6>
+                            </div>
+
+                            <div>
+                                <span class="theme-text">Date</span>
+                                <h6>{{ $nextBillingInfo['current_term_end'] ?? 'N/A' }}</h6>
+                            </div>
+                        @endif
+
+                        {{-- @if ($order->subscription->status == 'active')
+                        <div class="d-flex justify-content-end">
+                            <button type="button" data-bs-toggle="modal" data-bs-target="#cancel_subscription"
+                                class="py-1 px-2 text-danger rounded-2 border border-danger bg-transparent">
+                                Cancel Subscription
+                            </button>
                         </div>
-                    </div> -->
-            @endif
-            <div class="card p-3 mt-3">
-                <div class="row mb-4">
-                    <div class="col-md-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-                                <div class="row gy-3">
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <h5 class="mb-2">Filters</h5>
-                                        <div>
-                                            <button id="applyFilters"
-                                                class="btn btn-primary btn-sm me-2">Filter</button>
-                                            <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                        @endif --}}
+                    </div>
+
+                    @if (!empty($nextBillingInfo))
+                        <!-- <div class="card mt-4">
+                                                                    <div class="card-header">
+                                                                        <h5 class="card-title mb-0">Subscription Details</h5>
+                                                                    </div>
+                                                                    <div class="card-body">
+                                                                        <div class="row">
+                                                                            <div class="col-md-6">
+                                                                                <p><strong>Status:</strong> {{ ucfirst($nextBillingInfo['status'] ?? 'N/A') }}</p>
+                                                                                <p><strong>Billing Period:</strong> {{ $nextBillingInfo['billing_period'] ?? 'N/A' }} {{ $nextBillingInfo['billing_period_unit'] ?? '' }}</p>
+                                                                                <p><strong>Current Term Start:</strong> {{ $nextBillingInfo['current_term_start'] }}</p>
+                                                                            </div>
+                                                                            <div class="col-md-6">
+                                                                                <p><strong>Current Term End:</strong> {{ $nextBillingInfo['current_term_end'] }}</p>
+                                                                                <p><strong>Next Billing:</strong> {{ $nextBillingInfo['next_billing_at'] }}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div> -->
+                    @endif
+                    <div class="card p-3 mt-3">
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="row gy-3">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <h5 class="mb-2">Filters</h5>
+                                                <div>
+                                                    <button id="applyFilters"
+                                                        class="btn btn-primary btn-sm me-2">Filter</button>
+                                                    <button id="clearFilters" class="btn btn-secondary btn-sm">Clear</button>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="statusFilter" class="form-label">Invoice Status</label>
+                                                <select id="statusFilter" class="form-select">
+                                                    <option value="">All Statuses</option>
+                                                    <option value="paid">Paid</option>
+                                                    <option value="pending">Pending</option>
+                                                    <option value="failed">Failed</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="orderStatusFilter" class="form-label">Order Status</label>
+                                                <select id="orderStatusFilter" class="form-select">
+                                                    <option value="">All Order Statuses</option>
+                                                    <option value="pending">Pending</option>
+                                                    <option value="processing">Processing</option>
+                                                    <option value="completed">Completed</option>
+                                                    <option value="expired">Expired</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="startDate" class="form-label">Start Date</label>
+                                                <input type="date" id="startDate" class="form-control" placeholder="Start Date">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="endDate" class="form-label">End Date</label>
+                                                <input type="date" id="endDate" class="form-control" placeholder="End Date">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="priceRange" class="form-label">Price Range</label>
+                                                <select id="priceRange" class="form-select">
+                                                    <option value="">All Prices</option>
+                                                    <option value="0-100">$0 - $100</option>
+                                                    <option value="101-500">$101 - $500</option>
+                                                    <option value="501-1000">$501 - $1000</option>
+                                                    <option value="1001+">$1000+</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
-                                        <label for="statusFilter" class="form-label">Invoice Status</label>
-                                        <select id="statusFilter" class="form-select">
-                                            <option value="">All Statuses</option>
-                                            <option value="paid">Paid</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="failed">Failed</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label for="orderStatusFilter" class="form-label">Order Status</label>
-                                        <select id="orderStatusFilter" class="form-select">
-                                            <option value="">All Order Statuses</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="processing">Processing</option>
-                                            <option value="completed">Completed</option>
-                                            <option value="expired">Expired</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label for="startDate" class="form-label">Start Date</label>
-                                        <input type="date" id="startDate" class="form-control" placeholder="Start Date">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label for="endDate" class="form-label">End Date</label>
-                                        <input type="date" id="endDate" class="form-control" placeholder="End Date">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label for="priceRange" class="form-label">Price Range</label>
-                                        <select id="priceRange" class="form-select">
-                                            <option value="">All Prices</option>
-                                            <option value="0-100">$0 - $100</option>
-                                            <option value="101-500">$101 - $500</option>
-                                            <option value="501-1000">$501 - $1000</option>
-                                            <option value="1001+">$1000+</option>
-                                        </select>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="card p-3 mt-3">
-                <h6 class="d-flex align-items-center gap-2">
-                    <div class="d-flex align-items-center justify-content-center"
-                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                        <i class="fa-solid fa-file-invoice"></i>
+                    <div class="card p-3 mt-3">
+                        <h6 class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-file-invoice"></i>
+                            </div>
+                            Invoices
+                        </h6>
+
+                        <div class="table-responsive">
+                            <table id="invoicesTable" class="display w-100">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice #</th>
+                                        <th>Amount</th>
+                                        <th>Paid At</th>
+                                        <th>Status</th>
+                                        <!-- order-status -->
+                                        <th>Order Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                            </table>
+                        </div>
                     </div>
-                    Invoices
-                </h6>
 
-                <div class="table-responsive">
-                    <table id="invoicesTable" class="display w-100">
-                        <thead>
-                            <tr>
-                                <th>Invoice #</th>
-                                <th>Amount</th>
-                                <th>Paid At</th>
-                                <th>Status</th>
-                                <!-- order-status -->
-                                <th>Order Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                    </table>
-                </div>
-            </div>
-
-            @push('scripts')
-            <script>
-                $(document).ready(function() {
+                    @push('scripts')
+                        <script>
+                            $(document).ready(function () {
                                 let invoicesTable = $('#invoicesTable').DataTable({
                                     processing: true,
                                     serverSide: true,
                                     responsive: {
                                         details: {
                                             display: $.fn.dataTable.Responsive.display.modal({
-                                                header: function(row) {
+                                                header: function (row) {
                                                     return 'Invoice Details';
                                                 }
                                             }),
@@ -1101,7 +1123,7 @@ $(function() {
                                     ajax: {
                                         url: "{{ route('admin.invoices.data') }}",
                                         type: "GET",
-                                        data: function(d) {
+                                        data: function (d) {
                                             d.order_id = "{{ $order->id }}";
                                             d.status = $('#statusFilter').val();
                                             d.order_status = $('#orderStatusFilter').val();
@@ -1110,42 +1132,42 @@ $(function() {
                                             d.price_range = $('#priceRange').val();
                                             return d;
                                         },
-                                        error: function(xhr, error, thrown) {
+                                        error: function (xhr, error, thrown) {
                                             console.error('Error:', error);
                                             toastr.error('Error loading invoice data');
                                         }
                                     },
                                     columns: [{
-                                            data: 'chargebee_invoice_id',
-                                            name: 'chargebee_invoice_id'
-                                        },
-                                        {
-                                            data: 'amount',
-                                            name: 'amount'
-                                        },
-                                        {
-                                            data: 'paid_at',
-                                            name: 'paid_at'
-                                        },
-                                        {
-                                            data: 'status',
-                                            name: 'status'
-                                        },
-                                        {
-                                            data: 'status_manage_by_admin',
-                                            name: 'status_manage_by_admin'
-                                        },
-                                        {
-                                            data: 'action',
-                                            name: 'action',
-                                            orderable: false,
-                                            searchable: false
-                                        }
+                                        data: 'chargebee_invoice_id',
+                                        name: 'chargebee_invoice_id'
+                                    },
+                                    {
+                                        data: 'amount',
+                                        name: 'amount'
+                                    },
+                                    {
+                                        data: 'paid_at',
+                                        name: 'paid_at'
+                                    },
+                                    {
+                                        data: 'status',
+                                        name: 'status'
+                                    },
+                                    {
+                                        data: 'status_manage_by_admin',
+                                        name: 'status_manage_by_admin'
+                                    },
+                                    {
+                                        data: 'action',
+                                        name: 'action',
+                                        orderable: false,
+                                        searchable: false
+                                    }
                                     ],
                                     order: [
                                         [0, 'desc']
                                     ],
-                                    drawCallback: function(settings) {
+                                    drawCallback: function (settings) {
                                         if (settings.json && settings.json.error) {
                                             toastr.error(settings.json.message || 'Error loading data');
                                         }
@@ -1154,12 +1176,12 @@ $(function() {
                                 });
 
                                 // Apply filters button click handler
-                                $('#applyFilters').on('click', function() {
+                                $('#applyFilters').on('click', function () {
                                     invoicesTable.draw();
                                 });
 
                                 // Clear filters button click handler
-                                $('#clearFilters').on('click', function() {
+                                $('#clearFilters').on('click', function () {
                                     $('#statusFilter').val('');
                                     $('#orderStatusFilter').val('');
                                     $('#startDate').val('');
@@ -1169,7 +1191,7 @@ $(function() {
                                 });
 
                                 // Date range validation
-                                $('#endDate').on('change', function() {
+                                $('#endDate').on('change', function () {
                                     const startDate = $('#startDate').val();
                                     const endDate = $(this).val();
 
@@ -1179,7 +1201,7 @@ $(function() {
                                     }
                                 });
 
-                                $('#startDate').on('change', function() {
+                                $('#startDate').on('change', function () {
                                     const startDate = $(this).val();
                                     const endDate = $('#endDate').val();
 
@@ -1190,9 +1212,9 @@ $(function() {
                                 });
                             });
 
-                            $(document).ready(function() {
+                            $(document).ready(function () {
                                 // Handle form submission
-                                $('#cancel_subscription form').on('submit', function(e) {
+                                $('#cancel_subscription form').on('submit', function (e) {
                                     e.preventDefault();
 
                                     // Check if reason is provided
@@ -1233,7 +1255,7 @@ $(function() {
                                                 headers: {
                                                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                                                 },
-                                                beforeSend: function() {
+                                                beforeSend: function () {
                                                     // Show loading state
                                                     Swal.fire({
                                                         title: 'Processing...',
@@ -1246,7 +1268,7 @@ $(function() {
                                                         }
                                                     });
                                                 },
-                                                success: function(response) {
+                                                success: function (response) {
                                                     // Close the modal
                                                     $('#cancel_subscription').modal('hide');
 
@@ -1261,7 +1283,7 @@ $(function() {
                                                         window.location.reload();
                                                     });
                                                 },
-                                                error: function(xhr) {
+                                                error: function (xhr) {
                                                     let errorMessage =
                                                         'An error occurred while cancelling your subscription.';
                                                     if (xhr.responseJSON && xhr.responseJSON.message) {
@@ -1280,132 +1302,132 @@ $(function() {
                                     });
                                 }
                             });
-            </script>
-            @endpush
-            @else
-            <div class="card p-3">
-                <div class="text-center text-muted">
-                    No subscription information available
-                </div>
+                        </script>
+                    @endpush
+                @else
+                    <div class="card p-3">
+                        <div class="text-center text-muted">
+                            No subscription information available
+                        </div>
+                    </div>
+                @endif
             </div>
-            @endif
-        </div>
 
-        <div class="tab-pane fade" id="tickets-tab-pane" role="tabpanel" aria-labelledby="tickets-tab" tabindex="0">
-            <div class="card p-3">
-                <div class="table-responsive">
-                    <table id="myTable" class="display w-100">
-                        <thead>
-                            <tr>
-                                <th>Category</th>
-                                <th>Ticket #</th>
-                                <th>Created At</th>
-                                <th>Status</th>
-                                <th>Priority</th>
-                                <th>Order #</th>
-                                <!-- <th>Subscription #</th>
-                                <th>Description</th> -->
-                            </tr>
-                        </thead>
-                        <tbody>
+            <div class="tab-pane fade" id="tickets-tab-pane" role="tabpanel" aria-labelledby="tickets-tab" tabindex="0">
+                <div class="card p-3">
+                    <div class="table-responsive">
+                        <table id="myTable" class="display w-100">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Ticket #</th>
+                                    <th>Created At</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Order #</th>
+                                    <!-- <th>Subscription #</th>
+                                                    <th>Description</th> -->
+                                </tr>
+                            </thead>
+                            <tbody>
 
-                            @if($order->supportTickets && $order->supportTickets->count() > 0)
-                            @foreach($order->supportTickets as $ticket)
-                            <tr>
-                                <td>{{ ucfirst($ticket->category) ?? 'N/A' }}</td>
-                                <td>
-                                    <a href="{{ route('admin.support.tickets.show', $ticket->id) }}"
-                                        class="text-primary text-decoration-none">
-                                        {{ $ticket->ticket_number ?? 'N/A' }}
-                                    </a>
-                                </td>
-                                <td>{{ $ticket->created_at ?
-                                    $ticket->created_at->format('d M, Y') : 'N/A' }}</td>
-                                <td>
-                                    <span
-                                        class="badge bg-{{ $ticket->status === 'open' ? 'warning' : ($ticket->status === 'closed' ? 'success' : 'info') }}">
-                                        {{ ucfirst(str_replace('_', ' ', $ticket->status)) ?? 'N/A' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span
-                                        class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'secondary') }}">
-                                        {{ ucfirst($ticket->priority) ?? 'N/A' }}
-                                    </span>
-                                </td>
-                                <td>{{ $ticket->order_id ?? 'N/A' }}</td>
-                                <!-- <td>{{ $order->subscription ? $order->subscription->chargebee_subscription_id : 'N/A' }}</td>
-                                <td>
-                                    <span title="{{ $ticket->description }}">
-                                        {{ strlen($ticket->description) > 50 ? substr($ticket->description, 0, 50) . '...' : ($ticket->description ?? 'N/A') }}
-                                    </span>
-                                </td> -->
-                            </tr>
-                            @endforeach
-                            @else
-                            <tr>
-                                <td colspan="8" class="text-center text-muted">No tickets found for this order</td>
-                            </tr>
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Cancel Subscription Modal -->
-    <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
-        aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header border-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <h6 class="d-flex flex-column align-items-center justify-content-start gap-2">
-                        <div class="d-flex align-items-center justify-content-center"
-                            style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                            <i class="fa-solid fa-cart-plus"></i>
-                        </div>
-                        Cancel Subscription
-                    </h6>
-
-                    <p class="note">
-                        We are sad to to hear you're cancelling. Would you mind sharing the reason
-                        for the cancelation? We strive to always improve and would appreciate your
-                        feedback.
-                    </p>
-
-                    {{-- <form action="{{ route('customer.subscription.cancel') }}" method="POST">
-                        @csrf
-                        <div class="mb-3">
-                            <label for="cancellation_reason">Reason *</label>
-                            <textarea id="cancellation_reason" name="reason" class="form-control" rows="8"
-                                required></textarea>
-                        </div>
-
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="remove_accounts" id="remove_accounts">
-                            <label class="form-check-label" for="remove_accounts">
-                                I would like to have these email accounts removed and the domains
-                                released immediately. I will not be using these inboxes any longer.
-                            </label>
-                        </div>
-
-                        <div
-                            class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
-                            <button type="button"
-                                class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
-                                data-bs-dismiss="modal">No, I changed my mind</button>
-                            <button type="submit"
-                                class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
-                                I'm sure</button>
-                        </div>
-                    </form> --}}
+                                @if($order->supportTickets && $order->supportTickets->count() > 0)
+                                    @foreach($order->supportTickets as $ticket)
+                                                        <tr>
+                                                            <td>{{ ucfirst($ticket->category) ?? 'N/A' }}</td>
+                                                            <td>
+                                                                <a href="{{ route('admin.support.tickets.show', $ticket->id) }}"
+                                                                    class="text-primary text-decoration-none">
+                                                                    {{ $ticket->ticket_number ?? 'N/A' }}
+                                                                </a>
+                                                            </td>
+                                                            <td>{{ $ticket->created_at ?
+                                        $ticket->created_at->format('d M, Y') : 'N/A' }}</td>
+                                                            <td>
+                                                                <span
+                                                                    class="badge bg-{{ $ticket->status === 'open' ? 'warning' : ($ticket->status === 'closed' ? 'success' : 'info') }}">
+                                                                    {{ ucfirst(str_replace('_', ' ', $ticket->status)) ?? 'N/A' }}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <span
+                                                                    class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'secondary') }}">
+                                                                    {{ ucfirst($ticket->priority) ?? 'N/A' }}
+                                                                </span>
+                                                            </td>
+                                                            <td>{{ $ticket->order_id ?? 'N/A' }}</td>
+                                                            <!-- <td>{{ $order->subscription ? $order->subscription->chargebee_subscription_id : 'N/A' }}</td>
+                                                                                                                                                                                        <td>
+                                                                                                                                                                                            <span title="{{ $ticket->description }}">
+                                                                                                                                                                                                {{ strlen($ticket->description) > 50 ? substr($ticket->description, 0, 50) . '...' : ($ticket->description ?? 'N/A') }}
+                                                                                                                                                                                            </span>
+                                                                                                                                                                                        </td> -->
+                                                        </tr>
+                                    @endforeach
+                                @else
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted">No tickets found for this order</td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+
+        <!-- Cancel Subscription Modal -->
+        <div class="modal fade" id="cancel_subscription" tabindex="-1" aria-labelledby="cancel_subscriptionLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header border-0">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h6 class="d-flex flex-column align-items-center justify-content-start gap-2">
+                            <div class="d-flex align-items-center justify-content-center"
+                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                <i class="fa-solid fa-cart-plus"></i>
+                            </div>
+                            Cancel Subscription
+                        </h6>
+
+                        <p class="note">
+                            We are sad to to hear you're cancelling. Would you mind sharing the reason
+                            for the cancelation? We strive to always improve and would appreciate your
+                            feedback.
+                        </p>
+
+                        {{-- <form action="{{ route('customer.subscription.cancel') }}" method="POST">
+                            @csrf
+                            <div class="mb-3">
+                                <label for="cancellation_reason">Reason *</label>
+                                <textarea id="cancellation_reason" name="reason" class="form-control" rows="8"
+                                    required></textarea>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="remove_accounts" id="remove_accounts">
+                                <label class="form-check-label" for="remove_accounts">
+                                    I would like to have these email accounts removed and the domains
+                                    released immediately. I will not be using these inboxes any longer.
+                                </label>
+                            </div>
+
+                            <div
+                                class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                                <button type="button"
+                                    class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                                    data-bs-dismiss="modal">No, I changed my mind</button>
+                                <button type="submit"
+                                    class="border border-danger py-1 px-3 w-100 bg-transparent text-danger rounded-2">Yes,
+                                    I'm sure</button>
+                            </div>
+                        </form> --}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 @endsection
