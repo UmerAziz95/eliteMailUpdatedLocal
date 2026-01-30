@@ -482,7 +482,7 @@ class OrderCancelledService
      * @param \Illuminate\Support\Collection $splits Collection of OrderProviderSplit models
      * @return bool Returns true if any deletion is in progress (async)
      */
-    private function deleteMailboxesFromProviderSplits(Order $order, $splits)
+    public function deleteMailboxesFromProviderSplits(Order $order, $splits)
     {
         try {
             Log::info("Starting mailbox deletion from order_provider_splits", [
@@ -573,7 +573,7 @@ class OrderCancelledService
      * @param Order $order The order to delete mailboxes for
      * @return void
      */
-    private function deleteSmtpOrderMailboxes(Order $order)
+    public function deleteSmtpOrderMailboxes(Order $order)
     {
         try {
             // Get all OrderEmail records for this order that have Mailin.ai mailbox IDs
