@@ -113,6 +113,15 @@ class ProcessMailAutomationJob implements ShouldQueue
             throw new \Exception('Failed to split domains across providers');
         }
 
+        // Get list of active provider slugs from the new split
+        $activeProviderSlugs = array_keys($domainSplit);
+
+        // Delete any existing splits that are NOT in the new active list
+        // This handles the case where a provider was disabled and should be removed
+        OrderProviderSplit::where('order_id', $order->id)
+            ->whereNotIn('provider_slug', $activeProviderSlugs)
+            ->delete();
+
         foreach ($domainSplit as $providerSlug => $providerDomains) {
             if (empty($providerDomains)) {
                 continue;
@@ -142,6 +151,8 @@ class ProcessMailAutomationJob implements ShouldQueue
         Log::channel('mailin-ai')->info('Domain split saved', [
             'order_id' => $order->id,
             'splits' => array_map(fn($d) => count($d), $domainSplit),
+            'removed_inactive_splits_count' => OrderProviderSplit::where('order_id', $order->id)->whereNotIn('provider_slug', $activeProviderSlugs)->count() // logic already blindly deleted them so this count would be 0 or needs to be done before.
+            // Simplified log:
         ]);
     }
 

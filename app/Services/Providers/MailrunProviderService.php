@@ -665,6 +665,12 @@ class MailrunProviderService implements SmtpProviderInterface
 
             $data = $response->json();
 
+            // Log raw response for debugging
+            Log::channel('mailin-ai')->debug('Mailrun: Raw nameservers API response', [
+                'response_keys' => is_array($data) ? array_keys($data) : 'not_array',
+                'raw_data' => $data,
+            ]);
+
             // Parse response into domain => nameservers map
             $result = ['success' => true, 'domains' => []];
 
@@ -679,9 +685,14 @@ class MailrunProviderService implements SmtpProviderInterface
                     // If items are arrays containing 'domain' key
                     if (is_array($domainData) && isset($domainData['domain'])) {
                         $domain = $domainData['domain'];
+                        $ns = $domainData['nameservers'] ?? $domainData['ns'] ?? [];
                         $result['domains'][$domain] = [
-                            'nameservers' => $domainData['nameservers'] ?? $domainData['ns'] ?? [],
+                            'nameservers' => $ns,
                         ];
+                        Log::channel('mailin-ai')->debug('Mailrun: Extracted nameservers for domain', [
+                            'domain' => $domain,
+                            'nameservers' => $ns,
+                        ]);
                     }
                 }
             }
@@ -690,15 +701,21 @@ class MailrunProviderService implements SmtpProviderInterface
             if (empty($result['domains']) && is_array($data)) {
                 foreach ($data as $key => $value) {
                     if (is_string($key) && is_array($value)) {
+                        $ns = $value['nameservers'] ?? $value['ns'] ?? $value;
                         $result['domains'][$key] = [
-                            'nameservers' => $value['nameservers'] ?? $value['ns'] ?? $value,
+                            'nameservers' => $ns,
                         ];
+                        Log::channel('mailin-ai')->debug('Mailrun: Extracted nameservers via fallback', [
+                            'domain_key' => $key,
+                            'nameservers' => $ns,
+                        ]);
                     }
                 }
             }
 
             Log::channel('mailin-ai')->info('Mailrun: Nameservers retrieved', [
                 'domains' => array_keys($result['domains']),
+                'nameservers_count' => array_map(fn($d) => count($d['nameservers'] ?? []), $result['domains']),
             ]);
 
             return $result;
@@ -760,16 +777,33 @@ class MailrunProviderService implements SmtpProviderInterface
                 ];
             }
 
+            $responseData = $response->json();
+
+            // Try to extract UUID/ID from various possible response keys
+            // Mailrun API may return the enrollment ID in different formats
+            $uuid = $responseData['uuid']
+                ?? $responseData['id']
+                ?? $responseData['enrollmentId']
+                ?? $responseData['enrollment_id']
+                ?? $responseData['jobId']
+                ?? $responseData['job_id']
+                ?? ($responseData['data']['uuid'] ?? null)
+                ?? ($responseData['data']['id'] ?? null)
+                ?? ($responseData['data']['enrollmentId'] ?? null)
+                ?? null;
+
             Log::channel('mailin-ai')->info('Mailrun: Enrollment initiated', [
                 'domain_count' => count($domains),
-                'response_dump' => $response->json(),
+                'extracted_uuid' => $uuid,
+                'response_keys' => array_keys($responseData),
+                'response_dump' => $responseData,
             ]);
 
             return [
                 'success' => true,
                 'message' => 'Enrollment initiated',
-                'uuid' => $response->json('uuid') ?? $response->json('id'),
-                'data' => $response->json(),
+                'uuid' => $uuid,
+                'data' => $responseData,
             ];
 
         } catch (\Exception $e) {
