@@ -477,15 +477,28 @@ class MailboxCreationService
 
                 // If complete mismatch (no matching prefixes), skip saving and mark as pending
                 if ($hasCompleteMismatch) {
-                    Log::channel('mailin-ai')->error('Mailrun: Complete prefix mismatch - NOT saving wrong mailboxes', [
+                    $reason = "mailrun provider this domains already processed with these mailboxes now second time new mailboxes not proceeded and order reject it";
+                    Log::channel('mailin-ai')->error('Mailrun: Complete prefix mismatch - Rejecting Order', [
                         'domain' => $domain,
                         'returned_prefixes' => $returnedPrefixes,
                         'expected_prefixes' => $expectedPrefixes,
+                        'reason' => $reason
                     ]);
 
-                    // Add to pending - these mailboxes were NOT saved
-                    $results['pending'][] = $domain;
-                    continue;
+                    $order->update([
+                        'status_manage_by_admin' => 'reject',
+                        'reason' => $reason,
+                        'rejected_at' => now(),
+                    ]);
+
+                    // Stop processing for this split/order
+                    return [
+                        'created' => [],
+                        'failed' => [],
+                        'pending' => [], // Clear pending so it stops
+                        'rejected' => true, // Signal rejection
+                        'error' => $reason
+                    ];
                 }
             }
 
