@@ -88,6 +88,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
             'inboxes_per_domain' => count($prefixVariants),
             'persona' => $persona,
             'email_password' => $emailPassword,
+            'infra_type' => 'Google',
         ], $additionalData);
 
         if ($sequencer) {
