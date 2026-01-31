@@ -581,6 +581,7 @@
     </script>
 
     <script>
+        console.log("Dashboard loaded automatically");
         // Debug AJAX calls  
         $(document).ajaxSend(function(event, jqXHR, settings) {
             console.log('AJAX Request:', {
