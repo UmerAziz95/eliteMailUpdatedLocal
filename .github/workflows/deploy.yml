@@ -1,18 +1,18 @@
-name: Deploy Application (Beta)
+name: Deploy Application
 
 on:
   push:
-    branches: [ "beta" ]
-
-concurrency:
-  group: deploy-beta
-  cancel-in-progress: true
+    branches: [ "beta", "master" ]
 
 jobs:
-  deploy:
+  deploy-beta:
+    if: github.ref == 'refs/heads/beta'
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-beta
+      cancel-in-progress: true
     steps:
-      - name: Deploy to Server
+      - name: Deploy Beta to Server
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -21,17 +21,72 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
+
+            echo "=============================="
+            echo "🚀 STARTING BETA DEPLOYMENT"
+            echo "📂 Path: /var/www/testProjectInbox"
+            echo "=============================="
+
             cd /var/www/testProjectInbox
 
-            # Safer than git pull (avoids merge conflicts)
-            git fetch --all
+            echo "🔄 Fetching latest code (beta)"
+            git fetch origin
+            git checkout beta
             git reset --hard origin/beta
 
+            echo "🧱 Running migrations"
             php artisan migrate --force
 
-            # Safer than "optimize" (optimize can fail on route cache)
+            echo "⚡ Caching config / routes / views"
             php artisan config:cache
             php artisan route:cache || true
             php artisan view:cache || true
 
+            echo "🔁 Restarting queues"
             php artisan queue:restart || true
+
+            echo "✅ BETA DEPLOYMENT COMPLETED"
+            echo "=============================="
+
+  deploy-master:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-master
+      cancel-in-progress: true
+    steps:
+      - name: Deploy Master to Server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            echo "=============================="
+            echo "🚀 STARTING MASTER DEPLOYMENT"
+            echo "📂 Path: /var/www/EliteMailBoxes"
+            echo "=============================="
+
+            cd /var/www/EliteMailBoxes
+
+            echo "🔄 Fetching latest code (master)"
+            git fetch origin
+            git checkout master
+            git reset --hard origin/master
+
+            echo "🧱 Running migrations"
+            php artisan migrate --force
+
+            echo "⚡ Caching config / routes / views"
+            php artisan config:cache
+            php artisan route:cache || true
+            php artisan view:cache || true
+
+            echo "🔁 Restarting queues"
+            php artisan queue:restart || true
+
+            echo "✅ MASTER DEPLOYMENT COMPLETED"
+            echo "=============================="
