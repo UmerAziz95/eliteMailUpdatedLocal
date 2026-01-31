@@ -786,7 +786,7 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     //panels 
     Route::get('/panels/dashboard', [ContractorPanelController::class, 'index'])->name('panels.index');
     Route::get('/panels/data', [ContractorPanelController::class, 'getOrdersData'])->name('panels.data');
-    Route::get('/assigned/order/data', [ContractorOrderController::class, 'getAssignedOrdersData'])->name('panels.data');
+    Route::get('/assigned/order/data', [ContractorOrderController::class, 'getAssignedOrdersData'])->name('panels.assigned.orders.data');
     Route::get('/orders/{orderId}/splits', [ContractorPanelController::class, 'getOrderSplits'])->name('orders.splits');
     Route::post('/orders/{orderId}/assign-to-me', [ContractorOrderController::class, 'assignOrderToMe'])->name('orders.assign-to-me');
     Route::post('/orders/{orderId}/toggle-shared', [ContractorOrderController::class, 'toggleSharedStatus'])->name('orders.toggle-shared');
