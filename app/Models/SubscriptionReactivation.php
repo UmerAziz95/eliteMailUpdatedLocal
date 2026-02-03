@@ -20,6 +20,7 @@ class SubscriptionReactivation extends Model
         'data',
         'latest_invoice_start_date',
         'latest_invoice_end_date',
+        'retry_count',
     ];
 
     protected $casts = [

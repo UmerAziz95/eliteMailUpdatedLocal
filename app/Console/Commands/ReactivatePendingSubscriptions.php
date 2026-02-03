@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\SubscriptionReactivation;
 use App\Models\Subscription as UserSubscription;
+use App\Models\Order;
 use App\Services\SubscriptionReactivationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -60,13 +61,14 @@ class ReactivatePendingSubscriptions extends Command
                     continue;
                 }
 
-                // Check end date
-                // If end_date is null, we assume we can proceed (or should we wait? usually cancelled subs have end_date)
+                // Check end date using the stored latest_invoice_end_date
                 $shouldReactivate = false;
                 $now = Carbon::now();
 
+                // Ensure we don't process subscriptions that are not cancelled (unless it's a retry?)
+                // Actually if it's pending, it implies previously it was cancelled. 
+                // But subscription status might have changed externally?
                 if ($subscription->status !== 'cancelled') {
-                    // Already active or something else? Mark as processed to avoid loops
                     $reactivation->update([
                         'status' => 'success', // or 'skipped'
                         'message' => 'Subscription is not cancelled (current status: ' . $subscription->status . '). Marked as handled.',
@@ -74,10 +76,6 @@ class ReactivatePendingSubscriptions extends Command
                     $bar->advance();
                     continue;
                 }
-
-                // Check end date using the stored latest_invoice_end_date
-                $shouldReactivate = false;
-                $now = Carbon::now();
 
                 $endDate = $reactivation->latest_invoice_end_date ? Carbon::parse($reactivation->latest_invoice_end_date) : null;
 
@@ -89,9 +87,7 @@ class ReactivatePendingSubscriptions extends Command
                         Log::info("Reactivation #{$reactivation->id}: Invoice end date ({$endDate}) has NOT passed. Waiting.");
                     }
                 } else {
-                    // Fallback: If no end_date stored, check subscription or reactivate immediately?
-                    // Let's stick to the stored date logic. If null, maybe we should fetch subscription as backup or just proceed?
-                    // User asked to base on these dates. If null, let's look at subscription as fallback or warn.
+                    // Fallback: If no end_date stored
                     if ($subscription->end_date) {
                         $subEndDate = Carbon::parse($subscription->end_date);
                         if ($now->gt($subEndDate)) {
@@ -105,25 +101,60 @@ class ReactivatePendingSubscriptions extends Command
                 }
 
                 if ($shouldReactivate) {
-                    $this->info("Reactivating subscription {$reactivation->chargebee_subscription_id}...");
+                    $this->info("Reactivating subscription {$reactivation->chargebee_subscription_id} (Attempt " . ($reactivation->retry_count + 1) . ")...");
 
                     $result = $subscriptionReactivationService->reactivate(
                         $reactivation->chargebee_subscription_id,
                         $reactivation->user_id
                     );
 
-                    $reactivation->update([
-                        'status' => $result['success'] ? 'success' : 'failed',
-                        'message' => $result['message'] ?? '',
-                        'data' => $result, // Store full result
-                        'latest_invoice_start_date' => isset($result['current_term_start']) ? Carbon::createFromTimestamp($result['current_term_start']) : null,
-                        'latest_invoice_end_date' => isset($result['current_term_end']) ? Carbon::createFromTimestamp($result['current_term_end']) : null,
-                    ]);
-
                     if ($result['success']) {
+                        $reactivation->update([
+                            'status' => 'success',
+                            'message' => $result['message'] ?? '',
+                            'data' => $result,
+                            'latest_invoice_start_date' => isset($result['current_term_start']) ? Carbon::createFromTimestamp($result['current_term_start']) : null,
+                            'latest_invoice_end_date' => isset($result['current_term_end']) ? Carbon::createFromTimestamp($result['current_term_end']) : null,
+                        ]);
                         $this->info("✅ Reactivation successful.");
                     } else {
-                        $this->error("❌ Reactivation failed: " . ($result['message'] ?? 'Unknown error'));
+                        // Failed
+                        $newRetryCount = $reactivation->retry_count + 1;
+                        $message = "Reactivation failed (Attempt {$newRetryCount}): " . ($result['message'] ?? 'Unknown error');
+
+                        // User request: "retry 3 time ... when 4th time failed then order cancelled"
+                        // This means we allow 3 retries (total 4 attempts).
+                        if ($newRetryCount >= 4) {
+                            $this->error("❌ Max retries reached (4 failures). Cancelling Order.");
+
+                            $reactivation->update([
+                                'status' => 'failed',
+                                'message' => "Max retries reached. Order cancelled. Last error: " . ($result['message'] ?? ''),
+                                'retry_count' => $newRetryCount,
+                                'data' => $result,
+                            ]);
+
+                            // Cancel the Order locally
+                            $order = Order::find($reactivation->order_id);
+                            if ($order) {
+                                $order->update([
+                                    'status' => 'cancelled',
+                                    'status_manage_by_admin' => 'cancelled',
+                                ]);
+                                Log::info("Order #{$order->id} cancelled due to failed subscription reactivation max retries.");
+                            } else {
+                                Log::error("Order #{$reactivation->order_id} not found for cancellation.");
+                            }
+
+                        } else {
+                            // Retry available
+                            $reactivation->update([
+                                'message' => $message,
+                                'retry_count' => $newRetryCount,
+                                'data' => $result,
+                            ]);
+                            $this->warn("⚠️ Reactivation failed. Retrying later (Count: {$newRetryCount}).");
+                        }
                     }
                 }
 
