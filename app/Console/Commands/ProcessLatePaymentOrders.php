@@ -10,6 +10,9 @@ use App\Models\OrderTracking;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Models\Subscription as UserSubscription;
+use App\Models\SubscriptionReactivation;
+use App\Services\SubscriptionReactivationService;
 
 class ProcessLatePaymentOrders extends Command
 {
@@ -30,7 +33,7 @@ class ProcessLatePaymentOrders extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(SubscriptionReactivationService $subscriptionReactivationService)
     {
         $isDryRun = $this->option('dry-run');
 
@@ -50,9 +53,29 @@ class ProcessLatePaymentOrders extends Command
         foreach ($orders as $order) {
             try {
                 if ($isDryRun) {
-                    $this->info("   [DRY RUN] Would process Order #{$order->id} ({$order->provider_type}) - Status: {$order->status}");
+                    $this->info("   [DRY RUN] Would process Order #{$order->id} ({$order->provider_type}) - Status: {$order->status_manage_by_admin}");
                 } else {
-                    DB::transaction(function () use ($order) {
+                    DB::transaction(function () use ($order, $subscriptionReactivationService) {
+                        // Check if subscription needs reactivation
+                        if ($order->chargebee_subscription_id) {
+                            $subscription = UserSubscription::where('chargebee_subscription_id', $order->chargebee_subscription_id)->first();
+
+                            if ($subscription && $subscription->status === 'cancelled') {
+                                Log::info("Queuing subscription reactivation for Order #{$order->id} (Sub ID: {$order->chargebee_subscription_id})");
+
+                                // Create pending reactivation record
+                                SubscriptionReactivation::create([
+                                    'user_id' => $order->user_id,
+                                    'order_id' => $order->id,
+                                    'chargebee_subscription_id' => $order->chargebee_subscription_id,
+                                    'status' => 'pending',
+                                    'message' => 'Queued for reactivation. Waiting for invoice period expiration.',
+                                    'latest_invoice_start_date' => $subscription->last_billing_date ? \Carbon\Carbon::parse($subscription->last_billing_date) : null,
+                                    'latest_invoice_end_date' => $subscription->end_date ? \Carbon\Carbon::parse($subscription->end_date) : null,
+                                ]);
+                            }
+                        }
+
                         $providerType = strtolower($order->provider_type ?? '');
                         $status = strtolower($order->status_manage_by_admin ?? '');
 
