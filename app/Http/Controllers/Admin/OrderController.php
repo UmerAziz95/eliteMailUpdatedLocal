@@ -3781,9 +3781,8 @@ class OrderController extends Controller
                 // --- Step 1: Activate Domains ---
                 $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => ">>> Step 1: Activating Domains..."]);
 
-                // Run via Process to stream output
-                $phpBinary = PHP_BINARY;
-                $artisanPath = base_path('artisan');
+                // Run via Process to stream output. Use PHP CLI binary (artisan must run under CLI, not FPM).
+                $phpBinary = $this->getPhpCliBinary();
 
                 // Prepare environment with potential fix for Windows localhost [2002] error
                 $env = getenv();
@@ -3864,6 +3863,24 @@ class OrderController extends Controller
             'Connection' => 'keep-alive',
             'X-Accel-Buffering' => 'no',
         ]);
+    }
+
+    /**
+     * Resolve PHP CLI binary for running artisan in a subprocess.
+     * When the app runs under PHP-FPM, PHP_BINARY points to php-fpm, which cannot run artisan.
+     * Use config/env override or fall back to 'php' (CLI) when PHP_BINARY looks like FPM.
+     */
+    private function getPhpCliBinary(): string
+    {
+        $configured = config('app.php_cli_path') ?? env('PHP_CLI_PATH');
+        if ($configured !== null && $configured !== '') {
+            return $configured;
+        }
+        $binary = defined('PHP_BINARY') ? PHP_BINARY : 'php';
+        if (str_contains($binary, 'fpm')) {
+            return 'php';
+        }
+        return $binary;
     }
 
     /**
