@@ -528,9 +528,17 @@ class OrderController extends Controller
             Auth::id() // Who performed the action
         );
 
+        $oldStatus = $order->status_manage_by_admin;
+        $newStatus = $request->status_manage_by_admin;
+
         // Update the order status
-        $order->status_manage_by_admin = $request->status_manage_by_admin;
+        $order->status_manage_by_admin = $newStatus;
         $order->save();
+
+        // When order is "fixed" (reject → in-progress), sync order_provider_splits with current order (domains/prefixes)
+        if (strtolower($oldStatus) === 'reject' && strtolower($newStatus) === 'in-progress') {
+            $this->syncOrderProviderSplitsWhenFixed($order);
+        }
 
         return response()->json(['success' => true, 'message' => 'Status updated']);
     }
@@ -1315,6 +1323,9 @@ class OrderController extends Controller
         // If a panel is set to "in-progress", update order status to "in-progress"
         if ($newPanelStatus === 'in-progress') {
             if ($order->status_manage_by_admin !== 'in-progress') {
+                if (strtolower($order->status_manage_by_admin ?? '') === 'reject') {
+                    $this->syncOrderProviderSplitsWhenFixed($order);
+                }
                 $order->update(['status_manage_by_admin' => 'in-progress']);
             }
         }
@@ -1356,10 +1367,28 @@ class OrderController extends Controller
                     }
                 } else {
                     if ($order->status_manage_by_admin !== 'in-progress') {
+                        if (strtolower($order->status_manage_by_admin ?? '') === 'reject') {
+                            $this->syncOrderProviderSplitsWhenFixed($order);
+                        }
                         $order->update(['status_manage_by_admin' => 'in-progress']);
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * When order is "fixed" (reject → in-progress), sync order_provider_splits with current order (domains from reorder_info).
+     */
+    private function syncOrderProviderSplitsWhenFixed(Order $order): void
+    {
+        try {
+            \App\Jobs\MailAutomation\ProcessMailAutomationJob::syncSplitsForOrder($order);
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('OrderProviderSplitSync failed after order fixed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

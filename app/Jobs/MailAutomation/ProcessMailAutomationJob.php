@@ -4,6 +4,7 @@ namespace App\Jobs\MailAutomation;
 
 use App\Models\Order;
 use App\Models\OrderProviderSplit;
+use App\Models\SmtpProviderSplit;
 use App\Services\DomainSplitService;
 use App\Services\MailAutomation\DomainActivationService;
 use App\Services\MailAutomation\MailboxCreationService;
@@ -127,7 +128,7 @@ class ProcessMailAutomationJob implements ShouldQueue
                 continue;
             }
 
-            $provider = \App\Models\SmtpProviderSplit::getBySlug($providerSlug);
+            $provider = SmtpProviderSplit::getBySlug($providerSlug);
             $providerName = $provider ? $provider->name : $providerSlug;
 
             OrderProviderSplit::updateOrCreate(
@@ -151,9 +152,114 @@ class ProcessMailAutomationJob implements ShouldQueue
         Log::channel('mailin-ai')->info('Domain split saved', [
             'order_id' => $order->id,
             'splits' => array_map(fn($d) => count($d), $domainSplit),
-            'removed_inactive_splits_count' => OrderProviderSplit::where('order_id', $order->id)->whereNotIn('provider_slug', $activeProviderSlugs)->count() // logic already blindly deleted them so this count would be 0 or needs to be done before.
-            // Simplified log:
         ]);
+    }
+
+    /**
+     * Sync order_provider_splits for an order from current reorder_info (domains).
+     * Use when an order is "fixed" after rejection (admin changes status reject → in-progress).
+     *
+     * Splits are built from current provider configuration: only active (enabled) providers
+     * are included. If a provider was disabled, its split is deleted and domains are
+     * reassigned to the remaining active providers according to their split percentages.
+     *
+     * @param Order $order Order (with reorderInfo loaded)
+     * @return bool True if sync was performed, false if skipped
+     */
+    public static function syncSplitsForOrder(Order $order): bool
+    {
+        $order->loadMissing('reorderInfo', 'plan');
+
+        $reorderInfo = $order->reorderInfo?->first();
+        if (!$reorderInfo) {
+            Log::channel('mailin-ai')->debug('OrderProviderSplitSync: no reorderInfo', ['order_id' => $order->id]);
+            return false;
+        }
+
+        $plan = $order->plan;
+        if (!$plan || $plan->provider_type !== 'Private SMTP') {
+            Log::channel('mailin-ai')->debug('OrderProviderSplitSync: not Private SMTP', ['order_id' => $order->id]);
+            return false;
+        }
+
+        $domains = self::parseDomainsFromReorderInfo($reorderInfo);
+        if (empty($domains)) {
+            Log::channel('mailin-ai')->warning('OrderProviderSplitSync: no domains in reorderInfo', ['order_id' => $order->id]);
+            return false;
+        }
+
+        $domainSplitService = new DomainSplitService();
+        $domainSplit = $domainSplitService->splitDomains($domains);
+
+        if (empty($domainSplit)) {
+            Log::channel('mailin-ai')->warning('OrderProviderSplitSync: split returned empty', ['order_id' => $order->id]);
+            return false;
+        }
+
+        $activeProviderSlugs = array_keys($domainSplit);
+
+        $toDelete = OrderProviderSplit::where('order_id', $order->id)
+            ->whereNotIn('provider_slug', $activeProviderSlugs)
+            ->get();
+
+        if ($toDelete->isNotEmpty()) {
+            Log::channel('mailin-ai')->info('OrderProviderSplitSync: removing splits for disabled/removed providers', [
+                'order_id' => $order->id,
+                'removed_providers' => $toDelete->pluck('provider_slug')->toArray(),
+                'new_active_providers' => $activeProviderSlugs,
+            ]);
+            foreach ($toDelete as $split) {
+                $split->delete();
+            }
+        }
+
+        $totalDomains = count($domains);
+        foreach ($domainSplit as $providerSlug => $providerDomains) {
+            if (empty($providerDomains)) {
+                continue;
+            }
+
+            $provider = SmtpProviderSplit::getBySlug($providerSlug);
+            $providerName = $provider ? $provider->name : $providerSlug;
+
+            OrderProviderSplit::updateOrCreate(
+                [
+                    'order_id' => $order->id,
+                    'provider_slug' => $providerSlug,
+                ],
+                [
+                    'provider_name' => $providerName,
+                    'split_percentage' => count($providerDomains) / $totalDomains * 100,
+                    'domain_count' => count($providerDomains),
+                    'domains' => $providerDomains,
+                    'mailboxes' => null,
+                    'domain_statuses' => null,
+                    'all_domains_active' => false,
+                    'priority' => $provider ? (int) $provider->priority : 0,
+                ]
+            );
+        }
+
+        Log::channel('mailin-ai')->info('OrderProviderSplitSync: splits synced for order', [
+            'order_id' => $order->id,
+            'domain_count' => $totalDomains,
+            'splits' => array_map(fn($d) => count($d), $domainSplit),
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Parse domains string from reorder_info into array (newline/comma separated).
+     */
+    private static function parseDomainsFromReorderInfo($reorderInfo): array
+    {
+        $domainsRaw = $reorderInfo->domains ?? '';
+        if (is_array($domainsRaw)) {
+            return array_values(array_filter(array_map('trim', $domainsRaw)));
+        }
+        $domains = preg_split('/[\r\n,]+/', (string) $domainsRaw);
+        return array_values(array_filter(array_map('trim', $domains)));
     }
 
     /**
