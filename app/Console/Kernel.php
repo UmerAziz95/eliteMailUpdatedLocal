@@ -153,6 +153,20 @@ class Kernel extends ConsoleKernel
                         ->withoutOverlapping()
                         ->runInBackground()
                         ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
+                // Process late payment orders
+                $schedule->command('orders:process-late-payments')
+                        ->hourly()
+                        ->withoutOverlapping()
+                        ->runInBackground()
+                        ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
+
+                // Reactivate pending subscriptions
+                $schedule->command('subscriptions:reactivate-pending')
+                        ->everySixHours()
+                        ->withoutOverlapping()
+                        ->runInBackground()
+                        ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'));
         }
 
 
