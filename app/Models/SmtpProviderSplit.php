@@ -51,6 +51,55 @@ class SmtpProviderSplit extends Model
     }
 
     /**
+     * Credential field keys that can be shown in the config form (email, password, api_secret).
+     */
+    public const CONFIG_FIELD_EMAIL = 'email';
+    public const CONFIG_FIELD_PASSWORD = 'password';
+    public const CONFIG_FIELD_API_SECRET = 'api_secret';
+
+    /**
+     * Which credential fields to show in the config form per provider slug.
+     * Single source of truth: add/modify here instead of checking slug in the view.
+     *
+     * @param string $slug Provider slug (mailin, premiuminboxes, mailrun)
+     * @return array List of field keys to show, e.g. ['email', 'password'] or ['api_secret']
+     */
+    public static function getConfigFormCredentialFields(string $slug): array
+    {
+        $rules = [
+            'mailin' => [self::CONFIG_FIELD_EMAIL, self::CONFIG_FIELD_PASSWORD],
+            'premiuminboxes' => [self::CONFIG_FIELD_API_SECRET],
+            'mailrun' => [self::CONFIG_FIELD_API_SECRET],
+        ];
+
+        return $rules[$slug] ?? [self::CONFIG_FIELD_EMAIL, self::CONFIG_FIELD_PASSWORD];
+    }
+
+    /**
+     * Whether to show the email field in config form for the given provider slug.
+     */
+    public static function showEmailInConfig(string $slug): bool
+    {
+        return in_array(self::CONFIG_FIELD_EMAIL, self::getConfigFormCredentialFields($slug), true);
+    }
+
+    /**
+     * Whether to show the password field in config form for the given provider slug.
+     */
+    public static function showPasswordInConfig(string $slug): bool
+    {
+        return in_array(self::CONFIG_FIELD_PASSWORD, self::getConfigFormCredentialFields($slug), true);
+    }
+
+    /**
+     * Whether to show the API Secret Key field in config form for the given provider slug.
+     */
+    public static function showApiSecretInConfig(string $slug): bool
+    {
+        return in_array(self::CONFIG_FIELD_API_SECRET, self::getConfigFormCredentialFields($slug), true);
+    }
+
+    /**
      * Validate that total percentages equal 100
      */
     public static function validatePercentages()

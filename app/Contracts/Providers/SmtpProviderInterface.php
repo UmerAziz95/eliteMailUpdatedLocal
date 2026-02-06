@@ -4,6 +4,7 @@ namespace App\Contracts\Providers;
 
 use App\Models\Order;
 use App\Models\OrderProviderSplit;
+use App\Services\MailAutomation\DomainActivationService;
 
 /**
  * Interface for SMTP provider services
@@ -79,4 +80,20 @@ interface SmtpProviderInterface
      * @return bool
      */
     public function isAvailable(): bool;
+
+    /**
+     * Activate domains for this provider split (transfer/validate domains, update nameservers via activation service).
+     *
+     * @param Order $order
+     * @param OrderProviderSplit $split
+     * @param bool $bypassExistingMailboxCheck
+     * @param DomainActivationService $activationService For updateNameservers and rejectOrder callbacks
+     * @return array ['rejected' => bool, 'reason' => string|null, 'active' => array, 'transferred' => array, 'failed' => array]
+     */
+    public function activateDomainsForSplit(
+        Order $order,
+        OrderProviderSplit $split,
+        bool $bypassExistingMailboxCheck,
+        DomainActivationService $activationService
+    ): array;
 }

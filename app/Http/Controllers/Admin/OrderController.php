@@ -528,9 +528,17 @@ class OrderController extends Controller
             Auth::id() // Who performed the action
         );
 
+        $oldStatus = $order->status_manage_by_admin;
+        $newStatus = $request->status_manage_by_admin;
+
         // Update the order status
-        $order->status_manage_by_admin = $request->status_manage_by_admin;
+        $order->status_manage_by_admin = $newStatus;
         $order->save();
+
+        // When order is "fixed" (reject → in-progress), sync order_provider_splits with current order (domains/prefixes)
+        if (strtolower($oldStatus) === 'reject' && strtolower($newStatus) === 'in-progress') {
+            $this->syncOrderProviderSplitsWhenFixed($order);
+        }
 
         return response()->json(['success' => true, 'message' => 'Status updated']);
     }
@@ -1315,6 +1323,9 @@ class OrderController extends Controller
         // If a panel is set to "in-progress", update order status to "in-progress"
         if ($newPanelStatus === 'in-progress') {
             if ($order->status_manage_by_admin !== 'in-progress') {
+                if (strtolower($order->status_manage_by_admin ?? '') === 'reject') {
+                    $this->syncOrderProviderSplitsWhenFixed($order);
+                }
                 $order->update(['status_manage_by_admin' => 'in-progress']);
             }
         }
@@ -1356,10 +1367,28 @@ class OrderController extends Controller
                     }
                 } else {
                     if ($order->status_manage_by_admin !== 'in-progress') {
+                        if (strtolower($order->status_manage_by_admin ?? '') === 'reject') {
+                            $this->syncOrderProviderSplitsWhenFixed($order);
+                        }
                         $order->update(['status_manage_by_admin' => 'in-progress']);
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * When order is "fixed" (reject → in-progress), sync order_provider_splits with current order (domains from reorder_info).
+     */
+    private function syncOrderProviderSplitsWhenFixed(Order $order): void
+    {
+        try {
+            \App\Jobs\MailAutomation\ProcessMailAutomationJob::syncSplitsForOrder($order);
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('OrderProviderSplitSync failed after order fixed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -3752,9 +3781,8 @@ class OrderController extends Controller
                 // --- Step 1: Activate Domains ---
                 $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => ">>> Step 1: Activating Domains..."]);
 
-                // Run via Process to stream output
-                $phpBinary = PHP_BINARY;
-                $artisanPath = base_path('artisan');
+                // Run via Process to stream output. Use PHP CLI binary (artisan must run under CLI, not FPM).
+                $phpBinary = $this->getPhpCliBinary();
 
                 // Prepare environment with potential fix for Windows localhost [2002] error
                 $env = getenv();
@@ -3835,6 +3863,24 @@ class OrderController extends Controller
             'Connection' => 'keep-alive',
             'X-Accel-Buffering' => 'no',
         ]);
+    }
+
+    /**
+     * Resolve PHP CLI binary for running artisan in a subprocess.
+     * When the app runs under PHP-FPM, PHP_BINARY points to php-fpm, which cannot run artisan.
+     * Use config/env override or fall back to 'php' (CLI) when PHP_BINARY looks like FPM.
+     */
+    private function getPhpCliBinary(): string
+    {
+        $configured = config('app.php_cli_path') ?? env('PHP_CLI_PATH');
+        if ($configured !== null && $configured !== '') {
+            return $configured;
+        }
+        $binary = defined('PHP_BINARY') ? PHP_BINARY : 'php';
+        if (str_contains($binary, 'fpm')) {
+            return 'php';
+        }
+        return $binary;
     }
 
     /**

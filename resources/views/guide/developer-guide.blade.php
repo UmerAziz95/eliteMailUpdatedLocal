@@ -666,33 +666,15 @@
             <h3 class="h5 mt-4">11.3 Domain Activation Per Split (DomainActivationService)</h3>
             <pre><code class="language-php">public function activateDomainsForSplit(Order $order, OrderProviderSplit $split, bool $bypassExistingMailboxCheck = false): array
 {
-    if ($split-&gt;provider_slug === 'premiuminboxes') {
-        return $this-&gt;activateDomainsForPremiumInboxes($order, $split);
-    }
-
     $providerConfig = SmtpProviderSplit::getBySlug($split-&gt;provider_slug);
+    if (!$providerConfig) { /* ... return failed */ }
     $credentials = $providerConfig-&gt;getCredentials();
     $provider = $this-&gt;createProvider($split-&gt;provider_slug, $credentials);
 
-    if (!$provider-&gt;authenticate()) { /* ... */ }
-
-    foreach ($split-&gt;domains ?? [] as $domain) {
-        // Check existing mailboxes (conflict) → reject if same prefixes exist
-        $existingMailboxes = $provider-&gt;getMailboxesByDomain($domain);
-        // ...
-        $status = $provider-&gt;checkDomainStatus($domain);
-        if ($status['success'] && $status['status'] === 'active') {
-            $split-&gt;setDomainStatus($domain, 'active', $domainId, $ns);
-        } else {
-            $transferResult = $this-&gt;transferDomain($order, $provider, $domain);
-            if ($transferResult['success']) {
-                $split-&gt;setDomainStatus($domain, 'pending', null, $ns);
-            }
-        }
-    }
-    $split-&gt;checkAndUpdateAllDomainsActive();
-    return $results;
-}</code></pre>
+    return $provider-&gt;activateDomainsForSplit($order, $split, $bypassExistingMailboxCheck, $this);
+}
+// Provider-specific logic lives in each provider (MailinProviderService, PremiuminboxesProviderService, MailrunProviderService).
+// Providers use $activationService-&gt;updateNameservers() and $activationService-&gt;rejectOrder() for callbacks.</code></pre>
 
             <h3 class="h5 mt-4">11.4 Mailbox Creation Per Split (MailboxCreationService)</h3>
             <pre><code class="language-php">public function createMailboxesForSplit(Order $order, OrderProviderSplit $split, array $prefixVariants, array $prefixVariantsDetails): array

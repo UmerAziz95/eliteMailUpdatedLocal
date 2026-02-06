@@ -6,6 +6,7 @@ use App\Contracts\Providers\SmtpProviderInterface;
 use App\Models\Order;
 use App\Models\OrderProviderSplit;
 use App\Services\ActivityLogService;
+use App\Services\MailAutomation\DomainActivationService;
 use App\Services\PremiumInboxesService;
 use Illuminate\Support\Facades\Log;
 
@@ -558,5 +559,352 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
     public function getOrderId(): ?string
     {
         return $this->currentOrderId;
+    }
+
+    /**
+     * Get order from PremiumInboxes API (for idempotent sync when external_order_id already exists).
+     *
+     * @param string $orderId PremiumInboxes order ID (UUID / external_order_id)
+     * @return array ['success' => bool, 'status_code' => int, 'data' => array, 'error' => string|null]
+     */
+    public function getOrder(string $orderId): array
+    {
+        return $this->service->getOrder($orderId);
+    }
+
+    /**
+     * Activate domains for this PremiumInboxes split (create/sync order, update nameservers via activation service).
+     */
+    public function activateDomainsForSplit(
+        Order $order,
+        OrderProviderSplit $split,
+        bool $bypassExistingMailboxCheck,
+        DomainActivationService $activationService
+    ): array {
+        if (!$this->authenticate()) {
+            Log::channel('mailin-ai')->error('PremiumInboxes authentication failed', [
+                'order_id' => $order->id,
+            ]);
+            return [
+                'rejected' => false,
+                'reason' => null,
+                'active' => [],
+                'transferred' => [],
+                'failed' => $split->domains ?? [],
+            ];
+        }
+
+        // Idempotent: if PI order already exists (external_order_id stored), do NOT call /purchase again
+        if (!empty($split->external_order_id)) {
+            Log::channel('mailin-ai')->info('PremiumInboxes: external_order_id already set, syncing from GetOrder (skip purchase)', [
+                'order_id' => $order->id,
+                'split_id' => $split->id,
+                'external_order_id' => $split->external_order_id,
+            ]);
+
+            $getResult = $this->getOrder($split->external_order_id);
+
+            if (!$getResult['success']) {
+                Log::channel('mailin-ai')->error('PremiumInboxes GetOrder failed during sync (will not purchase again)', [
+                    'order_id' => $order->id,
+                    'external_order_id' => $split->external_order_id,
+                    'error' => $getResult['error'] ?? 'Unknown error',
+                ]);
+                return [
+                    'rejected' => false,
+                    'reason' => null,
+                    'active' => [],
+                    'transferred' => [],
+                    'failed' => $split->domains ?? [],
+                ];
+            }
+
+            return $this->syncOrderFromGetOrder($order, $split, $getResult['data'] ?? []);
+        }
+
+        $reorderInfo = $order->reorderInfo()->first();
+        $user = $order->user;
+
+        $firstName = 'User';
+        $lastName = '';
+        $prefixVariantsDetails = $reorderInfo->prefix_variants_details ?? [];
+        if (is_string($prefixVariantsDetails)) {
+            $prefixVariantsDetails = json_decode($prefixVariantsDetails, true) ?? [];
+        }
+        $firstVariant = reset($prefixVariantsDetails);
+        if ($firstVariant && isset($firstVariant['first_name'])) {
+            $firstName = $firstVariant['first_name'];
+            $lastName = $firstVariant['last_name'] ?? '';
+        } else {
+            $firstName = $reorderInfo->first_name ?? $user->first_name ?? 'User';
+            $lastName = $reorderInfo->last_name ?? $user->last_name ?? '';
+        }
+        if (empty(trim($lastName))) {
+            $lastName = !empty(trim($firstName)) && $firstName !== 'User' ? $firstName : 'Customer';
+        }
+
+        Log::channel('mailin-ai')->info('Preparing PremiumInboxes Persona', [
+            'order_id' => $order->id,
+            'source_first_name' => $reorderInfo->first_name ?? $user->first_name ?? null,
+            'source_last_name' => $reorderInfo->last_name ?? $user->last_name ?? null,
+            'final_first_name' => $firstName,
+            'final_last_name' => $lastName,
+        ]);
+
+        $prefixVariants = $reorderInfo->prefix_variants ?? [];
+        if (is_string($prefixVariants)) {
+            $prefixVariants = json_decode($prefixVariants, true) ?? [];
+        }
+        $prefixVariants = array_values(array_filter($prefixVariants));
+
+        $variations = [];
+        foreach ($prefixVariants as $prefix) {
+            if (!empty($prefix)) {
+                $variations[] = trim($prefix);
+            }
+        }
+        $persona = [
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'variations' => $variations,
+        ];
+
+        Log::channel('mailin-ai')->info('PremiumInboxes Persona Constructed', [
+            'order_id' => $order->id,
+            'persona' => $persona,
+            'variations_count' => count($variations),
+        ]);
+
+        $emailPassword = $this->generatePassword($order->id);
+        $clientOrderId = "PI-order-{$order->id}-" . \Carbon\Carbon::now();
+
+        $sequencer = null;
+        if ($reorderInfo && $reorderInfo->sequencer_login && $reorderInfo->sequencer_password) {
+            $sequencer = [
+                'platform' => $reorderInfo->sending_platform ?? 'instantly',
+                'email' => $reorderInfo->sequencer_login,
+                'password' => $reorderInfo->sequencer_password,
+            ];
+        }
+
+        $additionalData = [];
+        if ($reorderInfo && $reorderInfo->master_inbox_confirmation && !empty($reorderInfo->master_inbox_email)) {
+            $additionalData['master_inbox'] = $reorderInfo->master_inbox_email;
+        }
+        if ($user && !empty($user->profile_image)) {
+            $additionalData['profile_picture_url'] = $user->profile_image;
+        }
+        if ($user && !empty($user->domain_forwarding_url)) {
+            $additionalData['forwarding_domain'] = $user->domain_forwarding_url;
+        }
+        if (!empty($reorderInfo->additional_info)) {
+            $additionalData['additional_info'] = $reorderInfo->additional_info;
+        }
+
+        Log::channel('mailin-ai')->info('Step 1: PremiumInboxes - Calling createOrderWithDomains', [
+            'order_id' => $order->id,
+            'arguments' => [
+                'domains' => $split->domains ?? [],
+                'prefix_variants' => $prefixVariants,
+                'persona' => $persona,
+                'client_order_id' => $clientOrderId,
+                'sequencer' => $sequencer,
+                'additional_data' => $additionalData,
+            ],
+            'prefix_variants_count' => count($prefixVariants),
+        ]);
+
+        $result = $this->createOrderWithDomains(
+            $split->domains ?? [],
+            $prefixVariants,
+            $persona,
+            $emailPassword,
+            $clientOrderId,
+            $sequencer,
+            $additionalData
+        );
+
+        if ($result['success']) {
+            $split->update([
+                'external_order_id' => $result['order_id'],
+                'client_order_id' => $clientOrderId,
+                'order_status' => $result['status'],
+            ]);
+
+            $orderDomains = collect($result['domains'] ?? []);
+            foreach ($split->domains ?? [] as $domain) {
+                $domainData = $orderDomains->firstWhere('domain', $domain);
+                $domainNs = $domainData['nameservers'] ?? $result['name_servers'] ?? [];
+                $nsStatus = $domainData['ns_status'] ?? 'pending';
+                $ourStatus = (strtolower($nsStatus) === 'validated') ? 'active' : 'inactive';
+                $split->setDomainStatus($domain, $ourStatus, null, $domainNs);
+            }
+
+            $nameServers = $result['name_servers'] ?? [];
+            if (!empty($nameServers)) {
+                foreach ($split->domains ?? [] as $domain) {
+                    try {
+                        $activationService->updateNameservers($order, $domain, $nameServers);
+                    } catch (\Exception $e) {
+                        $reason = "Nameserver update failed for {$domain}: " . $e->getMessage();
+                        $activationService->rejectOrder($order, $reason);
+                        return [
+                            'rejected' => true,
+                            'reason' => $reason,
+                            'active' => [],
+                            'transferred' => [],
+                            'failed' => $split->domains ?? [],
+                        ];
+                    }
+                }
+            }
+
+            Log::channel('mailin-ai')->info('PremiumInboxes order created successfully', [
+                'order_id' => $order->id,
+                'premiuminboxes_order_id' => $result['order_id'],
+                'client_order_id' => $clientOrderId,
+                'domain_count' => count($split->domains ?? []),
+            ]);
+
+            return [
+                'rejected' => false,
+                'reason' => null,
+                'active' => [],
+                'transferred' => $split->domains ?? [],
+                'failed' => [],
+            ];
+        }
+
+        $rawError = $result['message'] ?? 'Unknown error';
+        $errorMessage = is_array($rawError) ? json_encode($rawError) : $rawError;
+        Log::channel('mailin-ai')->error('PremiumInboxes order creation failed', [
+            'order_id' => $order->id,
+            'error' => $errorMessage,
+        ]);
+        return [
+            'rejected' => true,
+            'reason' => $errorMessage,
+            'active' => [],
+            'transferred' => [],
+            'failed' => $split->domains ?? [],
+        ];
+    }
+
+    /**
+     * Sync PremiumInboxes order state from GetOrder response (idempotent path).
+     */
+    private function syncOrderFromGetOrder(Order $order, OrderProviderSplit $split, array $orderData): array
+    {
+        $activeDomains = [];
+        $orderDomains = $orderData['domains'] ?? [];
+        $orderStatus = $orderData['status'] ?? null;
+
+        if ($orderStatus !== null) {
+            $split->update(['order_status' => $orderStatus]);
+        }
+
+        foreach ($split->domains ?? [] as $domain) {
+            $domainData = collect($orderDomains)->firstWhere('domain', $domain);
+            $nsStatus = $domainData['ns_status'] ?? 'pending';
+            $nameservers = $domainData['nameservers'] ?? [];
+            $ourStatus = (strtolower($nsStatus) === 'validated') ? 'active' : 'inactive';
+            $split->setDomainStatus($domain, $ourStatus, null, $nameservers);
+            if ($ourStatus === 'active') {
+                $activeDomains[] = $domain;
+            }
+        }
+
+        $reorderInfo = $order->reorderInfo()->first();
+        $prefixVariants = $reorderInfo ? ($reorderInfo->prefix_variants ?? []) : [];
+        if (is_string($prefixVariants)) {
+            $prefixVariants = json_decode($prefixVariants, true) ?? [];
+        }
+        $prefixVariants = array_values(array_filter($prefixVariants));
+
+        $emailAccounts = $orderData['email_accounts'] ?? [];
+        foreach ($emailAccounts as $account) {
+            $email = $account['email'] ?? $account['email_address'] ?? '';
+            if (empty($email)) {
+                continue;
+            }
+            $parts = explode('@', $email);
+            $prefix = $parts[0] ?? '';
+            $domain = $account['domain'] ?? ($parts[1] ?? '');
+            if (empty($domain)) {
+                continue;
+            }
+            $piStatus = strtolower($account['status'] ?? '');
+            $ourMailboxStatus = ($piStatus === 'active') ? 'active' : 'inactive';
+            $prefixKey = $this->findPrefixKeyForSync($prefix, $prefixVariants);
+            $mailboxData = [
+                'id' => $account['id'] ?? null,
+                'mailbox_id' => $account['id'] ?? null,
+                'name' => $prefix,
+                'mailbox' => $email,
+                'email' => $email,
+                'password' => $account['password'] ?? null,
+                'status' => $ourMailboxStatus,
+            ];
+            $split->addMailbox($domain, $prefixKey, $mailboxData);
+        }
+
+        $split->checkAndUpdateAllDomainsActive();
+
+        Log::channel('mailin-ai')->info('PremiumInboxes order synced from GetOrder', [
+            'order_id' => $order->id,
+            'split_id' => $split->id,
+            'external_order_id' => $split->external_order_id,
+            'active_domains_count' => count($activeDomains),
+            'email_accounts_synced' => count($emailAccounts),
+        ]);
+
+        return [
+            'rejected' => false,
+            'reason' => null,
+            'active' => $activeDomains,
+            'transferred' => [],
+            'failed' => [],
+        ];
+    }
+
+    private function findPrefixKeyForSync(string $emailPrefix, array $prefixVariants): string
+    {
+        foreach ($prefixVariants as $key => $prefix) {
+            $p = is_string($prefix) ? $prefix : (string) ($prefix['name'] ?? $prefix['prefix'] ?? '');
+            if (strtolower(trim($p)) === strtolower(trim($emailPrefix))) {
+                return is_numeric($key) ? 'prefix_variant_' . ($key + 1) : (string) $key;
+            }
+        }
+        if (!empty($prefixVariants)) {
+            $firstKey = array_key_first($prefixVariants);
+            return is_numeric($firstKey) ? 'prefix_variant_' . ($firstKey + 1) : (string) $firstKey;
+        }
+        return 'prefix_variant_1';
+    }
+
+    private function generatePassword(int $orderId, int $index = 0): string
+    {
+        $upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $lowerCase = 'abcdefghijklmnopqrstuvwxyz';
+        $numbers = '0123456789';
+        $specialChars = '!@#$%^&*';
+        mt_srand($orderId + $index);
+        $password = '';
+        $password .= $upperCase[mt_rand(0, strlen($upperCase) - 1)];
+        $password .= $lowerCase[mt_rand(0, strlen($lowerCase) - 1)];
+        $password .= $numbers[mt_rand(0, strlen($numbers) - 1)];
+        $password .= $specialChars[mt_rand(0, strlen($specialChars) - 1)];
+        $allChars = $upperCase . $lowerCase . $numbers . $specialChars;
+        for ($i = 4; $i < 8; $i++) {
+            $password .= $allChars[mt_rand(0, strlen($allChars) - 1)];
+        }
+        $passwordArray = str_split($password);
+        for ($i = count($passwordArray) - 1; $i > 0; $i--) {
+            $j = mt_rand(0, $i);
+            $temp = $passwordArray[$i];
+            $passwordArray[$i] = $passwordArray[$j];
+            $passwordArray[$j] = $temp;
+        }
+        return implode('', $passwordArray);
     }
 }

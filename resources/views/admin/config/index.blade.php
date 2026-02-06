@@ -756,7 +756,8 @@
                                         </div>
 
                                         <form class="provider-settings-form" data-provider-id="{{ $provider->id }}"
-                                            data-slug="{{ $provider->slug }}">
+                                            data-slug="{{ $provider->slug }}"
+                                            data-credential-fields="{{ json_encode(\App\Models\SmtpProviderSplit::getConfigFormCredentialFields($provider->slug)) }}">
                                             @csrf
                                             <input type="hidden" name="providers[{{ $provider->id }}][id]"
                                                 value="{{ $provider->id }}">
@@ -780,28 +781,31 @@
                                                     </div>
                                                 </div>
 
-                                                {{-- Email (Show in ALL cases) --}}
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label for="email-{{ $provider->slug }}" class="form-label">
-                                                            <i class="ti ti-mail me-1"></i>
-                                                            Email *
-                                                        </label>
-                                                        <input type="email" class="form-control"
-                                                            id="email-{{ $provider->slug }}"
-                                                            name="providers[{{ $provider->id }}][email]"
-                                                            placeholder="Enter Email" value="{{ $provider->email ?? '' }}"
-                                                            required>
-                                                        <small class="form-text text-muted">
-                                                            Email for {{ $provider->name }} authentication
-                                                        </small>
-                                                        <div class="validation-error" id="email-error-{{ $provider->slug }}"
-                                                            style="display: none;"></div>
+                                                {{-- Credential fields: show/hide from model rules (no slug checks in view) --}}
+                                                @if(\App\Models\SmtpProviderSplit::showEmailInConfig($provider->slug))
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label for="email-{{ $provider->slug }}" class="form-label">
+                                                                <i class="ti ti-mail me-1"></i>
+                                                                Email *
+                                                            </label>
+                                                            <input type="email" class="form-control"
+                                                                id="email-{{ $provider->slug }}"
+                                                                name="providers[{{ $provider->id }}][email]"
+                                                                placeholder="Enter Email" value="{{ $provider->email ?? '' }}"
+                                                                required>
+                                                            <small class="form-text text-muted">
+                                                                Email for {{ $provider->name }} authentication
+                                                            </small>
+                                                            <div class="validation-error" id="email-error-{{ $provider->slug }}"
+                                                                style="display: none;"></div>
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                @else
+                                                    <input type="hidden" name="providers[{{ $provider->id }}][email]" value="">
+                                                @endif
 
-                                                @if($provider->slug === 'premiuminboxes')
-                                                    {{-- PremiumInboxes: Replace Password with API Secret Key --}}
+                                                @if(\App\Models\SmtpProviderSplit::showApiSecretInConfig($provider->slug))
                                                     <div class="col-md-6">
                                                         <div class="form-group">
                                                             <label for="api_secret-{{ $provider->slug }}" class="form-label">
@@ -817,19 +821,17 @@
                                                                 <i class="fa-regular fa-eye password-toggle"></i>
                                                             </div>
                                                             <small class="form-text text-muted">
-                                                                API Secret Key for PremiumInboxes authentication
+                                                                API Secret Key for {{ $provider->name }} authentication
                                                             </small>
                                                             <div class="validation-error"
                                                                 id="api_secret-error-{{ $provider->slug }}" style="display: none;">
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    <input type="hidden" name="providers[{{ $provider->id }}][password]" value="">
+                                                @endif
 
-                                                    {{-- Keep password hidden (optional safety if backend still expects it) --}}
-                                                    <input type="hidden" id="password-{{ $provider->slug }}"
-                                                        name="providers[{{ $provider->id }}][password]" value="">
-                                                @else
-                                                    {{-- Other providers: Password --}}
+                                                @if(\App\Models\SmtpProviderSplit::showPasswordInConfig($provider->slug))
                                                     <div class="col-md-6">
                                                         <div class="form-group">
                                                             <label for="password-{{ $provider->slug }}" class="form-label">
@@ -851,10 +853,7 @@
                                                                 style="display: none;"></div>
                                                         </div>
                                                     </div>
-
-                                                    {{-- Keep api_secret hidden for non-premium providers (optional) --}}
-                                                    <input type="hidden" id="api_secret-{{ $provider->slug }}"
-                                                        name="providers[{{ $provider->id }}][api_secret]" value="">
+                                                    <input type="hidden" name="providers[{{ $provider->id }}][api_secret]" value="">
                                                 @endif
 
                                                 {{-- Split Percentage --}}
@@ -897,12 +896,6 @@
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <div class="d-flex gap-2 flex-wrap mt-3">
-                                                <button type="submit" class="btn btn-save btn-sm">
-                                                    <i class="ti ti-device-floppy me-1"></i> Save Settings
-                                                </button>
-                                            </div>
                                         </form>
                                     </div>
 
@@ -913,6 +906,14 @@
                                     </div>
                                 @endforelse
                             </div>
+
+                            @if($providers->isNotEmpty())
+                                <div class="d-flex gap-2 flex-wrap mt-3">
+                                    <button type="button" class="btn btn-save btn-sm" id="saveAllProviderSettings">
+                                        <i class="ti ti-device-floppy me-1"></i> Save all provider settings
+                                    </button>
+                                </div>
+                            @endif
 
                             <!-- Total Percentage Display -->
                             <div class="mt-4">
@@ -2056,7 +2057,15 @@
                 updateStatusDisplay(slug, isChecked);
             });
 
-            // Handle form submission
+            // Single save button: trigger first form submit (handler gathers all providers)
+            $('#saveAllProviderSettings').on('click', function () {
+                const firstForm = $('.provider-settings-form').first();
+                if (firstForm.length) {
+                    firstForm.trigger('submit');
+                }
+            });
+
+            // Handle form submission (runs when any provider form is submitted or single save is clicked)
             $('.provider-settings-form').on('submit', function (e) {
                 e.preventDefault();
 
@@ -2066,18 +2075,18 @@
                 const formData = new FormData(this);
                 const statusCheckbox = $(`#status-${slug}`);
 
-                // Get all providers data
+                // Get all providers data (credential fields from data-credential-fields, no slug checks)
                 const providers = [];
                 document.querySelectorAll('.provider-split-form').forEach(providerForm => {
                     const providerFormEl = $(providerForm);
                     const providerId = providerFormEl.data('provider-id');
                     const slug = providerFormEl.data('slug');
+                    const credentialFields = providerFormEl.find('form.provider-settings-form').data('credential-fields') || [];
                     const statusSwitch = providerFormEl.find('.status-switch');
 
                     const priorityValue = providerFormEl.find(`#priority-${slug}`).val();
                     const priority = priorityValue !== '' && !isNaN(priorityValue) ? parseInt(priorityValue) : null;
 
-                    // Build provider data based on provider type
                     const providerData = {
                         id: providerId,
                         api_endpoint: providerFormEl.find(`#api_endpoint-${slug}`).val() || null,
@@ -2086,24 +2095,23 @@
                         is_active: statusSwitch.is(':checked') ? true : false,
                     };
 
-                    if (['premiuminboxes', 'mailrun'].includes(slug)) {
-                        // PremiumInboxes/Mailrun: use api_secret, email is empty
-                        // Map api_secret to password field because that's where we store the token
+                    if (credentialFields.includes('api_secret')) {
                         const secret = providerFormEl.find(`#api_secret-${slug}`).val() || '';
                         providerData.api_secret = secret;
                         providerData.password = secret;
                         providerData.email = '';
                     } else {
-                        // Other providers: use email and password
                         providerData.email = providerFormEl.find(`#email-${slug}`).val() || '';
                         providerData.password = providerFormEl.find(`#password-${slug}`).val() || '';
-                        providerData.api_secret = null;
+                        providerData.api_secret = '';
                     }
 
                     providers.push(providerData);
                 });
 
-                const submitBtn = form.find('button[type="submit"]');
+                const submitBtn = form.find('button[type="submit"]').length
+                    ? form.find('button[type="submit"]')
+                    : $('#saveAllProviderSettings');
                 const originalText = submitBtn.html();
 
                 // Validate priorities are unique
@@ -2234,11 +2242,7 @@
             // Calculate total percentage on input change
             $('.split-percentage-input').on('input', function () {
                 calculateActiveTotalPercentage();
-                // Ensure all save buttons are enabled when user changes values
-                $('.provider-settings-form').each(function () {
-                    const btn = $(this).find('button[type="submit"]');
-                    btn.prop('disabled', false).removeAttr('disabled');
-                });
+                $('#saveAllProviderSettings').prop('disabled', false).removeAttr('disabled');
             });
 
             // Validate priority uniqueness on input change

@@ -6,6 +6,7 @@ use App\Contracts\Providers\SmtpProviderInterface;
 use App\Models\Order;
 use App\Models\OrderProviderSplit;
 use App\Services\ActivityLogService;
+use App\Services\MailAutomation\DomainActivationService;
 use App\Services\MailinAiService;
 use Illuminate\Support\Facades\Log;
 
@@ -298,5 +299,174 @@ class MailinProviderService implements SmtpProviderInterface
         return !empty($this->credentials['base_url'])
             && !empty($this->credentials['email'])
             && !empty($this->credentials['password']);
+    }
+
+    /**
+     * Activate domains for this Mailin split (transfer/validate domains, update nameservers via activation service).
+     */
+    public function activateDomainsForSplit(
+        Order $order,
+        OrderProviderSplit $split,
+        bool $bypassExistingMailboxCheck,
+        DomainActivationService $activationService
+    ): array {
+        $results = [
+            'rejected' => false,
+            'reason' => null,
+            'active' => [],
+            'transferred' => [],
+            'failed' => [],
+        ];
+
+        if (!$this->authenticate()) {
+            Log::channel('mailin-ai')->error('Provider authentication failed', [
+                'provider' => $split->provider_slug,
+                'order_id' => $order->id,
+            ]);
+            $results['failed'] = $split->domains ?? [];
+            return $results;
+        }
+
+        $reorderInfo = $order->reorderInfo->first();
+        $prefixVariantsRaw = $reorderInfo ? ($reorderInfo->prefix_variants ?? []) : [];
+        $prefixVariants = array_filter(array_values($prefixVariantsRaw));
+
+        foreach ($split->domains ?? [] as $domain) {
+            if ($split->getDomainStatus($domain) === 'active' && !empty($split->getNameservers($domain))) {
+                $results['active'][] = $domain;
+                Log::channel('mailin-ai')->debug("Skipping check for already active domain (nameservers present)", [
+                    'domain' => $domain,
+                    'order_id' => $order->id,
+                ]);
+                continue;
+            }
+
+            try {
+                $existingMailboxes = $this->getMailboxesByDomain($domain);
+                if (!$bypassExistingMailboxCheck && !empty($existingMailboxes['mailboxes']) && !empty($prefixVariants)) {
+                    $existingPrefixes = [];
+                    foreach ($existingMailboxes['mailboxes'] as $mb) {
+                        $email = $mb['email'] ?? $mb['username'] ?? '';
+                        if (strpos($email, '@') !== false) {
+                            $existingPrefixes[] = strtolower(explode('@', $email)[0]);
+                        }
+                    }
+                    $conflictingMailboxes = [];
+                    foreach ($prefixVariants as $prefix) {
+                        if (in_array(strtolower(trim($prefix)), $existingPrefixes)) {
+                            $conflictingMailboxes[] = $prefix . '@' . $domain;
+                        }
+                    }
+                    Log::channel('mailin-ai')->debug('Mailbox conflict check', [
+                        'domain' => $domain,
+                        'order_prefixes' => $prefixVariants,
+                        'existing_prefixes' => $existingPrefixes,
+                        'conflicts' => $conflictingMailboxes,
+                    ]);
+                    if (!empty($conflictingMailboxes)) {
+                        $activationService->rejectOrder($order, "Same mailboxes already exist: " . implode(', ', $conflictingMailboxes));
+                        return [
+                            'rejected' => true,
+                            'reason' => "Same mailboxes already exist: " . implode(', ', $conflictingMailboxes),
+                            'active' => $results['active'],
+                            'transferred' => $results['transferred'],
+                            'failed' => $results['failed'],
+                        ];
+                    }
+                }
+
+                $status = $this->checkDomainStatus($domain);
+
+                if ($status['success'] && $status['status'] === 'active') {
+                    $results['active'][] = $domain;
+                    $domainId = $status['data']['id'] ?? $status['domain_id'] ?? null;
+                    $ns = $status['name_servers'] ?? $status['nameservers'] ?? $status['data']['nameservers'] ?? [];
+
+                    if (empty($ns) && method_exists($this, 'getNameservers')) {
+                        try {
+                            $nsResult = $this->getNameservers([$domain]);
+                            if (($nsResult['success'] ?? false) && !empty($nsResult['domains'][$domain]['nameservers'])) {
+                                $ns = $nsResult['domains'][$domain]['nameservers'];
+                                Log::channel('mailin-ai')->info('Fetched missing nameservers via fallback', [
+                                    'domain' => $domain,
+                                    'nameservers' => $ns,
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            Log::channel('mailin-ai')->warning('Failed to fetch missing nameservers', ['domain' => $domain, 'error' => $e->getMessage()]);
+                        }
+                    }
+
+                    $split->setDomainStatus($domain, 'active', $domainId, $ns);
+                    Log::channel('mailin-ai')->info('Domain is active', [
+                        'domain' => $domain,
+                        'domain_id' => $domainId,
+                        'provider' => $split->provider_slug,
+                        'order_id' => $order->id,
+                    ]);
+                } else {
+                    $transferResult = $this->transferDomain($domain);
+                    if ($transferResult['success']) {
+                        $ns = $transferResult['name_servers'] ?? [];
+                        if (!empty($ns)) {
+                            try {
+                                $activationService->updateNameservers($order, $domain, $ns);
+                            } catch (\Exception $e) {
+                                $reason = "Nameserver update failed for {$domain}: " . $e->getMessage();
+                                $activationService->rejectOrder($order, $reason);
+                                return [
+                                    'rejected' => true,
+                                    'reason' => $reason,
+                                    'active' => $results['active'],
+                                    'transferred' => $results['transferred'],
+                                    'failed' => array_merge($results['failed'], [$domain]),
+                                ];
+                            }
+                        }
+                        $results['transferred'][] = $domain;
+                        $split->setDomainStatus($domain, 'pending', null, $ns);
+                        Log::channel('mailin-ai')->info('Domain transferred', [
+                            'domain' => $domain,
+                            'provider' => $split->provider_slug,
+                            'order_id' => $order->id,
+                        ]);
+                    } else {
+                        $message = $transferResult['message'] ?? '';
+                        $isRateLimit = str_contains(strtolower($message), 'rate limit')
+                            || str_contains($message, '429')
+                            || str_contains($message, 'Too Many Attempts');
+                        if ($isRateLimit) {
+                            Log::channel('mailin-ai')->warning('Domain transfer rate limit exceeded (will retry later)', [
+                                'domain' => $domain,
+                                'error' => $message,
+                                'order_id' => $order->id,
+                            ]);
+                            $results['failed'][] = $domain;
+                            $split->setDomainStatus($domain, 'failed');
+                        } else {
+                            $activationService->rejectOrder($order, "Domain transfer failed for: {$domain}. {$message}");
+                            return [
+                                'rejected' => true,
+                                'reason' => "Domain transfer failed for: {$domain}. {$message}",
+                                'active' => $results['active'],
+                                'transferred' => $results['transferred'],
+                                'failed' => array_merge($results['failed'], [$domain]),
+                            ];
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::channel('mailin-ai')->error('Domain activation error', [
+                    'domain' => $domain,
+                    'error' => $e->getMessage(),
+                    'order_id' => $order->id,
+                ]);
+                $results['failed'][] = $domain;
+                $split->setDomainStatus($domain, 'failed');
+            }
+        }
+
+        $split->checkAndUpdateAllDomainsActive();
+        return $results;
     }
 }
