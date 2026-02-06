@@ -557,10 +557,21 @@ class MailinAiService
                     }, $mailboxes),
                 ]);
 
-                // If domain not registered, include domains in error message for easier parsing
+                // If domain not registered, return error structure instead of throwing exception
                 if ($domainNotRegistered) {
-                    $domainsList = implode(', ', array_unique($unregisteredDomains));
-                    throw new \Exception('Failed to create mailboxes via Mailin.ai: Domain not registered. Domains: ' . $domainsList . '. Error: ' . $errorMessage);
+                    Log::channel('mailin-ai')->warning('Mailin.ai createMailboxes: Domain not registered', [
+                        'action' => 'create_mailboxes',
+                        'unregistered_domains' => $unregisteredDomains,
+                        'order_update_required' => true
+                    ]);
+
+                    return [
+                        'success' => false,
+                        'domain_not_registered' => true,
+                        'unregistered_domains' => array_unique($unregisteredDomains),
+                        'error' => $errorMessage,
+                        'response' => $responseBody
+                    ];
                 }
 
                 throw new \Exception('Failed to create mailboxes via Mailin.ai: ' . $errorMessage);
@@ -821,9 +832,9 @@ class MailinAiService
                 ];
             } else {
                 $errorMessage = $responseBody['message'] ?? $responseBody['error'] ?? 'Unknown error';
-                
+
                 // Check if mailbox doesn't exist (404 or 500 with "not found" message)
-                $isNotFound = $statusCode === 404 
+                $isNotFound = $statusCode === 404
                     || str_contains(strtolower($errorMessage), 'not found')
                     || str_contains(strtolower($errorMessage), 'no query results')
                     || str_contains(strtolower($errorMessage), 'does not exist');
@@ -862,15 +873,15 @@ class MailinAiService
             $errorMessage = 'Network error: ' . $e->getMessage();
             $statusCode = null;
             $responseBody = null;
-            
+
             if ($e->response) {
                 $statusCode = $e->response->status();
                 $responseBody = $e->response->json();
                 $errorMessage .= '. Status: ' . $statusCode . '. Body: ' . substr($e->response->body(), 0, 500);
-                
+
                 // Check if mailbox doesn't exist (404 or 500 with "not found" message)
                 $apiErrorMessage = $responseBody['message'] ?? $responseBody['error'] ?? '';
-                $isNotFound = $statusCode === 404 
+                $isNotFound = $statusCode === 404
                     || str_contains(strtolower($apiErrorMessage), 'not found')
                     || str_contains(strtolower($apiErrorMessage), 'no query results')
                     || str_contains(strtolower($apiErrorMessage), 'does not exist');
