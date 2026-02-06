@@ -659,9 +659,25 @@ class MailboxCreationService
         $apiResult = $provider->createMailboxes($mailboxes);
 
         if (!$apiResult['success']) {
+            // Handle specific case where domain is not registered
+            if (($apiResult['domain_not_registered'] ?? false) === true) {
+                Log::channel('mailin-ai')->warning('MailboxCreationService: Domain not registered, marking as inactive. Please retry manually or wait for auto-run in 5 minutes.', [
+                    'domain' => $domain,
+                    'order_id' => $order->id,
+                    'split_id' => $split->id
+                ]);
+
+                // Update domain status to inactive
+                $split->setDomainStatus($domain, 'inactive');
+
+                // Set all_domains_active to 0 (false)
+                $split->all_domains_active = false;
+                $split->save();
+            }
+
             Log::channel('mailin-ai')->error('Mailbox creation failed', [
                 'domain' => $domain,
-                'error' => $apiResult['message'] ?? 'Unknown error',
+                'error' => $apiResult['message'] ?? $apiResult['error'] ?? 'Unknown error',
             ]);
 
             return [
