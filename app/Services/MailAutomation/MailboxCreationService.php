@@ -475,30 +475,47 @@ class MailboxCreationService
                     'note' => 'Domain may have been enrolled previously with different settings',
                 ]);
 
-                // If complete mismatch (no matching prefixes), skip saving and mark as pending
+                // If complete mismatch (no matching prefixes), call delete API and reset
                 if ($hasCompleteMismatch) {
-                    $reason = "mailrun provider this domains already processed with these mailboxes now second time new mailboxes not proceeded and order reject it";
-                    Log::channel('mailin-ai')->error('Mailrun: Complete prefix mismatch - Rejecting Order', [
+                    Log::channel('mailin-ai')->warning('Mailrun: Complete prefix mismatch - Deleting domain to re-enroll', [
                         'domain' => $domain,
                         'returned_prefixes' => $returnedPrefixes,
                         'expected_prefixes' => $expectedPrefixes,
-                        'reason' => $reason
                     ]);
 
-                    $order->update([
-                        'status_manage_by_admin' => 'reject',
-                        'reason' => $reason,
-                        'rejected_at' => now(),
-                    ]);
+                    // Call delete API
+                    $deleteResult = $provider->deleteDomain($domain);
 
-                    // Stop processing for this split/order
-                    return [
-                        'created' => [],
-                        'failed' => [],
-                        'pending' => [], // Clear pending so it stops
-                        'rejected' => true, // Signal rejection
-                        'error' => $reason
-                    ];
+                    if (!$deleteResult['success']) {
+                        Log::channel('mailin-ai')->error('Mailrun: Failed to delete domain after mismatch', [
+                            'domain' => $domain,
+                            'error' => $deleteResult['message'] ?? 'Unknown error'
+                        ]);
+                        // If delete fails, we probably should still pending/fail or just continue to retry later?
+                        // For now, mark as pending so it retries.
+                        $results['pending'][] = $domain;
+                        continue;
+                    }
+
+                    // Reset metadata to trigger fresh enrollment next time
+                    $split->setMetadata('mailrun_enrollment_uuid', null);
+                    $split->setMetadata('mailrun_enrollment_started_at', null);
+
+                    // Also reset domain status in split to 'pending' (or remove it to force re-check)
+                    // The split stores domain statuses in JSON column 'domain_statuses'.
+                    // createMailboxesForMailrun checks if it's active in Mailrun, which it IS, but
+                    // we just deleted it. So next run, checkDomainStatus should return false (or not active),
+                    // and it will proceed to enroll. 
+                    // However, we should update our local state to reflect it's no longer "enrolled".
+                    // The 'domain_statuses' might mark it as active.
+                    // Let's set it to 'pending' to be safe, although createMailboxes uses real-time checks mostly.
+                    $split->setDomainStatus($domain, 'pending');
+
+                    Log::channel('mailin-ai')->info('Mailrun: Domain deleted and reset for sequential re-enrollment', ['domain' => $domain]);
+
+                    // Mark as pending so the job comes back to it
+                    $results['pending'][] = $domain;
+                    continue;
                 }
             }
 
