@@ -1190,7 +1190,7 @@ class MailrunProviderService implements SmtpProviderInterface
 
             $url = '/affiliate/enrollment/delete';
             // Start Request
-            $response = $this->makeRequest('POST', $url, $payload);
+            $response = $this->makeRequest('DELETE', $url, $payload);
 
             if (!$response->successful()) {
                 return [
