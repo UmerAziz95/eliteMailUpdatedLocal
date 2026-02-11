@@ -687,14 +687,16 @@ class MailboxCreationService
         }
 
         // Fetch mailbox IDs from provider after creation with retry
-        $maxRetries = 12; // Increased to 60 seconds (12 * 5s)
+        // We limit this to ~15 seconds per domain to prevent web timeouts.
+        // If IDs are not found, they will be marked as PENDING and retry via background scheduler.
+        $maxRetries = 5; 
         $retryCount = 0;
         $createdMailboxes = [];
 
         do {
             if ($retryCount > 0) {
-                // Wait 5 seconds before retry
-                sleep(5);
+                // Wait 3 seconds before retry
+                sleep(3);
             }
 
             $createdMailboxes = $provider->getMailboxesByDomain($domain);
