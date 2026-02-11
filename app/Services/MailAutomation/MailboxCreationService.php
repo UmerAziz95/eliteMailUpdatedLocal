@@ -57,10 +57,12 @@ class MailboxCreationService
             $validation = $this->validateOrderMailboxCompletion($order, $prefixVariants);
 
             if ($validation['is_complete']) {
-                $order->update([
-                    'status_manage_by_admin' => 'completed',
-                    'completed_at' => now(),
-                ]);
+                if ($order->status_manage_by_admin !== 'completed') {
+                    $order->update([
+                        'status_manage_by_admin' => 'completed',
+                        'completed_at' => now(),
+                    ]);
+                }
 
                 Log::channel('mailin-ai')->info('Order completed after mailbox creation', [
                     'order_id' => $order->id,
@@ -673,7 +675,19 @@ class MailboxCreationService
         }
 
         // Call provider API
-        $apiResult = $provider->createMailboxes($mailboxes);
+        try {
+            $apiResult = $provider->createMailboxes($mailboxes);
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Mailbox creation exception', [
+                'domain' => $domain,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'created' => [],
+                'failed' => array_column($mailboxes, 'username'),
+            ];
+        }
 
         if (!$apiResult['success']) {
             // Handle specific case where domain is not registered
@@ -704,14 +718,16 @@ class MailboxCreationService
         }
 
         // Fetch mailbox IDs from provider after creation with retry
-        $maxRetries = 5;
+        // We limit this to ~15 seconds per domain to prevent web timeouts.
+        // If IDs are not found, they will be marked as PENDING and retry via background scheduler.
+        $maxRetries = 5; 
         $retryCount = 0;
         $createdMailboxes = [];
 
         do {
             if ($retryCount > 0) {
-                // Wait 2 seconds before retry
-                sleep(2);
+                // Wait 3 seconds before retry
+                sleep(3);
             }
 
             $createdMailboxes = $provider->getMailboxesByDomain($domain);
@@ -749,14 +765,27 @@ class MailboxCreationService
             }
         }
 
+        $successfulMailboxes = [];
+        $pendingMailboxes = [];
+
         // Store in JSON column with mailbox IDs
         foreach ($mailboxDataMap as $prefixKey => $data) {
-            $data['status'] = 'active';
             $targetEmail = strtolower($data['mailbox']);
-            $data['mailbox_id'] = $mailboxIdMap[$targetEmail] ?? null;
+            $mailboxId = $mailboxIdMap[$targetEmail] ?? null;
+            
+            if ($mailboxId) {
+                // Mailbox found and has ID - mark as active
+                $data['status'] = 'active';
+                $data['mailbox_id'] = $mailboxId;
+                $successfulMailboxes[] = $data['mailbox'];
+            } else {
+                // Mailbox NOT found in API yet - keep as pending
+                // DO NOT mark as active without ID
+                $data['status'] = 'pending_id_fetch';
+                $data['mailbox_id'] = null;
+                $pendingMailboxes[] = $data['mailbox'];
 
-            if (empty($data['mailbox_id'])) {
-                Log::channel('mailin-ai')->warning('Could not find mailbox ID for email', [
+                Log::channel('mailin-ai')->warning('Could not find mailbox ID for email - marking as pending', [
                     'email' => $data['mailbox'],
                     'target_lookup' => $targetEmail,
                     'available_map_keys' => array_keys($mailboxIdMap),
@@ -766,15 +795,144 @@ class MailboxCreationService
             $split->addMailbox($domain, $prefixKey, $data);
         }
 
-        Log::channel('mailin-ai')->info('Mailboxes created for domain', [
+        Log::channel('mailin-ai')->info('Mailboxes processed for domain', [
             'domain' => $domain,
-            'count' => count($mailboxes),
+            'total_requested' => count($mailboxes),
+            'successful' => count($successfulMailboxes),
+            'pending_id' => count($pendingMailboxes),
+            'provider' => $split->provider_slug,
+        ]);
+
+        // Return successfully created ones in 'created'
+        // Return ones waiting for IDs in 'pending' (this handles the "created but not ready" state)
+        // If we return them as 'created', the order might complete prematurely
+        
+        $result = [
+            'created' => $successfulMailboxes,
+            'failed' => [],
+        ];
+
+        // If we have pending mailboxes (created but no ID yet), add to a custom key or treat as pending?
+        // The calling method (createMailboxesForOrder) checks 'pending' key from this return?
+        // Let's check createMailboxesForSplit -> it aggregates 'created', 'failed', 'pending'
+        
+        if (!empty($pendingMailboxes)) {
+            // We need to return these as pending so validateOrderMailboxCompletion 
+            // and the main loop sees them as not fully done.
+            // But createMailboxesForOrder structure is:
+            // $results['created'], $results['failed']
+            // It doesn't seem to explicitly handle 'pending' from createMailboxesForDomain return in the current code
+            // currently createMailboxesForDomain returns ['created' => ..., 'failed' => ...]
+            // Let's check createMailboxesForSplit (lines 102-159)
+            // It mimics: $results['created'] = array_merge..., $results['failed'] = ...
+            // It DOES NOT map 'pending' from createMailboxesForDomain result.
+            // I need to update createMailboxesForSplit as well or change how I return this.
+            
+            // To be safe, I will treat them as FAILED for now so they are not counted as 'created'.
+            // Or better, I should treat them as PENDING if I can modify the caller.
+            // Let's look at createMailboxesForSplit again (I'll read it after this thought if needed, but I have it in context)
+            // Line 154: $results['created'] = array_merge($results['created'], $domainResult['created']);
+            // Line 155: $results['failed'] = array_merge($results['failed'], $domainResult['failed']);
+            // It only looks for created and failed.
+            
+            // So I should return them as 'failed' (or rather, just NOT created) 
+            // so the count doesn't match expected. 
+            // If I return them as 'failed', the order will say "Failed: X".
+            // If I return them as empty (neither created nor failed), the validation logic 
+            // (validateOrderMailboxCompletion) will see count mismatch and report "Pending".
+            
+            // Let's check validateOrderMailboxCompletion (lines 805+).
+            // It compares count($domainMailboxes) where they are stored in DB.
+            // Wait, I AM storing them in DB: $split->addMailbox($domain, $prefixKey, $data).
+            // $data['status'] = 'pending_id_fetch'.
+            
+            // The validation logic (lines 841) checks:
+            // if ($createdCount < $expectedForDomain)
+            // $createdCount comes from count($domainMailboxes).
+            // So if I save them to DB, they COUNT as created in validation!
+            
+            // ERROR IN PLAN: simple "pending" status in JSON might still count as "created" 
+            // if the validation just counts array entries.
+            // I need to check how validation counts.
+            
+            // Validation: 
+            // $domainMailboxes = $splitMailboxes[$domain] ?? [];
+            // $createdCount = count($domainMailboxes);
+            
+            // YES, validation just counts entries in the JSON.
+            // So if I add them to JSON, validation thinks they exist.
+            
+            // CORRECTION:
+            // I should ONLY add them to JSON if they have an ID.
+            // OR I should update validation to check status?
+            // Modifying validation is risky/bigger scope.
+            
+            // Better approach:
+            // DO NOT add them to the split via addMailbox if they don't have an ID?
+            // If I don't add them, validation sees count < expected. -> Pending.
+            // This is safer.
+            // BUT, if I don't add them, the user won't see "pending" in UI? (Maybe they see nothing).
+            // And next run?
+            // Next run (CheckPendingDomains) calls createMailboxesForOrder again.
+            // It calls createMailboxesForSplit -> createMailboxesForDomain.
+            // createMailboxesForDomain generates the list again.
+            // If I didn't save them, it creates them AGAIN via API?
+            // The API provider check "already exists"?
+            // Yes, Mailin provider returns "success" if already exists.
+            
+            // So, safer flow:
+            // 1. Try create.
+            // 2. Try fetch ID.
+            // 3. If ID missing -> DO NOT SAVE to DB.
+            // 4. Return as 'failed' (or 'pending' if I can pass that up).
+            
+            // If I don't save to DB:
+            // -> Validation logic sees 0 created.
+            // -> Validation says "Pending: 150".
+            // -> Order NOT marked completed.
+            // -> Status remains "In Progress".
+            // -> Next schedule run (CheckPendingDomains) picks it up.
+            // -> Calls createMailboxesForOrder.
+            // -> Tries to create (API says "already exists OK").
+            // -> Tries to fetch ID (Hopefully it works now).
+            // -> ID found -> Saves to DB.
+            // -> Success.
+            
+            // This seems correct and robust.
+            
+            // So, change in this block:
+            // Only call $split->addMailbox if $mailboxId is present.
+            
+            if ($mailboxId) {
+                // Mailbox found and has ID - mark as active
+                $data['status'] = 'active';
+                $data['mailbox_id'] = $mailboxId;
+                $split->addMailbox($domain, $prefixKey, $data);
+                $successfulMailboxes[] = $data['mailbox'];
+            } else {
+                // Mailbox NOT found in API yet
+                // DO NOT save to DB so validation fails (correctly) logic
+                $pendingMailboxes[] = $data['mailbox'];
+
+                Log::channel('mailin-ai')->warning('Could not find mailbox ID for email - NOT saving to DB to force retry', [
+                    'email' => $data['mailbox'],
+                    'target_lookup' => $targetEmail,
+                    'available_map_keys' => array_keys($mailboxIdMap),
+                ]);
+            }
+        }
+
+        Log::channel('mailin-ai')->info('Mailboxes processed for domain', [
+            'domain' => $domain,
+            'total_requested' => count($mailboxes),
+            'successful' => count($successfulMailboxes),
+            'pending_retry' => count($pendingMailboxes),
             'provider' => $split->provider_slug,
         ]);
 
         return [
-            'created' => array_column($mailboxes, 'username'),
-            'failed' => [],
+            'created' => $successfulMailboxes,
+            'failed' => [], // We don't mark them as failed in the sense of "error", just not created yet
         ];
     }
 
@@ -942,18 +1100,26 @@ class MailboxCreationService
 
         if ($validation['is_complete']) {
             // All mailboxes created - mark as completed
-            $order->update([
-                'status_manage_by_admin' => 'completed',
-                'completed_at' => now(),
-            ]);
+            if ($order->status_manage_by_admin !== 'completed') {
+                $order->update([
+                    'status_manage_by_admin' => 'completed',
+                    'completed_at' => now(),
+                ]);
 
-            Log::channel('mailin-ai')->info('Order status updated to COMPLETED', [
-                'order_id' => $order->id,
-                'total_mailboxes' => $validation['total_created'],
-            ]);
+                Log::channel('mailin-ai')->info('Order status updated to COMPLETED', [
+                    'order_id' => $order->id,
+                    'total_mailboxes' => $validation['total_created'],
+                ]);
 
+                return [
+                    'status_updated' => true,
+                    'new_status' => 'completed',
+                    'validation' => $validation,
+                ];
+            }
+            
             return [
-                'status_updated' => true,
+                'status_updated' => false,
                 'new_status' => 'completed',
                 'validation' => $validation,
             ];
