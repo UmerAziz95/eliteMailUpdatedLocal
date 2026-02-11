@@ -57,10 +57,12 @@ class MailboxCreationService
             $validation = $this->validateOrderMailboxCompletion($order, $prefixVariants);
 
             if ($validation['is_complete']) {
-                $order->update([
-                    'status_manage_by_admin' => 'completed',
-                    'completed_at' => now(),
-                ]);
+                if ($order->status_manage_by_admin !== 'completed') {
+                    $order->update([
+                        'status_manage_by_admin' => 'completed',
+                        'completed_at' => now(),
+                    ]);
+                }
 
                 Log::channel('mailin-ai')->info('Order completed after mailbox creation', [
                     'order_id' => $order->id,
@@ -656,7 +658,19 @@ class MailboxCreationService
         }
 
         // Call provider API
-        $apiResult = $provider->createMailboxes($mailboxes);
+        try {
+            $apiResult = $provider->createMailboxes($mailboxes);
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Mailbox creation exception', [
+                'domain' => $domain,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'created' => [],
+                'failed' => array_column($mailboxes, 'username'),
+            ];
+        }
 
         if (!$apiResult['success']) {
             // Handle specific case where domain is not registered
@@ -1069,18 +1083,26 @@ class MailboxCreationService
 
         if ($validation['is_complete']) {
             // All mailboxes created - mark as completed
-            $order->update([
-                'status_manage_by_admin' => 'completed',
-                'completed_at' => now(),
-            ]);
+            if ($order->status_manage_by_admin !== 'completed') {
+                $order->update([
+                    'status_manage_by_admin' => 'completed',
+                    'completed_at' => now(),
+                ]);
 
-            Log::channel('mailin-ai')->info('Order status updated to COMPLETED', [
-                'order_id' => $order->id,
-                'total_mailboxes' => $validation['total_created'],
-            ]);
+                Log::channel('mailin-ai')->info('Order status updated to COMPLETED', [
+                    'order_id' => $order->id,
+                    'total_mailboxes' => $validation['total_created'],
+                ]);
 
+                return [
+                    'status_updated' => true,
+                    'new_status' => 'completed',
+                    'validation' => $validation,
+                ];
+            }
+            
             return [
-                'status_updated' => true,
+                'status_updated' => false,
                 'new_status' => 'completed',
                 'validation' => $validation,
             ];
