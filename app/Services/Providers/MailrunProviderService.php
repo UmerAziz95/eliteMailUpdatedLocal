@@ -38,7 +38,7 @@ class MailrunProviderService implements SmtpProviderInterface
      * Then implement external API call in deleteMailboxesFromSplit and deleteMailbox;
      * keep log keys mailrun_deletion_mode ('api') and mailrun_api_available (true).
      */
-    private const MAILRUN_DELETION_API_AVAILABLE = false;
+    private const MAILRUN_DELETION_API_AVAILABLE = true;
     private const MAX_DOMAINS_ENROLLMENT = 50;
     private const ENROLLMENT_POLL_INTERVAL = 15; // minutes
     private const ENROLLMENT_MAX_WAIT = 120; // minutes (2 hours)
