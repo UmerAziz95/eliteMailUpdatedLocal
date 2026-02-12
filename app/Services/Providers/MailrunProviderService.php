@@ -51,7 +51,11 @@ class MailrunProviderService implements SmtpProviderInterface
     public function __construct(array $credentials)
     {
         $this->baseUrl = $credentials['base_url'] ?? self::BASE_URL;
-        $this->apiToken = $credentials['api_key'] ?? $credentials['api_token'] ?? $credentials['password'] ?? '';
+        
+        $token = $credentials['api_key'] ?? $credentials['api_token'] ?? $credentials['password'] ?? '';
+        // Remove 'Bearer ' prefix (case-insensitive) if present to avoid double bearer in headers
+        $this->apiToken = preg_replace('/^Bearer\s+/i', '', trim($token));
+
         $this->customerId = $credentials['customer_id'] ?? null;
 
         Log::channel('mailin-ai')->debug('MailrunProviderService initialized', [
