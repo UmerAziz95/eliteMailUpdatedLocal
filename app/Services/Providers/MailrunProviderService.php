@@ -133,17 +133,19 @@ class MailrunProviderService implements SmtpProviderInterface
         }
     }
 
-    /**
+        /**
      * Check domain status
      * Maps to: Nameserver Status Check (POST /affiliate/nameserver/status)
+     * Supports single domain (string) or multiple domains (array)
      */
-    public function checkDomainStatus(string $domain): array
+    public function checkDomainStatus($domains): array
     {
+        $isSingle = is_string($domains);
+        $domainList = $isSingle ? [$domains] : $domains;
+
         try {
             $response = $this->makeRequest('POST', '/affiliate/nameserver/status', [
-                'domains' => [
-                    ['domain' => $domain]
-                ]
+                'domains' => array_map(fn($d) => ['domain' => $d], $domainList)
             ]);
 
             if (!$response->successful()) {
@@ -155,55 +157,68 @@ class MailrunProviderService implements SmtpProviderInterface
             }
 
             $data = $response->json();
-            $domainStatus = null;
+            $results = [];
+
+            // Helper to parse domain status item
+            $parseItem = function ($item) {
+                $isActive = ($item['status'] ?? '') === 'active'
+                    || ($item['nameservers_valid'] ?? false) === true
+                    || (($item['cloudflare-status']['status'] ?? '') === 'active');
+
+                return [
+                    'success' => true,
+                    'status' => $isActive ? 'active' : 'pending',
+                    'name_servers' => $item['nameservers'] ?? $item['ns'] ?? [],
+                    'data' => $item,
+                    'domain_id' => $item['id'] ?? null,
+                ];
+            };
 
             // Handle different response formats (keyed or list)
-            $list = $data['domains'] ?? $data['domainNameservers'] ?? $data['data'] ?? null;
+            $responseDataList = $data['domains'] ?? $data['domainNameservers'] ?? $data['data'] ?? null;
 
-            if (is_array($list)) {
-                foreach ($list as $item) {
-                    if (($item['domain'] ?? '') === $domain) {
-                        $domainStatus = $item;
-                        break;
+            if (is_array($responseDataList)) {
+                foreach ($responseDataList as $item) {
+                    if (isset($item['domain'])) {
+                        $results[$item['domain']] = $parseItem($item);
                     }
                 }
-                // Fallback: if we requested 1 domain and list has 1 item, assuming it's ours if domain key missing or mismatch (rare)
-                if (!$domainStatus && count($list) === 1 && isset($list[0])) {
-                    $domainStatus = $list[0];
+            }
+
+            // Fallback: direct key access
+            foreach ($domainList as $domain) {
+                if (!isset($results[$domain])) {
+                    $directItem = $data['domains'][$domain] ?? $data[$domain] ?? null;
+                    if ($directItem) {
+                        $results[$domain] = $parseItem($directItem);
+                    } else {
+                         $results[$domain] = [
+                            'success' => false,
+                            'status' => 'unknown', 
+                            'message' => 'Domain not found in response'
+                        ];
+                    }
                 }
             }
-
-            if (!$domainStatus) {
-                // Try direct key access
-                $domainStatus = $data['domains'][$domain] ?? $data[$domain] ?? null;
-            }
-
-            // Determine if nameservers are active
-            // Determine if nameservers are active
-            $isActive = false;
-            if (is_array($domainStatus)) {
-                $isActive = ($domainStatus['status'] ?? '') === 'active'
-                    || ($domainStatus['nameservers_valid'] ?? false) === true
-                    || (($domainStatus['cloudflare-status']['status'] ?? '') === 'active');
-            }
-
-            Log::channel('mailin-ai')->info('Mailrun: Domain status checked', [
-                'domain' => $domain,
-                'is_active' => $isActive,
-                'response' => $domainStatus,
+            
+            Log::channel('mailin-ai')->info('Mailrun: Batch domain status checked', [
+                'count' => count($domainList),
+                'active_count' => count(array_filter($results, fn($r) => ($r['status'] ?? '') === 'active')),
             ]);
 
-            return [
-                'success' => true,
-                'status' => $isActive ? 'active' : 'pending',
-                'name_servers' => $domainStatus['nameservers'] ?? $domainStatus['ns'] ?? [],
-                'data' => $domainStatus,
-                'domain_id' => $domainStatus['id'] ?? null,
-            ];
+            if ($isSingle) {
+                return $results[$domains] ?? [
+                    'success' => false,
+                    'status' => 'unknown',
+                    'message' => 'Domain not found in response'
+                ];
+            }
+
+            return ['success' => true, 'results' => $results];
 
         } catch (\Exception $e) {
             Log::channel('mailin-ai')->error('Mailrun: Domain status check failed', [
-                'domain' => $domain,
+                'domains' => $domainList,
                 'error' => $e->getMessage(),
             ]);
 
@@ -598,147 +613,127 @@ class MailrunProviderService implements SmtpProviderInterface
             return $results;
         }
 
-        $reorderInfo = $order->reorderInfo->first();
-        $prefixVariantsRaw = $reorderInfo ? ($reorderInfo->prefix_variants ?? []) : [];
-        $prefixVariants = array_filter(array_values($prefixVariantsRaw));
+        $allDomains = $split->domains ?? [];
+        if (empty($allDomains)) {
+            return $results;
+        }
+        
+        // chunk domains to respect max batch size (50)
+        $domainChunks = array_chunk($allDomains, 50);
+        
+        foreach ($domainChunks as $domains) {
+            $this->processDomainBatch($domains, $order, $split, $bypassExistingMailboxCheck, $activationService, $results);
+            if ($results['rejected']) {
+                return $results;
+            }
+        }
+        
+        $split->checkAndUpdateAllDomainsActive();
+        return $results;
+    }
 
-        foreach ($split->domains ?? [] as $domain) {
+    private function processDomainBatch(
+        array $domains,
+        Order $order,
+        OrderProviderSplit $split,
+        bool $bypassExistingMailboxCheck,
+        DomainActivationService $activationService,
+        array &$results
+    ) {
+        // 1. Filter out already active domains (local check)
+        $domainsToCheck = [];
+        foreach ($domains as $domain) {
             if ($split->getDomainStatus($domain) === 'active' && !empty($split->getNameservers($domain))) {
                 $results['active'][] = $domain;
-                Log::channel('mailin-ai')->debug("Skipping check for already active domain (nameservers present)", [
-                    'domain' => $domain,
-                    'order_id' => $order->id,
-                ]);
-                continue;
-            }
-
-            try {
-                $existingMailboxes = $this->getMailboxesByDomain($domain);
-                if (!$bypassExistingMailboxCheck && !empty($existingMailboxes['mailboxes']) && !empty($prefixVariants)) {
-                    $existingPrefixes = [];
-                    foreach ($existingMailboxes['mailboxes'] as $mb) {
-                        $email = $mb['email'] ?? $mb['username'] ?? '';
-                        if (strpos($email, '@') !== false) {
-                            $existingPrefixes[] = strtolower(explode('@', $email)[0]);
-                        }
-                    }
-                    $conflictingMailboxes = [];
-                    foreach ($prefixVariants as $prefix) {
-                        if (in_array(strtolower(trim($prefix)), $existingPrefixes)) {
-                            $conflictingMailboxes[] = $prefix . '@' . $domain;
-                        }
-                    }
-                    Log::channel('mailin-ai')->debug('Mailbox conflict check', [
-                        'domain' => $domain,
-                        'order_prefixes' => $prefixVariants,
-                        'existing_prefixes' => $existingPrefixes,
-                        'conflicts' => $conflictingMailboxes,
-                    ]);
-                    if (!empty($conflictingMailboxes)) {
-                        $activationService->rejectOrder($order, "Same mailboxes already exist: " . implode(', ', $conflictingMailboxes));
-                        return [
-                            'rejected' => true,
-                            'reason' => "Same mailboxes already exist: " . implode(', ', $conflictingMailboxes),
-                            'active' => $results['active'],
-                            'transferred' => $results['transferred'],
-                            'failed' => $results['failed'],
-                        ];
-                    }
-                }
-
-                $status = $this->checkDomainStatus($domain);
-
-                if ($status['success'] && $status['status'] === 'active') {
-                    $results['active'][] = $domain;
-                    $domainId = $status['data']['id'] ?? $status['domain_id'] ?? null;
-                    $ns = $status['name_servers'] ?? $status['nameservers'] ?? $status['data']['nameservers'] ?? [];
-
-                    if (empty($ns) && method_exists($this, 'getNameservers')) {
-                        try {
-                            $nsResult = $this->getNameservers([$domain]);
-                            if (($nsResult['success'] ?? false) && !empty($nsResult['domains'][$domain]['nameservers'])) {
-                                $ns = $nsResult['domains'][$domain]['nameservers'];
-                                Log::channel('mailin-ai')->info('Fetched missing nameservers via fallback', [
-                                    'domain' => $domain,
-                                    'nameservers' => $ns,
-                                ]);
-                            }
-                        } catch (\Exception $e) {
-                            Log::channel('mailin-ai')->warning('Failed to fetch missing nameservers', ['domain' => $domain, 'error' => $e->getMessage()]);
-                        }
-                    }
-
-                    $split->setDomainStatus($domain, 'active', $domainId, $ns);
-                    Log::channel('mailin-ai')->info('Domain is active', [
-                        'domain' => $domain,
-                        'domain_id' => $domainId,
-                        'provider' => $split->provider_slug,
-                        'order_id' => $order->id,
-                    ]);
-                } else {
-                    $transferResult = $this->transferDomain($domain);
-                    if ($transferResult['success']) {
-                        $ns = $transferResult['name_servers'] ?? [];
-                        if (!empty($ns)) {
-                            try {
-                                $activationService->updateNameservers($order, $domain, $ns);
-                            } catch (\Exception $e) {
-                                $reason = "Nameserver update failed for {$domain}: " . $e->getMessage();
-                                $activationService->rejectOrder($order, $reason);
-                                return [
-                                    'rejected' => true,
-                                    'reason' => $reason,
-                                    'active' => $results['active'],
-                                    'transferred' => $results['transferred'],
-                                    'failed' => array_merge($results['failed'], [$domain]),
-                                ];
-                            }
-                        }
-                        $results['transferred'][] = $domain;
-                        $split->setDomainStatus($domain, 'pending', null, $ns);
-                        Log::channel('mailin-ai')->info('Domain transferred', [
-                            'domain' => $domain,
-                            'provider' => $split->provider_slug,
-                            'order_id' => $order->id,
-                        ]);
-                    } else {
-                        $message = $transferResult['message'] ?? '';
-                        $isRateLimit = str_contains(strtolower($message), 'rate limit')
-                            || str_contains($message, '429')
-                            || str_contains($message, 'Too Many Attempts');
-                        if ($isRateLimit) {
-                            Log::channel('mailin-ai')->warning('Domain transfer rate limit exceeded (will retry later)', [
-                                'domain' => $domain,
-                                'error' => $message,
-                                'order_id' => $order->id,
-                            ]);
-                            $results['failed'][] = $domain;
-                            $split->setDomainStatus($domain, 'failed');
-                        } else {
-                            $activationService->rejectOrder($order, "Domain transfer failed for: {$domain}. {$message}");
-                            return [
-                                'rejected' => true,
-                                'reason' => "Domain transfer failed for: {$domain}. {$message}",
-                                'active' => $results['active'],
-                                'transferred' => $results['transferred'],
-                                'failed' => array_merge($results['failed'], [$domain]),
-                            ];
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                Log::channel('mailin-ai')->error('Domain activation error', [
-                    'domain' => $domain,
-                    'error' => $e->getMessage(),
-                    'order_id' => $order->id,
-                ]);
-                $results['failed'][] = $domain;
-                $split->setDomainStatus($domain, 'failed');
+            } else {
+                $domainsToCheck[] = $domain;
             }
         }
 
-        $split->checkAndUpdateAllDomainsActive();
-        return $results;
+        if (empty($domainsToCheck)) {
+            return;
+        }
+
+        // 2. Conflict Check (Skipped for optimization as per plan)
+
+        // 3. Status Check (Batch)
+        $statusResults = $this->checkDomainStatus($domainsToCheck);
+        
+        $activeDomains = [];
+        $pendingDomains = [];
+        
+        if ($statusResults['success'] ?? false) {
+            foreach ($domainsToCheck as $domain) {
+                // extract status for this domain
+                $dStatus = $statusResults['results'][$domain] ?? null;
+                
+                if ($dStatus && ($dStatus['status'] === 'active')) {
+                   // Domain is active
+                   $activeDomains[] = $domain;
+                   
+                   $domainId = $dStatus['data']['id'] ?? $dStatus['domain_id'] ?? null;
+                   $ns = $dStatus['name_servers'] ?? [];
+                   
+                   $split->setDomainStatus($domain, 'active', $domainId, $ns);
+                   $results['active'][] = $domain;
+                   
+                } else {
+                   $pendingDomains[] = $domain;
+                }
+            }
+        } else {
+            // If batch check failed completely, treat all as pending
+            $pendingDomains = $domainsToCheck;
+        }
+
+        if (empty($pendingDomains)) {
+            return;
+        }
+
+        // 4. Setup/Transfer (Batch)
+        // Only for valid domains that are not active
+        $setupResult = $this->domainSetup($pendingDomains);
+        
+        if (!$setupResult['success']) {
+             foreach ($pendingDomains as $d) {
+                 $results['failed'][] = $d;
+             }
+             Log::channel('mailin-ai')->error('Mailrun: Batch setup failed', ['error' => $setupResult['message']]);
+             return;
+        }
+
+        // 5. Get Nameservers (Batch)
+        $nsResult = $this->getNameservers($pendingDomains);
+        
+        if (!$nsResult['success']) {
+             foreach ($pendingDomains as $d) {
+                 $results['failed'][] = $d;
+             }
+             return;
+        }
+
+        foreach ($pendingDomains as $domain) {
+            $nsData = $nsResult['domains'][$domain] ?? null;
+            $ns = $nsData['nameservers'] ?? [];
+            
+            if ($nsData && !empty($ns)) {
+                $results['transferred'][] = $domain;
+                // User Request: If NS are active (present), set status to 'active'
+                $split->setDomainStatus($domain, 'active', null, $ns);
+                
+                // Update NS via activation service
+                try {
+                     $activationService->updateNameservers($order, $domain, $ns);
+                } catch (\Exception $e) {
+                     Log::channel('mailin-ai')->warning('Nameserver update failed', ['domain' => $domain, 'error' => $e->getMessage()]);
+                }
+            } else {
+                // User Request: If domains are pending (no NS), set inactive status
+                $results['transferred'][] = $domain;
+                $split->setDomainStatus($domain, 'inactive', null, []); 
+                Log::channel('mailin-ai')->warning('Mailrun: Domain setup success but no NS returned yet (marked inactive)', ['domain' => $domain]);
+            }
+        }
     }
 
     // =========================================================================
