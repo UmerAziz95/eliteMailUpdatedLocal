@@ -1158,6 +1158,72 @@ class MailrunProviderService implements SmtpProviderInterface
     }
 
     /**
+     * Delete domain from Mailrun
+     * Endpoint: /affiliate/enrollment/delete
+     */
+    public function deleteDomain(string $domain): array
+    {
+        try {
+            Log::channel('mailin-ai')->info('Mailrun: Deleting domain via API', ['domain' => $domain]);
+
+            $payload = [
+                'domains' => [
+                    ['domain' => $domain]
+                ]
+            ];
+
+            // Use makeRequest to reuse auth and error handling
+            // Endpoint is absolute URL in user request but let's see if makeRequest handles base url.
+            // makeRequest appends endpoint to baseUrl.
+            // User request: https://api.mailrun.ai/api/affiliate/enrollment/delete
+            // Service BASE_URL: https://api.mailrun.ai/api
+            // So endpoint should be /affiliate/enrollment/delete
+
+            // However, makeRequest does: $url = rtrim($this->baseUrl, '/') . $endpoint;
+            // So we pass '/affiliate/enrollment/delete'
+
+            // Wait, we need to handle the response format specifically.
+            // makeRequest returns a Laravel Response object.
+
+            // But I cannot call makeRequest directly if it's private and I am inside the class :) yes I can.
+            // But wait, the previous tool call failed because I targeted line 1196 which is '}'.
+
+            $url = '/affiliate/enrollment/delete';
+            // Start Request
+            $response = $this->makeRequest('DELETE', $url, $payload);
+
+            if (!$response->successful()) {
+                return [
+                    'success' => false,
+                    'message' => 'API request failed: ' . $response->body(),
+                ];
+            }
+
+            $data = $response->json();
+
+            Log::channel('mailin-ai')->info('Mailrun: Delete response', ['domain' => $domain, 'response' => $data]);
+
+            // success is true in the response example
+            return [
+                'success' => true,
+                'data' => $data,
+                'message' => 'Deletion request processed',
+            ];
+
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Mailrun: Domain deletion failed', [
+                'domain' => $domain,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Make authenticated API request
      */
     private function makeRequest(string $method, string $endpoint, array $data = []): \Illuminate\Http\Client\Response
