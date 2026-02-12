@@ -3811,7 +3811,7 @@ class OrderController extends Controller
                 $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => ">>> Step 2: Creating Mailboxes..."]);
 
                 $process2 = new \Symfony\Component\Process\Process(
-                    [$phpBinary, 'artisan', 'mailin:create-mailboxes', $orderId],
+                    [$phpBinary, 'artisan', 'mailin:create-mailboxes', $orderId, '--force'],
                     base_path(),
                     $env
                 );

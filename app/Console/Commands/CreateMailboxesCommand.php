@@ -111,7 +111,7 @@ class CreateMailboxesCommand extends Command
         $this->info("Creating mailboxes...");
         $this->newLine();
 
-        $result = $service->createMailboxesForOrder($order, $prefixVariants, $prefixVariantsDetails);
+        $result = $service->createMailboxesForOrder($order, $prefixVariants, $prefixVariantsDetails, $force);
 
         if (!$result['success']) {
             $this->error("Mailbox creation failed: " . ($result['error'] ?? 'Unknown error'));

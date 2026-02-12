@@ -26,7 +26,8 @@ class MailboxCreationService
     public function createMailboxesForOrder(
         Order $order,
         array $prefixVariants,
-        array $prefixVariantsDetails
+        array $prefixVariantsDetails,
+        bool $force = false
     ): array {
         // GATE: Check ALL domains across ALL splits are active
         if (!OrderProviderSplit::areAllDomainsActiveForOrder($order->id)) {
@@ -44,6 +45,16 @@ class MailboxCreationService
         $totalPending = 0;
 
         foreach ($splits as $split) {
+            // New Logic: If force is true, only process splits that are fully active
+            // Skip splits that are not active to avoid errors
+            if ($force && !$split->all_domains_active) {
+                Log::channel('mailin-ai')->info('Skipping inactive provider split in force mode', [
+                    'order_id' => $order->id,
+                    'provider' => $split->provider_slug,
+                ]);
+                continue;
+            }
+
             $result = $this->createMailboxesForSplit($order, $split, $prefixVariants, $prefixVariantsDetails);
             $allResults[$split->provider_slug] = $result;
             $totalCreated += count($result['created'] ?? []);
@@ -317,8 +328,16 @@ class MailboxCreationService
             $domainsToEnroll = [];
             $domainsNeedingReEnrollment = [];
 
+            // Batch check status for all domains to avoid rate limits
+            $batchStatusResult = $provider->checkDomainStatus($split->domains ?? []);
+            $domainStatuses = $batchStatusResult['success'] ? ($batchStatusResult['results'] ?? []) : [];
+
             foreach ($split->domains ?? [] as $domain) {
-                $statusResult = $provider->checkDomainStatus($domain);
+                $statusResult = $domainStatuses[$domain] ?? ['success' => false, 'is_active' => false];
+                // Map 'active' status to is_active boolean if not already present
+                if (!isset($statusResult['is_active']) && ($statusResult['status'] ?? '') === 'active') {
+                    $statusResult['is_active'] = true;
+                }
 
                 if ($statusResult['success'] && ($statusResult['is_active'] ?? false)) {
                     // Domain is active in Mailrun - check if it has existing mailboxes
