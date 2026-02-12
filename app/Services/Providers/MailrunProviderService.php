@@ -1229,7 +1229,7 @@ class MailrunProviderService implements SmtpProviderInterface
     {
         $url = rtrim($this->baseUrl, '/') . $endpoint;
         $maxRetries = 3;
-        $retryDelay = 2000; // start with 2 seconds
+        $retryDelay = 15000; // 15 seconds between retries (Mailrun rate limit: 5/min)
 
         Log::channel('mailin-ai')->debug('Mailrun: API request', [
             'method' => $method,
