@@ -22,7 +22,7 @@ return [
     'api_key' => env('MAILIN_AI_API_KEY'),
 
     // API request settings
-    'timeout' => env('MAILIN_AI_TIMEOUT', 30), // seconds
+    'timeout' => env('MAILIN_AI_TIMEOUT', 120), // seconds
     'retry_attempts' => env('MAILIN_AI_RETRY_ATTEMPTS', 3),
     'retry_delay' => env('MAILIN_AI_RETRY_DELAY', 5), // seconds
 
