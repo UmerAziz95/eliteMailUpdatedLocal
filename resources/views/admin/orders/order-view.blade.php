@@ -521,8 +521,8 @@
                                                                                                                                                                                                     <div class='mb-detail-row'><span class='mb-label'>IMAP:</span> <span class='mb-value'>$imapHost:$imapPort</span></div>
                                                                                                                                                                                                 </div>";
 
-                                                                    // Build Copy Data (CSV format)
-                                                                    $copyParts[] = "$email,$password,$smtpHost,$smtpPort,$imapHost,$imapPort";
+                                                                    // Build Copy Data (readable multiline format)
+                                                                    $copyParts[] = "Mailbox $mailboxCount\nEmail: $email\nPassword: $password\nSMTP: $smtpHost:$smtpPort\nIMAP: $imapHost:$imapPort";
                                                                 }
                                                             }
                                                         }
@@ -542,7 +542,9 @@
                                                         } else {
                                                             $tooltipContent = 'No mailboxes created';
                                                         }
-                                                        $copyData = !empty($copyParts) ? implode("\n", $copyParts) : '';
+                                                        $copyData = !empty($copyParts)
+                                                            ? "Domain: $domainName\nStatus: " . ucfirst($status) . "\n\n" . implode("\n\n------------------------------\n\n", $copyParts)
+                                                            : '';
 
                                                         // Determine badge color based on status
                                                         $badgeClass = match ($status) {
@@ -566,7 +568,7 @@
                                                                 </span>
                                                                 @if($mailboxCount > 0)
                                                                     <button class="btn btn-sm btn-light border-0 py-0 px-1 copy-domain-btn"
-                                                                        data-copy-text="{{ $copyData }}" title="Copy details"
+                                                                        data-copy-text="{{ base64_encode($copyData) }}" title="Copy details"
                                                                         data-bs-toggle="tooltip">
                                                                         <i class="fa-regular fa-copy"></i>
                                                                     </button>
@@ -701,45 +703,65 @@
                                     // Copy All Emails Handler
                                     $('#copyAllEmailsBtn').click(function () {
                                         const orderProviderSplits = @json($orderProviderSplits ?? []);
-                                        let textToCopy = ""; // "Email,Password,SMTP Host,SMTP Port,IMAP Host,IMAP Port" 
+                                        const providerSections = [];
 
                                         if (!orderProviderSplits || orderProviderSplits.length === 0) {
                                             toastr.warning('No email data available to copy.');
                                             return;
                                         }
 
-                                        // Iterate through splits
+                                        // Build readable grouped text by provider/domain
                                         orderProviderSplits.forEach(split => {
-                                            if (split.mailboxes) {
-                                                // mailboxes structure: { "domain.com": { "prefix1": { ...data... } } }
-                                                Object.values(split.mailboxes).forEach(domainMailboxes => {
-                                                    // Handle case where it might be array or object
-                                                    const mailboxesArray = Array.isArray(domainMailboxes) ? domainMailboxes : Object.values(domainMailboxes);
+                                            if (!split.mailboxes) {
+                                                return;
+                                            }
 
-                                                    mailboxesArray.forEach(mailbox => {
-                                                        const email = mailbox.email || mailbox.mailbox || '';
-                                                        const password = mailbox.password || '';
+                                            const providerName = split.provider_slug ? split.provider_slug.toUpperCase() : 'PROVIDER';
+                                            const domainSections = [];
 
-                                                        // Use empty string if value is null/undefined to keep CSV format clean, or 'N/A' if preferred.
-                                                        // User request implied just getting the details. 
-                                                        // If fields are missing, empty string might be better for CSV parsing, or N/A for readability.
-                                                        // Using user defined logic: "Include SMTP/IMAP fields".
-                                                        const smtpHost = mailbox.smtp_host || '';
-                                                        const smtpPort = mailbox.smtp_port || '';
-                                                        const imapHost = mailbox.imap_host || '';
-                                                        const imapPort = mailbox.imap_port || '';
+                                            Object.entries(split.mailboxes).forEach(([domainName, domainMailboxes]) => {
+                                                const mailboxesArray = Array.isArray(domainMailboxes)
+                                                    ? domainMailboxes
+                                                    : Object.values(domainMailboxes || {});
 
-                                                        if (email) {
-                                                            textToCopy += `${email},${password},${smtpHost},${smtpPort},${imapHost},${imapPort}\n`;
-                                                        }
-                                                    });
+                                                const mailboxBlocks = [];
+
+                                                mailboxesArray.forEach((mailbox, index) => {
+                                                    const email = mailbox.email || mailbox.mailbox || '';
+                                                    if (!email) {
+                                                        return;
+                                                    }
+
+                                                    const password = mailbox.password || 'N/A';
+                                                    const smtpHost = mailbox.smtp_host || 'N/A';
+                                                    const smtpPort = mailbox.smtp_port || 'N/A';
+                                                    const imapHost = mailbox.imap_host || 'N/A';
+                                                    const imapPort = mailbox.imap_port || 'N/A';
+
+                                                    mailboxBlocks.push(
+                                                        `Mailbox ${index + 1}\nEmail: ${email}\nPassword: ${password}\nSMTP: ${smtpHost}:${smtpPort}\nIMAP: ${imapHost}:${imapPort}`
+                                                    );
                                                 });
+
+                                                if (mailboxBlocks.length > 0) {
+                                                    domainSections.push(
+                                                        `Domain: ${domainName}\n\n${mailboxBlocks.join('\n\n------------------------------\n\n')}`
+                                                    );
+                                                }
+                                            });
+
+                                            if (domainSections.length > 0) {
+                                                providerSections.push(
+                                                    `Provider: ${providerName}\n\n${domainSections.join('\n\n========================================\n\n')}`
+                                                );
                                             }
                                         });
 
+                                        const textToCopy = providerSections.join('\n\n##################################################\n\n');
+
                                         if (textToCopy) {
                                             navigator.clipboard.writeText(textToCopy).then(function () {
-                                                toastr.success('All emails copied to clipboard!');
+                                                toastr.success('Readable email details copied to clipboard!');
                                             }, function (err) {
                                                 toastr.error('Could not copy text: ' + err);
                                             });
@@ -750,11 +772,12 @@
 
                                     // Copy Domain Emails Handler
                                     $(document).on('click', '.copy-domain-btn', function () {
-                                        const textToCopy = $(this).attr('data-copy-text');
+                                        const encodedText = $(this).attr('data-copy-text');
+                                        const textToCopy = encodedText ? atob(encodedText) : '';
 
                                         if (textToCopy) {
                                             navigator.clipboard.writeText(textToCopy).then(function () {
-                                                toastr.success('Domain emails copied to clipboard!');
+                                                toastr.success('Readable domain details copied to clipboard!');
                                             }, function (err) {
                                                 toastr.error('Could not copy text: ' + err);
                                             });
