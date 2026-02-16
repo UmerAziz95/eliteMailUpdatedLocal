@@ -266,26 +266,34 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
             ];
         }
 
-        // Filter email_accounts by domain
+        $mailboxes = [];
+        // Assuming $this->service->getEmailAccountsByDomain is a new method that fetches accounts for a given order and domain
+        // and that $this->currentOrderId is the orderId
         $emailAccounts = collect($order['data']['email_accounts'] ?? [])
             ->filter(function ($account) use ($domain) {
                 return ($account['domain'] ?? '') === $domain;
             })
-            ->map(function ($account) {
-                return [
-                    'id' => $account['id'] ?? null,
-                    'email' => $account['email'] ?? '',
-                    'domain' => $account['domain'] ?? '',
-                    'status' => $account['status'] ?? 'unknown',
-                    'password' => $account['password'] ?? null,
-                ];
-            })
             ->values()
             ->toArray();
 
+        foreach ($emailAccounts as $account) {
+            $mailboxes[] = [
+                'id' => $account['id'] ?? null,
+                'email' => $account['email'] ?? $account['username'] ?? '',
+                'username' => $account['email'] ?? $account['username'] ?? '',
+                'name' => $account['first_name'] ?? $account['name'] ?? '', // API uses first_name/last_name
+                'password' => $account['password'] ?? '', // Password might not be returned in list
+                // Map SMTP/IMAP details without fallback (save null if not available)
+                'smtp_host' => $account['smtp_host'] ?? $account['smtpHost'] ?? null,
+                'smtp_port' => $account['smtp_port'] ?? $account['smtpPort'] ?? null,
+                'imap_host' => $account['imap_host'] ?? $account['imapHost'] ?? null,
+                'imap_port' => $account['imap_port'] ?? $account['imapPort'] ?? null,
+            ];
+        }
+
         return [
             'success' => true,
-            'mailboxes' => $emailAccounts,
+            'mailboxes' => $mailboxes,
         ];
     }
 
