@@ -38,13 +38,13 @@ class OrderCancelledService
                 'message' => 'No active subscription found'
             ];
         }
-        
+
         Log::info("Found active subscription for cancellation: Subscription ID {$subscription->id}, ChargeBee ID {$chargebee_subscription_id}, User ID {$user_id}");
         try {
             // First, check if subscription is already cancelled in Chargebee
             $chargebeeSubscription = \ChargeBee\ChargeBee\Models\Subscription::retrieve($chargebee_subscription_id);
             $isAlreadyCancelled = $chargebeeSubscription->subscription()->status === 'cancelled';
-            
+
             // Only call cancel API if not already cancelled
             if (!$isAlreadyCancelled) {
                 $result = \ChargeBee\ChargeBee\Models\Subscription::cancelForItems($chargebee_subscription_id, [
@@ -65,7 +65,7 @@ class OrderCancelledService
 
                 // Calculate proper end date based on billing cycle or force cancel
                 $endDate = now(); // Default fallback
-                
+
                 if ($force_cancel) {
                     // For force cancel, set end date to now
                     $endDate = now();
@@ -77,7 +77,7 @@ class OrderCancelledService
                         $lastBillingDate = $nextBillingDate->copy()->subMonth();
                         $endDate = $nextBillingDate->copy()->subDay(); // End date is day before next billing
                         Log::info("Calculated end date from next billing date: {$endDate->toDateString()} for Subscription ID {$subscription->id}");
-                    }else{
+                    } else {
                         // get last billing date from subscription
                         $lastBillingDate = $subscription->last_billing_date ? Carbon::parse($subscription->last_billing_date) : null;
                         if ($lastBillingDate) {
@@ -108,12 +108,12 @@ class OrderCancelledService
 
                 $order = Order::where('chargebee_subscription_id', $chargebee_subscription_id)->first();
                 $mailboxDeletionInProgress = false;
-                
+
                 if ($order) {
                     // For Google/365 orders with force cancel, status will be set to 'cancellation-in-process' in deleteOrderMailboxes
                     // For other orders or EOBC, set to 'cancelled' immediately
                     $isGoogle365ForceCancel = $force_cancel && in_array($order->provider_type, ['Google', 'Microsoft 365']);
-                    
+
                     if (!$isGoogle365ForceCancel) {
                         $order->update([
                             'status_manage_by_admin' => 'cancelled',
@@ -121,7 +121,7 @@ class OrderCancelledService
                         ]);
                         Log::info("Updated order record to cancelled: Order ID {$order->id}, User ID {$user_id}");
                     }
-                    
+
                     // Delete mailboxes from Mailin.ai immediately only for Force Cancel
                     // For EOBC, mailboxes should remain active until subscription end date
                     if ($force_cancel) {
@@ -146,18 +146,18 @@ class OrderCancelledService
                         'status' => $subscription->status,
                     ]
                 );
-                
+
                 // Check if order has splits before creating domain removal task
                 $hasSplits = false;
                 if ($order) {
                     $hasSplits = OrderPanel::where('order_id', $order->id)->exists();
                 }
-                
+
                 // Check if Mailin.ai automation is enabled and provider type is Private SMTP
                 $automationEnabled = config('mailin_ai.automation_enabled', false);
                 $providerType = $order ? $order->provider_type : null;
                 $shouldSkipDomainRemovalTask = $automationEnabled && $providerType === 'Private SMTP';
-                
+
                 // Only create domain removal task if splits are found AND automation conditions are not met
                 if ($hasSplits && !$shouldSkipDomainRemovalTask) {
                     // Add entry to domain removal queue table
@@ -207,7 +207,7 @@ class OrderCancelledService
                             'context' => 'OrderCancelledService::cancelSubscription'
                         ]);
                     }
-                    
+
                     try {
                         Mail::to(config('mail.admin_address', 'admin@example.com'))
                             ->queue(new SubscriptionCancellationMail($subscription, $user, $reasonString, true));
@@ -237,12 +237,12 @@ class OrderCancelledService
                     ]);
                 }
                 Log::info("Subscription cancellation process completed for ChargeBee ID {$chargebee_subscription_id}, User ID {$user_id}");
-                
+
                 $message = 'Subscription cancelled successfully';
                 if ($mailboxDeletionInProgress) {
                     $message = 'Subscription cancellation is in process. Mailbox deletion is running in the background.';
                 }
-                
+
                 return [
                     'success' => true,
                     'message' => $message,
@@ -283,7 +283,7 @@ class OrderCancelledService
         try {
             // First, reactivate the subscription on ChargeBee
             $chargebeeResult = \ChargeBee\ChargeBee\Models\Subscription::reactivate($chargebee_subscription_id);
-            
+
             if ($chargebeeResult->subscription()->status !== 'active') {
                 throw new Exception('Failed to reactivate subscription on ChargeBee: status is ' . $chargebeeResult->subscription()->status);
             }
@@ -319,7 +319,7 @@ class OrderCancelledService
             $order = Order::where('chargebee_subscription_id', $chargebee_subscription_id)->first();
             if ($order) {
                 $statusToRestore = 'completed'; // Better default fallback
-                
+
                 // First, try to find the cancellation log to get the previous status
                 $cancellationLog = \App\Models\Log::where('performed_on_type', 'App\Models\Order')
                     ->where('performed_on_id', $order->id)
@@ -402,7 +402,7 @@ class OrderCancelledService
 
             // Check if Mailin.ai automation is enabled
             $automationEnabled = config('mailin_ai.automation_enabled', false);
-            
+
             if (!$automationEnabled) {
                 Log::info("Skipping mailbox deletion - automation not enabled", [
                     'action' => 'delete_order_mailboxes',
@@ -413,7 +413,7 @@ class OrderCancelledService
             }
 
             $providerType = $order->provider_type;
-            
+
             // Route to provider-specific deletion methods
             if (in_array(strtolower($providerType ?? ''), ['private smtp', 'smtp'])) {
                 // Check for order_provider_splits first (new multi-provider system)
@@ -433,26 +433,26 @@ class OrderCancelledService
                     'status_manage_by_admin' => 'cancellation-in-process',
                     'reason' => $reason,
                 ]));
-                
+
                 Log::info('Updated order status to cancellation-in-process before mailbox deletion', [
                     'action' => 'delete_order_mailboxes',
                     'order_id' => $order->id,
                     'provider_type' => $providerType,
                 ]);
-                
+
                 // Dispatch job for Google/365 orders (batch processing)
                 \App\Jobs\MailinAi\DeleteGoogle365MailboxesJob::dispatch(
                     $order->id,
                     50, // batch size
                     0    // offset
                 );
-                
+
                 Log::info('Google/365 mailbox deletion job dispatched for background processing', [
                     'action' => 'delete_order_mailboxes',
                     'order_id' => $order->id,
                     'provider_type' => $providerType,
                 ]);
-                
+
                 return true; // Indicate that mailbox deletion is in progress
             } else {
                 Log::info("Skipping mailbox deletion - unsupported provider type", [
@@ -495,7 +495,7 @@ class OrderCancelledService
 
             foreach ($splits as $split) {
                 $providerSlug = $split->provider_slug;
-                
+
                 Log::info("Processing provider split for deletion", [
                     'action' => 'delete_mailboxes_from_provider_splits',
                     'order_id' => $order->id,
@@ -657,14 +657,14 @@ class OrderCancelledService
                     ]);
 
                     $result = $mailinService->deleteMailbox($orderEmail->mailin_mailbox_id);
-                    
+
                     if ($result['success']) {
                         $deletedCount++;
                         $emailsDeleted[] = $email;
-                        
+
                         // Delete the OrderEmail record from database after successful deletion from Mailin.ai
                         $orderEmail->delete();
-                        
+
                         Log::info('Mailbox deleted successfully from Mailin.ai and database', [
                             'action' => 'delete_smtp_order_mailboxes',
                             'order_id' => $order->id,
@@ -676,7 +676,7 @@ class OrderCancelledService
                         $failedCount++;
                         $emailsFailed[] = $email;
                         $errors[] = "Mailbox ID {$orderEmail->mailin_mailbox_id}: " . ($result['message'] ?? 'Unknown error');
-                        
+
                         Log::warning('Mailbox deletion from Mailin.ai failed, keeping OrderEmail record', [
                             'action' => 'delete_smtp_order_mailboxes',
                             'order_id' => $order->id,
@@ -687,10 +687,10 @@ class OrderCancelledService
                         ]);
                     }
                 } catch (\Exception $e) {
-                    $failedCount++;                      
+                    $failedCount++;
                     $emailsFailed[] = $email;
                     $errors[] = "Mailbox ID {$orderEmail->mailin_mailbox_id}: " . $e->getMessage();
-                    
+
                     Log::error('Exception occurred while deleting mailbox from Mailin.ai', [
                         'action' => 'delete_smtp_order_mailboxes',
                         'order_id' => $order->id,
@@ -794,7 +794,7 @@ class OrderCancelledService
                     'order_id' => $orderId,
                     'offset' => $offset,
                 ]);
-                
+
                 if ($isBatchMode) {
                     return [
                         'processed' => 0,
@@ -817,14 +817,14 @@ class OrderCancelledService
             foreach ($orderPanels as $panel) {
                 // Get ALL split IDs for this panel at once
                 $splitIds = $panel->orderPanelSplits->pluck('id');
-                
+
                 if ($splitIds->isEmpty()) {
                     continue;
                 }
 
                 // Fetch emails for ALL splits at once (same as exportSmartZip)
                 $panelEmails = OrderEmail::whereIn('order_split_id', $splitIds)->get();
-                
+
                 if ($panelEmails->isNotEmpty()) {
                     $allEmails = $allEmails->merge($panelEmails);
                     $splitIdsWithCustomizedEmails = $splitIdsWithCustomizedEmails->merge($splitIds);
@@ -847,7 +847,7 @@ class OrderCancelledService
             if (!$isBatchMode || $offset === 0) {
                 // Check if record already exists (for batch mode)
                 $existingRecord = $isBatchMode ? UsedEmailsInOrder::where('order_id', $orderId)->first() : null;
-                
+
                 if (!$existingRecord) {
                     $usedEmailsRecord = UsedEmailsInOrder::create([
                         'order_id' => $orderId,
@@ -899,7 +899,7 @@ class OrderCancelledService
             // Apply batch limits if in batch mode
             if ($isBatchMode) {
                 $emailsToProcess = $allEmailAddresses->slice($offset, $batchSize);
-                
+
                 if ($emailsToProcess->isEmpty()) {
                     Log::info("No emails in batch range", [
                         'action' => 'delete_google365_order_mailboxes',
@@ -908,7 +908,7 @@ class OrderCancelledService
                         'batch_size' => $batchSize,
                         'total_count' => $totalCount,
                     ]);
-                    
+
                     return [
                         'processed' => 0,
                         'deleted' => 0,
@@ -954,12 +954,12 @@ class OrderCancelledService
             // In batch mode, only process emails in the current batch
             foreach ($allEmails as $orderEmail) {
                 $email = $orderEmail->email;
-                
+
                 // Skip if not in current batch
                 if ($isBatchMode && !$emailsToProcess->contains($email)) {
                     continue;
                 }
-                
+
                 $emailsChecked[] = $email;
 
                 Log::info("Checking email on Mailin.ai", [
@@ -971,12 +971,12 @@ class OrderCancelledService
                 ]);
 
                 $result = $this->processEmailForDeletion($orderEmail, $mailinService, $order);
-                
+
                 if ($result['success']) {
                     $deletedCount++;
                     $emailsDeleted[] = $email;
                     $emailsFound[] = $email;
-                    
+
                     Log::info("Email successfully deleted from Mailin.ai", [
                         'action' => 'delete_google365_order_mailboxes',
                         'order_id' => $orderId,
@@ -985,7 +985,7 @@ class OrderCancelledService
                 } elseif ($result['not_found']) {
                     $notFoundCount++;
                     $emailsNotFound[] = $email;
-                    
+
                     Log::info("Email not found on Mailin.ai", [
                         'action' => 'delete_google365_order_mailboxes',
                         'order_id' => $orderId,
@@ -994,7 +994,7 @@ class OrderCancelledService
                 } elseif ($result['lookup_failed']) {
                     $lookupFailedCount++;
                     $emailsLookupFailed[] = $email;
-                    
+
                     Log::warning("Failed to lookup email on Mailin.ai", [
                         'action' => 'delete_google365_order_mailboxes',
                         'order_id' => $orderId,
@@ -1004,7 +1004,7 @@ class OrderCancelledService
                 } else {
                     $failedCount++;
                     $errors[] = $result['error'] ?? 'Unknown error';
-                    
+
                     Log::error("Failed to delete email from Mailin.ai", [
                         'action' => 'delete_google365_order_mailboxes',
                         'order_id' => $orderId,
@@ -1018,12 +1018,12 @@ class OrderCancelledService
             // In batch mode, only process emails in the current batch
             foreach ($generatedEmails as $generatedEmail) {
                 $email = $generatedEmail->email;
-                
+
                 // Skip if not in current batch
                 if ($isBatchMode && !$emailsToProcess->contains($email)) {
                     continue;
                 }
-                
+
                 $emailsChecked[] = $email;
 
                 Log::info("Checking generated email on Mailin.ai", [
@@ -1035,12 +1035,12 @@ class OrderCancelledService
                 ]);
 
                 $result = $this->processGeneratedEmailForDeletion($generatedEmail, $mailinService, $order);
-                
+
                 if ($result['success']) {
                     $deletedCount++;
                     $emailsDeleted[] = $email;
                     $emailsFound[] = $email;
-                    
+
                     Log::info("Generated email successfully deleted from Mailin.ai", [
                         'action' => 'delete_google365_order_mailboxes',
                         'order_id' => $orderId,
@@ -1049,7 +1049,7 @@ class OrderCancelledService
                 } elseif ($result['not_found']) {
                     $notFoundCount++;
                     $emailsNotFound[] = $email;
-                    
+
                     Log::info("Generated email not found on Mailin.ai", [
                         'action' => 'delete_google365_order_mailboxes',
                         'order_id' => $orderId,
@@ -1058,7 +1058,7 @@ class OrderCancelledService
                 } elseif ($result['lookup_failed']) {
                     $lookupFailedCount++;
                     $emailsLookupFailed[] = $email;
-                    
+
                     Log::warning("Failed to lookup generated email on Mailin.ai", [
                         'action' => 'delete_google365_order_mailboxes',
                         'order_id' => $orderId,
@@ -1068,7 +1068,7 @@ class OrderCancelledService
                 } else {
                     $failedCount++;
                     $errors[] = $result['error'] ?? 'Unknown error';
-                    
+
                     Log::error("Failed to delete generated email from Mailin.ai", [
                         'action' => 'delete_google365_order_mailboxes',
                         'order_id' => $orderId,
@@ -1217,7 +1217,7 @@ class OrderCancelledService
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             if ($isBatchMode) {
                 return [
                     'processed' => 0,
@@ -1273,7 +1273,7 @@ class OrderCancelledService
                 foreach ($domains as $domain) {
                     foreach ($prefixVariants as $prefix) {
                         $email = $prefix . '@' . $domain;
-                        $generatedEmails->push((object)[
+                        $generatedEmails->push((object) [
                             'email' => $email,
                             'domain' => $domain,
                             'prefix' => $prefix,
@@ -1333,8 +1333,8 @@ class OrderCancelledService
 
         if ($split->domains) {
             // Handle both JSON string and array
-            $domainsData = is_string($split->domains) 
-                ? json_decode($split->domains, true) 
+            $domainsData = is_string($split->domains)
+                ? json_decode($split->domains, true)
                 : $split->domains;
 
             if (is_array($domainsData)) {
@@ -1373,10 +1373,10 @@ class OrderCancelledService
             ]);
 
             $lookupResult = $mailinService->lookupMailboxIdByEmail($email);
-            
+
             if ($lookupResult['success'] && $lookupResult['mailbox_id']) {
                 $mailboxId = $lookupResult['mailbox_id'];
-                
+
                 Log::info("Mailbox ID found via lookup, updating OrderEmail record", [
                     'order_id' => $order->id,
                     'order_email_id' => $orderEmail->id,
