@@ -51,7 +51,7 @@ class MailrunProviderService implements SmtpProviderInterface
     public function __construct(array $credentials)
     {
         $this->baseUrl = $credentials['base_url'] ?? self::BASE_URL;
-        
+
         $token = $credentials['api_key'] ?? $credentials['api_token'] ?? $credentials['password'] ?? '';
         // Remove 'Bearer ' prefix (case-insensitive) if present to avoid double bearer in headers
         $this->apiToken = preg_replace('/^Bearer\s+/i', '', trim($token));
@@ -133,7 +133,7 @@ class MailrunProviderService implements SmtpProviderInterface
         }
     }
 
-        /**
+    /**
      * Check domain status
      * Maps to: Nameserver Status Check (POST /affiliate/nameserver/status)
      * Supports single domain (string) or multiple domains (array)
@@ -192,15 +192,15 @@ class MailrunProviderService implements SmtpProviderInterface
                     if ($directItem) {
                         $results[$domain] = $parseItem($directItem);
                     } else {
-                         $results[$domain] = [
+                        $results[$domain] = [
                             'success' => false,
-                            'status' => 'unknown', 
+                            'status' => 'unknown',
                             'message' => 'Domain not found in response'
                         ];
                     }
                 }
             }
-            
+
             Log::channel('mailin-ai')->info('Mailrun: Batch domain status checked', [
                 'count' => count($domainList),
                 'active_count' => count(array_filter($results, fn($r) => ($r['status'] ?? '') === 'active')),
@@ -405,21 +405,27 @@ class MailrunProviderService implements SmtpProviderInterface
             'provider' => 'mailrun',
             'order_id' => $order->id,
             'split_id' => $split->id,
-            'mailrun_deletion_mode' => self::MAILRUN_DELETION_API_AVAILABLE ? 'api' : 'local_only',
-            'mailrun_api_available' => self::MAILRUN_DELETION_API_AVAILABLE,
         ];
 
         try {
             $mailboxes = $split->mailboxes ?? [];
+            $domains = array_keys($mailboxes);
             $totalMailboxes = 0;
+
             foreach ($mailboxes as $domain => $domainMailboxes) {
                 $totalMailboxes += is_array($domainMailboxes) ? count($domainMailboxes) : 0;
             }
+
             $logContext['mailbox_count'] = $totalMailboxes;
-            $logContext['domains'] = array_keys($mailboxes);
+            $logContext['domains'] = $domains;
 
-            Log::channel('mailin-ai')->warning('Mailrun: local-only deletion; external API not available', $logContext);
+            // Dispatch asynchronous deletion job for domains
+            if (!empty($domains)) {
+                \App\Jobs\MailinAi\DeleteMailrunDomainsJob::dispatch($domains, $split->provider_slug);
+                Log::channel('mailin-ai')->info('Mailrun: Dispatched DeleteMailrunDomainsJob', ['count' => count($domains)]);
+            }
 
+            // Mark locally deleted
             foreach ($mailboxes as $domain => $domainMailboxes) {
                 foreach ($domainMailboxes as $prefixKey => $mailbox) {
                     if (!$split->isMailboxDeleted($domain, $prefixKey)) {
@@ -433,53 +439,33 @@ class MailrunProviderService implements SmtpProviderInterface
 
             $logContext['deleted'] = $deletedCount;
             $logContext['skipped'] = $skippedCount;
-            $logContext['failed'] = $failedCount;
 
-            Log::channel('mailin-ai')->info('Mailrun: mailboxes marked deleted locally (no external API)', $logContext);
+            Log::channel('mailin-ai')->info('Mailrun: mailboxes marked deleted locally and job dispatched', $logContext);
 
-            // Also log to default channel for action-based search (search: mailrun_deletion)
-            Log::info('Mailrun split deletion completed', [
+            // Also log to default channel for action-based search
+            Log::info('Mailrun split deletion initiated', [
                 'action' => 'delete_mailboxes_from_split',
                 'provider' => 'mailrun',
                 'order_id' => $order->id,
-                'split_id' => $split->id,
-                'mailrun_deletion_mode' => $logContext['mailrun_deletion_mode'],
-                'mailrun_api_available' => $logContext['mailrun_api_available'],
-                'deleted' => $deletedCount,
-                'skipped' => $skippedCount,
-                'failed' => $failedCount,
+                'deleted_local' => $deletedCount,
             ]);
 
             if ($deletedCount > 0) {
                 ActivityLogService::log(
                     'order-mailboxes-deleted',
-                    "Marked Mailrun mailboxes as deleted (local-only; external API not yet available)",
+                    "Marked Mailrun mailboxes as deleted and initiated domain deletion",
                     $order,
-                    [
-                        'order_id' => $order->id,
-                        'split_id' => $split->id,
-                        'provider' => 'mailrun',
-                        'note' => 'Mailrun: local-only deletion; external API deletion not supported yet',
-                        'mailrun_deletion_mode' => 'local_only',
-                    ]
+                    $logContext
                 );
             }
         } catch (\Exception $e) {
             $logContext['error'] = $e->getMessage();
-            $logContext['trace'] = $e->getTraceAsString();
-            Log::channel('mailin-ai')->error('Mailrun: error during local-only deletion', $logContext);
-            Log::error('Error processing Mailrun mailboxes from split', [
-                'action' => 'delete_mailboxes_from_split',
-                'provider' => 'mailrun',
-                'order_id' => $order->id,
-                'split_id' => $split->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::channel('mailin-ai')->error('Mailrun: error during deletion', $logContext);
         }
 
         return ['deleted' => $deletedCount, 'failed' => $failedCount, 'skipped' => $skippedCount];
     }
+
 
     /**
      * Get mailboxes by domain
@@ -617,17 +603,17 @@ class MailrunProviderService implements SmtpProviderInterface
         if (empty($allDomains)) {
             return $results;
         }
-        
+
         // chunk domains to respect max batch size (50)
         $domainChunks = array_chunk($allDomains, 50);
-        
+
         foreach ($domainChunks as $domains) {
             $this->processDomainBatch($domains, $order, $split, $bypassExistingMailboxCheck, $activationService, $results);
             if ($results['rejected']) {
                 return $results;
             }
         }
-        
+
         $split->checkAndUpdateAllDomainsActive();
         return $results;
     }
@@ -658,27 +644,27 @@ class MailrunProviderService implements SmtpProviderInterface
 
         // 3. Status Check (Batch)
         $statusResults = $this->checkDomainStatus($domainsToCheck);
-        
+
         $activeDomains = [];
         $pendingDomains = [];
-        
+
         if ($statusResults['success'] ?? false) {
             foreach ($domainsToCheck as $domain) {
                 // extract status for this domain
                 $dStatus = $statusResults['results'][$domain] ?? null;
-                
+
                 if ($dStatus && ($dStatus['status'] === 'active')) {
-                   // Domain is active
-                   $activeDomains[] = $domain;
-                   
-                   $domainId = $dStatus['data']['id'] ?? $dStatus['domain_id'] ?? null;
-                   $ns = $dStatus['name_servers'] ?? [];
-                   
-                   $split->setDomainStatus($domain, 'active', $domainId, $ns);
-                   $results['active'][] = $domain;
-                   
+                    // Domain is active
+                    $activeDomains[] = $domain;
+
+                    $domainId = $dStatus['data']['id'] ?? $dStatus['domain_id'] ?? null;
+                    $ns = $dStatus['name_servers'] ?? [];
+
+                    $split->setDomainStatus($domain, 'active', $domainId, $ns);
+                    $results['active'][] = $domain;
+
                 } else {
-                   $pendingDomains[] = $domain;
+                    $pendingDomains[] = $domain;
                 }
             }
         } else {
@@ -693,44 +679,44 @@ class MailrunProviderService implements SmtpProviderInterface
         // 4. Setup/Transfer (Batch)
         // Only for valid domains that are not active
         $setupResult = $this->domainSetup($pendingDomains);
-        
+
         if (!$setupResult['success']) {
-             foreach ($pendingDomains as $d) {
-                 $results['failed'][] = $d;
-             }
-             Log::channel('mailin-ai')->error('Mailrun: Batch setup failed', ['error' => $setupResult['message']]);
-             return;
+            foreach ($pendingDomains as $d) {
+                $results['failed'][] = $d;
+            }
+            Log::channel('mailin-ai')->error('Mailrun: Batch setup failed', ['error' => $setupResult['message']]);
+            return;
         }
 
         // 5. Get Nameservers (Batch)
         $nsResult = $this->getNameservers($pendingDomains);
-        
+
         if (!$nsResult['success']) {
-             foreach ($pendingDomains as $d) {
-                 $results['failed'][] = $d;
-             }
-             return;
+            foreach ($pendingDomains as $d) {
+                $results['failed'][] = $d;
+            }
+            return;
         }
 
         foreach ($pendingDomains as $domain) {
             $nsData = $nsResult['domains'][$domain] ?? null;
             $ns = $nsData['nameservers'] ?? [];
-            
+
             if ($nsData && !empty($ns)) {
                 $results['transferred'][] = $domain;
                 // User Request: If NS are active (present), set status to 'active'
                 $split->setDomainStatus($domain, 'active', null, $ns);
-                
+
                 // Update NS via activation service
                 try {
-                     $activationService->updateNameservers($order, $domain, $ns);
+                    $activationService->updateNameservers($order, $domain, $ns);
                 } catch (\Exception $e) {
-                     Log::channel('mailin-ai')->warning('Nameserver update failed', ['domain' => $domain, 'error' => $e->getMessage()]);
+                    Log::channel('mailin-ai')->warning('Nameserver update failed', ['domain' => $domain, 'error' => $e->getMessage()]);
                 }
             } else {
                 // User Request: If domains are pending (no NS), set inactive status
                 $results['transferred'][] = $domain;
-                $split->setDomainStatus($domain, 'inactive', null, []); 
+                $split->setDomainStatus($domain, 'inactive', null, []);
                 Log::channel('mailin-ai')->warning('Mailrun: Domain setup success but no NS returned yet (marked inactive)', ['domain' => $domain]);
             }
         }
@@ -808,6 +794,59 @@ class MailrunProviderService implements SmtpProviderInterface
             ];
 
         } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Delete domains from Mailrun
+     * Maps to: POST /affiliate/enrollment/delete
+     * Rate Limit: 10 requests / hour
+     */
+    public function deleteDomains(array $domains): array
+    {
+        try {
+            $payload = [
+                'domains' => array_map(fn($d) => ['domain' => $d], $domains)
+            ];
+
+            if ($this->customerId) {
+                $payload['customerId'] = $this->customerId;
+            }
+
+            Log::channel('mailin-ai')->info('Mailrun: Deleting domains...', ['count' => count($domains), 'domains' => $domains]);
+
+            $response = $this->makeRequest('DELETE', '/affiliate/enrollment/delete', $payload);
+
+            if (!$response->successful()) {
+                $error = $response->json('message') ?? $response->body();
+                Log::channel('mailin-ai')->error('Mailrun: Domain deletion failed', [
+                    'domains' => $domains,
+                    'error' => $error,
+                    'status' => $response->status(),
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => "Domain deletion failed: {$error}",
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Domains deleted successfully',
+                'data' => $response->json()
+            ];
+
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('Mailrun: Domain deletion exception', [
+                'domains' => $domains,
+                'error' => $e->getMessage(),
+            ]);
+
             return [
                 'success' => false,
                 'message' => $e->getMessage(),
