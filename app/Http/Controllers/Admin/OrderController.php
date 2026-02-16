@@ -196,10 +196,12 @@ class OrderController extends Controller
             ];
         }
 
-        // Get order provider splits for Private SMTP orders
+        // Get order provider splits for orders that use them (Private SMTP, Mailin, Premium Inboxes etc)
         $orderProviderSplits = [];
-        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
-        if (strtolower($providerType ?? '') === 'private smtp') {
+        // Check if any splits exist for this order
+        $hasSplits = \App\Models\OrderProviderSplit::where('order_id', $order->id)->exists();
+
+        if ($hasSplits) {
             $orderProviderSplits = \App\Models\OrderProviderSplit::where('order_id', $order->id)
                 ->get()
                 ->map(function ($split) {

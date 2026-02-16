@@ -367,33 +367,33 @@
                         </div>
 
                         <!-- <div class="card p-3">
-                                                <h6 class="d-flex align-items-center gap-2">
-                                                    <div class="d-flex align-items-center justify-content-center"
-                                                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                                                        <i class="fa-solid fa-cart-plus"></i>
-                                                    </div>
-                                                    Products: <span class="text-success">${{ number_format($order->amount ?? 0, 2) }}</span>
-                                                    <span>/Monthly</span>
-                                                </h6>
+                                                                                <h6 class="d-flex align-items-center gap-2">
+                                                                                    <div class="d-flex align-items-center justify-content-center"
+                                                                                        style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                                                                        <i class="fa-solid fa-cart-plus"></i>
+                                                                                    </div>
+                                                                                    Products: <span class="text-success">${{ number_format($order->amount ?? 0, 2) }}</span>
+                                                                                    <span>/Monthly</span>
+                                                                                </h6>
 
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div>
-                                                        <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
-                                                    </div>
-                                                    <div>
-                                                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                                                        <br>
-                                                        @if (isset($order->meta['product_details']))
-                                                            <span>{{ $order->meta['product_details']['quantity'] ?? '0' }} x
-                                                                ${{ number_format($order->meta['product_details']['unit_price'] ?? 0, 2) }}
-                                                                <small>/monthly</small></span>
-                                                        @else
-                                                            <span>{{ $order->reorderInfo->first()->total_inboxes ?? '0' }} <b>X </b>
-                                                                {{ number_format($order->amount, 2) }} /monthly</span>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div> -->
+                                                                                <div class="d-flex align-items-center gap-3">
+                                                                                    <div>
+                                                                                        <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                                                                                        <br>
+                                                                                        @if (isset($order->meta['product_details']))
+                                                                                            <span>{{ $order->meta['product_details']['quantity'] ?? '0' }} x
+                                                                                                ${{ number_format($order->meta['product_details']['unit_price'] ?? 0, 2) }}
+                                                                                                <small>/monthly</small></span>
+                                                                                        @else
+                                                                                            <span>{{ $order->reorderInfo->first()->total_inboxes ?? '0' }} <b>X </b>
+                                                                                                {{ number_format($order->amount, 2) }} /monthly</span>
+                                                                                        @endif
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div> -->
                         <div class="price-display-section card p-3">
                             @if(isset($order->plan) && $order->plan)
                                                 @php
@@ -478,7 +478,7 @@
                                         $isPrivateSMTP = strtolower($providerType ?? '') === 'private smtp';
                                     @endphp
 
-                                    @if($isPrivateSMTP && !empty($orderProviderSplits))
+                                    @if(!empty($orderProviderSplits))
                                         {{-- Show domains from order_provider_splits with status --}}
                                         @foreach($orderProviderSplits as $split)
                                             <div class="mb-3">
@@ -495,17 +495,54 @@
                                                         // Count mailboxes and collect emails for tooltip
                                                         $domainMailboxes = $split['mailboxes'][$domainName] ?? [];
                                                         $mailboxCount = 0;
-                                                        $emailList = [];
+                                                        $mailboxItemsHtml = '';
+                                                        $copyParts = [];
+
                                                         if (is_array($domainMailboxes) && !empty($domainMailboxes)) {
                                                             foreach ($domainMailboxes as $key => $mbx) {
+                                                                // Handle array or object structure if necessary, though usually array here
                                                                 $email = $mbx['mailbox'] ?? $mbx['email'] ?? null;
-                                                                if (is_array($mbx) && !empty($email)) {
+
+                                                                if (!empty($email)) {
                                                                     $mailboxCount++;
-                                                                    $emailList[] = $email;
+
+                                                                    $password = $mbx['password'] ?? 'N/A';
+                                                                    $smtpHost = $mbx['smtp_host'] ?? 'N/A';
+                                                                    $smtpPort = $mbx['smtp_port'] ?? 'N/A';
+                                                                    $imapHost = $mbx['imap_host'] ?? 'N/A';
+                                                                    $imapPort = $mbx['imap_port'] ?? 'N/A';
+
+                                                                    // Build Structured HTML for this mailbox
+                                                                    $mailboxItemsHtml .= "
+                                                                                                                                                                                                <div class='mailbox-item'>
+                                                                                                                                                                                                    <span class='mb-email'>$email</span>
+                                                                                                                                                                                                    <div class='mb-detail-row'><span class='mb-label'>Pwd:</span> <span class='mb-value'>$password</span></div>
+                                                                                                                                                                                                    <div class='mb-detail-row'><span class='mb-label'>SMTP:</span> <span class='mb-value'>$smtpHost:$smtpPort</span></div>
+                                                                                                                                                                                                    <div class='mb-detail-row'><span class='mb-label'>IMAP:</span> <span class='mb-value'>$imapHost:$imapPort</span></div>
+                                                                                                                                                                                                </div>";
+
+                                                                    // Build Copy Data (CSV format)
+                                                                    $copyParts[] = "$email,$password,$smtpHost,$smtpPort,$imapHost,$imapPort";
                                                                 }
                                                             }
                                                         }
-                                                        $tooltipEmails = !empty($emailList) ? implode('<br>', $emailList) : 'No mailboxes created';
+
+                                                        // Wrap content in main container
+                                                        if (!empty($mailboxItemsHtml)) {
+                                                            $tooltipContent = "
+                                                                                                                                                                                        <div class='tooltip-content-wrapper'>
+                                                                                                                                                                                            <div class='tooltip-header'>
+                                                                                                                                                                                                <span>Mailbox Details</span>
+                                                                                                                                                                                                <span class='badge bg-white text-dark'>$mailboxCount Accounts</span>
+                                                                                                                                                                                            </div>
+                                                                                                                                                                                            <div class='tooltip-body'>
+                                                                                                                                                                                                $mailboxItemsHtml
+                                                                                                                                                                                            </div>
+                                                                                                                                                                                        </div>";
+                                                        } else {
+                                                            $tooltipContent = 'No mailboxes created';
+                                                        }
+                                                        $copyData = !empty($copyParts) ? implode("\n", $copyParts) : '';
 
                                                         // Determine badge color based on status
                                                         $badgeClass = match ($status) {
@@ -520,10 +557,21 @@
                                                         <span>{{ $domainName }}</span>
                                                         <div class="d-flex align-items-center gap-2">
                                                             <span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
-                                                            <span class="badge bg-primary" style="cursor: pointer;" data-bs-toggle="tooltip"
-                                                                data-bs-placement="left" data-bs-html="true"
-                                                                data-bs-custom-class="email-tooltip"
-                                                                title="{!! $tooltipEmails !!}">{{ $mailboxCount }} inboxes</span>
+                                                            <div class="d-flex align-items-center gap-1">
+                                                                <span class="badge bg-primary" style="cursor: pointer;"
+                                                                    data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true"
+                                                                    data-bs-custom-class="modern-mail-tooltip"
+                                                                    title="{!! $tooltipContent !!}">
+                                                                    {{ $mailboxCount }} inboxes
+                                                                </span>
+                                                                @if($mailboxCount > 0)
+                                                                    <button class="btn btn-sm btn-light border-0 py-0 px-1 copy-domain-btn"
+                                                                        data-copy-text="{{ $copyData }}" title="Copy details"
+                                                                        data-bs-toggle="tooltip">
+                                                                        <i class="fa-regular fa-copy"></i>
+                                                                    </button>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 @endforeach
@@ -594,7 +642,12 @@
                         </h6>
 
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div class="d-flex align-items-center gap-3" style="display: none;">
+                            <div class="d-flex align-items-center gap-3">
+                                @if(isset($orderProviderSplits) && count($orderProviderSplits) > 0)
+                                    <button id="copyAllEmailsBtn" class="btn btn-secondary">
+                                        <i class="fa-regular fa-copy me-1"></i> Copy All
+                                    </button>
+                                @endif
                                 <div style="display: none;">
                                     <button id="addNewBtn" class="btn btn-primary me-2" style="display: none;">
                                         <i class="fa-solid fa-plus me-1"></i> Add Email
@@ -644,6 +697,71 @@
                                     // const totalInboxes = {{ $order->plan && $order->plan->max_inbox ? $order->plan->max_inbox : 0 }};
                                     const totalInboxes = {{ optional($order->reorderInfo->first())->total_inboxes ?? 0 }};
                                     const maxEmails = totalInboxes || 0; // If totalInboxes is 0, allow unlimited emails
+
+                                    // Copy All Emails Handler
+                                    $('#copyAllEmailsBtn').click(function () {
+                                        const orderProviderSplits = @json($orderProviderSplits ?? []);
+                                        let textToCopy = ""; // "Email,Password,SMTP Host,SMTP Port,IMAP Host,IMAP Port" 
+
+                                        if (!orderProviderSplits || orderProviderSplits.length === 0) {
+                                            toastr.warning('No email data available to copy.');
+                                            return;
+                                        }
+
+                                        // Iterate through splits
+                                        orderProviderSplits.forEach(split => {
+                                            if (split.mailboxes) {
+                                                // mailboxes structure: { "domain.com": { "prefix1": { ...data... } } }
+                                                Object.values(split.mailboxes).forEach(domainMailboxes => {
+                                                    // Handle case where it might be array or object
+                                                    const mailboxesArray = Array.isArray(domainMailboxes) ? domainMailboxes : Object.values(domainMailboxes);
+
+                                                    mailboxesArray.forEach(mailbox => {
+                                                        const email = mailbox.email || mailbox.mailbox || '';
+                                                        const password = mailbox.password || '';
+
+                                                        // Use empty string if value is null/undefined to keep CSV format clean, or 'N/A' if preferred.
+                                                        // User request implied just getting the details. 
+                                                        // If fields are missing, empty string might be better for CSV parsing, or N/A for readability.
+                                                        // Using user defined logic: "Include SMTP/IMAP fields".
+                                                        const smtpHost = mailbox.smtp_host || '';
+                                                        const smtpPort = mailbox.smtp_port || '';
+                                                        const imapHost = mailbox.imap_host || '';
+                                                        const imapPort = mailbox.imap_port || '';
+
+                                                        if (email) {
+                                                            textToCopy += `${email},${password},${smtpHost},${smtpPort},${imapHost},${imapPort}\n`;
+                                                        }
+                                                    });
+                                                });
+                                            }
+                                        });
+
+                                        if (textToCopy) {
+                                            navigator.clipboard.writeText(textToCopy).then(function () {
+                                                toastr.success('All emails copied to clipboard!');
+                                            }, function (err) {
+                                                toastr.error('Could not copy text: ' + err);
+                                            });
+                                        } else {
+                                            toastr.warning('No valid emails found to copy.');
+                                        }
+                                    });
+
+                                    // Copy Domain Emails Handler
+                                    $(document).on('click', '.copy-domain-btn', function () {
+                                        const textToCopy = $(this).attr('data-copy-text');
+
+                                        if (textToCopy) {
+                                            navigator.clipboard.writeText(textToCopy).then(function () {
+                                                toastr.success('Domain emails copied to clipboard!');
+                                            }, function (err) {
+                                                toastr.error('Could not copy text: ' + err);
+                                            });
+                                        } else {
+                                            toastr.warning('No email data to copy.');
+                                        }
+                                    });
 
                                     // Function declarations first
                                     function updateRowCount(table) {
@@ -1003,23 +1121,23 @@
 
                     @if (!empty($nextBillingInfo))
                         <!-- <div class="card mt-4">
-                                                                    <div class="card-header">
-                                                                        <h5 class="card-title mb-0">Subscription Details</h5>
-                                                                    </div>
-                                                                    <div class="card-body">
-                                                                        <div class="row">
-                                                                            <div class="col-md-6">
-                                                                                <p><strong>Status:</strong> {{ ucfirst($nextBillingInfo['status'] ?? 'N/A') }}</p>
-                                                                                <p><strong>Billing Period:</strong> {{ $nextBillingInfo['billing_period'] ?? 'N/A' }} {{ $nextBillingInfo['billing_period_unit'] ?? '' }}</p>
-                                                                                <p><strong>Current Term Start:</strong> {{ $nextBillingInfo['current_term_start'] }}</p>
-                                                                            </div>
-                                                                            <div class="col-md-6">
-                                                                                <p><strong>Current Term End:</strong> {{ $nextBillingInfo['current_term_end'] }}</p>
-                                                                                <p><strong>Next Billing:</strong> {{ $nextBillingInfo['next_billing_at'] }}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div> -->
+                                                                                                                                    <div class="card-header">
+                                                                                                                                        <h5 class="card-title mb-0">Subscription Details</h5>
+                                                                                                                                    </div>
+                                                                                                                                    <div class="card-body">
+                                                                                                                                        <div class="row">
+                                                                                                                                            <div class="col-md-6">
+                                                                                                                                                <p><strong>Status:</strong> {{ ucfirst($nextBillingInfo['status'] ?? 'N/A') }}</p>
+                                                                                                                                                <p><strong>Billing Period:</strong> {{ $nextBillingInfo['billing_period'] ?? 'N/A' }} {{ $nextBillingInfo['billing_period_unit'] ?? '' }}</p>
+                                                                                                                                                <p><strong>Current Term Start:</strong> {{ $nextBillingInfo['current_term_start'] }}</p>
+                                                                                                                                            </div>
+                                                                                                                                            <div class="col-md-6">
+                                                                                                                                                <p><strong>Current Term End:</strong> {{ $nextBillingInfo['current_term_end'] }}</p>
+                                                                                                                                                <p><strong>Next Billing:</strong> {{ $nextBillingInfo['next_billing_at'] }}</p>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                    </div>
+                                                                                                                                </div> -->
                     @endif
                     <div class="card p-3 mt-3">
                         <div class="row mb-4">
@@ -1326,7 +1444,7 @@
                                     <th>Priority</th>
                                     <th>Order #</th>
                                     <!-- <th>Subscription #</th>
-                                                    <th>Description</th> -->
+                                                                                    <th>Description</th> -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -1357,11 +1475,11 @@
                                                             </td>
                                                             <td>{{ $ticket->order_id ?? 'N/A' }}</td>
                                                             <!-- <td>{{ $order->subscription ? $order->subscription->chargebee_subscription_id : 'N/A' }}</td>
-                                                                                                                                                                                        <td>
-                                                                                                                                                                                            <span title="{{ $ticket->description }}">
-                                                                                                                                                                                                {{ strlen($ticket->description) > 50 ? substr($ticket->description, 0, 50) . '...' : ($ticket->description ?? 'N/A') }}
-                                                                                                                                                                                            </span>
-                                                                                                                                                                                        </td> -->
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    <td>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span title="{{ $ticket->description }}">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            {{ strlen($ticket->description) > 50 ? substr($ticket->description, 0, 50) . '...' : ($ticket->description ?? 'N/A') }}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        </span>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    </td> -->
                                                         </tr>
                                     @endforeach
                                 @else
@@ -1430,4 +1548,142 @@
             </div>
         </div>
     </section>
+
+    @push('styles')
+        <style>
+            .modern-mail-tooltip {
+                --bs-tooltip-bg: #fff;
+                --bs-tooltip-color: #333;
+                --bs-tooltip-opacity: 1;
+                --bs-tooltip-padding-x: 0;
+                --bs-tooltip-padding-y: 0;
+                --bs-tooltip-max-width: 400px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                border-radius: 12px;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+            }
+
+            .modern-mail-tooltip .tooltip-inner {
+                background-color: #fff;
+                color: #444;
+                border-radius: 12px;
+                padding: 0;
+                text-align: left;
+                box-shadow: none;
+                max-width: 100%;
+            }
+
+            .tooltip-content-wrapper {
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                border-radius: 12px;
+            }
+
+            .tooltip-header {
+                background: var(--second-primary);
+                background: linear-gradient(135deg, #6a5cff 0%, var(--second-primary) 55%, #3f32e3 100%);
+                color: #f8fafc;
+                padding: 12px 15px;
+                font-weight: 700;
+                letter-spacing: 0.2px;
+                font-size: 0.92rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 8px 24px rgba(74, 58, 255, 0.32);
+            }
+
+            .tooltip-header::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 52%);
+                pointer-events: none;
+            }
+
+            .tooltip-header>* {
+                position: relative;
+                z-index: 1;
+            }
+
+            .tooltip-header .badge {
+                background: rgba(255, 255, 255, 0.12) !important;
+                color: #f8fafc !important;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 999px;
+                font-weight: 600;
+            }
+
+            .tooltip-body {
+                max-height: 300px;
+                overflow-y: auto;
+                padding: 5px 0;
+            }
+
+            /* Custom Scrollbar for tooltip */
+            .tooltip-body::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .tooltip-body::-webkit-scrollbar-track {
+                background: #f1f1f1;
+            }
+
+            .tooltip-body::-webkit-scrollbar-thumb {
+                background: #ccc;
+                border-radius: 3px;
+            }
+
+            .tooltip-body::-webkit-scrollbar-thumb:hover {
+                background: #aaa;
+            }
+
+            .mailbox-item {
+                padding: 10px 15px;
+                border-bottom: 1px solid #f0f0f0;
+                transition: background-color 0.2s;
+            }
+
+            .mailbox-item:last-child {
+                border-bottom: none;
+            }
+
+            .mailbox-item:hover {
+                background-color: #f9fbfd;
+            }
+
+            .mb-email {
+                font-weight: 600;
+                color: #2c3e50;
+                font-size: 0.95rem;
+                margin-bottom: 4px;
+                display: block;
+            }
+
+            .mb-detail-row {
+                display: flex;
+                font-size: 0.8rem;
+                color: #666;
+                margin-bottom: 2px;
+                font-family: 'Consolas', 'Monaco', monospace;
+            }
+
+            .mb-label {
+                width: 50px;
+                min-width: 50px;
+                font-weight: 600;
+                color: #888;
+                user-select: none;
+            }
+
+            .mb-value {
+                color: #333;
+                word-break: break-all;
+            }
+        </style>
+    @endpush
 @endsection
