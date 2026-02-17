@@ -263,104 +263,104 @@
                             </h6>
 
                             @if (optional($order->reorderInfo)->count() > 0)
-                                                <div class="d-flex align-items-center justify-content-between">
-                                                    @php
-                                                        $domains = $order->reorderInfo->first()->domains ?? '';
-                                                        $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
+                                                                        <div class="d-flex align-items-center justify-content-between">
+                                                                            @php
+                                                                                $domains = $order->reorderInfo->first()->domains ?? '';
+                                                                                $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
 
-                                                        // Parse domains and count them
-                                                        $domainsArray = [];
-                                                        $lines = preg_split('/\r\n|\r|\n/', $domains);
-                                                        foreach ($lines as $line) {
-                                                            if (trim($line)) {
-                                                                $lineItems = explode(',', $line);
-                                                                foreach ($lineItems as $item) {
-                                                                    if (trim($item)) {
-                                                                        $domainsArray[] = trim($item);
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
+                                                                                // Parse domains and count them
+                                                                                $domainsArray = [];
+                                                                                $lines = preg_split('/\r\n|\r|\n/', $domains);
+                                                                                foreach ($lines as $line) {
+                                                                                    if (trim($line)) {
+                                                                                        $lineItems = explode(',', $line);
+                                                                                        foreach ($lineItems as $item) {
+                                                                                            if (trim($item)) {
+                                                                                                $domainsArray[] = trim($item);
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
 
-                                                        $totalDomains = count($domainsArray);
-                                                        $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
-                                                    @endphp
-                                                    <span>Total Inboxes <br> {{ $calculatedTotalInboxes }} ({{ $totalDomains }} domains × {{
+                                                                                $totalDomains = count($domainsArray);
+                                                                                $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
+                                                                            @endphp
+                                                                            <span>Total Inboxes <br> {{ $calculatedTotalInboxes }} ({{ $totalDomains }} domains × {{
                                 $inboxesPerDomain }})</span>
-                                                    <span>Inboxes per domain <br>
-                                                        {{ $order->reorderInfo->first()->inboxes_per_domain ?? '0' }}</span>
-                                                </div>
-                                                <hr>
-                                                <div class="d-flex flex-column">
-                                                    <span class="opacity-50 mb-2">Prefix Variants</span>
-                                                    @php
-                                                        // Check if new prefix_variants JSON column exists and has data
-                                                        $prefixVariants = $order->reorderInfo->first()->prefix_variants ?? [];
-                                                        $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
+                                                                            <span>Inboxes per domain <br>
+                                                                                {{ $order->reorderInfo->first()->inboxes_per_domain ?? '0' }}</span>
+                                                                        </div>
+                                                                        <hr>
+                                                                        <div class="d-flex flex-column">
+                                                                            <span class="opacity-50 mb-2">Prefix Variants</span>
+                                                                            @php
+                                                                                // Check if new prefix_variants JSON column exists and has data
+                                                                                $prefixVariants = $order->reorderInfo->first()->prefix_variants ?? [];
+                                                                                $inboxesPerDomain = $order->reorderInfo->first()->inboxes_per_domain ?? 1;
 
-                                                        // If new format doesn't exist, fallback to old individual fields
-                                                        if (empty($prefixVariants)) {
-                                                            $prefixVariants = [];
-                                                            if ($order->reorderInfo->first()->prefix_variant_1) {
-                                                                $prefixVariants['prefix_variant_1'] = $order->reorderInfo->first()->prefix_variant_1;
-                                                            }
-                                                            if ($order->reorderInfo->first()->prefix_variant_2) {
-                                                                $prefixVariants['prefix_variant_2'] = $order->reorderInfo->first()->prefix_variant_2;
-                                                            }
-                                                        }
-                                                    @endphp
+                                                                                // If new format doesn't exist, fallback to old individual fields
+                                                                                if (empty($prefixVariants)) {
+                                                                                    $prefixVariants = [];
+                                                                                    if ($order->reorderInfo->first()->prefix_variant_1) {
+                                                                                        $prefixVariants['prefix_variant_1'] = $order->reorderInfo->first()->prefix_variant_1;
+                                                                                    }
+                                                                                    if ($order->reorderInfo->first()->prefix_variant_2) {
+                                                                                        $prefixVariants['prefix_variant_2'] = $order->reorderInfo->first()->prefix_variant_2;
+                                                                                    }
+                                                                                }
+                                                                            @endphp
 
-                                                    @for($i = 1; $i <= $inboxesPerDomain; $i++)
-                                                        @php
-                                                            $variantKey = "prefix_variant_$i";
-                                                            $variantValue = $prefixVariants[$variantKey] ?? 'N/A';
-                                                            $variantDetails = $order->reorderInfo->first()->prefix_variants_details[$variantKey] ?? null;
-                                                            $firstName = $variantDetails['first_name'] ?? 'N/A';
-                                                            $lastName = $variantDetails['last_name'] ?? 'N/A';
-                                                        @endphp
-                                                        <div class="border rounded p-2 mb-2" style="background-color: rgba(255,255,255,0.03);">
-                                                            <div class="d-flex align-items-center mb-1">
-                                                                <span class="badge bg-secondary me-2">Variant {{ $i }}</span>
-                                                            </div>
-                                                            <div class="row">
-                                                                <div class="col-4">
-                                                                    <small class="opacity-50 d-block">Prefix</small>
-                                                                    <span>{{ $variantValue }}</span>
-                                                                </div>
-                                                                <div class="col-4">
-                                                                    <small class="opacity-50 d-block">First Name</small>
-                                                                    <span>{{ $firstName }}</span>
-                                                                </div>
-                                                                <div class="col-4">
-                                                                    <small class="opacity-50 d-block">Last Name</small>
-                                                                    <span>{{ $lastName }}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @endfor
-                                                </div>
-                                                <div class="d-flex flex-column mt-3">
-                                                    <span class="opacity-50">Profile Picture URLs</span>
-                                                    @if($order->reorderInfo->first()->prefix_variants_details)
-                                                        @foreach($order->reorderInfo->first()->prefix_variants_details as $key => $variant)
-                                                            <div class="mt-1">
-                                                                <strong>{{ ucfirst(str_replace('_', ' ', $key)) }}:</strong>
-                                                                @if(!empty($variant['profile_link']))
-                                                                    <a href="{{ $variant['profile_link'] }}"
-                                                                        target="_blank">{{ $variant['profile_link'] }}</a>
-                                                                @else
-                                                                    <span>N/A</span>
-                                                                @endif
-                                                            </div>
-                                                        @endforeach
-                                                    @else
-                                                        <span>N/A</span>
-                                                    @endif
-                                                </div>
-                                                <div class="d-flex flex-column mt-3">
-                                                    <span class="opacity-50">Master Inbox Email</span>
-                                                    <span>{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
-                                                </div>
+                                                                            @for($i = 1; $i <= $inboxesPerDomain; $i++)
+                                                                                @php
+                                                                                    $variantKey = "prefix_variant_$i";
+                                                                                    $variantValue = $prefixVariants[$variantKey] ?? 'N/A';
+                                                                                    $variantDetails = $order->reorderInfo->first()->prefix_variants_details[$variantKey] ?? null;
+                                                                                    $firstName = $variantDetails['first_name'] ?? 'N/A';
+                                                                                    $lastName = $variantDetails['last_name'] ?? 'N/A';
+                                                                                @endphp
+                                                                                <div class="border rounded p-2 mb-2" style="background-color: rgba(255,255,255,0.03);">
+                                                                                    <div class="d-flex align-items-center mb-1">
+                                                                                        <span class="badge bg-secondary me-2">Variant {{ $i }}</span>
+                                                                                    </div>
+                                                                                    <div class="row">
+                                                                                        <div class="col-4">
+                                                                                            <small class="opacity-50 d-block">Prefix</small>
+                                                                                            <span>{{ $variantValue }}</span>
+                                                                                        </div>
+                                                                                        <div class="col-4">
+                                                                                            <small class="opacity-50 d-block">First Name</small>
+                                                                                            <span>{{ $firstName }}</span>
+                                                                                        </div>
+                                                                                        <div class="col-4">
+                                                                                            <small class="opacity-50 d-block">Last Name</small>
+                                                                                            <span>{{ $lastName }}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            @endfor
+                                                                        </div>
+                                                                        <div class="d-flex flex-column mt-3">
+                                                                            <span class="opacity-50">Profile Picture URLs</span>
+                                                                            @if($order->reorderInfo->first()->prefix_variants_details)
+                                                                                @foreach($order->reorderInfo->first()->prefix_variants_details as $key => $variant)
+                                                                                    <div class="mt-1">
+                                                                                        <strong>{{ ucfirst(str_replace('_', ' ', $key)) }}:</strong>
+                                                                                        @if(!empty($variant['profile_link']))
+                                                                                            <a href="{{ $variant['profile_link'] }}"
+                                                                                                target="_blank">{{ $variant['profile_link'] }}</a>
+                                                                                        @else
+                                                                                            <span>N/A</span>
+                                                                                        @endif
+                                                                                    </div>
+                                                                                @endforeach
+                                                                            @else
+                                                                                <span>N/A</span>
+                                                                            @endif
+                                                                        </div>
+                                                                        <div class="d-flex flex-column mt-3">
+                                                                            <span class="opacity-50">Master Inbox Email</span>
+                                                                            <span>{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
+                                                                        </div>
                             @else
                                 <div class="text-muted">No email configuration data available</div>
                             @endif
@@ -396,28 +396,28 @@
                                                                             </div> -->
                         <div class="price-display-section card p-3">
                             @if(isset($order->plan) && $order->plan)
-                                                @php
-                                                    $totalInboxes = optional(optional($order)->reorderInfo)->count() > 0 ?
-                                                        $order->reorderInfo->first()->total_inboxes : 0;
-                                                    $originalPrice = $order->plan->price * $totalInboxes;
-                                                @endphp
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div>
-                                                        <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
-                                                    </div>
-                                                    <div>
-                                                        <span class="opacity-50">Officially Google Workspace Inboxes</span>
-                                                        <br>
-                                                        <span>({{ $totalInboxes }} x ${{ number_format($order->plan->price, 2) }} <small>/{{
+                                                                        @php
+                                                                            $totalInboxes = optional(optional($order)->reorderInfo)->count() > 0 ?
+                                                                                $order->reorderInfo->first()->total_inboxes : 0;
+                                                                            $originalPrice = $order->plan->price * $totalInboxes;
+                                                                        @endphp
+                                                                        <div class="d-flex align-items-center gap-3">
+                                                                            <div>
+                                                                                <img src="{{ $defaultImage }}" width="30" alt="Product Icon">
+                                                                            </div>
+                                                                            <div>
+                                                                                <span class="opacity-50">Officially Google Workspace Inboxes</span>
+                                                                                <br>
+                                                                                <span>({{ $totalInboxes }} x ${{ number_format($order->plan->price, 2) }} <small>/{{
                                 $order->plan->duration }})</small></span>
-                                                    </div>
-                                                </div>
-                                                <h6 class="my-3 small"><span class="theme-text">Original Price:</span> ${{
+                                                                            </div>
+                                                                        </div>
+                                                                        <h6 class="my-3 small"><span class="theme-text">Original Price:</span> ${{
                                 number_format($originalPrice, 2) }}</h6>
-                                                <!-- <h6><span class="theme-text">Discount:</span> 0%</h6> -->
-                                                <h6 class="small"><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }}
-                                                    <small>/{{ $order->plan->duration }}</small>
-                                                </h6>
+                                                                        <!-- <h6><span class="theme-text">Discount:</span> 0%</h6> -->
+                                                                        <h6 class="small"><span class="theme-text">Total:</span> ${{ number_format($originalPrice, 2) }}
+                                                                            <small>/{{ $order->plan->duration }}</small>
+                                                                        </h6>
                             @else
                                 <h6><span class="theme-text">Original Price:</span> <small>Select a plan to view price</small>
                                 </h6>
@@ -514,12 +514,12 @@
 
                                                                     // Build Structured HTML for this mailbox
                                                                     $mailboxItemsHtml .= "
-                                                                                                                                                                                                <div class='mailbox-item'>
-                                                                                                                                                                                                    <span class='mb-email'>$email</span>
-                                                                                                                                                                                                    <div class='mb-detail-row'><span class='mb-label'>Pwd:</span> <span class='mb-value'>$password</span></div>
-                                                                                                                                                                                                    <div class='mb-detail-row'><span class='mb-label'>SMTP:</span> <span class='mb-value'>$smtpHost:$smtpPort</span></div>
-                                                                                                                                                                                                    <div class='mb-detail-row'><span class='mb-label'>IMAP:</span> <span class='mb-value'>$imapHost:$imapPort</span></div>
-                                                                                                                                                                                                </div>";
+                                                                                                                                                                                                                                        <div class='mailbox-item'>
+                                                                                                                                                                                                                                            <span class='mb-email'>$email</span>
+                                                                                                                                                                                                                                            <div class='mb-detail-row'><span class='mb-label'>Pwd:</span> <span class='mb-value'>$password</span></div>
+                                                                                                                                                                                                                                            <div class='mb-detail-row'><span class='mb-label'>SMTP:</span> <span class='mb-value'>$smtpHost:$smtpPort</span></div>
+                                                                                                                                                                                                                                            <div class='mb-detail-row'><span class='mb-label'>IMAP:</span> <span class='mb-value'>$imapHost:$imapPort</span></div>
+                                                                                                                                                                                                                                        </div>";
 
                                                                     // Build Copy Data (readable multiline format)
                                                                     $copyParts[] = "Mailbox $mailboxCount\nEmail: $email\nPassword: $password\nSMTP: $smtpHost:$smtpPort\nIMAP: $imapHost:$imapPort";
@@ -528,20 +528,23 @@
                                                         }
 
                                                         // Wrap content in main container
-                                                        if (!empty($mailboxItemsHtml)) {
-                                                            $tooltipContent = "
-                                                                                                                                                                                        <div class='tooltip-content-wrapper'>
-                                                                                                                                                                                            <div class='tooltip-header'>
-                                                                                                                                                                                                <span>Mailbox Details</span>
-                                                                                                                                                                                                <span class='badge bg-white text-dark'>$mailboxCount Accounts</span>
-                                                                                                                                                                                            </div>
-                                                                                                                                                                                            <div class='tooltip-body'>
-                                                                                                                                                                                                $mailboxItemsHtml
-                                                                                                                                                                                            </div>
-                                                                                                                                                                                        </div>";
-                                                        } else {
-                                                            $tooltipContent = 'No mailboxes created';
-                                                        }
+                                                        // Wrap content in main container
+                                                        $tooltipBodyContent = !empty($mailboxItemsHtml)
+                                                            ? $mailboxItemsHtml
+                                                            : "<div class='p-3 text-center text-muted' style='font-size: 0.9rem;'>No mailboxes created</div>";
+
+                                                        $tooltipContent = "
+                                                                                                    <div class='tooltip-content-wrapper'>
+                                                                                                        <div class='tooltip-header'>
+                                                                                                            <span>Mailbox Details</span>
+                                                                                                            <span class='badge'>$mailboxCount Accounts</span>
+                                                                                                        </div>
+                                                                                                        <div class='tooltip-body'>
+                                                                                                            $tooltipBodyContent
+                                                                                                        </div>
+                                                                                                    </div>";
+
+
                                                         $copyData = !empty($copyParts)
                                                             ? "Domain: $domainName\nStatus: " . ucfirst($status) . "\n\n" . implode("\n\n------------------------------\n\n", $copyParts)
                                                             : '';
@@ -1474,36 +1477,36 @@
 
                                 @if($order->supportTickets && $order->supportTickets->count() > 0)
                                     @foreach($order->supportTickets as $ticket)
-                                                        <tr>
-                                                            <td>{{ ucfirst($ticket->category) ?? 'N/A' }}</td>
-                                                            <td>
-                                                                <a href="{{ route('admin.support.tickets.show', $ticket->id) }}"
-                                                                    class="text-primary text-decoration-none">
-                                                                    {{ $ticket->ticket_number ?? 'N/A' }}
-                                                                </a>
-                                                            </td>
-                                                            <td>{{ $ticket->created_at ?
+                                                                                    <tr>
+                                                                                        <td>{{ ucfirst($ticket->category) ?? 'N/A' }}</td>
+                                                                                        <td>
+                                                                                            <a href="{{ route('admin.support.tickets.show', $ticket->id) }}"
+                                                                                                class="text-primary text-decoration-none">
+                                                                                                {{ $ticket->ticket_number ?? 'N/A' }}
+                                                                                            </a>
+                                                                                        </td>
+                                                                                        <td>{{ $ticket->created_at ?
                                         $ticket->created_at->format('d M, Y') : 'N/A' }}</td>
-                                                            <td>
-                                                                <span
-                                                                    class="badge bg-{{ $ticket->status === 'open' ? 'warning' : ($ticket->status === 'closed' ? 'success' : 'info') }}">
-                                                                    {{ ucfirst(str_replace('_', ' ', $ticket->status)) ?? 'N/A' }}
-                                                                </span>
-                                                            </td>
-                                                            <td>
-                                                                <span
-                                                                    class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'secondary') }}">
-                                                                    {{ ucfirst($ticket->priority) ?? 'N/A' }}
-                                                                </span>
-                                                            </td>
-                                                            <td>{{ $ticket->order_id ?? 'N/A' }}</td>
-                                                            <!-- <td>{{ $order->subscription ? $order->subscription->chargebee_subscription_id : 'N/A' }}</td>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    <td>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span title="{{ $ticket->description }}">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            {{ strlen($ticket->description) > 50 ? substr($ticket->description, 0, 50) . '...' : ($ticket->description ?? 'N/A') }}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        </span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    </td> -->
-                                                        </tr>
+                                                                                        <td>
+                                                                                            <span
+                                                                                                class="badge bg-{{ $ticket->status === 'open' ? 'warning' : ($ticket->status === 'closed' ? 'success' : 'info') }}">
+                                                                                                {{ ucfirst(str_replace('_', ' ', $ticket->status)) ?? 'N/A' }}
+                                                                                            </span>
+                                                                                        </td>
+                                                                                        <td>
+                                                                                            <span
+                                                                                                class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'secondary') }}">
+                                                                                                {{ ucfirst($ticket->priority) ?? 'N/A' }}
+                                                                                            </span>
+                                                                                        </td>
+                                                                                        <td>{{ $ticket->order_id ?? 'N/A' }}</td>
+                                                                                        <!-- <td>{{ $order->subscription ? $order->subscription->chargebee_subscription_id : 'N/A' }}</td>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <td>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span title="{{ $ticket->description }}">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        {{ strlen($ticket->description) > 50 ? substr($ticket->description, 0, 50) . '...' : ($ticket->description ?? 'N/A') }}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </span>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </td> -->
+                                                                                    </tr>
                                     @endforeach
                                 @else
                                     <tr>
