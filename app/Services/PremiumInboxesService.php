@@ -121,6 +121,50 @@ class PremiumInboxesService
     }
 
     /**
+     * Verify nameservers (trigger real-time verification against Cloudflare)
+     * POST /orders/{order_id}/verify-ns
+     *
+     * @param string $orderId PremiumInboxes order ID (UUID)
+     * @return array ['success' => bool, 'status_code' => int, 'data' => array, 'error' => string|null]
+     *               data: order_id, order_status, domains (domain, ns_status, expected_nameservers), all_validated
+     */
+    public function verifyNameservers(string $orderId): array
+    {
+        try {
+            Log::channel('mailin-ai')->info('PremiumInboxes verify nameservers', [
+                'action' => 'verifyNameservers',
+                'order_id' => $orderId,
+            ]);
+
+            $result = $this->makeRequest('POST', "/orders/{$orderId}/verify-ns", []);
+
+            if ($result['success']) {
+                Log::channel('mailin-ai')->debug('PremiumInboxes verify-ns response', [
+                    'action' => 'verifyNameservers',
+                    'order_id' => $orderId,
+                    'order_status' => $result['data']['order_status'] ?? 'N/A',
+                    'all_validated' => $result['data']['all_validated'] ?? false,
+                ]);
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::channel('mailin-ai')->error('PremiumInboxes verifyNameservers exception', [
+                'action' => 'verifyNameservers',
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'status_code' => 500,
+                'data' => null,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * List orders (for debugging)
      * GET /orders
      * 

@@ -596,12 +596,42 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
 
         // Idempotent: if PI order already exists (external_order_id stored), do NOT call /purchase again
         if (!empty($split->external_order_id)) {
-            Log::channel('mailin-ai')->info('PremiumInboxes: external_order_id already set, syncing from GetOrder (skip purchase)', [
+            Log::channel('mailin-ai')->info('PremiumInboxes: external_order_id already set, triggering verify-ns then syncing (skip purchase)', [
                 'order_id' => $order->id,
                 'split_id' => $split->id,
                 'external_order_id' => $split->external_order_id,
             ]);
 
+            $verifyResult = $this->service->verifyNameservers($split->external_order_id);
+
+            if ($verifyResult['success']) {
+                $this->syncFromVerifyNsResponse($order, $split, $verifyResult['data'] ?? []);
+                $activeDomains = [];
+                foreach ($split->domains ?? [] as $domain) {
+                    if (($split->getDomainStatus($domain) ?? '') === 'active') {
+                        $activeDomains[] = $domain;
+                    }
+                }
+                Log::channel('mailin-ai')->info('PremiumInboxes order synced from verify-ns', [
+                    'order_id' => $order->id,
+                    'split_id' => $split->id,
+                    'active_domains_count' => count($activeDomains),
+                ]);
+                return [
+                    'rejected' => false,
+                    'reason' => null,
+                    'active' => $activeDomains,
+                    'transferred' => [],
+                    'failed' => [],
+                ];
+            }
+
+            // Fall back to getOrder when verify-ns fails (network/API error)
+            Log::channel('mailin-ai')->warning('PremiumInboxes verify-ns failed, falling back to GetOrder', [
+                'order_id' => $order->id,
+                'external_order_id' => $split->external_order_id,
+                'error' => $verifyResult['error'] ?? 'Unknown error',
+            ]);
             $getResult = $this->getOrder($split->external_order_id);
 
             if (!$getResult['success']) {
@@ -788,6 +818,31 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
             'transferred' => [],
             'failed' => $split->domains ?? [],
         ];
+    }
+
+    /**
+     * Sync PremiumInboxes order state from verify-ns API response (order_status and domain ns_status only).
+     */
+    private function syncFromVerifyNsResponse(Order $order, OrderProviderSplit $split, array $verifyData): void
+    {
+        $orderStatus = $verifyData['order_status'] ?? null;
+        if ($orderStatus !== null) {
+            $split->update(['order_status' => $orderStatus]);
+        }
+
+        $splitDomains = $split->domains ?? [];
+        foreach ($verifyData['domains'] ?? [] as $domainItem) {
+            $domain = $domainItem['domain'] ?? null;
+            if ($domain === null || !in_array($domain, $splitDomains, true)) {
+                continue;
+            }
+            $nsStatus = $domainItem['ns_status'] ?? 'pending';
+            $ourStatus = (strtolower($nsStatus) === 'validated') ? 'active' : 'inactive';
+            $nameservers = $domainItem['expected_nameservers'] ?? [];
+            $split->setDomainStatus($domain, $ourStatus, null, $nameservers);
+        }
+
+        $split->checkAndUpdateAllDomainsActive();
     }
 
     /**
