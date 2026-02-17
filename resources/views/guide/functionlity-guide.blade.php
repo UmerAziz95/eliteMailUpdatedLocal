@@ -4,11 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="{{ asset('assets/favicon/favicon.png') }}" type="image/x-icon">
-  <title>Order System (Layman Guide) — Functionality Overview</title>
+  <title>Order System — Functionality Guide (Non-Technical)</title>
 
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Mermaid.js for flow diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 
   <style>
     :root { scroll-behavior: smooth; }
@@ -57,7 +59,7 @@
         <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
           <i class="bi bi-list"></i> Menu
         </button>
-        <span class="navbar-brand ms-2 mb-0 h1">Layman Guide</span>
+        <span class="navbar-brand ms-2 mb-0 h1">Functionality Guide</span>
       </div>
       <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left-circle"></i> Return to project
@@ -76,7 +78,7 @@
           <i class="bi bi-people-fill text-primary fs-4"></i>
           <div>
             <div class="fw-bold">Order System</div>
-            <div class="text-muted small">Simple functionality guide</div>
+            <div class="text-muted small">Functionality guide (non-technical)</div>
           </div>
         </div>
 
@@ -90,14 +92,19 @@
             <li class="nav-item"><a class="nav-link" href="#what-this-is">What this system does</a></li>
             <li class="nav-item"><a class="nav-link" href="#key-terms">Key terms (simple)</a></li>
             <li class="nav-item"><a class="nav-link" href="#who-uses-it">Who uses it</a></li>
+            <li class="nav-item"><a class="nav-link" href="#flow-diagrams">Project flow diagrams</a></li>
+            <li class="nav-item"><a class="nav-link" href="#provider-split-logic">Provider split logic — how it works</a></li>
             <li class="nav-item"><a class="nav-link" href="#order-flow">How an order is completed</a></li>
+            <li class="nav-item"><a class="nav-link" href="#draft-orders">Draft orders</a></li>
             <li class="nav-item"><a class="nav-link" href="#providers">How providers work (Mailin / PremiumInboxes / Mailrun)</a></li>
             <li class="nav-item"><a class="nav-link" href="#safety-checks">Safety checks</a></li>
             <li class="nav-item"><a class="nav-link" href="#status-meaning">Order statuses (what they mean)</a></li>
             <li class="nav-item"><a class="nav-link" href="#cancellation">How cancellation works</a></li>
             <li class="nav-item"><a class="nav-link" href="#google365">Google / Microsoft 365 cancellation (special case)</a></li>
             <li class="nav-item"><a class="nav-link" href="#what-you-see">What you can see in the admin panel</a></li>
+            <li class="nav-item"><a class="nav-link" href="#background-checks">Background checks (pending domains)</a></li>
             <li class="nav-item"><a class="nav-link" href="#common-questions">Common questions</a></li>
+            <li class="nav-item"><a class="nav-link" href="#developer-guide-link">For developers</a></li>
           </ul>
         </nav>
 
@@ -120,16 +127,21 @@
           </div>
           <ul id="tocListMobile" class="nav nav-pills flex-column gap-1">
             <li class="nav-item"><a class="nav-link" href="#what-this-is" data-bs-dismiss="offcanvas">What this system does</a></li>
-            <li class="nav-item"><a class="nav-link" href="#key-terms" data-bs-dismiss="offcanvas">Key terms (simple)</a></li>
+            <li class="nav-item"><a class="nav-link" href="#key-terms" data-bs-dismiss="offcanvas">Key terms</a></li>
             <li class="nav-item"><a class="nav-link" href="#who-uses-it" data-bs-dismiss="offcanvas">Who uses it</a></li>
+            <li class="nav-item"><a class="nav-link" href="#flow-diagrams" data-bs-dismiss="offcanvas">Flow diagrams</a></li>
+            <li class="nav-item"><a class="nav-link" href="#provider-split-logic" data-bs-dismiss="offcanvas">Provider split logic</a></li>
             <li class="nav-item"><a class="nav-link" href="#order-flow" data-bs-dismiss="offcanvas">How an order is completed</a></li>
+            <li class="nav-item"><a class="nav-link" href="#draft-orders" data-bs-dismiss="offcanvas">Draft orders</a></li>
             <li class="nav-item"><a class="nav-link" href="#providers" data-bs-dismiss="offcanvas">How providers work</a></li>
             <li class="nav-item"><a class="nav-link" href="#safety-checks" data-bs-dismiss="offcanvas">Safety checks</a></li>
             <li class="nav-item"><a class="nav-link" href="#status-meaning" data-bs-dismiss="offcanvas">Order statuses</a></li>
             <li class="nav-item"><a class="nav-link" href="#cancellation" data-bs-dismiss="offcanvas">Cancellation</a></li>
             <li class="nav-item"><a class="nav-link" href="#google365" data-bs-dismiss="offcanvas">Google/365</a></li>
             <li class="nav-item"><a class="nav-link" href="#what-you-see" data-bs-dismiss="offcanvas">What you see</a></li>
+            <li class="nav-item"><a class="nav-link" href="#background-checks" data-bs-dismiss="offcanvas">Background checks</a></li>
             <li class="nav-item"><a class="nav-link" href="#common-questions" data-bs-dismiss="offcanvas">Common questions</a></li>
+            <li class="nav-item"><a class="nav-link" href="#developer-guide-link" data-bs-dismiss="offcanvas">For developers</a></li>
           </ul>
         </div>
       </div>
@@ -140,9 +152,9 @@
           <header class="mb-4">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
               <div>
-                <h1 class="h3 mb-1">Order System — Simple Functionality Guide</h1>
+                <h1 class="h3 mb-1">Order System — Functionality Guide</h1>
                 <p class="text-muted mb-0 mini">
-                  A non-technical explanation of how orders are created, split across providers, completed, and cancelled.
+                  A non-technical explanation of how orders are created, split across providers, completed, and cancelled. Includes flow diagrams for quick understanding.
                 </p>
               </div>
               <div class="d-flex gap-2">
@@ -223,6 +235,12 @@
                   <div class="text-muted mini">Background processing that completes work step-by-step without manual effort.</div>
                 </div>
               </div>
+              <div class="col-md-6">
+                <div class="border rounded-4 p-3 h-100">
+                  <div class="fw-semibold"><i class="bi bi-type text-primary"></i> Provider type</div>
+                  <div class="text-muted mini">The kind of inbox: <strong>Private SMTP</strong> / <strong>SMTP</strong> (multi-provider split), <strong>Google</strong>, or <strong>Microsoft 365</strong>. This decides how mailboxes are created and cancelled.</div>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -234,6 +252,104 @@
               <li><strong>Admin/Support team:</strong> monitors progress, checks problems, and cancels when needed.</li>
               <li><strong>The system (automation):</strong> does the heavy work: split, activate, create, verify, delete.</li>
             </ul>
+          </section>
+
+          <!-- Flow Diagrams -->
+          <section id="flow-diagrams" class="mb-5">
+            <h2 class="h4 section-title">Project flow diagrams</h2>
+            <p class="mini mb-3">
+              The diagrams below show how an order moves through the system and how cancellation works. Use them to understand the big picture.
+            </p>
+
+            <h3 class="h5 mt-3">High-level order flow (SMTP / Private SMTP)</h3>
+            <div class="border rounded-3 p-3 bg-light mb-4">
+              <div class="mermaid">
+flowchart LR
+  subgraph Customer
+    A[Customer places order] --> B[Order saved]
+  end
+  subgraph Automation
+    B --> C[Split domains across providers]
+    C --> D[Activate domains]
+    D --> E{All domains active?}
+    E -->|No| F[Wait for transfer / scheduler retries]
+    F --> D
+    E -->|Yes| G[Create mailboxes]
+    G --> H[Verify & complete]
+  end
+  H --> I[Customer receives inboxes]
+              </div>
+            </div>
+
+            <h3 class="h5 mt-4">Provider split (how domains are assigned)</h3>
+            <div class="border rounded-3 p-3 bg-light mb-4">
+              <div class="mermaid">
+flowchart LR
+  O[Order with N domains] --> S[Split by % and priority]
+  S --> M[Mailin]
+  S --> P[PremiumInboxes]
+  S --> R[Mailrun]
+  M --> A[Activate & create]
+  P --> A
+  R --> A
+  A --> Done[Completed order]
+              </div>
+            </div>
+
+            <h3 class="h5 mt-4">Cancellation flow</h3>
+            <div class="border rounded-3 p-3 bg-light mb-4">
+              <div class="mermaid">
+flowchart TD
+  Start[Customer or admin cancels] --> Type{Order type?}
+  Type -->|SMTP / Private SMTP| SMTP[Delete mailboxes per provider split]
+  Type -->|Google / Microsoft 365| G365[Set cancellation-in-process]
+  SMTP --> Mark[Mark order cancelled]
+  G365 --> Job[Background job deletes in batches]
+  Job --> More{More mailboxes?}
+  More -->|Yes| Job
+  More -->|No| Mark
+  Mark --> End[Order cancelled]
+              </div>
+            </div>
+          </section>
+
+          <!-- Provider split logic — how it works -->
+          <section id="provider-split-logic" class="mb-5">
+            <h2 class="h4 section-title">Provider split logic — how it works</h2>
+            <p class="mini mb-3">
+              This is the core flow that takes one order’s list of domains and turns it into per-provider work: <strong>split domains across providers</strong>, then <strong>activate domains</strong> for each provider. What happens next depends on whether all domains are active.
+            </p>
+
+            <div class="border rounded-3 p-3 bg-light mb-3">
+              <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 py-2">
+                <span class="px-3 py-2 rounded border bg-white fw-medium">Order saved (domains list)</span>
+                <span class="text-muted">→</span>
+                <span class="px-3 py-2 rounded border border-primary bg-primary bg-opacity-10 text-primary fw-medium">Split domains across providers</span>
+                <span class="text-muted">→</span>
+                <span class="px-3 py-2 rounded border border-primary bg-primary bg-opacity-10 text-primary fw-medium">Activate domains</span>
+                <span class="text-muted">→</span>
+                <span class="px-3 py-2 rounded border bg-white fw-medium">All active? → Create mailboxes or wait</span>
+              </div>
+            </div>
+
+            <ol class="mini mb-0">
+              <li class="mb-2">
+                <strong>Split domains across providers</strong><br>
+                The system takes the order’s full list of domains and divides it among the active providers (Mailin, PremiumInboxes, Mailrun) using configured <strong>split percentages</strong> and <strong>priority</strong>. For example, with 10 domains and 40% / 40% / 20%, one provider might get 4 domains, another 4, another 2. Each provider gets its own “split” record with its list of domains. No activation or mailbox creation happens yet.
+              </li>
+              <li class="mb-2">
+                <strong>Activate domains</strong><br>
+                For each provider’s split, the system runs that provider’s activation (transfer, status check, nameservers, etc.). Each domain’s status is stored. When every domain in every split is active, the system moves on. If some are not ready yet (e.g. transfer pending), the flow stops here and the scheduler will retry later.
+              </li>
+              <li>
+                <strong>After activation</strong><br>
+                If <strong>all domains are active</strong>, the system creates mailboxes for each split and then completes the order. If not, it waits; the background “pending domains” check will re-run activation and create mailboxes when everything is ready.
+              </li>
+            </ol>
+            <div class="alert alert-light border mt-3 mb-0 mini">
+              <i class="bi bi-diagram-2 text-primary me-1"></i>
+              So: <em>split</em> decides <strong>which provider gets which domains</strong>; <em>activate</em> makes those domains ready; then mailboxes are created and the order is completed.
+            </div>
           </section>
 
           <!-- Order Flow -->
@@ -273,6 +389,23 @@
             <div class="alert alert-light border mt-4 mb-0 mini">
               <i class="bi bi-check2-circle me-1"></i>
               Result: customer receives working inboxes, and support can see exactly which provider owns each domain/inbox.
+            </div>
+          </section>
+
+          <!-- Draft orders -->
+          <section id="draft-orders" class="mb-5">
+            <h2 class="h4 section-title">Draft orders</h2>
+            <p class="mini">
+              Orders can be saved as <strong>drafts</strong>. When an order is saved as a draft:
+            </p>
+            <ul class="mini">
+              <li>The system does <strong>not</strong> start the automation (no domain split, no activation, no mailbox creation).</li>
+              <li>You can come back later to add or change domains and inbox details, then submit for real.</li>
+              <li>When you remove the draft flag and save, the automation runs and the order moves to <strong>in-progress</strong>.</li>
+            </ul>
+            <div class="alert alert-light border mt-2 mb-0 mini">
+              <i class="bi bi-pencil-square me-1"></i>
+              Drafts are useful when the customer is still preparing the list of domains or needs to verify details before going live.
             </div>
           </section>
 
@@ -351,6 +484,10 @@
                 </thead>
                 <tbody>
                   <tr>
+                    <td><span class="badge text-bg-secondary">draft</span></td>
+                    <td>Order saved but not submitted; automation does not run until draft is removed.</td>
+                  </tr>
+                  <tr>
                     <td><span class="badge text-bg-secondary">pending</span></td>
                     <td>Order is saved, but automation has not fully started yet.</td>
                   </tr>
@@ -361,6 +498,10 @@
                   <tr>
                     <td><span class="badge text-bg-success">completed</span></td>
                     <td>All mailboxes are created and verified. Delivery is ready.</td>
+                  </tr>
+                  <tr>
+                    <td><span class="badge text-bg-danger">reject</span></td>
+                    <td>Order was rejected (e.g. domain conflict or validation failure during activation).</td>
                   </tr>
                   <tr>
                     <td><span class="badge text-bg-warning">cancellation-in-process</span></td>
@@ -429,11 +570,30 @@
             <h2 class="h4 section-title">What you can see in the admin panel</h2>
             <ul class="mini">
               <li><strong>Order status:</strong> pending / in-progress / completed / cancellation-in-process / cancelled</li>
+              <li><strong>Provider type:</strong> e.g. Private SMTP, SMTP, Google, Microsoft 365 — determines how mailboxes are created and cancelled</li>
               <li><strong>Domains list:</strong> which domains are part of the order</li>
-              <li><strong>Provider ownership:</strong> which provider is responsible for each domain</li>
+              <li><strong>Provider ownership:</strong> which provider (Mailin, PremiumInboxes, Mailrun) is responsible for each domain</li>
               <li><strong>Mailbox output:</strong> mailbox usernames and passwords (where applicable)</li>
               <li><strong>Reason (on cancellation):</strong> stored so support knows why it was cancelled</li>
+              <li><strong>ChargeBee subscription:</strong> link to the billing subscription when the order is tied to one</li>
             </ul>
+          </section>
+
+          <!-- Background checks -->
+          <section id="background-checks" class="mb-5">
+            <h2 class="h4 section-title">Background checks (pending domains)</h2>
+            <p class="mini">
+              Sometimes domains take time to become active (e.g. after a transfer or nameserver change). The system does not leave these orders stuck:
+            </p>
+            <ul class="mini">
+              <li>A <strong>scheduled task</strong> runs every few minutes and looks at all orders that are still <strong>in-progress</strong>.</li>
+              <li>For each such order, it re-checks domain status. When <strong>all</strong> domains for that order are active, it creates the mailboxes and completes the order.</li>
+              <li>So even if the first run could not create mailboxes (domains not ready yet), a later run will pick it up automatically.</li>
+            </ul>
+            <div class="alert alert-light border mt-2 mb-0 mini">
+              <i class="bi bi-clock-history me-1"></i>
+              No manual action is needed — the system keeps checking until domains are ready, then finishes the order.
+            </div>
           </section>
 
           <!-- Common Questions -->
@@ -500,10 +660,21 @@
               <!-- <i class="bi bi-chat-dots me-1"></i> -->
             </div>
           </section>
+
+          <!-- For developers -->
+          <section id="developer-guide-link" class="mb-0">
+            <h2 class="h4 section-title">For developers</h2>
+            <p class="mini">
+              For technical details — code structure, database schema, jobs, and cancellation implementation — see the Developer Guide.
+            </p>
+            <a href="{{ route('admin.developer-guide') }}" class="btn btn-primary">
+              <i class="bi bi-code-slash me-1"></i> Open Developer Guide
+            </a>
+          </section>
         </div>
 
         <footer class="text-center text-muted small mt-3">
-          Built with Bootstrap 5 • Sidebar search • Responsive layout
+          Functionality Guide (non-technical) • Flow diagrams • <a href="{{ route('admin.developer-guide') }}">Developer Guide</a>
         </footer>
       </main>
     </div>
@@ -513,6 +684,9 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+    // Mermaid: render flow diagrams
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral', flowchart: { useMaxWidth: true } });
+
     // Sidebar Search (Desktop + Mobile)
     function setupFilter(inputEl, listEl) {
       if (!inputEl || !listEl) return;

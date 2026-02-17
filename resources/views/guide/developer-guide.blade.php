@@ -4,13 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="{{ asset('assets/favicon/favicon.png') }}" type="image/x-icon">
-  <title>Order System (Developer Guide) — Architecture Overview</title>
+  <title>Order System — Developer Guide (Technical)</title>
 
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Optional: Bootstrap Icons (nice for UI) -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Mermaid.js for flow diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 
   <style>
     :root { scroll-behavior: smooth; }
@@ -79,22 +79,26 @@
 
         <div class="d-flex justify-content-between align-items-center mb-2">
           <span class="text-muted small">Table of Contents</span>
-          <span class="badge text-bg-primary toc-badge">11</span>
+          <span class="badge text-bg-primary toc-badge">13</span>
         </div>
 
         <nav>
           <ul id="tocList" class="nav nav-pills flex-column gap-1">
             <li class="nav-item"><a class="nav-link" href="#1-overview">1. Overview</a></li>
-            <li class="nav-item"><a class="nav-link" href="#2-code-structure-interface--services">2. Code Structure: Interface & Services</a></li>
-            <li class="nav-item"><a class="nav-link" href="#3-database-schema--data-storage">3. Database Schema & Data Storage</a></li>
-            <li class="nav-item"><a class="nav-link" href="#4-order-creation-with-automation">4. Order Creation with Automation</a></li>
+            <li class="nav-item"><a class="nav-link" href="#flow-diagrams">Flow diagrams (technical)</a></li>
+            <li class="nav-item"><a class="nav-link" href="#provider-split-logic">Provider split logic</a></li>
+            <li class="nav-item"><a class="nav-link" href="#2-code-structure-interface--services">2. Code Structure</a></li>
+            <li class="nav-item"><a class="nav-link" href="#3-database-schema--data-storage">3. Database Schema</a></li>
+            <li class="nav-item"><a class="nav-link" href="#4-order-creation-with-automation">4. Order Creation & Automation</a></li>
+            <li class="nav-item"><a class="nav-link" href="#scheduler-commands">Scheduler & Commands</a></li>
             <li class="nav-item"><a class="nav-link" href="#5-provider-specific-creation-mailin-premiuminboxes-mailrun">5. Provider-Specific Creation</a></li>
             <li class="nav-item"><a class="nav-link" href="#6-checks-during-creation">6. Checks During Creation</a></li>
             <li class="nav-item"><a class="nav-link" href="#7-legacy-vs-new-system">7. Legacy vs New System</a></li>
-            <li class="nav-item"><a class="nav-link" href="#8-benefits-of-the-new-architecture">8. Benefits of the New Architecture</a></li>
+            <li class="nav-item"><a class="nav-link" href="#8-benefits-of-the-new-architecture">8. Benefits</a></li>
             <li class="nav-item"><a class="nav-link" href="#9-cancellation-process">9. Cancellation Process</a></li>
             <li class="nav-item"><a class="nav-link" href="#10-google365-legacy-job-based-deletion">10. Google/365 Legacy</a></li>
             <li class="nav-item"><a class="nav-link" href="#11-key-code-snippets">11. Key Code Snippets</a></li>
+            <li class="nav-item"><a class="nav-link" href="#functionality-guide-link">Functionality guide</a></li>
           </ul>
         </nav>
 
@@ -119,9 +123,12 @@
 
           <ul id="tocListMobile" class="nav nav-pills flex-column gap-1">
             <li class="nav-item"><a class="nav-link" href="#1-overview" data-bs-dismiss="offcanvas">1. Overview</a></li>
+            <li class="nav-item"><a class="nav-link" href="#flow-diagrams" data-bs-dismiss="offcanvas">Flow diagrams</a></li>
+            <li class="nav-item"><a class="nav-link" href="#provider-split-logic" data-bs-dismiss="offcanvas">Provider split logic</a></li>
             <li class="nav-item"><a class="nav-link" href="#2-code-structure-interface--services" data-bs-dismiss="offcanvas">2. Code Structure</a></li>
             <li class="nav-item"><a class="nav-link" href="#3-database-schema--data-storage" data-bs-dismiss="offcanvas">3. Database Schema</a></li>
             <li class="nav-item"><a class="nav-link" href="#4-order-creation-with-automation" data-bs-dismiss="offcanvas">4. Automation</a></li>
+            <li class="nav-item"><a class="nav-link" href="#scheduler-commands" data-bs-dismiss="offcanvas">Scheduler & Commands</a></li>
             <li class="nav-item"><a class="nav-link" href="#5-provider-specific-creation-mailin-premiuminboxes-mailrun" data-bs-dismiss="offcanvas">5. Providers</a></li>
             <li class="nav-item"><a class="nav-link" href="#6-checks-during-creation" data-bs-dismiss="offcanvas">6. Checks</a></li>
             <li class="nav-item"><a class="nav-link" href="#7-legacy-vs-new-system" data-bs-dismiss="offcanvas">7. Legacy vs New</a></li>
@@ -129,6 +136,7 @@
             <li class="nav-item"><a class="nav-link" href="#9-cancellation-process" data-bs-dismiss="offcanvas">9. Cancellation</a></li>
             <li class="nav-item"><a class="nav-link" href="#10-google365-legacy-job-based-deletion" data-bs-dismiss="offcanvas">10. Google/365</a></li>
             <li class="nav-item"><a class="nav-link" href="#11-key-code-snippets" data-bs-dismiss="offcanvas">11. Snippets</a></li>
+            <li class="nav-item"><a class="nav-link" href="#functionality-guide-link" data-bs-dismiss="offcanvas">Functionality guide</a></li>
           </ul>
         </div>
       </div>
@@ -137,10 +145,10 @@
       <main class="col-lg-9 p-3 p-lg-4">
         <div class="content-card p-3 p-lg-4">
           <header class="mb-4">
-            <h1 class="h3 mb-2">Order Creation &amp; Cancellation Architecture</h1>
+            <h1 class="h3 mb-2">Order Creation &amp; Cancellation — Developer Guide</h1>
             <p class="text-muted mb-0">
-              This document describes the order creation flow with automation, provider splitting (Mailin, PremiumInboxes, Mailrun),
-              the code structure (interfaces and services), database storage, and the cancellation process including legacy Google/365 job-based deletion.
+              Technical architecture: order creation with automation, provider splitting (Mailin, PremiumInboxes, Mailrun),
+              code structure (interfaces and services), database schema, scheduler/commands, and cancellation (including Google/365 batch job).
             </p>
           </header>
 
@@ -167,6 +175,105 @@
             </ul>
           </section>
 
+          <!-- Flow diagrams (technical) -->
+          <section id="flow-diagrams" class="mb-5">
+            <h2 class="h4 section-title">Flow diagrams (technical)</h2>
+            <p class="mb-3">End-to-end flows for order creation, domain activation, mailbox creation, and cancellation.</p>
+
+            <h3 class="h5 mt-3">Order creation (ProcessMailAutomationJob)</h3>
+            <div class="border rounded-3 p-3 bg-light mb-4">
+              <div class="mermaid">
+flowchart TD
+  A[ProcessMailAutomationJob::handle] --> B[splitAndSaveDomains]
+  B --> C[DomainActivationService::activateDomainsForOrder]
+  C --> D{rejected?}
+  D -->|Yes| E[return]
+  D -->|No| F[OrderProviderSplit::areAllDomainsActiveForOrder]
+  F --> G{all active?}
+  G -->|No| H[Wait for scheduler / transfer]
+  G -->|Yes| I[createMailboxes]
+  I --> J[MailboxCreationService::createMailboxesForOrder]
+  J --> K[Validate & complete order]
+              </div>
+            </div>
+
+            <h3 class="h5 mt-4">Domain activation per split</h3>
+            <div class="border rounded-3 p-3 bg-light mb-4">
+              <div class="mermaid">
+flowchart LR
+  O[Order] --> S[OrderProviderSplit 1..N]
+  S --> A[DomainActivationService::activateDomainsForSplit]
+  A --> P[Provider::activateDomainsForSplit]
+  P --> M[Mailin]
+  P --> PI[PremiumInboxes]
+  P --> MR[Mailrun]
+  M --> U[update domain_statuses, all_domains_active]
+  PI --> U
+  MR --> U
+              </div>
+            </div>
+
+            <h3 class="h5 mt-4">Cancellation: SMTP vs Google/365</h3>
+            <div class="border rounded-3 p-3 bg-light mb-4">
+              <div class="mermaid">
+flowchart TD
+  E[OrderCancelledService::cancelSubscription] --> CB[ChargeBee cancel]
+  CB --> DOM[deleteOrderMailboxes]
+  DOM --> T{provider_type?}
+  T -->|SMTP / Private SMTP| SPLIT{splits exist?}
+  SPLIT -->|Yes| DS[deleteMailboxesFromProviderSplits]
+  SPLIT -->|No| LEG[deleteSmtpOrderMailboxes legacy]
+  DS --> DONE[status = cancelled]
+  LEG --> DONE
+  T -->|Google / Microsoft 365| G365[status = cancellation-in-process]
+  G365 --> JOB[DeleteGoogle365MailboxesJob::dispatch]
+  JOB --> BATCH[deleteGoogle365OrderMailboxes batch]
+  BATCH --> MORE{has_more?}
+  MORE -->|Yes| JOB
+  MORE -->|No| DONE
+              </div>
+            </div>
+          </section>
+
+          <!-- Provider split logic (technical) -->
+          <section id="provider-split-logic" class="mb-5">
+            <h2 class="h4 section-title">Provider split logic — how it works</h2>
+            <p class="mb-3">The flow is: <strong>split domains across providers</strong> → <strong>activate domains</strong> (per split) → create mailboxes when all active. Below is how it’s implemented.</p>
+
+            <div class="border rounded-3 p-3 bg-light mb-3">
+              <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 py-2 small">
+                <code>ProcessMailAutomationJob</code>
+                <span class="text-muted">→</span>
+                <code>DomainSplitService::splitDomains()</code>
+                <span class="text-muted">→</span>
+                <code>order_provider_splits</code> (per provider)
+                <span class="text-muted">→</span>
+                <code>DomainActivationService::activateDomainsForOrder()</code>
+                <span class="text-muted">→</span>
+                <code>Provider::activateDomainsForSplit()</code>
+                <span class="text-muted">→</span>
+                <code>domain_statuses</code> / <code>all_domains_active</code>
+              </div>
+            </div>
+
+            <h3 class="h5 mt-3">1. Split domains across providers</h3>
+            <ul>
+              <li><strong>Service:</strong> <code>App\Services\DomainSplitService</code> (<code>splitDomains(array $domains): array</code>).</li>
+              <li><strong>Config:</strong> Active providers from <code>smtp_provider_splits</code> (where <code>is_active = true</code>), ordered by <code>priority</code>. Each row has <code>split_percentage</code> (e.g. 40, 40, 20).</li>
+              <li><strong>Logic:</strong> For each provider, <code>domainCount = round(totalDomains * percentage / 100)</code>. Domains are assigned in order; remaining domains (from rounding) are assigned round-robin by priority.</li>
+              <li><strong>Output:</strong> <code>['mailin' => ['d1.com','d2.com'], 'premiuminboxes' => [...], 'mailrun' => [...]]</code>. The job then <code>updateOrCreate</code>s one <code>order_provider_splits</code> row per provider with that order’s <code>domains</code> (JSON), <code>domain_statuses = null</code>, <code>all_domains_active = false</code>.</li>
+            </ul>
+
+            <h3 class="h5 mt-4">2. Activate domains</h3>
+            <ul>
+              <li><strong>Service:</strong> <code>DomainActivationService::activateDomainsForOrder($order)</code>. For each <code>OrderProviderSplit</code>, it loads credentials from <code>smtp_provider_splits</code>, builds the provider via <code>CreatesProviders::createProvider()</code>, and calls <code>$provider->activateDomainsForSplit($order, $split, ...)</code>.</li>
+              <li><strong>Per provider:</strong> Mailin: transfer + status check + conflict check. PremiumInboxes: order/status handling. Mailrun: enrollment, nameservers, provision status. Each implementation updates the split’s <code>domain_statuses</code> and sets <code>all_domains_active</code> when every domain in that split is active.</li>
+              <li><strong>After activation:</strong> <code>OrderProviderSplit::areAllDomainsActiveForOrder($orderId)</code> must be true for every split. If yes, <code>MailboxCreationService::createMailboxesForOrder()</code> runs; if no, the job ends and the scheduler (<code>mailin:check-pending-domains</code>) will retry activation and then create mailboxes later.</li>
+            </ul>
+
+            <p class="mb-0"><strong>Summary:</strong> Split assigns domains to providers and persists them in <code>order_provider_splits</code>. Activate runs per-split provider logic and fills <code>domain_statuses</code> / <code>all_domains_active</code>. Only when all splits report all domains active does mailbox creation run.</p>
+          </section>
+
           <!-- 2 -->
           <section id="2-code-structure-interface--services" class="mb-5">
             <h2 class="h4 section-title">2. Code Structure: Interface &amp; Services</h2>
@@ -190,7 +297,7 @@
 }</code></pre>
 
             <ul>
-              <li><strong>Creation:</strong> <code>authenticate</code>, <code>transferDomain</code>, <code>checkDomainStatus</code>, <code>createMailboxes</code>, <code>getMailboxesByDomain</code>.</li>
+              <li><strong>Creation / activation:</strong> <code>authenticate</code>, <code>transferDomain</code>, <code>checkDomainStatus</code>, <code>createMailboxes</code>, <code>getMailboxesByDomain</code>, <code>activateDomainsForSplit</code> (per-split domain activation with callbacks).</li>
               <li><strong>Deletion:</strong> <code>deleteMailbox</code>, <code>deleteMailboxesFromSplit</code> (per-split bulk delete; updates split JSON and calls provider API as needed).</li>
             </ul>
 
@@ -442,6 +549,40 @@
                 When all mailboxes are created and validated, update <code>orders.status_manage_by_admin = 'completed'</code> and set <code>completed_at</code>.
               </li>
             </ol>
+          </section>
+
+          <!-- Scheduler & Commands -->
+          <section id="scheduler-commands" class="mb-5">
+            <h2 class="h4 section-title">Scheduler &amp; Commands</h2>
+            <p>Background tasks that keep orders moving when domains become active later or when manual intervention is needed.</p>
+
+            <h3 class="h5 mt-3">mailin:check-pending-domains (scheduled every 5 minutes)</h3>
+            <p class="mb-2"><strong>Command:</strong> <code>php artisan mailin:check-pending-domains</code></p>
+            <p class="mb-2"><strong>Location:</strong> <code>app/Console/Commands/CheckPendingDomainsCommand.php</code></p>
+            <ul>
+              <li>Finds orders with <code>status_manage_by_admin = 'in-progress'</code> that have <code>order_provider_splits</code>.</li>
+              <li>For each order: calls <code>DomainActivationService::activateDomainsForOrder($order)</code> to re-check domain status.</li>
+              <li>If <code>OrderProviderSplit::areAllDomainsActiveForOrder($orderId)</code> is true, calls <code>MailboxCreationService::createMailboxesForOrder(...)</code> and completes the order.</li>
+            </ul>
+            <p class="mb-0">So orders that could not create mailboxes in the first job run (domains not yet active) are picked up automatically when domains become ready.</p>
+
+            <h3 class="h5 mt-4">Artisan commands (manual)</h3>
+            <div class="table-responsive">
+              <table class="table table-sm table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th>Command</th>
+                    <th>Purpose</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>mailin:activate-domains</code></td><td>Activate domains for a single order (by ID). Optional <code>--bypass-existing-mailbox-check</code>.</td></tr>
+                  <tr><td><code>mailin:create-mailboxes</code></td><td>Create mailboxes for an order when all domains are already active.</td></tr>
+                  <tr><td><code>mailin:check-pending-domains --dry-run</code></td><td>Show which orders would be processed without making changes.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="mb-0">Other scheduled tasks (draft notifications, panel capacity, domain removal, pool commands, etc.) are defined in <code>app/Console/Kernel.php</code>.</p>
           </section>
 
           <!-- 5 -->
@@ -775,10 +916,21 @@ protected function updateOrderStatusToCancelled(): void
               This page reflects the current design: automation + provider splits for SMTP, and a batched job for Google/365 legacy deletion.
             </div>
           </section>
+
+          <!-- Functionality guide link -->
+          <section id="functionality-guide-link" class="mb-0">
+            <h2 class="h4 section-title">Functionality guide (non-technical)</h2>
+            <p class="mb-2">
+              For a product-level explanation of order flow, providers, statuses, and cancellation — for support and non-developers — see the Functionality Guide.
+            </p>
+            <a href="{{ route('admin.functionlity-guide') }}" class="btn btn-outline-primary">
+              <i class="bi bi-book me-1"></i> Open Functionality Guide
+            </a>
+          </section>
         </div>
 
         <footer class="text-center text-muted small mt-3">
-          Built with Bootstrap 5 • Sidebar search + active section highlight
+          Developer Guide • Flow diagrams • <a href="{{ route('admin.functionlity-guide') }}">Functionality Guide</a>
         </footer>
       </main>
     </div>
@@ -788,6 +940,9 @@ protected function updateOrderStatusToCancelled(): void
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+    // Mermaid: render flow diagrams
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral', flowchart: { useMaxWidth: true } });
+
     // ----- Sidebar Search (Desktop + Mobile) -----
     function setupFilter(inputEl, listEl) {
       if (!inputEl || !listEl) return;
