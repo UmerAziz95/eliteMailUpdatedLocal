@@ -457,6 +457,84 @@ flowchart TD
                 </div>
               </div>
             </div>
+
+            <div class="alert alert-light border mt-3 mini">
+              <i class="bi bi-arrows-split text-primary me-1"></i>
+              <strong>Split-wise meaning:</strong> every order is divided into provider splits, and each split owns a specific domain list. Ownership stays clear from activation to mailbox creation and cancellation.
+            </div>
+
+            <h3 class="h5 mt-4">Split-wise details (what is stored and used)</h3>
+            <div class="table-responsive mini">
+              <table class="table table-bordered align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Field</th>
+                    <th>Simple meaning</th>
+                    <th>How system uses it</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>provider_slug</code></td>
+                    <td>Provider name key (mailin/premiuminboxes/mailrun)</td>
+                    <td>Chooses provider-specific activation/creation logic</td>
+                  </tr>
+                  <tr>
+                    <td><code>domains</code></td>
+                    <td>Domains assigned to that provider split</td>
+                    <td>Only those domains are processed by that provider</td>
+                  </tr>
+                  <tr>
+                    <td><code>domain_statuses</code></td>
+                    <td>Per-domain activation status</td>
+                    <td>Checks whether split/order is ready for mailbox creation</td>
+                  </tr>
+                  <tr>
+                    <td><code>all_domains_active</code></td>
+                    <td>One boolean for the full split</td>
+                    <td>Gate for next step (create mailboxes or wait/retry)</td>
+                  </tr>
+                  <tr>
+                    <td><code>mailboxes</code></td>
+                    <td>Saved mailbox credentials/details per domain</td>
+                    <td>Used for delivery/export and safe cancellation tracking</td>
+                  </tr>
+                  <tr>
+                    <td><code>external_order_id</code></td>
+                    <td>Provider-side order id (mostly PI/Mailrun)</td>
+                    <td>Used to sync/verify existing order without repurchase</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3 class="h5 mt-4">Combined split flow (all providers)</h3>
+            <div class="border rounded-3 p-3 bg-light mb-0">
+              <div class="mermaid">
+flowchart LR
+  A[Order saved with domains] --> B[Split engine]
+  B --> M[Mailin split]
+  B --> P[PremiumInboxes split]
+  B --> R[Mailrun split]
+
+  M --> M1[Activate domains]
+  M1 --> M2[Create mailboxes]
+
+  P --> P1[Create or sync provider order]
+  P1 --> P2[Verify NS and statuses]
+  P2 --> P3[Fetch/list mailboxes]
+
+  R --> R1[Enrollment and provisioning]
+  R1 --> R2[Fetch provisioned mailboxes]
+
+  M2 --> C{All splits complete?}
+  P3 --> C
+  R2 --> C
+  C -->|No| W[Wait and retry via scheduler]
+  W --> B
+  C -->|Yes| D[Mark order completed]
+              </div>
+            </div>
           </section>
 
           <!-- Safety checks -->
