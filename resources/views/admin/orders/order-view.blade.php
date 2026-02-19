@@ -563,7 +563,7 @@
                                                         <div class="d-flex align-items-center gap-2">
                                                             <span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
                                                             <div class="d-flex align-items-center gap-1">
-                                                                <span class="badge bg-primary" style="cursor: pointer;"
+                                                                <span class="badge bg-primary mailbox-tooltip-trigger" style="cursor: pointer;"
                                                                     data-bs-toggle="tooltip" data-bs-placement="left" data-bs-html="true"
                                                                     data-bs-custom-class="modern-mail-tooltip"
                                                                     title="{!! $tooltipContent !!}">
@@ -1575,6 +1575,94 @@
         </div>
     </section>
 
+    @push('scripts')
+        <script>
+            $(document).ready(function () {
+                const hideTimers = new WeakMap();
+
+                const clearHideTimer = (el) => {
+                    const timer = hideTimers.get(el);
+                    if (timer) {
+                        clearTimeout(timer);
+                        hideTimers.delete(el);
+                    }
+                };
+
+                const scheduleHide = ($trigger) => {
+                    const el = $trigger.get(0);
+                    clearHideTimer(el);
+                    const timer = setTimeout(() => {
+                        $trigger.tooltip('hide');
+                    }, 150);
+                    hideTimers.set(el, timer);
+                };
+
+                const bindTooltipHoverBridge = ($trigger) => {
+                    const tipId = $trigger.attr('aria-describedby');
+                    if (!tipId) {
+                        return;
+                    }
+
+                    const $tip = $('#' + tipId);
+                    if (!$tip.length) {
+                        return;
+                    }
+
+                    $tip.off('.mailboxTooltipBridge')
+                        .on('mouseenter.mailboxTooltipBridge', function () {
+                            clearHideTimer($trigger.get(0));
+                        })
+                        .on('mouseleave.mailboxTooltipBridge', function () {
+                            scheduleHide($trigger);
+                        });
+                };
+
+                const initMailboxTooltips = () => {
+                    $('.mailbox-tooltip-trigger').each(function () {
+                        const $trigger = $(this);
+
+                        if ($trigger.data('mailboxTooltipBound')) {
+                            return;
+                        }
+
+                        if ($trigger.data('bs.tooltip') || $trigger.data('tooltip')) {
+                            $trigger.tooltip('dispose');
+                        }
+
+                        $trigger.tooltip({
+                            html: true,
+                            trigger: 'manual',
+                            container: 'body',
+                            sanitize: false
+                        });
+
+                        $trigger.on('mouseenter', function () {
+                            clearHideTimer(this);
+                            $trigger.tooltip('show');
+                            bindTooltipHoverBridge($trigger);
+                        });
+
+                        $trigger.on('mouseleave', function () {
+                            scheduleHide($trigger);
+                        });
+
+                        $trigger.on('shown.bs.tooltip', function () {
+                            bindTooltipHoverBridge($trigger);
+                        });
+
+                        $trigger.on('hidden.bs.tooltip', function () {
+                            clearHideTimer(this);
+                        });
+
+                        $trigger.data('mailboxTooltipBound', true);
+                    });
+                };
+
+                initMailboxTooltips();
+            });
+        </script>
+    @endpush
+
     @push('styles')
         <style>
             .modern-mail-tooltip {
@@ -1587,6 +1675,7 @@
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
                 border-radius: 12px;
                 border: 1px solid rgba(0, 0, 0, 0.05);
+                pointer-events: auto;
             }
 
             .modern-mail-tooltip .tooltip-inner {
