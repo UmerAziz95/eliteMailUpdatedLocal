@@ -222,7 +222,8 @@
 
         .copy-value-btn i {
             font-size: 10px;
-            margin-left: -6px
+            line-height: 1;
+            margin: 0;
         }
 
         .copy-value-btn:hover {
