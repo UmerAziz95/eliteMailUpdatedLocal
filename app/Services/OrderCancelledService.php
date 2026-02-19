@@ -415,12 +415,13 @@ class OrderCancelledService
             $providerType = $order->provider_type;
 
             // Route to provider-specific deletion methods
-            if (in_array(strtolower($providerType ?? ''), ['private smtp', 'smtp'])) {
+            $providerTypeLower = strtolower($providerType ?? '');
+            if (in_array($providerTypeLower, ['private smtp', 'smtp'])) {
                 // Check for order_provider_splits first (new multi-provider system)
                 $providerSplits = \App\Models\OrderProviderSplit::where('order_id', $order->id)->get();
 
                 if ($providerSplits->isNotEmpty()) {
-                    // New system: Use order_provider_splits
+                    // New system: Use order_provider_splits (PremiumInboxes calls POST /orders/{id}/cancel to cancel order + all inboxes)
                     return $this->deleteMailboxesFromProviderSplits($order, $providerSplits);
                 }
 

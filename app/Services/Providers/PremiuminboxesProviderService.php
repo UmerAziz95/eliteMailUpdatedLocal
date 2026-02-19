@@ -368,6 +368,8 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
                 $result = $this->service->cancelOrder($split->external_order_id);
 
                 if ($result['success']) {
+                    $apiData = $result['data'] ?? [];
+                    $cancelledInboxCount = $apiData['cancelled_inbox_count'] ?? null;
                     $mailboxes = $split->mailboxes ?? [];
                     foreach ($mailboxes as $domain => $domainMailboxes) {
                         foreach ($domainMailboxes as $prefixKey => $mailbox) {
@@ -383,16 +385,18 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
                         'order_id' => $order->id,
                         'split_id' => $split->id,
                         'external_order_id' => $split->external_order_id,
+                        'cancelled_inbox_count' => $cancelledInboxCount,
                     ]);
                     ActivityLogService::log(
                         'order-mailboxes-deleted',
-                        "Cancelled PremiumInboxes order for cancelled order",
+                        "Cancelled PremiumInboxes order and inboxes" . ($cancelledInboxCount !== null ? " ({$cancelledInboxCount} inboxes)" : ""),
                         $order,
                         [
                             'order_id' => $order->id,
                             'split_id' => $split->id,
                             'provider' => 'premiuminboxes',
                             'external_order_id' => $split->external_order_id,
+                            'cancelled_inbox_count' => $cancelledInboxCount,
                         ]
                     );
                 } else {
