@@ -230,6 +230,14 @@
             color: #93c5fd;
             background: rgba(30, 58, 138, 0.35);
         }
+
+        .config-section-heading {
+            font-size: 18px;
+            font-weight: 700;
+            color: #dbe7ff;
+            margin: 8px 0 14px;
+            line-height: 1.2;
+        }
     </style>
     <section class="py-3 overflow-hidden">
         {{-- <div class="d-flex align-items-center justify-content-between">
@@ -750,7 +758,7 @@
                                     </div>
                                 </div>
                                 <div class="d-flex flex-column">
-                                    <span class="opacity-50">Domains</span>
+                                    <h6 class="config-section-heading">Domains</h6>
                                     @php
                                         $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
                                         $isPrivateSMTP = strtolower($providerType ?? '') === 'private smtp';
