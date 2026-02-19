@@ -184,6 +184,7 @@
             align-items: center;
             justify-content: flex-start;
             gap: 0;
+            margin-left: 20px;
         }
 
         .config-value-text {
@@ -238,6 +239,19 @@
             color: #dbe7ff;
             margin: 8px 0 14px;
             line-height: 1.2;
+        }
+
+        .config-label-with-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .config-label-with-icon i {
+            font-size: 11px;
+            color: #93c5fd;
+            width: 12px;
+            text-align: center;
         }
     </style>
     <section class="py-3 overflow-hidden">
@@ -671,7 +685,7 @@
 
                             @if (optional($order->reorderInfo)->count() > 0)
                                 <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Hosting Platform</span>
+                                    <span class="opacity-50 config-label-with-icon"><i class="fa-solid fa-server"></i>Hosting Platform</span>
                                     @php $hostingPlatform = $order->reorderInfo->first()->hosting_platform ?? 'N/A'; @endphp
                                     <div class="config-value-row">
                                         <span class="config-value-text">{{ $hostingPlatform }}</span>
@@ -683,7 +697,7 @@
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Platform Login</span>
+                                    <span class="opacity-50 config-label-with-icon"><i class="fa-solid fa-user"></i>Platform Login</span>
                                     @php $platformLogin = $order->reorderInfo->first()->platform_login ?? 'N/A'; @endphp
                                     <div class="config-value-row">
                                         <span class="config-value-text">{{ $platformLogin }}</span>
@@ -695,7 +709,7 @@
                                 </div>
                                 <!-- platform_password -->
                                 <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Platform Password</span>
+                                    <span class="opacity-50 config-label-with-icon"><i class="fa-solid fa-key"></i>Platform Password</span>
                                     @php $platformPassword = $order->reorderInfo->first()->platform_password ?? 'N/A'; @endphp
                                     <div class="config-value-row">
                                         <span class="config-value-text">{{ $platformPassword }}</span>
@@ -707,7 +721,7 @@
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Domain Forwarding Destination URL</span>
+                                    <span class="opacity-50 config-label-with-icon"><i class="fa-solid fa-link"></i>Domain Forwarding Destination URL</span>
                                     @php $forwardingUrl = $order->reorderInfo->first()->forwarding_url ?? 'N/A'; @endphp
                                     <div class="config-value-row">
                                         @if($forwardingUrl !== 'N/A')
@@ -724,7 +738,7 @@
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Sending Platform</span>
+                                    <span class="opacity-50 config-label-with-icon"><i class="fa-solid fa-paper-plane"></i>Sending Platform</span>
                                     @php $sendingPlatform = $order->reorderInfo->first()->sending_platform ?? 'N/A'; @endphp
                                     <div class="config-value-row">
                                         <span class="config-value-text">{{ $sendingPlatform }}</span>
@@ -736,7 +750,7 @@
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Cold email platform - Login</span>
+                                    <span class="opacity-50 config-label-with-icon"><i class="fa-solid fa-right-to-bracket"></i>Cold email platform - Login</span>
                                     @php $sequencerLogin = $order->reorderInfo->first()->sequencer_login ?? 'N/A'; @endphp
                                     <div class="config-value-row">
                                         <span class="config-value-text">{{ $sequencerLogin }}</span>
@@ -748,7 +762,7 @@
                                 </div>
                                 <!-- Sending plateform Sequencer - Password  -->
                                 <div class="d-flex flex-column mb-3">
-                                    <span class="opacity-50">Cold email platform - Password </span>
+                                    <span class="opacity-50 config-label-with-icon"><i class="fa-solid fa-shield-halved"></i>Cold email platform - Password</span>
                                     @php $sequencerPassword = $order->reorderInfo->first()->sequencer_password ?? 'N/A'; @endphp
                                     <div class="config-value-row">
                                         <span class="config-value-text">{{ $sequencerPassword }}</span>
@@ -759,7 +773,7 @@
                                     </div>
                                 </div>
                                 <div class="d-flex flex-column">
-                                    <h6 class="config-section-heading">Domains</h6>
+                                    <h6 class="config-section-heading config-label-with-icon"><i class="fa-solid fa-earth-europe"></i>Domains</h6>
                                     @php
                                         $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
                                         $isPrivateSMTP = strtolower($providerType ?? '') === 'private smtp';
