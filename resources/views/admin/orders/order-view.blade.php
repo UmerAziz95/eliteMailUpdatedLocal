@@ -168,14 +168,67 @@
         }
 
         .master-inbox-value {
-            font-size: 18px;
-            font-weight: 700;
+            font-size: 14px;
+            font-weight: 600;
             color: #f8fafc;
-            padding: 6px 10px;
+            padding: 4px 8px;
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 8px;
             background: rgba(15, 23, 42, 0.45);
             display: inline-block;
+            line-height: 1.25;
+        }
+
+        .config-value-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0;
+        }
+
+        .config-value-text {
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .config-value-link {
+            color: #93c5fd;
+            text-decoration: none;
+            word-break: break-all;
+            font-weight: 600;
+        }
+
+        .config-value-link:hover {
+            color: #bfdbfe;
+            text-decoration: underline;
+        }
+
+        .copy-value-btn {
+            width: 18px;
+            height: 18px;
+            border-radius: 6px;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            background: rgba(15, 23, 42, 0.55);
+            color: #cbd5e1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 0;
+            margin-left: 2px;
+        }
+
+        .copy-value-btn i {
+            font-size: 10px;
+            margin-left: -6px
+        }
+
+        .copy-value-btn:hover {
+            border-color: rgba(59, 130, 246, 0.6);
+            color: #93c5fd;
+            background: rgba(30, 58, 138, 0.35);
         }
     </style>
     <section class="py-3 overflow-hidden">
@@ -610,37 +663,91 @@
                             @if (optional($order->reorderInfo)->count() > 0)
                                 <div class="d-flex flex-column mb-3">
                                     <span class="opacity-50">Hosting Platform</span>
-                                    <span>{{ $order->reorderInfo->first()->hosting_platform }}</span>
+                                    @php $hostingPlatform = $order->reorderInfo->first()->hosting_platform ?? 'N/A'; @endphp
+                                    <div class="config-value-row">
+                                        <span class="config-value-text">{{ $hostingPlatform }}</span>
+                                        <button type="button" class="copy-value-btn" data-copy-value="{{ $hostingPlatform }}"
+                                            title="Copy Hosting Platform">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">
                                     <span class="opacity-50">Platform Login</span>
-                                    <span>{{ $order->reorderInfo->first()->platform_login }}</span>
+                                    @php $platformLogin = $order->reorderInfo->first()->platform_login ?? 'N/A'; @endphp
+                                    <div class="config-value-row">
+                                        <span class="config-value-text">{{ $platformLogin }}</span>
+                                        <button type="button" class="copy-value-btn" data-copy-value="{{ $platformLogin }}"
+                                            title="Copy Platform Login">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <!-- platform_password -->
                                 <div class="d-flex flex-column mb-3">
                                     <span class="opacity-50">Platform Password</span>
-                                    <span>{{ $order->reorderInfo->first()->platform_password }}</span>
+                                    @php $platformPassword = $order->reorderInfo->first()->platform_password ?? 'N/A'; @endphp
+                                    <div class="config-value-row">
+                                        <span class="config-value-text">{{ $platformPassword }}</span>
+                                        <button type="button" class="copy-value-btn" data-copy-value="{{ $platformPassword }}"
+                                            title="Copy Platform Password">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">
                                     <span class="opacity-50">Domain Forwarding Destination URL</span>
-                                    <span>{{ $order->reorderInfo->first()->forwarding_url }}</span>
+                                    @php $forwardingUrl = $order->reorderInfo->first()->forwarding_url ?? 'N/A'; @endphp
+                                    <div class="config-value-row">
+                                        @if($forwardingUrl !== 'N/A')
+                                            <a href="{{ $forwardingUrl }}" target="_blank"
+                                                class="config-value-link">{{ $forwardingUrl }}</a>
+                                        @else
+                                            <span class="config-value-text">N/A</span>
+                                        @endif
+                                        <button type="button" class="copy-value-btn" data-copy-value="{{ $forwardingUrl }}"
+                                            title="Copy Forwarding URL">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">
                                     <span class="opacity-50">Sending Platform</span>
-                                    <span>{{ $order->reorderInfo->first()->sending_platform }}</span>
+                                    @php $sendingPlatform = $order->reorderInfo->first()->sending_platform ?? 'N/A'; @endphp
+                                    <div class="config-value-row">
+                                        <span class="config-value-text">{{ $sendingPlatform }}</span>
+                                        <button type="button" class="copy-value-btn" data-copy-value="{{ $sendingPlatform }}"
+                                            title="Copy Sending Platform">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="d-flex flex-column mb-3">
                                     <span class="opacity-50">Cold email platform - Login</span>
-                                    <span>{{ $order->reorderInfo->first()->sequencer_login }}</span>
+                                    @php $sequencerLogin = $order->reorderInfo->first()->sequencer_login ?? 'N/A'; @endphp
+                                    <div class="config-value-row">
+                                        <span class="config-value-text">{{ $sequencerLogin }}</span>
+                                        <button type="button" class="copy-value-btn" data-copy-value="{{ $sequencerLogin }}"
+                                            title="Copy Cold Email Platform Login">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <!-- Sending plateform Sequencer - Password  -->
                                 <div class="d-flex flex-column mb-3">
                                     <span class="opacity-50">Cold email platform - Password </span>
-                                    <span>{{ $order->reorderInfo->first()->sequencer_password }}</span>
+                                    @php $sequencerPassword = $order->reorderInfo->first()->sequencer_password ?? 'N/A'; @endphp
+                                    <div class="config-value-row">
+                                        <span class="config-value-text">{{ $sequencerPassword }}</span>
+                                        <button type="button" class="copy-value-btn" data-copy-value="{{ $sequencerPassword }}"
+                                            title="Copy Cold Email Platform Password">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="d-flex flex-column">
                                     <span class="opacity-50">Domains</span>
@@ -977,6 +1084,22 @@
                                         } else {
                                             toastr.warning('No email data to copy.');
                                         }
+                                    });
+
+                                    // Copy dynamic configuration values
+                                    $(document).on('click', '.copy-value-btn', function () {
+                                        const textToCopy = $(this).data('copy-value') || '';
+
+                                        if (!textToCopy) {
+                                            toastr.warning('No value to copy.');
+                                            return;
+                                        }
+
+                                        navigator.clipboard.writeText(textToCopy).then(function () {
+                                            toastr.success('Copied to clipboard');
+                                        }, function (err) {
+                                            toastr.error('Could not copy text: ' + err);
+                                        });
                                     });
 
                                     // Function declarations first
