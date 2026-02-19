@@ -2835,6 +2835,39 @@ class OrderController extends Controller
             return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
     }    /**
+     * Export SMTP CSV for a specific provider split in Instantly format
+     *
+     * @param int $orderId
+     * @param int $splitId
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function exportSmtpSplitCsv($orderId, $splitId)
+    {
+        try {
+            $order = Order::with('reorderInfo')->findOrFail($orderId);
+
+            // Validate split belongs to this order
+            $split = OrderProviderSplit::where('id', $splitId)
+                ->where('order_id', $orderId)
+                ->first();
+
+            if (!$split) {
+                return back()->with('error', 'Invalid split selected for this order.');
+            }
+
+            $exportService = app(EmailExportService::class);
+            return $exportService->exportPrivateSmtpSplitCsvInstantly($order, $splitId);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting SMTP Split CSV: ' . $e->getMessage(), [
+                'order_id' => $orderId,
+                'split_id' => $splitId
+            ]);
+            return back()->with('error', 'Error exporting split CSV: ' . $e->getMessage());
+        }
+    }
+
+    /**
          * Export CSV using existing order_emails data
          */
     private function exportCsvFromOrderEmails($splitId, $orderEmails)
@@ -4069,4 +4102,3 @@ class OrderController extends Controller
         ]);
     }
 }
-

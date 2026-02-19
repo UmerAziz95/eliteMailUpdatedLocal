@@ -985,4 +985,118 @@ class EmailExportService
             throw $e;
         }
     }
+
+    /**
+     * Export a single OrderProviderSplit in Instantly CSV format.
+     *
+     * @param object $order
+     * @param int $splitId
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function exportPrivateSmtpSplitCsvInstantly($order, $splitId)
+    {
+        try {
+            $split = OrderProviderSplit::where('id', $splitId)
+                ->where('order_id', $order->id)
+                ->first();
+
+            if (!$split) {
+                throw new \Exception('Order Provider Split not found for this order.');
+            }
+
+            $mailboxes = [];
+            $rawMailboxes = $split->mailboxes ?? [];
+
+            if (is_array($rawMailboxes) && !empty($rawMailboxes)) {
+                foreach ($rawMailboxes as $domain => $variants) {
+                    if (!is_array($variants)) {
+                        continue;
+                    }
+
+                    foreach ($variants as $mailboxData) {
+                        if (is_array($mailboxData)) {
+                            $mailboxes[] = $mailboxData;
+                        }
+                    }
+                }
+            }
+
+            if (empty($mailboxes)) {
+                throw new \Exception('No mailboxes found in the selected split.');
+            }
+
+            $filename = "order_{$order->id}_split_{$splitId}_smtp_instantly_" . date('Y-m-d_His') . ".csv";
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($mailboxes) {
+                $file = fopen('php://output', 'w');
+
+                fputcsv($file, [
+                    'Email',
+                    'First Name',
+                    'Last Name',
+                    'IMAP Username',
+                    'IMAP Password',
+                    'IMAP Host',
+                    'IMAP Port',
+                    'SMTP Username',
+                    'SMTP Password',
+                    'SMTP Host',
+                    'SMTP Port',
+                    'Daily Limit',
+                    'Warmup Enabled',
+                    'Warmup Limit',
+                    'Warmup Increment'
+                ]);
+
+                foreach ($mailboxes as $mailbox) {
+                    $email = $mailbox['mailbox'] ?? $mailbox['email'] ?? '';
+                    if (empty($email)) {
+                        continue;
+                    }
+
+                    $firstName = $mailbox['first_name'] ?? $mailbox['name'] ?? '';
+                    $lastName = $mailbox['last_name'] ?? '';
+                    $password = $mailbox['password'] ?? '';
+
+                    fputcsv($file, [
+                        $email,
+                        $firstName,
+                        $lastName,
+                        $mailbox['imap_username'] ?? $email,
+                        $mailbox['imap_password'] ?? $password,
+                        $mailbox['imap_host'] ?? '',
+                        $mailbox['imap_port'] ?? '',
+                        $mailbox['smtp_username'] ?? $email,
+                        $mailbox['smtp_password'] ?? $password,
+                        $mailbox['smtp_host'] ?? '',
+                        $mailbox['smtp_port'] ?? '',
+                        $mailbox['daily_limit'] ?? '',
+                        $mailbox['warmup_enabled'] ?? '',
+                        $mailbox['warmup_limit'] ?? '',
+                        $mailbox['warmup_increment'] ?? '',
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            Log::info('Private SMTP split Instantly CSV export initiated', [
+                'order_id' => $order->id,
+                'split_id' => $splitId,
+                'total_mailboxes' => count($mailboxes)
+            ]);
+
+            return response()->stream($callback, 200, $headers);
+        } catch (\Exception $e) {
+            Log::error('Error exporting Private SMTP split Instantly CSV: ' . $e->getMessage(), [
+                'order_id' => $order->id ?? null,
+                'split_id' => $splitId
+            ]);
+            throw $e;
+        }
+    }
 }

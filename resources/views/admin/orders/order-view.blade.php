@@ -9,6 +9,27 @@
             white-space: nowrap;
             padding: 8px 12px;
         }
+
+        .split-csv-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            height: 24px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid #198754;
+            background: #e9f7ef;
+            color: #146c43;
+            text-decoration: none;
+            line-height: 1;
+        }
+
+        .split-csv-btn:hover {
+            background: #dff3e8;
+            color: #0f5132;
+        }
     </style>
     <section class="py-3 overflow-hidden">
         {{-- <div class="d-flex align-items-center justify-content-between">
@@ -482,7 +503,26 @@
                                         {{-- Show domains from order_provider_splits with status --}}
                                         @foreach($orderProviderSplits as $split)
                                             <div class="mb-3">
-                                                <span class="badge bg-secondary mb-2">{{ ucfirst($split['provider_slug']) }}</span>
+                                                @php
+                                                    $splitMailboxCount = 0;
+                                                    if (!empty($split['mailboxes']) && is_array($split['mailboxes'])) {
+                                                        foreach ($split['mailboxes'] as $mailboxesByDomain) {
+                                                            if (is_array($mailboxesByDomain)) {
+                                                                $splitMailboxCount += count($mailboxesByDomain);
+                                                            }
+                                                        }
+                                                    }
+                                                @endphp
+                                                <div class="d-flex align-items-center gap-2 mb-2">
+                                                    <span class="badge bg-secondary">{{ ucfirst($split['provider_slug']) }}</span>
+                                                    @if(($split['id'] ?? null) && $splitMailboxCount > 0)
+                                                        <a href="{{ route('admin.orders.split.export.smtp.csv', ['orderId' => $order->id, 'splitId' => $split['id']]) }}"
+                                                            class="split-csv-btn" title="Download split CSV in Instantly format"
+                                                            target="_blank">
+                                                            <i class="fa-solid fa-download"></i> CSV
+                                                        </a>
+                                                    @endif
+                                                </div>
                                                 @foreach($split['domains'] as $domainKey => $domain)
                                                     @php
                                                         // Handle case where domain might be the key or value
