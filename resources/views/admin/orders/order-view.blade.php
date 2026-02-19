@@ -30,6 +30,153 @@
             background: #dff3e8;
             color: #0f5132;
         }
+
+        .prefix-variants-wrap {
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            background: transparent;
+            backdrop-filter: none;
+        }
+
+        .prefix-variant-card {
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 9px 10px;
+            margin-bottom: 8px;
+            box-shadow: none;
+            transition: all 0.2s ease;
+        }
+
+        .prefix-variant-card:hover {
+            border-color: rgba(59, 130, 246, 0.55);
+            box-shadow: none;
+            transform: none;
+        }
+
+        .prefix-variant-badge {
+            display: inline-flex;
+            align-items: center;
+            height: 22px;
+            padding: 0 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #e2e8f0;
+            border: 1px solid rgba(148, 163, 184, 0.26);
+            background: rgba(100, 116, 139, 0.38);
+            margin-bottom: 8px;
+        }
+
+        .pv-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+        }
+
+        .pv-item {
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 10px;
+            padding: 6px 8px;
+            background: rgba(15, 23, 42, 0.45);
+        }
+
+        .pv-label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            color: rgba(148, 163, 184, 0.95);
+            margin-bottom: 2px;
+        }
+
+        .pv-value {
+            display: block;
+            font-size: 18px;
+            line-height: 1.2;
+            font-weight: 700;
+            color: #f8fafc;
+            word-break: break-word;
+        }
+
+        @media (max-width: 767.98px) {
+            .pv-meta-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pv-value {
+                font-size: 16px;
+            }
+        }
+
+        .config-info-block {
+            margin-top: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(15, 23, 42, 0.38);
+        }
+
+        .config-info-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.45px;
+            font-weight: 700;
+            color: rgba(148, 163, 184, 0.95);
+            margin-bottom: 8px;
+        }
+
+        .config-info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.45);
+            margin-bottom: 6px;
+        }
+
+        .config-info-key {
+            font-size: 11px;
+            font-weight: 700;
+            color: #dbe7ff;
+            background: rgba(100, 116, 139, 0.35);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 999px;
+            padding: 2px 8px;
+            white-space: nowrap;
+        }
+
+        .config-info-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #f1f5f9;
+            word-break: break-all;
+        }
+
+        .config-info-link {
+            color: #93c5fd;
+            text-decoration: none;
+        }
+
+        .config-info-link:hover {
+            color: #bfdbfe;
+            text-decoration: underline;
+        }
+
+        .master-inbox-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #f8fafc;
+            padding: 6px 10px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.45);
+            display: inline-block;
+        }
     </style>
     <section class="py-3 overflow-hidden">
         {{-- <div class="d-flex align-items-center justify-content-between">
@@ -259,8 +406,8 @@
         <div class="tab-content mt-3" id="myTabContent">
             <div class="tab-pane fade show active" id="configuration-tab-pane" role="tabpanel"
                 aria-labelledby="configuration-tab" tabindex="0">
-                <div class="row">
-                    <div class="col-md-6">
+                <div class="row align-items-stretch">
+                    <div class="col-md-6 d-flex flex-column">
                         <div class="card p-3 mb-3">
                             <h6 class="d-flex align-items-center justify-content-between gap-2">
                                 <div class="d-flex align-items-center gap-2">
@@ -331,56 +478,59 @@
                                                                                 }
                                                                             @endphp
 
-                                                                            @for($i = 1; $i <= $inboxesPerDomain; $i++)
-                                                                                @php
-                                                                                    $variantKey = "prefix_variant_$i";
-                                                                                    $variantValue = $prefixVariants[$variantKey] ?? 'N/A';
-                                                                                    $variantDetails = $order->reorderInfo->first()->prefix_variants_details[$variantKey] ?? null;
-                                                                                    $firstName = $variantDetails['first_name'] ?? 'N/A';
-                                                                                    $lastName = $variantDetails['last_name'] ?? 'N/A';
-                                                                                @endphp
-                                                                                <div class="border rounded p-2 mb-2" style="background-color: rgba(255,255,255,0.03);">
-                                                                                    <div class="d-flex align-items-center mb-1">
-                                                                                        <span class="badge bg-secondary me-2">Variant {{ $i }}</span>
+                                                                            <div class="prefix-variants-wrap">
+                                                                                @for($i = 1; $i <= $inboxesPerDomain; $i++)
+                                                                                    @php
+                                                                                        $variantKey = "prefix_variant_$i";
+                                                                                        $variantValue = $prefixVariants[$variantKey] ?? 'N/A';
+                                                                                        $variantDetails = $order->reorderInfo->first()->prefix_variants_details[$variantKey] ?? null;
+                                                                                        $firstName = $variantDetails['first_name'] ?? 'N/A';
+                                                                                        $lastName = $variantDetails['last_name'] ?? 'N/A';
+                                                                                    @endphp
+                                                                                    <div class="prefix-variant-card">
+                                                                                        <span class="prefix-variant-badge">Variant {{ $i }}</span>
+                                                                                        <div class="pv-meta-grid">
+                                                                                            <div class="pv-item">
+                                                                                                <span class="pv-label">Prefix</span>
+                                                                                                <span class="pv-value">{{ $variantValue }}</span>
+                                                                                            </div>
+                                                                                            <div class="pv-item">
+                                                                                                <span class="pv-label">First Name</span>
+                                                                                                <span class="pv-value">{{ $firstName }}</span>
+                                                                                            </div>
+                                                                                            <div class="pv-item">
+                                                                                                <span class="pv-label">Last Name</span>
+                                                                                                <span class="pv-value">{{ $lastName }}</span>
+                                                                                            </div>
+                                                                                        </div>
                                                                                     </div>
-                                                                                    <div class="row">
-                                                                                        <div class="col-4">
-                                                                                            <small class="opacity-50 d-block">Prefix</small>
-                                                                                            <span>{{ $variantValue }}</span>
-                                                                                        </div>
-                                                                                        <div class="col-4">
-                                                                                            <small class="opacity-50 d-block">First Name</small>
-                                                                                            <span>{{ $firstName }}</span>
-                                                                                        </div>
-                                                                                        <div class="col-4">
-                                                                                            <small class="opacity-50 d-block">Last Name</small>
-                                                                                            <span>{{ $lastName }}</span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            @endfor
+                                                                                @endfor
+                                                                            </div>
                                                                         </div>
-                                                                        <div class="d-flex flex-column mt-3">
-                                                                            <span class="opacity-50">Profile Picture URLs</span>
+                                                                        <div class="config-info-block">
+                                                                            <div class="config-info-title">Profile Picture URLs</div>
                                                                             @if($order->reorderInfo->first()->prefix_variants_details)
                                                                                 @foreach($order->reorderInfo->first()->prefix_variants_details as $key => $variant)
-                                                                                    <div class="mt-1">
-                                                                                        <strong>{{ ucfirst(str_replace('_', ' ', $key)) }}:</strong>
+                                                                                    <div class="config-info-item">
+                                                                                        <span class="config-info-key">{{ ucfirst(str_replace('_', ' ', $key)) }}</span>
                                                                                         @if(!empty($variant['profile_link']))
-                                                                                            <a href="{{ $variant['profile_link'] }}"
-                                                                                                target="_blank">{{ $variant['profile_link'] }}</a>
+                                                                                            <a href="{{ $variant['profile_link'] }}" target="_blank"
+                                                                                                class="config-info-value config-info-link">{{ $variant['profile_link'] }}</a>
                                                                                         @else
-                                                                                            <span>N/A</span>
+                                                                                            <span class="config-info-value">N/A</span>
                                                                                         @endif
                                                                                     </div>
                                                                                 @endforeach
                                                                             @else
-                                                                                <span>N/A</span>
+                                                                                <div class="config-info-item">
+                                                                                    <span class="config-info-key">Default</span>
+                                                                                    <span class="config-info-value">N/A</span>
+                                                                                </div>
                                                                             @endif
                                                                         </div>
-                                                                        <div class="d-flex flex-column mt-3">
-                                                                            <span class="opacity-50">Master Inbox Email</span>
-                                                                            <span>{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
+                                                                        <div class="config-info-block">
+                                                                            <div class="config-info-title">Master Inbox Email</div>
+                                                                            <span class="master-inbox-value">{{ $order->reorderInfo->first()->master_inbox_email ?? 'N/A' }}</span>
                                                                         </div>
                             @else
                                 <div class="text-muted">No email configuration data available</div>
@@ -447,8 +597,8 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="card p-3 overflow-y-auto" style="max-height: 30rem">
+                    <div class="col-md-6 d-flex">
+                        <div class="card p-3 h-100 w-100">
                             <h6 class="d-flex align-items-center gap-2">
                                 <div class="d-flex align-items-center justify-content-center"
                                     style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
