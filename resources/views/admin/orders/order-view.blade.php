@@ -705,10 +705,10 @@
                                                                     // Build Structured HTML for this mailbox
                                                                     $mailboxItemsHtml .= "
                                                                                                                                                                                                                                         <div class='mailbox-item'>
-                                                                                                                                                                                                                                            <span class='mb-email'>$email</span>
-                                                                                                                                                                                                                                            <div class='mb-detail-row'><span class='mb-label'>Pwd:</span> <span class='mb-value'>$password</span></div>
-                                                                                                                                                                                                                                            <div class='mb-detail-row'><span class='mb-label'>SMTP:</span> <span class='mb-value'>$smtpHost:$smtpPort</span></div>
-                                                                                                                                                                                                                                            <div class='mb-detail-row'><span class='mb-label'>IMAP:</span> <span class='mb-value'>$imapHost:$imapPort</span></div>
+                                                                                                                                                                                                                                            <span class='mb-email'><i class='fa-solid fa-envelope mb-icon'></i>$email</span>
+                                                                                                                                                                                                                                            <div class='mb-detail-row'><span class='mb-label'><i class='fa-solid fa-key mb-icon'></i>Pwd:</span> <span class='mb-value'>$password</span></div>
+                                                                                                                                                                                                                                            <div class='mb-detail-row'><span class='mb-label'><i class='fa-solid fa-paper-plane mb-icon'></i>SMTP:</span> <span class='mb-value'>$smtpHost:$smtpPort</span></div>
+                                                                                                                                                                                                                                            <div class='mb-detail-row'><span class='mb-label'><i class='fa-solid fa-inbox mb-icon'></i>IMAP:</span> <span class='mb-value'>$imapHost:$imapPort</span></div>
                                                                                                                                                                                                                                         </div>";
 
                                                                     // Build Copy Data (readable multiline format)
@@ -726,7 +726,7 @@
                                                         $tooltipContent = "
                                                                                                     <div class='tooltip-content-wrapper'>
                                                                                                         <div class='tooltip-header'>
-                                                                                                            <span>Mailbox Details</span>
+                                                                                                            <span><i class='fa-solid fa-layer-group me-1'></i> Mailbox Details</span>
                                                                                                             <span class='badge'>$mailboxCount Accounts</span>
                                                                                                         </div>
                                                                                                         <div class='tooltip-body'>
@@ -1856,21 +1856,21 @@
     @push('styles')
         <style>
             .modern-mail-tooltip {
-                --bs-tooltip-bg: #fff;
-                --bs-tooltip-color: #333;
+                --bs-tooltip-bg: #1f2647;
+                --bs-tooltip-color: #dbe7ff;
                 --bs-tooltip-opacity: 1;
                 --bs-tooltip-padding-x: 0;
                 --bs-tooltip-padding-y: 0;
                 --bs-tooltip-max-width: 400px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                box-shadow: 0 10px 28px rgba(2, 6, 23, 0.45);
                 border-radius: 12px;
-                border: 1px solid rgba(0, 0, 0, 0.05);
+                border: 1px solid rgba(59, 130, 246, 0.25);
                 pointer-events: auto;
             }
 
             .modern-mail-tooltip .tooltip-inner {
-                background-color: #fff;
-                color: #444;
+                background-color: #1f2647;
+                color: #dbe7ff;
                 border-radius: 12px;
                 padding: 0;
                 text-align: left;
@@ -1887,7 +1887,6 @@
 
             .tooltip-header {
                 background: var(--second-primary);
-                background: linear-gradient(135deg, #6a5cff 0%, var(--second-primary) 55%, #3f32e3 100%);
                 color: #f8fafc;
                 padding: 12px 15px;
                 font-weight: 700;
@@ -1899,15 +1898,11 @@
                 border-bottom: 1px solid rgba(255, 255, 255, 0.14);
                 position: relative;
                 overflow: hidden;
-                box-shadow: 0 8px 24px rgba(74, 58, 255, 0.32);
+                box-shadow: none;
             }
 
             .tooltip-header::after {
-                content: '';
-                position: absolute;
-                inset: 0;
-                background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 52%);
-                pointer-events: none;
+                content: none;
             }
 
             .tooltip-header>* {
@@ -1927,6 +1922,7 @@
                 max-height: 300px;
                 overflow-y: auto;
                 padding: 5px 0;
+                background: #1f2647;
             }
 
             /* Custom Scrollbar for tooltip */
@@ -1935,21 +1931,21 @@
             }
 
             .tooltip-body::-webkit-scrollbar-track {
-                background: #f1f1f1;
+                background: rgba(148, 163, 184, 0.16);
             }
 
             .tooltip-body::-webkit-scrollbar-thumb {
-                background: #ccc;
+                background: rgba(148, 163, 184, 0.45);
                 border-radius: 3px;
             }
 
             .tooltip-body::-webkit-scrollbar-thumb:hover {
-                background: #aaa;
+                background: rgba(148, 163, 184, 0.65);
             }
 
             .mailbox-item {
                 padding: 10px 15px;
-                border-bottom: 1px solid #f0f0f0;
+                border-bottom: 1px solid rgba(148, 163, 184, 0.2);
                 transition: background-color 0.2s;
             }
 
@@ -1958,36 +1954,51 @@
             }
 
             .mailbox-item:hover {
-                background-color: #f9fbfd;
+                background-color: rgba(59, 130, 246, 0.1);
             }
 
             .mb-email {
                 font-weight: 600;
-                color: #2c3e50;
+                color: #e2e8f0;
                 font-size: 0.95rem;
                 margin-bottom: 4px;
-                display: block;
+                display: flex;
+                align-items: center;
             }
 
             .mb-detail-row {
                 display: flex;
+                align-items: center;
+                gap: 8px;
                 font-size: 0.8rem;
-                color: #666;
+                color: #cbd5e1;
                 margin-bottom: 2px;
                 font-family: 'Consolas', 'Monaco', monospace;
             }
 
             .mb-label {
-                width: 50px;
-                min-width: 50px;
+                display: inline-flex;
+                align-items: center;
+                width: 76px;
+                min-width: 76px;
                 font-weight: 600;
-                color: #888;
+                color: #93c5fd;
                 user-select: none;
+                white-space: nowrap;
             }
 
             .mb-value {
-                color: #333;
+                flex: 1;
+                color: #e5edff;
                 word-break: break-all;
+            }
+
+            .mb-icon {
+                font-size: 0.74rem;
+                width: 14px;
+                text-align: center;
+                margin-right: 4px;
+                opacity: 0.9;
             }
         </style>
     @endpush
