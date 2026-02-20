@@ -379,12 +379,18 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
                             }
                         }
                     }
+                    $externalOrderId = $split->external_order_id;
+                    $split->update([
+                        'external_order_id' => null,
+                        'client_order_id' => null,
+                        'order_status' => null,
+                    ]);
                     Log::info("PremiumInboxes order cancelled successfully", [
                         'action' => 'delete_mailboxes_from_split',
                         'provider' => 'premiuminboxes',
                         'order_id' => $order->id,
                         'split_id' => $split->id,
-                        'external_order_id' => $split->external_order_id,
+                        'external_order_id' => $externalOrderId,
                         'cancelled_inbox_count' => $cancelledInboxCount,
                     ]);
                     ActivityLogService::log(
@@ -395,7 +401,7 @@ class PremiuminboxesProviderService implements SmtpProviderInterface
                             'order_id' => $order->id,
                             'split_id' => $split->id,
                             'provider' => 'premiuminboxes',
-                            'external_order_id' => $split->external_order_id,
+                            'external_order_id' => $externalOrderId,
                             'cancelled_inbox_count' => $cancelledInboxCount,
                         ]
                     );
