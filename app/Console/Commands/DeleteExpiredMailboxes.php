@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Subscription;
 use App\Models\Order;
 use App\Models\OrderEmail;
+use App\Models\OrderPanel;
 use App\Services\OrderCancelledService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +26,7 @@ class DeleteExpiredMailboxes extends Command
      *
      * @var string
      */
-    protected $description = 'Delete Mailin.ai mailboxes for EOBC cancelled subscriptions that have reached their end date';
+    protected $description = 'Delete Mailin.ai mailboxes for EOBC cancelled subscriptions that have reached their end date (Private SMTP + Google/365)';
 
     /**
      * Execute the console command.
@@ -163,6 +164,103 @@ class DeleteExpiredMailboxes extends Command
                 'total_subscriptions' => $expiredSubscriptions->count(),
                 'processed_count' => $processedCount,
                 'skipped_count' => $skippedCount,
+            ]);
+
+            // ──────────────────────────────────────────────────────────────
+            // SECTION 2: Google / Microsoft 365 orders
+            // These use order_panels instead of order_emails for mailbox tracking
+            // ──────────────────────────────────────────────────────────────
+            $this->info('');
+            $this->info('--- Processing Google/365 expired EOBC orders ---');
+
+            $expiredGoogle365Subscriptions = Subscription::where('subscriptions.status', 'cancelled')
+                ->where('subscriptions.is_cancelled_force', false)
+                ->whereNotNull('subscriptions.end_date')
+                ->where('subscriptions.end_date', '<=', now())
+                ->join('orders', 'orders.chargebee_subscription_id', '=', 'subscriptions.chargebee_subscription_id')
+                ->whereIn('orders.provider_type', ['Google', 'Microsoft 365'])
+                ->whereExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('order_panels')
+                        ->whereColumn('order_panels.order_id', 'orders.id');
+                })
+                ->select('subscriptions.*')
+                ->distinct()
+                ->with('order')
+                ->get();
+
+            $this->info("Found {$expiredGoogle365Subscriptions->count()} expired Google/365 EOBC subscriptions.");
+
+            Log::channel('mailin-ai')->info('Found expired Google/365 EOBC subscriptions for mailbox deletion', [
+                'action' => 'delete_expired_mailboxes_google365',
+                'count' => $expiredGoogle365Subscriptions->count(),
+                'subscription_ids' => $expiredGoogle365Subscriptions->pluck('id')->toArray(),
+            ]);
+
+            $google365ProcessedCount = 0;
+            $google365SkippedCount = 0;
+
+            foreach ($expiredGoogle365Subscriptions as $subscription) {
+                try {
+                    $order = $subscription->order;
+
+                    if (!$order) {
+                        $this->warn("No order found for subscription ID: {$subscription->id}");
+                        Log::channel('mailin-ai')->warning('No order found for expired Google/365 subscription', [
+                            'action' => 'delete_expired_mailboxes_google365',
+                            'subscription_id' => $subscription->id,
+                            'chargebee_subscription_id' => $subscription->chargebee_subscription_id,
+                        ]);
+                        $google365SkippedCount++;
+                        continue;
+                    }
+
+                    // Double-check: Verify order_panels still exist
+                    $hasPanels = OrderPanel::where('order_id', $order->id)->exists();
+
+                    if (!$hasPanels) {
+                        $this->info("Skipping order #{$order->id} - no panels found (already deleted)");
+                        Log::channel('mailin-ai')->info('Skipping Google/365 order - panels already deleted', [
+                            'action' => 'delete_expired_mailboxes_google365',
+                            'order_id' => $order->id,
+                            'subscription_id' => $subscription->id,
+                        ]);
+                        $google365SkippedCount++;
+                        continue;
+                    }
+
+                    $this->info("Processing Google/365 order #{$order->id} for subscription #{$subscription->id} (end_date: {$subscription->end_date})");
+
+                    $cancelledService->deleteOrderMailboxes($order);
+
+                    $google365ProcessedCount++;
+
+                    Log::channel('mailin-ai')->info('Successfully processed expired Google/365 subscription for mailbox deletion', [
+                        'action' => 'delete_expired_mailboxes_google365',
+                        'order_id' => $order->id,
+                        'subscription_id' => $subscription->id,
+                        'end_date' => $subscription->end_date,
+                    ]);
+
+                } catch (\Exception $e) {
+                    $this->error("Error processing Google/365 subscription #{$subscription->id}: " . $e->getMessage());
+                    Log::channel('mailin-ai')->error('Error processing expired Google/365 subscription for mailbox deletion', [
+                        'action' => 'delete_expired_mailboxes_google365',
+                        'subscription_id' => $subscription->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                    $google365SkippedCount++;
+                }
+            }
+
+            $this->info("Google/365: Processed: {$google365ProcessedCount}, Skipped: {$google365SkippedCount}");
+
+            Log::channel('mailin-ai')->info('Google/365 expired mailbox deletion completed', [
+                'action' => 'delete_expired_mailboxes_google365',
+                'total_subscriptions' => $expiredGoogle365Subscriptions->count(),
+                'processed_count' => $google365ProcessedCount,
+                'skipped_count' => $google365SkippedCount,
             ]);
 
             return 0;
