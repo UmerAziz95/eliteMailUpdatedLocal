@@ -419,7 +419,7 @@ class OrderCancelledService
                 // Dispatch job for Google/365 orders (batch processing)
                 \App\Jobs\MailinAi\DeleteGoogle365MailboxesJob::dispatch(
                     $order->id,
-                    50, // batch size
+                    10, // batch size (keep small to avoid worker timeouts on large orders)
                     0    // offset
                 );
                 
