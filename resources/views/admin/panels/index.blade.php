@@ -74,6 +74,11 @@
         margin-bottom: 1rem;
     }
 
+    .counters {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
     /* Loading state styling */
     #loadingState {
         width: 100%;
@@ -325,50 +330,6 @@
 .modal-header .btn-close {
     filter: invert(1);
 }
-/* Panel Reassignment Styles */
-.panel-option {
-    transition: all 0.2s ease;
-    border: 2px solid transparent !important;
-}
-
-.panel-option:hover:not(.bg-light) {
-    background-color: rgba(13, 110, 253, 0.05) !important;
-    border-color: #0d6efd !important;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.panel-option.border-primary {
-    border-color: #0d6efd !important;
-    background-color: rgba(13, 110, 253, 0.1) !important;
-}
-
-.panel-option.bg-light {
-    opacity: 0.7;
-}
-
-.panel-option .badge {
-    font-size: 0.7em;
-}
-
-#reassignPanelModal .modal-body {
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-#availablePanelsContainer {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.reassign-panel-info {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-
     .card {
         overflow: hidden
     }
@@ -471,7 +432,6 @@
             </div>
             
             <form id="panelForm" class="">
-
                 <div class="mb-3" id="nextPanelIdContainer">
                     <label for="panel_id">Panel ID:</label>
                     <input type="text" class="form-control" id="panel_id" name="panel_id" value="" readonly>
@@ -479,11 +439,29 @@
                 <label for="panel_title">Panel title: <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="panel_title" name="panel_title" value="" required maxlength="255">
 
+                @php
+                    $providerOptions = $providerTypes ?? ['Google', 'Microsoft 365'];
+                    $selectedProviderType = $defaultProviderType ?? ($providerOptions[0] ?? null);
+                    $capacityMap = $providerCapacities ?? [];
+                    $selectedCapacity = $selectedProviderType && isset($capacityMap[$selectedProviderType])
+                        ? $capacityMap[$selectedProviderType]
+                        : env('PANEL_CAPACITY', 1790);
+                @endphp
+                <label for="provider_type" class="mt-3">Provider Type: <span class="text-danger">*</span></label>
+                <select class="form-control mb-3" id="provider_type" name="provider_type" required>
+                    <option value="" disabled {{ $selectedProviderType ? '' : 'selected' }}>Select provider</option>
+                    @foreach($providerOptions as $provider)
+                        <option value="{{ $provider }}" {{ $selectedProviderType === $provider ? 'selected' : '' }}>
+                            {{ $provider }}
+                        </option>
+                    @endforeach
+                </select>
+
                 <label for="panel_description" class="mt-3">Panel Description:</label>
                 <input type="text" class="form-control mb-3" id="panel_description" name="panel_description" value="">
 
                 <label for="panel_limit">Limit: <span class="text-danger">*</span></label>
-                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{env('PANEL_CAPACITY', 1790)}}" required min="1" readonly>
+                <input type="number" class="form-control mb-3" id="panel_limit" name="panel_limit" value="{{ $selectedCapacity }}" required min="1" readonly>
 
                 <label for="panel_status">Status:</label>
                 <select class="form-control mb-3" name="panel_status" id="panel_status" required>
@@ -499,172 +477,9 @@
             </form>
         </div>
     </div>
-    <div class="offcanvas offcanvas-start" style="min-width: 70%;  background-color: var(--filter-color); backdrop-filter: blur(5px); border: 3px solid var(--second-primary);" tabindex="-1" id="secondOffcanvas" aria-labelledby="secondOffcanvasLabel">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="secondOffcanvasLabel">Order Awaited Panel Allocation</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-            <div class="counters mb-3">
-                <div class="p-3 filter">
-                    <div>
-                        <div class="d-flex align-items-start justify-content-between">
-                            <div class="content-left">
-                                <h6 class="text-heading">Number of Orders</h6>
-                                <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2 fs-2" id="orders_counter">0</h4>
-                                    <p class="text-success mb-0"></p>
-                                </div>
-                                <small class="mb-0"></small>
-                            </div>
-                            <div class="avatar">
-                                <i class="fa-brands fa-first-order fs-2"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-3 filter">
-                    <div>
-                        <div class="d-flex align-items-start justify-content-between">
-                            <div class="content-left">
-                                <h6 class="text-heading">Number of Inboxes</h6>
-                                <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2 fs-2" id="inboxes_counter">0</h4>
-                                    <p class="text-success mb-0"></p>
-                                </div>
-                                <small class="mb-0"></small>
-                            </div>
-                            <div class="avatar">
-                                <i class="fa-solid fa-inbox fs-2"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-3 filter">
-                    <div>
-                        <div class="d-flex align-items-start justify-content-between">
-                            <div class="content-left">
-                                <h6 class="text-heading">Panels Required</h6>
-                                <div class="d-flex align-items-center my-1">
-                                    <h4 class="mb-0 me-2 fs-2" id="panels_counter">0</h4>
-                                    <p class="text-success mb-0"></p>
-                                </div>
-                                <small class="mb-0"></small>
-                            </div>
-                            <div class="avatar">
-                                <i class="fa-solid fa-solar-panel fs-2"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table id="myTable" class="w-100 display">
-                    <thead style="position: sticky; top: 0;">
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Date</th>
-                            <th>Plan</th>
-                            <th>Domain URL</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="overflow-y-auto" id="orderTrackingTableBody">
-                        <!-- Dynamic data will be loaded here -->
-                    </tbody>
-                    
-                </table>
-            </div>
-        </div>
-    </div>
+    <x-panel.order-awaiting-offcanvas />
         <!-- Panel Capacity Alert -->
-        @php
-            // Get panel capacity alert data using the same logic as the AJAX endpoint
-            $pendingOrders = \App\Models\OrderTracking::where('status', 'pending')
-                ->whereNotNull('total_inboxes')
-                ->where('total_inboxes', '>', 0)
-                ->get();
-            
-            $insufficientSpaceOrders = [];
-            $totalPanelsNeeded = 0;
-            $panelCapacity = env('PANEL_CAPACITY', 1790);
-            $maxSplitCapacity = env('MAX_SPLIT_CAPACITY', 358);
-            
-            // Helper function to get available panel space for specific order
-            $getAvailablePanelSpaceForOrder = function(int $orderSize, int $inboxesPerDomain) use ($panelCapacity, $maxSplitCapacity) {
-                if ($orderSize >= $panelCapacity) {
-                    // For large orders, prioritize full capacity panels
-                    $fullCapacityPanels = \App\Models\Panel::where('is_active', 1)
-                                                ->where('limit', $panelCapacity)
-                                                ->where('remaining_limit', '>=', $inboxesPerDomain)
-                                                ->get();
-                    
-                    $fullCapacitySpace = 0;
-                    foreach ($fullCapacityPanels as $panel) {
-                        $fullCapacitySpace += min($panel->remaining_limit, $maxSplitCapacity);
-                    }
-                    
-                    return $fullCapacitySpace;
-                    
-                } else {
-                    // For smaller orders, use any panel with remaining space that can accommodate at least one domain
-                    $availablePanels = \App\Models\Panel::where('is_active', 1)
-                                            ->where('limit', $panelCapacity)
-                                            ->where('remaining_limit', '>=', $inboxesPerDomain)
-                                            ->get();
-                    
-                    $totalSpace = 0;
-                    foreach ($availablePanels as $panel) {
-                        $totalSpace += min($panel->remaining_limit, $maxSplitCapacity);
-                    }
-                    
-                    return $totalSpace;
-                }
-            };
-            
-            foreach ($pendingOrders as $order) {
-                // Get inboxes per domain from order details or use default
-                $inboxesPerDomain = $order->inboxes_per_domain ?? 1;
-                
-                // Calculate available space for this order based on logic
-                $availableSpace = $getAvailablePanelSpaceForOrder(
-                    $order->total_inboxes, 
-                    $inboxesPerDomain
-                );
-                
-                if ($order->total_inboxes > $availableSpace) {
-                    // Calculate panels needed for this order (same logic as Console Command)
-                    $panelsNeeded = ceil($order->total_inboxes / $maxSplitCapacity);
-                    $insufficientSpaceOrders[] = $order;
-                    $totalPanelsNeeded += $panelsNeeded;
-                }
-            }
-            
-            // Adjust total panels needed based on available panels (same logic as Console Command)
-            $availablePanelCount = \App\Models\Panel::where('is_active', true)
-                ->where('limit', $panelCapacity)
-                ->where('remaining_limit', '>=', $maxSplitCapacity)
-                ->count();
-            
-            $adjustedPanelsNeeded = max(0, $totalPanelsNeeded - $availablePanelCount);
-        @endphp
-
-        @if($adjustedPanelsNeeded > 0)
-        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
-            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
-            <i class="ti ti-server me-2 alert-icon"></i>
-            <strong>Panel Capacity Alert:</strong>
-            {{ $adjustedPanelsNeeded }} new panel{{ $adjustedPanelsNeeded != 1 ? 's' : '' }} required for {{ count($insufficientSpaceOrders) }} pending order{{ count($insufficientSpaceOrders) != 1 ? 's' : '' }}.
-            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
-            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
-                aria-label="Close"></button>
-        </div>
-        @endif
-
+        <x-panel.panel-capacity-alert />
         <div class="counters mb-3">
             <div class="card p-3 counter_1">
                 <div>
@@ -673,9 +488,16 @@
                             <h6 class="text-heading">Total Panels</h6>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2 fs-2" id="total_counter">0</h4>
-                                <p class="text-success mb-0"></p>
                             </div>
-                            <small class="mb-0"></small>
+                            <small class="mb-0 d-flex align-items-center gap-2">
+                                <span class="text-success">
+                                    <span class="fw-semibold" id="active_panels_counter">0</span> active
+                                </span>
+                                <span class="text-muted">•</span>
+                                <span class="text-warning">
+                                    <span class="fw-semibold" id="archived_panels_counter">0</span> archived
+                                </span>
+                            </small>
                         </div>
                         <div class="avatar">
                             <i class="fa-solid fa-solar-panel fs-2"></i>
@@ -690,7 +512,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Available Capacity</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2" id="active_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="available_capacity_counter">0</h4>
                                 <p class="text-danger mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -709,26 +531,7 @@
                         <div class="content-left">
                             <h6 class="text-heading">Used Capacity</h6>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2" id="used_counter">0</h4>
-                                <p class="text-success mb-0"></p>
-                            </div>
-                            <small class="mb-0"></small>
-                        </div>
-                        <div class="avatar">
-                            <i class="fa-solid fa-solar-panel fs-2"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-    
-            <div class="card p-3 counter_2">
-                <div>
-                    <!-- {{-- //card body --}} -->
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <h6 class="text-heading">Closed Panels</h6>
-                            <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2 fs-2" id="closed_counter">0</h4>
+                                <h4 class="mb-0 me-2 fs-2" id="used_capacity_counter">0</h4>
                                 <p class="text-success mb-0"></p>
                             </div>
                             <small class="mb-0"></small>
@@ -814,6 +617,14 @@
                 </button>
             </li>
         </ul>
+        <div class="d-flex align-items-center">
+        {{-- Provider Type Filter Dropdown --}}
+        <select class="form-select form-select-sm me-2" id="providerTypeFilter" style="width: auto; min-width: 180px;"
+                onchange="filterByProviderType()">
+            <option value="all">All Providers</option>
+            <option value="Google">Google</option>
+            <option value="Microsoft 365">Microsoft 365</option>
+        </select>
         
         {{-- create panel button --}}
         <button type="button" class="btn btn-primary btn-sm border-0 px-3" 
@@ -821,18 +632,48 @@
             <i class="fa-solid fa-plus me-2"></i>
             Create New Panel
         </button>
-    </div>
-    <!-- Grid Cards (Dynamic) -->
-    <div id="panelsContainer"
-        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
-        <!-- Loading state -->
-        <div id="loadingState"
-            style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-2 mb-0">Loading panels...</p>
         </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loadingState"
+        style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 mb-0">Loading panels...</p>
+    </div>
+
+    <!-- Google Panels Section -->
+    <div id="googlePanelsSection" style="display: none;">
+        <div class="d-flex align-items-center mb-3">
+            <i class="fab fa-google me-2 text-danger" style="font-size: 1.5rem;"></i>
+            <h5 class="mb-0">Google Panels</h5>
+            <span class="badge bg-primary ms-2 d-none" id="googlePanelsCount">0</span>
+        </div>
+        <div id="googlePanelsContainer"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        </div>
+    </div>
+
+    <!-- Microsoft 365 Panels Section -->
+    <div id="microsoftPanelsSection" style="display: none;">
+        <div class="d-flex align-items-center mb-3">
+            <i class="fab fa-microsoft me-2 text-info" style="font-size: 1.5rem;"></i>
+            <h5 class="mb-0">Microsoft 365 Panels</h5>
+            <span class="badge bg-primary ms-2 d-none" id="microsoftPanelsCount">0</span>
+        </div>
+        <div id="microsoftPanelsContainer"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
+        </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" style="display: none; text-align: center; padding: 3rem 0; min-height: 300px;">
+        <i class="fas fa-inbox text-muted mb-3" style="font-size: 3rem;"></i>
+        <h5>No Panels Found</h5>
+        <p class="mb-3">No panels match your current filters.</p>
+        <button class="btn btn-outline-primary" onclick="resetFilters()">Clear Filters</button>
     </div>
 
 
@@ -880,228 +721,147 @@
 </div>
 
 <!-- Panel Reassignment Modal -->
-<div class="modal fade" id="reassignPanelModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="reassignModalLabel">Reassign Panel</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Panel Reassignment:</strong> Select a target panel within the same order to reassign the split(s) to. 
-                        This will move all domains and capacity from the current panel to the selected panel.
-                    </div>
-                </div>
-                <!-- Loading State -->
-                <div id="reassignLoader" class="text-center py-4" style="display: none;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2">Loading available panels...</p>
-                </div>
-                
-                <!-- Available Panels Container -->
-                <div id="availablePanelsContainer"></div>
-                
-                <!-- Reassignment Reason -->
-                <div class="mt-3" style="display: none;" id="reassignReasonContainer">
-                    <label for="reassignReason" class="form-label">Reason for reassignment (optional)</label>
-                    <textarea class="form-control" id="reassignReason" rows="3" placeholder="Enter reason for reassignment..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmReassignBtn" disabled onclick="confirmReassignment()">
-                    <i class="fas fa-exchange-alt me-1"></i>Select Panel First
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+<x-panel.reassign-modal />
+@include('components.order.change-provider-type')
 
 @endsection
 
 @push('scripts')
 <script>
     // Pass PHP values to JavaScript
-    const PANEL_CAPACITY = {{ env('PANEL_CAPACITY', 1790) }};
+    const PANEL_CAPACITY_FALLBACK = {{ env('PANEL_CAPACITY', 1790) }};
+    const DEFAULT_PROVIDER_TYPE = @json($selectedProviderType ?? 'Google');
+    const PROVIDER_OPTIONS = @json($providerOptions ?? ['Google', 'Microsoft 365']);
+    const PROVIDER_CAPACITIES = @json($capacityMap ?? []);
 
 
-    document.getElementById("openSecondOffcanvasBtn").addEventListener("click", function () {
-        const secondOffcanvasElement = document.getElementById("secondOffcanvas");
-        const secondOffcanvas = new bootstrap.Offcanvas(secondOffcanvasElement, {
-            backdrop: false, // no backdrop to prevent it from dismissing others
-            scroll: true     // allows scrolling while multiple are open
-        });
-        secondOffcanvas.show();
-        // Initialize DataTable when offcanvas is shown
-        setTimeout(function() {
-            initializeOrderTrackingTable();
-        }, 300); // Small delay to ensure offcanvas is fully shown
-    });
+    const PROVIDER_BADGE_MAP = {
+        'Google': { className: 'bg-danger text-white', icon: 'fab fa-google' },
+        'Microsoft 365': { className: 'bg-primary text-white', icon: 'fab fa-microsoft' },
+        'Private SMTP': { className: 'bg-success text-white', icon: 'fas fa-lock' },
+    };
+
+    function getCapacityForProvider(providerType) {
+        if (providerType && Object.prototype.hasOwnProperty.call(PROVIDER_CAPACITIES, providerType)) {
+            const capacity = Number(PROVIDER_CAPACITIES[providerType]);
+            if (!Number.isNaN(capacity) && capacity > 0) {
+                return capacity;
+            }
+        }
+        return PANEL_CAPACITY_FALLBACK;
+    }
+
+    function getProviderBadge(providerType) {
+        if (!providerType) {
+            return '';
+        }
+
+        const config = PROVIDER_BADGE_MAP[providerType] || { className: 'bg-secondary text-white', icon: 'fas fa-globe' };
+        return `
+            <span class="badge ${config.className} ms-2 d-inline-flex align-items-center gap-1">
+                <i class="${config.icon}"></i>
+            </span>
+        `;
+    }
 
     // Fetch next panel ID when panelFormOffcanvas is opened
     // document.getElementById('panelFormOffcanvas').addEventListener('shown.bs.offcanvas', function () {
         
     // });
 
-    function fetchNextPanelId() {
-        // Show SweetAlert loading dialog
-        Swal.fire({
-            title: 'Fetching Panel ID',
-            text: 'Please wait...',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
+    // Filter panels by provider type
+    function filterByProviderType() {
+        const selectedProvider = document.getElementById('providerTypeFilter').value;
+        
+        // Store the current filter
+        window.currentProviderFilter = selectedProvider;
+        
+        // Add provider type filter to current filters
+        if (selectedProvider !== 'all') {
+            currentFilters.provider_type = selectedProvider;
+        } else {
+            delete currentFilters.provider_type;
+        }
+        
+        // Reset pagination and reload panels
+        currentPage = 1;
+        loadPanels(currentFilters, 1, false);
+    }
 
-        fetch('/admin/panels/next-id')
-            .then(response => response.json())
+    function fetchNextPanelId(options = {}) {
+        const { showOffcanvas = true, showLoader = true } = options;
+        const providerTypeField = document.getElementById('provider_type');
+        const providerTypeValue = providerTypeField && providerTypeField.value
+            ? providerTypeField.value
+            : DEFAULT_PROVIDER_TYPE;
+        const query = new URLSearchParams({
+            provider_type: providerTypeValue || DEFAULT_PROVIDER_TYPE,
+        });
+        const panelLimitInput = document.getElementById('panel_limit');
+
+        if (showLoader) {
+            // Show SweetAlert loading dialog only when requested
+            Swal.fire({
+                title: 'Fetching Panel ID',
+                text: 'Please wait...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
+
+        fetch(`/admin/panels/next-id?${query.toString()}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch next panel ID.');
+                }
+                return response.json();
+            })
             .then(data => {
                 document.getElementById('panel_id').value = data.next_id || '';
-                Swal.close();
-                // Show the offcanvas (no need to wait for fetchNextPanelId, since it sets the value asynchronously)
-                const offcanvasElement = document.getElementById('panelFormOffcanvas');
-                const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
-                offcanvas.show();
+                const capacityFromResponse = data && typeof data.capacity !== 'undefined'
+                    ? Number(data.capacity)
+                    : null;
+
+                if (panelLimitInput) {
+                    const capacityToApply = capacityFromResponse && !Number.isNaN(capacityFromResponse)
+                        ? capacityFromResponse
+                        : getCapacityForProvider(providerTypeValue);
+                    panelLimitInput.value = capacityToApply;
+                }
+
+                if (showLoader) {
+                    Swal.close();
+                }
+
+                if (showOffcanvas) {
+                    // Show the offcanvas (no need to wait for fetchNextPanelId, since it sets the value asynchronously)
+                    const offcanvasElement = document.getElementById('panelFormOffcanvas');
+                    const offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+                    offcanvas.show();
+                }
             })
-            .catch(() => {
+            .catch((error) => {
                 document.getElementById('panel_id').value = '';
-                Swal.close();
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Failed to fetch next panel ID.',
-                    confirmButtonText: 'OK'
-                });
-            });
-    }
-
-    let orderTrackingTable = null;
-
-    function initializeOrderTrackingTable() {
-        // Destroy existing table if it exists
-        if (orderTrackingTable) {
-            orderTrackingTable.destroy();
-        }
-
-        // Initialize DataTable
-        orderTrackingTable = $('#myTable').DataTable({
-            pageLength: 10,         // Show 10 rows per page
-            lengthMenu: [10, 25, 50, 100], // Optional dropdown for page length
-            ordering: true,         // Enable column sorting
-            searching: false,        // Enable search box
-            scrollX: true,          // Enable horizontal scroll if needed
-            processing: true,       // Show processing indicator
-            ajax: {
-                url: '/admin/panels/order-tracking',
-                type: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                dataSrc: function(json) {
-                    if (json.success) {
-                        // Update counters with server-calculated data
-                        if (json.counters) {
-                            console.log('Updating counters from server:', json.counters);
-                            $('#orders_counter').text(json.counters.total_orders || 0);
-                            $('#inboxes_counter').text(json.counters.total_inboxes || 0);
-                            $('#panels_counter').text(json.counters.panels_required || 0);
-                        }
-                        return json.data;
-                    } else {
-                        console.error('Error fetching data:', json.message);
-                        return [];
-                    }
+                if (panelLimitInput) {
+                    panelLimitInput.value = getCapacityForProvider(providerTypeValue);
                 }
-            },
-            columns: [
-                { data: 'order_id', title: 'Order ID', render: function(data) { return '#' + data; } },
-                { data: 'date', title: 'Date' },
-                { data: 'plan', title: 'Plan' },
-                { data: 'domain_url', title: 'Domain URL' },
-                { data: 'total', title: 'Total' },
-                { 
-                    data: 'status', 
-                    title: 'Status',
-                    render: function(data) {
-                        let badgeClass = 'bg-label-secondary';
-                        switch(data) {
-                            case 'completed':
-                                badgeClass = 'bg-label-success';
-                                break;
-                            case 'active':
-                                badgeClass = 'bg-label-success';
-                                break;
-                            case 'pending':
-                                badgeClass = 'bg-label-warning';
-                                break;
-                            case 'failed':
-                                badgeClass = 'bg-label-danger';
-                                break;
-                        }
-                        return '<span class="badge ' + badgeClass + ' rounded-1 px-2 py-1">' + data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
-                    }
-                }
-            ]
-        });
-    }
-    // Function to update counters - now using server-side calculation
-    async function updateCounters(data = null) {
-        try {
-            // If we have data with counters, use that first
-            if (data && typeof data === 'object' && data.counters) {
-                console.log('Using provided counter data:', data.counters);
-                $('#orders_counter').text(data.counters.total_orders || 0);
-                $('#inboxes_counter').text(data.counters.total_inboxes || 0);
-                $('#panels_counter').text(data.counters.panels_required || 0);
-                return;
-            }
-            
-            // Otherwise fetch from server
-            console.log('Fetching counters from server...');
-            const response = await fetch('/admin/panels/counters', {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
+
+                if (showLoader) {
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to fetch next panel ID.',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    console.error(error);
                 }
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            
-            if (result.success && result.counters) {
-                console.log('Counters from server:', result.counters);
-                
-                $('#orders_counter').text(result.counters.total_orders || 0);
-                $('#inboxes_counter').text(result.counters.total_inboxes || 0);
-                $('#panels_counter').text(result.counters.panels_required || 0);
-            } else {
-                console.error('Failed to fetch counters:', result.message);
-                // Fallback to 0 values if server returns error
-                $('#orders_counter').text(0);
-                $('#inboxes_counter').text(0);
-                $('#panels_counter').text(0);
-            }
-        } catch (error) {
-            console.error('Error updating counters:', error);
-            // Fallback to 0 values on error
-            $('#orders_counter').text(0);
-            $('#inboxes_counter').text(0);
-            $('#panels_counter').text(0);
-        }
     }
 
     // Function to update panel counters with dynamic data
@@ -1109,8 +869,16 @@
         try {
             console.log('Fetching panel counters...');
             
+            // Get current provider filter
+            const providerFilter = document.getElementById('providerTypeFilter')?.value || 'all';
+            const params = new URLSearchParams();
+            if (providerFilter && providerFilter !== 'all') {
+                params.append('provider_type', providerFilter);
+            }
+            
             // Fetch comprehensive panel statistics from server
-            const response = await fetch('/admin/panels/statistics', {
+            const url = `/admin/panels/statistics${params.toString() ? '?' + params.toString() : ''}`;
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -1127,9 +895,12 @@
                     
                     // Update the main panel counters
                     $('#total_counter').text(result.statistics.total_panels || 0);
-                    $('#active_counter').text((result.statistics.available_capacity || 0).toLocaleString());
-                    $('#used_counter').text((result.statistics.used_capacity || 0).toLocaleString());
-                    $('#closed_counter').text(result.statistics.closed_panels || 0);
+                    $('#available_capacity_counter').text((result.statistics.available_capacity || 0).toLocaleString());
+                    $('#used_capacity_counter').text((result.statistics.used_capacity || 0).toLocaleString());
+                    $('#active_panels_counter').text(result.statistics.active_panels || 0);
+                    $('#archived_panels_counter').text(
+                        (result.statistics.archived_panels ?? result.statistics.closed_panels) || 0
+                    );
                     
                     return;
                 }
@@ -1143,13 +914,16 @@
                 let totalVisible = panels.length;
                 let availableCapacity = 0;
                 let usedCapacity = 0;
-                let closedVisible = 0;
+                let activeVisible = 0;
+                let archivedVisible = 0;
                 
                 panels.forEach(panel => {
                     availableCapacity += panel.remaining_limit || 0;
                     usedCapacity += (panel.limit || 0) - (panel.remaining_limit || 0);
-                    if (!panel.is_active) {
-                        closedVisible++;
+                    if (panel.is_active) {
+                        activeVisible++;
+                    } else {
+                        archivedVisible++;
                     }
                 });
                 
@@ -1157,14 +931,16 @@
                     totalVisible,
                     availableCapacity, 
                     usedCapacity,
-                    closedVisible
+                    activeVisible,
+                    archivedVisible
                 });
                 
                 // Update counters (note: these are based on filtered/paginated results)
                 $('#total_counter').text(totalVisible);
-                $('#active_counter').text(availableCapacity.toLocaleString());
-                $('#used_counter').text(usedCapacity.toLocaleString());
-                $('#closed_counter').text(closedVisible);
+                $('#available_capacity_counter').text(availableCapacity.toLocaleString());
+                $('#used_capacity_counter').text(usedCapacity.toLocaleString());
+                $('#active_panels_counter').text(activeVisible);
+                $('#archived_panels_counter').text(archivedVisible);
             } else {
                 console.log('No panels data available for calculation');
                 // Keep existing values if no data available
@@ -1177,20 +953,24 @@
             if (panels && panels.length > 0) {
                 let availableCapacity = 0;
                 let usedCapacity = 0;
-                let closedVisible = 0;
+                let activeVisible = 0;
+                let archivedVisible = 0;
                 
                 panels.forEach(panel => {
                     availableCapacity += panel.remaining_limit || 0;
                     usedCapacity += (panel.limit || 0) - (panel.remaining_limit || 0);
-                    if (!panel.is_active) {
-                        closedVisible++;
+                    if (panel.is_active) {
+                        activeVisible++;
+                    } else {
+                        archivedVisible++;
                     }
                 });
                 
                 $('#total_counter').text(panels.length);
-                $('#active_counter').text(availableCapacity.toLocaleString());
-                $('#used_counter').text(usedCapacity.toLocaleString());
-                $('#closed_counter').text(closedVisible);
+                $('#available_capacity_counter').text(availableCapacity.toLocaleString());
+                $('#used_capacity_counter').text(usedCapacity.toLocaleString());
+                $('#active_panels_counter').text(activeVisible);
+                $('#archived_panels_counter').text(archivedVisible);
             }
         }
     }
@@ -1202,6 +982,7 @@
         let hasMorePages = false;
         let totalPanels = 0;
         let isLoading = false;
+        let currentTab = 'active'; // Track current tab (active or archived)
 
         // Load panels data
         async function loadPanels(filters = {}, page = 1, append = false) {
@@ -1224,8 +1005,16 @@
                 const params = new URLSearchParams({
                     ...filters,
                     page: page,
-                    per_page: 12
+                    per_page: 12,
+                    is_active: currentTab === 'active' ? 1 : 0
                 });
+                
+                // Add provider type filter if set
+                const providerFilter = document.getElementById('providerTypeFilter')?.value;
+                if (providerFilter && providerFilter !== 'all') {
+                    params.append('provider_type', providerFilter);
+                }
+                
                 const url = `/admin/panels/data?${params}`;
                
                 
@@ -1262,7 +1051,7 @@
                 totalPanels = pagination.total || 0;
                 
                 
-                renderPanels(append);
+                renderPanels(append, newPanels);
                 updatePaginationInfo();
                 updateLoadMoreButton();
                 
@@ -1331,63 +1120,88 @@
                 </div>
             `;
         }
-          // Render panels
-        function renderPanels(append = false) {
+        // Render panels
+        function renderPanels(append = false, appendedPanels = []) {
             if (!append) {
                 hideLoading();
             }
             
-            const container = document.getElementById('panelsContainer');
-            if (!container) {
-                console.error('panelsContainer element not found');
+            // Use only newly fetched panels when appending to avoid duplicating existing cards/IDs
+            const dataSource = append ? appendedPanels : panels;
+            
+            const googleContainer = document.getElementById('googlePanelsContainer');
+            const microsoftContainer = document.getElementById('microsoftPanelsContainer');
+            const googleSection = document.getElementById('googlePanelsSection');
+            const microsoftSection = document.getElementById('microsoftPanelsSection');
+            const emptyState = document.getElementById('emptyState');
+            const googleCountBadge = document.getElementById('googlePanelsCount');
+            const microsoftCountBadge = document.getElementById('microsoftPanelsCount');
+            
+            if (!googleContainer || !microsoftContainer) {
+                console.error('Panel containers not found');
                 return;
             }
               
-            if (panels.length === 0 && !append) {
-                // Keep grid layout but show empty state spanning full width
-                container.style.display = 'grid';
-                container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
-                container.style.gap = '1rem';
-                
-                container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem 0; min-height: 300px;">
-                        <i class="fas fa-inbox text-muted mb-3" style="font-size: 3rem;"></i>
-                        <h5>No Panels Found</h5>
-                        <p class="mb-3">No panels match your current filters.</p>
-                        <button class="btn btn-outline-primary" onclick="resetFilters()">Clear Filters</button>
-                    </div>
-                `;
+            if (dataSource.length === 0 && !append) {
+                // Show empty state
+                googleSection.style.display = 'none';
+                microsoftSection.style.display = 'none';
+                emptyState.style.display = 'block';
                 return;
             }
             
-            // Reset container to grid layout for panels
-            container.style.display = 'grid';
-            container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
-            container.style.gap = '1rem';
+            // Hide empty state
+            emptyState.style.display = 'none';
+            
+            // Separate panels by provider type
+            const googlePanels = dataSource.filter(p => p.provider_type === 'Google');
+            const microsoftPanels = dataSource.filter(p => p.provider_type === 'Microsoft 365');
 
             if (append) {
-                // Only add new panels for pagination
-                const currentPanelsCount = container.children.length;
-                const newPanels = panels.slice(currentPanelsCount);
-                const newPanelsHtml = newPanels.map(panel => createPanelCard(panel)).join('');
-                container.insertAdjacentHTML('beforeend', newPanelsHtml);
+                // For pagination, append to respective containers
+                const googleHtml = googlePanels.map(panel => createPanelCard(panel)).join('');
+                const microsoftHtml = microsoftPanels.map(panel => createPanelCard(panel)).join('');
                 
-                // Initialize charts for new panels only
+                if (googleHtml) googleContainer.insertAdjacentHTML('beforeend', googleHtml);
+                if (microsoftHtml) microsoftContainer.insertAdjacentHTML('beforeend', microsoftHtml);
+                
+                // Ensure sections are visible when new panels are appended
+                if (googlePanels.length > 0 && googleSection) {
+                    googleSection.style.display = 'block';
+                }
+                if (microsoftPanels.length > 0 && microsoftSection) {
+                    microsoftSection.style.display = 'block';
+                }
+                
+                // Initialize charts for new panels
                 setTimeout(() => {
-                    newPanels.forEach(panel => {
+                    [...googlePanels, ...microsoftPanels].forEach(panel => {
                         initChart(panel);
                     });
                 }, 100);
             } else {
-                // Replace all content for new search
-                const panelsHtml = panels.map(panel => createPanelCard(panel)).join('');
-                container.innerHTML = panelsHtml;
+                // Replace all content
+                const googleHtml = googlePanels.map(panel => createPanelCard(panel)).join('');
+                const microsoftHtml = microsoftPanels.map(panel => createPanelCard(panel)).join('');
+                
+                googleContainer.innerHTML = googleHtml;
+                microsoftContainer.innerHTML = microsoftHtml;
+                
+                // Show/hide sections based on content
+                googleSection.style.display = googlePanels.length > 0 ? 'block' : 'none';
+                microsoftSection.style.display = microsoftPanels.length > 0 ? 'block' : 'none';
+                
+                // Update count badges
+                if (googleCountBadge) googleCountBadge.textContent = googlePanels.length;
+                if (microsoftCountBadge) microsoftCountBadge.textContent = microsoftPanels.length;
                 
                 // Initialize charts after DOM is updated
                 setTimeout(() => {
                     panels.forEach(panel => {
                         initChart(panel);
                     });
-                }, 100);            }
+                }, 100);
+            }
         }
 
         // Update pagination info display
@@ -1453,6 +1267,7 @@
             const used = panel.limit - panel.remaining_limit;
             const remaining = panel.remaining_limit;
             const totalOrders = panel.recent_orders ? panel.recent_orders.length : 0;
+            const providerLabel = getProviderBadge(panel.provider_type);
             
             // Generate edit/delete buttons only if conditions are met
             let actionButtons = '';
@@ -1519,7 +1334,10 @@
             return `
                 <div class="card p-3 d-flex flex-column gap-1" style="${archivedStyle}">                    
                     <div class="d-flex flex-column gap-2 align-items-start justify-content-between">
-                        <small class="mb-0 opacity-75">${'PNL-' + panel.id || panel.auto_generated_id}</small>
+                        <div class="d-flex align-items-center gap-2">
+                            <small class="mb-0 opacity-75">${'PNL-' + panel.panel_sr_no || panel.id || panel.auto_generated_id}</small>
+                            ${providerLabel}
+                        </div>
                         <h6>Title: ${panel.title || 'N/A'} ${!panel.is_active ? '<span class="badge bg-secondary ms-2">Archived</span>' : ''}</h6>
                     </div>
 
@@ -1709,7 +1527,7 @@
 
             const ordersHtml = `
                 <div class="mb-4">
-                    <h6>PNL- ${panel.id}</h6>
+                    <h6>PNL- ${ panel.panel_sr_no || panel.id}</h6>
                     <h6>Title: ${panel.title}</h6>
                     <p class="text-white small">${panel.description || ''}</p>
                 </div>
@@ -1724,6 +1542,12 @@
                                     <small>ORDER ID: #${order.order_id || 0 }</small>
                                     <small class="text-light"><i class="fas fa-envelope me-1"></i><span>Inboxes:</span> <span class="fw-bold">${order.space_assigned || order.inboxes_per_domain || 0}</span>${order.remaining_order_panels && order.remaining_order_panels.length > 0 ? `<span> (${order.remaining_order_panels.length} more split${order.remaining_order_panels.length > 1 ? 's' : ''}</span>)` : ''}</small>
                                     <div class="d-flex align-items-center gap-2">
+                                        <button class="btn btn-info btn-sm px-2 py-1"
+                                            onclick="openChangeProviderTypeModal(${order.order_id}, '${order.provider_type || ''}', ${panel.id})"
+                                            style="font-size: 11px;">
+                                            <i class="${order.provider_type === 'Google' ? 'fab fa-google' : order.provider_type === 'Microsoft 365' ? 'fab fa-microsoft' : 'fas fa-exchange-alt'} me-1"></i>
+                                            ${order.provider_type ? `Change Provider (${order.provider_type})` : 'Set Provider'}
+                                        </button>
                                         ${order.order_status === 'pending' ? `<span class="badge ${getStatusBadgeClass(order.order_status)}" style="font-size: 10px;">${order.order_status || 'Unknown'}</span>` : `
                                             <span class="badge ${getStatusBadgeClass(order.order_status)}" style="font-size: 10px;">
                                                 ${order.order_status || 'Unknown'}
@@ -1758,7 +1582,7 @@
                                                 <tr>
                                                     <th scope="row">${index + 1}</th>
 
-                                                    <td>PNL-${order.panel_id || 'N/A'}</td>
+                                                    <td>PNL-${order.panel_sr_no || order.panel_id || 'N/A'}</td>
 
                                                     <td>${panel?.title || 'N/A'}</td>
                                                     
@@ -1797,7 +1621,7 @@
                                                             
                                                             ${order.order_status === 'cancelled' || order.order_status === 'reject' || order.order_status === 'removed' ? '' : `
                                                                 <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
-                                                                    onclick="openReassignModal(${order.order_id}, ${order.panel_id}, ${order.order_panel_id}, '${panel?.title || 'N/A'}')"
+                                                                    onclick="openReassignModal(${order.order_id}, ${order.panel_id}, ${order.order_panel_id}, '${panel?.title || 'N/A'}', ${order.panel_sr_no || 'null'})"
                                                                     title="Reassign to another panel">
                                                                     Reassign
                                                                 </button>
@@ -1819,7 +1643,7 @@
 
                                                             <th scope="row">${index + 1}.${panelIndex + 1}</th>
 
-                                                            <td>PNL-${remainingPanel.panel_id || 'N/A'}</td>
+                                                            <td>PNL-${remainingPanel.panel_sr_no || remainingPanel.panel_id || 'N/A'}</td>
                                                             
                                                             <td>${remainingPanel.panel_title || 'N/A'}</td>
                                                             
@@ -1856,7 +1680,7 @@
                                                                     
                                                                     ${order.order_status === 'cancelled' || order.order_status === 'reject' || order.order_status === 'removed' ? '' : `
                                                                         <button style="font-size: 12px" class="btn border-0 btn-sm py-0 px-2 rounded-1 btn-success"
-                                                                            onclick="openReassignModal(${order.order_id}, ${remainingPanel.panel_id}, ${remainingPanel.order_panel_id}, '${remainingPanel.panel_title || 'N/A'}')"
+                                                                            onclick="openReassignModal(${order.order_id}, ${remainingPanel.panel_id}, ${remainingPanel.order_panel_id}, '${remainingPanel.panel_title || 'N/A'}', ${remainingPanel.panel_sr_no || 'null'})"
                                                                             title="Reassign to another panel">
                                                                             Reassign
                                                                         </button>
@@ -1975,7 +1799,10 @@
                                                     <span class="opacity-50">Cold email platform - Password</span>
                                                     <span>${order.reorder_info?.sequencer_password || 'N/A'}</span>
                                                 </div>
-
+                                                <div class="d-flex flex-column mb-3">
+                                                    <span class="opacity-50">Backup Codes</span>
+                                                    <span>${order.reorder_info?.backup_codes || 'N/A'}</span>
+                                                </div>
                                                 <div class="d-flex flex-column">
                                                     <span class="opacity-50 mb-3">
                                                         <i class="fa-solid fa-globe me-2"></i>All Domains & Panel Breaks
@@ -1990,7 +1817,7 @@
                                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold; display:none;">
                                                                     Panel Break 01
                                                                 </span>
-                                                                <small class="text-white fw-bold text-uppercase">PNL-${order.panel_id} | ${order.panel_title || 'N/A'}</small>
+                                                                <small class="text-white fw-bold text-uppercase">PNL-${order.panel_sr_no || order.panel_id} | ${order.panel_title || 'N/A'}</small>
                                                             </div>
                                                             <div class="d-flex align-items-center">
                                                                 <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
@@ -2022,7 +1849,7 @@
                                                                         <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold; display:none;">
                                                                             Panel Break ${String(index + 2).padStart(2, '0')}
                                                                         </span>
-                                                                        <small class="text-white fw-bold text-uppercase">PNL-${panel.panel_id} | ${panel.panel_title || 'N/A'}</small>
+                                                                        <small class="text-white fw-bold text-uppercase">PNL-${panel.panel_sr_no || panel.panel_id} | ${panel.panel_title || 'N/A'}</small>
                                                                     </div>
                                                                     <div class="d-flex align-items-center">
                                                                         <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
@@ -3023,14 +2850,6 @@
             setTimeout(function() {
                 initializeChevronStates();
             }, 200);
-            
-            // Add event listener for panel reassign modal reset
-            const reassignPanelModal = document.getElementById('reassignPanelModal');
-            if (reassignPanelModal) {
-                reassignPanelModal.addEventListener('hidden.bs.modal', function () {
-                    resetReassignModal();
-                });
-            }
         });
         
 </script>
@@ -3057,10 +2876,24 @@ $('#submitPanelFormBtn').on('click', function(e) {
         $('#panel_title').after('<div class="invalid-feedback">Panel title must not exceed 255 characters</div>');
         isValid = false;
     }
+
+    // Validate provider type on create
+    const providerTypeEl = $('#provider_type');
+    const providerType = providerTypeEl.val();
+    const allowedProviders = Array.isArray(PROVIDER_OPTIONS) && PROVIDER_OPTIONS.length
+        ? PROVIDER_OPTIONS
+        : ['Google', 'Microsoft 365'];
+    const isUpdate = form.data('action') === 'update';
+    if (!isUpdate) {
+        if (!providerType || !allowedProviders.includes(providerType)) {
+            providerTypeEl.addClass('is-invalid');
+            providerTypeEl.after('<div class="invalid-feedback">Please select a valid provider</div>');
+            isValid = false;
+        }
+    }
     
     // Validate panel limit (only for new panels, not for updates since it's readonly)
     const panelLimit = $('#panel_limit').val();
-    const isUpdate = form.data('action') === 'update';
     
     if (!isUpdate) {
         // Only validate limit for new panels
@@ -3328,6 +3161,11 @@ async function editPanel(panelId) {
         $('#panel_description').val(panel.description || '');
         $('#panel_limit').val(panel.limit || '');
         $('#panel_status').val(panel.is_active ? '1' : '0');
+        // Provider type is fixed after creation; show if available and disable the field
+        if (panel.provider_type) {
+            $('#provider_type').val(panel.provider_type);
+        }
+        $('#provider_type').prop('disabled', true);
         
         // For editing, we want to keep the current limit but make it readonly
         // The limit should not be changed for existing panels
@@ -3646,6 +3484,9 @@ function switchTab(tab) {
     panels = [];
     showLoading();
     
+    // Update current tab
+    currentTab = tab;
+    
     // Update current filters based on tab
     if (tab === 'active') {
         currentFilters.is_active = 1;
@@ -3684,7 +3525,10 @@ function resetPanelForm() {
     $('#panelForm').removeData('action');
     $('#panelFormOffcanvasLabel').text('Panel');
     $('#submitPanelFormBtn').text('Submit');
-    $('#panel_limit').val('{{env('PANEL_CAPACITY', 1790)}}'); // Reset to default
+    $('#panel_limit').val(getCapacityForProvider(DEFAULT_PROVIDER_TYPE)); // Reset to default
+    // Reset provider type for new panel creation
+    $('#provider_type').prop('disabled', false);
+    $('#provider_type').val(DEFAULT_PROVIDER_TYPE);
     
     // Clear any validation errors
     $('.form-control').removeClass('is-invalid');
@@ -3692,12 +3536,26 @@ function resetPanelForm() {
     
     // Ensure panel_limit is readonly for new panels
     $('#panel_limit').prop('readonly', true);
+    
+    // Fetch next panel ID whenever form is reset
+    fetchNextPanelId({ showOffcanvas: false, showLoader: false });
 }
 
 // Initialize on document ready
 $(document).ready(function() {
     // Load initial panels
     // loadPanels();
+
+    const providerTypeSelect = document.getElementById('provider_type');
+    if (providerTypeSelect) {
+        providerTypeSelect.addEventListener('change', function() {
+            const limitInput = document.getElementById('panel_limit');
+            if (limitInput) {
+                limitInput.value = getCapacityForProvider(this.value);
+            }
+            fetchNextPanelId({ showOffcanvas: false, showLoader: false });
+        });
+    }
     
     // Reset form when offcanvas is hidden
     $('#panelFormOffcanvas').on('hidden.bs.offcanvas', function () {
@@ -3709,7 +3567,9 @@ $(document).ready(function() {
     
     // Auto-refresh panel capacity alert and counters every 60 seconds
     setInterval(function() {
-        refreshPanelCapacityAlert();
+        if (typeof refreshPanelCapacityAlert === 'function') {
+            refreshPanelCapacityAlert();
+        }
         
         // Refresh panel counters
         updatePanelCounters();
@@ -3723,589 +3583,6 @@ $(document).ready(function() {
         }
     }, 60000); // 60 seconds
 });
-
-/**
- * Refresh the panel capacity alert without refreshing the entire page
- */
-function refreshPanelCapacityAlert() {
-    $.ajax({
-        url: '{{ route("admin.panels.capacity-alert") }}',
-        method: 'GET',
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-            'Accept': 'application/json'
-        },
-        success: function(response) {
-            if (response.success) {
-                // Update the alert section
-                const alertContainer = $('#panelCapacityAlert').parent();
-                
-                if (response.show_alert) {
-                    // Show/update the alert
-                    const alertHtml = `
-                        <div id="panelCapacityAlert" class="alert alert-danger alert-dismissible fade show py-2 rounded-1" role="alert"
-                            style="background-color: rgba(220, 53, 69, 0.2); color: #fff; border: 2px solid #dc3545;">
-                            <i class="ti ti-server me-2 alert-icon"></i>
-                            <strong>Panel Capacity Alert:</strong>
-                            ${response.total_panels_needed} new panel${response.total_panels_needed != 1 ? 's' : ''} required for ${response.insufficient_orders_count} pending order${response.insufficient_orders_count != 1 ? 's' : ''}.
-                            <a href="{{ route('admin.panels.index') }}" class="text-light alert-link">Manage Panels</a> to create additional capacity.
-                            <button type="button" class="btn-close" style="padding: 11px" data-bs-dismiss="alert"
-                                aria-label="Close"></button>
-                        </div>
-                    `;
-                    
-                    if ($('#panelCapacityAlert').length) {
-                        // Update existing alert
-                        $('#panelCapacityAlert').replaceWith(alertHtml);
-                    } else {
-                        // Insert new alert after the order tracking table
-                        $('#orderTrackingTableBody').closest('.card').after(alertHtml);
-                    }
-                } else {
-                    // Hide the alert if no longer needed
-                    $('#panelCapacityAlert').remove();
-                }
-                
-                console.log('Panel capacity alert refreshed at:', new Date().toLocaleTimeString());
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('Error refreshing panel capacity alert:', error);
-        }
-    });
-}
-
-// Panel Reassignment Functions (from orders.blade.php)
-let currentReassignData = {};
-
-/**
- * Open the panel reassignment modal
- */
-function openReassignModal(orderId, currentPanelId, orderPanelId, panelTitle) {
-    currentReassignData = {
-        orderId: orderId,
-        currentPanelId: currentPanelId,
-        orderPanelId: orderPanelId,
-        panelTitle: panelTitle
-    };
-
-    // Update modal title
-    document.getElementById('reassignModalLabel').innerHTML = `Reassign Panel: ${'PNL-'+currentPanelId +" "+ panelTitle}`;
-    
-    // Load available panels using orderPanelId
-    loadAvailablePanels(orderId, orderPanelId);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('reassignPanelModal'));
-    modal.show();
-}
-
-/**
- * Load available panels for reassignment
- */
-async function loadAvailablePanels(orderId, orderPanelId) {
-    try {
-        showReassignLoading(true);
-        
-        const response = await fetch(`/admin/orders/${orderId}/order-panels/${orderPanelId}/available-for-reassignment`);
-        const data = await response.json();
-        
-        if (data.success) {
-            renderAvailablePanels(data.panels);
-        } else {
-            showReassignError(data.error || 'Failed to load available panels');
-        }
-    } catch (error) {
-        console.error('Error loading available panels:', error);
-        showReassignError('Failed to load available panels');
-    } finally {
-        showReassignLoading(false);
-    }
-}
-
-/**
- * Render available panels in the modal
- */
-function renderAvailablePanels(panels) {
-    const container = document.getElementById('availablePanelsContainer');
-    
-    if (!panels || panels.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-4">
-                <i class="fas fa-info-circle text-muted mb-3" style="font-size: 2rem;"></i>
-                <p class="text-muted mb-0">No panels available for reassignment</p>
-            </div>
-        `;
-        return;
-    }
-
-    // Add search input
-    const searchHtml = `
-        <div class="mb-3">
-            <div class="input-group">
-                <span class="input-group-text bg-light border-end-0">
-                    <i class="fas fa-search text-muted"></i>
-                </span>
-                <input type="text" class="form-control border-start-0" id="panelSearchInput" 
-                       placeholder="Search panels by ID or title..." onkeyup="filterPanels()">
-            </div>
-        </div>
-    `;
-    
-    const panelsHtml = panels.map(panel => `
-        <div class="panel-option mb-2 border rounded-3 shadow-sm position-relative overflow-hidden panel-card" 
-             data-panel-id="${panel.panel_id}"
-             data-panel-title="${panel.panel_title.toLowerCase()}"
-             data-space-needed="${panel.space_needed || 0}"
-             data-panel-limit="${panel.panel_limit}"
-             data-panel-remaining="${panel.panel_remaining_limit}"
-             ${panel.is_reassignable ? `onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}', ${panel.space_needed || 0}, ${panel.panel_remaining_limit})"` : ''} 
-             style="${panel.is_reassignable ? 'cursor: pointer; transition: all 0.2s ease;' : 'cursor: not-allowed; opacity: 0.6;'}">
-            
-            ${panel.is_reassignable ? '' : '<div class="position-absolute top-0 start-0 w-100 h-100 bg-light bg-opacity-75 d-flex align-items-center justify-content-center" style="z-index: 2;"><span class="badge bg-warning text-dark">Insufficient Space</span></div>'}
-            
-            <div class="p-3">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="d-flex align-items-center">
-                        <div class="panel-icon me-2">
-                            <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary bg-gradient" 
-                                 style="width: 35px; height: 35px;">
-                                <i class="fas fa-server text-white"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h6 class="mb-0 fw-bold">
-                                <span class="badge bg-info bg-gradient me-2 px-2 py-1 small">PNL-${panel.panel_id}</span>
-                                <span class="panel-title-text">${panel.panel_title}</span>
-                            </h6>
-                        </div>
-                    </div>
-                    
-                    ${panel.is_reassignable ? 
-                        `<button type="button" class="btn btn-outline-primary btn-sm px-3 select-btn" 
-                             onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}', ${panel.space_needed || 0}, ${panel.panel_remaining_limit})">
-                            <i class="fas fa-arrow-right me-1"></i>Select
-                        </button>` : ''
-                    }
-                </div>
-                
-                <div class="row g-2 mt-1">
-                    <div class="col-3">
-                        <div class="text-center p-2 rounded bg-light">
-                            <div class="fw-bold text-success panel-space-needed" style="font-size: 0.9rem;">${panel.space_needed || 0}</div>
-                            <small class="text-muted">Need</small>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="text-center p-2 rounded bg-light">
-                            <div class="fw-bold text-primary" style="font-size: 0.9rem;">${panel.total_orders || 0}</div>
-                            <small class="text-muted">Orders</small>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="text-center p-2 rounded bg-light">
-                            <div class="fw-bold text-warning" style="font-size: 0.9rem;">${panel.panel_limit}</div>
-                            <small class="text-muted">Limit</small>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="text-center p-2 rounded bg-light">
-                            <div class="fw-bold text-danger panel-remaining" style="font-size: 0.9rem;">${panel.panel_remaining_limit}</div>
-                            <small class="text-muted">Free</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-
-    container.innerHTML = searchHtml + '<div id="panelsList">' + panelsHtml + '</div>';
-    
-    // Add CSS for hover effects
-    const style = document.createElement('style');
-    style.textContent = `
-        .panel-card{
-            border: 1px solid #dee2e6;
-        }
-        .panel-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-        }
-        .panel-card.selected {
-            border-color: #0d6efd !important;
-            background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%) !important;
-            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
-        }
-        .badge-sm {
-            font-size: 0.7rem;
-            padding: 0.25rem 0.5rem;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-/**
- * Filter panels based on search input
- */
-function filterPanels() {
-    const searchTerm = document.getElementById('panelSearchInput').value.toLowerCase();
-    const panelCards = document.querySelectorAll('.panel-card');
-    let visibleCount = 0;
-    
-    panelCards.forEach(card => {
-        const panelId = card.getAttribute('data-panel-id');
-        const panelTitle = card.getAttribute('data-panel-title');
-        
-        const isVisible = panelId.includes(searchTerm) || panelTitle.includes(searchTerm);
-        
-        if (isVisible) {
-            card.style.display = 'block';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-    
-    // Show/hide no results message
-    const panelsList = document.getElementById('panelsList');
-    let noResultsDiv = document.getElementById('noSearchResults');
-    
-    if (visibleCount === 0 && searchTerm.length > 0) {
-        if (!noResultsDiv) {
-            noResultsDiv = document.createElement('div');
-            noResultsDiv.id = 'noSearchResults';
-            noResultsDiv.className = 'text-center py-4';
-            noResultsDiv.innerHTML = `
-                <i class="fas fa-search text-muted mb-2" style="font-size: 1.5rem;"></i>
-                <p class="text-muted mb-0">No panels found matching "${searchTerm}"</p>
-            `;
-            panelsList.appendChild(noResultsDiv);
-        }
-    } else if (noResultsDiv) {
-        noResultsDiv.remove();
-    }
-}
-
-/**
- * Select target panel for reassignment
- */
-function selectTargetPanel(targetPanelId, targetPanelTitle, spaceNeeded = 0, remainingSpace = 0) {
-    // Remove previous selection
-    document.querySelectorAll('.panel-card').forEach(option => {
-        option.classList.remove('selected');
-    });
-
-    // Highlight selected panel
-    const selectedPanel = document.querySelector(`[data-panel-id="${targetPanelId}"]`);
-    if (selectedPanel) {
-        selectedPanel.classList.add('selected');
-    }
-
-    // Update space values dynamically
-    updatePanelSpaceValues(targetPanelId, spaceNeeded);
-
-    // Store selection
-    currentReassignData.targetPanelId = targetPanelId;
-    currentReassignData.targetPanelTitle = targetPanelTitle;
-    currentReassignData.spaceNeeded = spaceNeeded;
-    currentReassignData.remainingSpace = remainingSpace;
-
-    // Enable reassign button
-    const reassignBtn = document.getElementById('confirmReassignBtn');
-    reassignBtn.disabled = false;
-    reassignBtn.innerHTML = `<i class="fas fa-exchange-alt me-1"></i>Reassign to ${targetPanelTitle}`;
-}
-
-/**
- * Update panel space values after selection
- */
-function updatePanelSpaceValues(selectedPanelId, spaceToMove) {
-    // Get current space needed from the selected order panel (from currentReassignData)
-    const currentSpaceNeeded = spaceToMove;
-    
-    // First, reset all panels to their original values
-    document.querySelectorAll('.panel-card').forEach(panelOption => {
-        const originalSpaceNeeded = parseInt(panelOption.getAttribute('data-space-needed')) || 0;
-        const originalRemaining = parseInt(panelOption.getAttribute('data-panel-remaining')) || 0;
-        
-        const spaceNeededElement = panelOption.querySelector('.panel-space-needed');
-        const remainingElement = panelOption.querySelector('.panel-remaining');
-        
-        // Reset to original values and styles
-        if (spaceNeededElement) {
-            spaceNeededElement.textContent = originalSpaceNeeded;
-            spaceNeededElement.style.color = '';
-            spaceNeededElement.style.fontWeight = '';
-        }
-        if (remainingElement) {
-            remainingElement.textContent = originalRemaining;
-            remainingElement.style.color = '';
-            remainingElement.style.fontWeight = '';
-        }
-    });
-    
-    // Then update only the selected panel to show new values after reassignment
-    document.querySelectorAll('.panel-card').forEach(panelOption => {
-        const panelId = panelOption.getAttribute('data-panel-id');
-        const originalSpaceNeeded = parseInt(panelOption.getAttribute('data-space-needed')) || 0;
-        const originalRemaining = parseInt(panelOption.getAttribute('data-panel-remaining')) || 0;
-        
-        const spaceNeededElement = panelOption.querySelector('.panel-space-needed');
-        const remainingElement = panelOption.querySelector('.panel-remaining');
-        // not need to add on need 
-        if (panelId == selectedPanelId) {
-            // This panel will receive the space
-            const newSpaceNeeded = originalSpaceNeeded + currentSpaceNeeded;
-            const newRemaining = originalRemaining - currentSpaceNeeded;
-            
-            // if (spaceNeededElement) {
-            //     spaceNeededElement.textContent = newSpaceNeeded;
-            //     spaceNeededElement.style.color = '#198754'; // Green for increase
-            //     spaceNeededElement.style.fontWeight = 'bold';
-            // }
-            if (remainingElement) {
-                remainingElement.textContent = newRemaining;
-                remainingElement.style.color = newRemaining < 0 ? '#dc3545' : '#dc3545'; // Red
-                remainingElement.style.fontWeight = 'bold';
-            }
-        }
-    });
-}
-
-/**
- * Confirm panel reassignment
- */
-
-async function confirmReassignment() {
-    if (!currentReassignData.targetPanelId) {
-        showReassignError('Please select a target panel');
-        return;
-    }
-
-    try {
-        // Show SweetAlert2 confirmation dialog
-        const result = await Swal.fire({
-            title: 'Confirm Panel Reassignment?',
-            html: `
-                <div class="text-start">
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                <div class="card-body text-center text-white">
-                                    <i class="fas fa-exchange-alt fs-2 mb-2"></i>
-                                    <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.currentPanelId}</h4>
-                                    <p class="mb-1 fw-semibold">${currentReassignData.panelTitle}</p>
-                                    <small class="text-white-50">From Panel</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
-                                <div class="card-body text-center text-white">
-                                    <i class="fas fa-arrow-right fs-2 mb-2"></i>
-                                    <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.targetPanelId}</h4>
-                                    <p class="mb-1 fw-semibold">${currentReassignData.targetPanelTitle}</p>
-                                    <small class="text-white-50">To Panel</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                                <div class="card-body text-center text-white">
-                                    <i class="fas fa-inbox fs-2 mb-2"></i>
-                                    <h4 class="card-title mb-1 fw-bold">${currentReassignData.spaceNeeded || 0}</h4>
-                                    <small class="text-white-50">Spaces to Transfer</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="alert alert-warning mt-3 mb-0" style="font-size: 14px;">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Note:</strong> After this action is completed, the selected spaces will be transferred from the source panel to the destination panel.
-                    </div>
-                </div>
-            `,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#ffc107',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: '<i class="fas fa-exchange-alt me-1"></i>Confirm Reassignment',
-            cancelButtonText: '<i class="fas fa-times me-1"></i>Cancel',
-            reverseButtons: true,
-            customClass: {
-                popup: 'swal-wide'
-            }
-        });
-
-        // If user cancels, return early
-        if (!result.isConfirmed) {
-            return;
-        }
-
-        // Show SweetAlert2 loading dialog
-        Swal.fire({
-            title: 'Reassigning Panel...',
-            html: `
-                <div class="text-center">
-                    <div class="spinner-border text-warning mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p>Please wait while we reassign the panel...</p>
-                    <small class="text-muted">This may take a few moments</small>
-                </div>
-            `,
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            customClass: {
-                popup: 'swal-loading'
-            }
-        });
-
-        const formData = {
-            from_order_panel_id: currentReassignData.orderPanelId,
-            to_panel_id: currentReassignData.targetPanelId,
-            reason: document.getElementById('reassignReason').value || null
-        };
-
-        const response = await fetch('/admin/orders/panels/reassign', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify(formData)
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            // Close loading dialog and show success
-            await Swal.fire({
-                title: 'Reassignment Successful!',
-                html: `
-                    <div class="text-center">
-                        <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
-                        <p class="mb-2">${data.message}</p>
-                        <small class="text-muted">Panel has been successfully reassigned</small>
-                    </div>
-                `,
-                icon: 'success',
-                confirmButtonColor: '#28a745',
-                timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: true,
-                confirmButtonText: 'Great!'
-            });
-            
-            // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('reassignPanelModal')).hide();
-            
-            // Refresh the panel orders view
-            const currentPanelId = currentReassignData.currentPanelId;
-            if (currentPanelId) {
-                setTimeout(() => {
-                    viewPanelOrders(currentPanelId);
-                }, 1000);
-            }
-            
-            // Refresh panels list
-            loadPanels(currentFilters, 1, false);
-            
-            // Reset form
-            resetReassignModal();
-        } else {
-            // Close loading dialog and show error
-            await Swal.fire({
-                title: 'Reassignment Failed!',
-                html: `
-                    <div class="text-center">
-                        <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
-                        <p class="mb-2">${data.message || 'Reassignment failed'}</p>
-                        <small class="text-muted">Please try again or contact support</small>
-                    </div>
-                `,
-                icon: 'error',
-                confirmButtonColor: '#dc3545',
-                confirmButtonText: 'Try Again'
-            });
-            
-            showReassignError(data.message || 'Reassignment failed');
-        }
-    } catch (error) {
-        console.error('Error during reassignment:', error);
-        
-        // Close loading dialog and show error
-        await Swal.fire({
-            title: 'Error!',
-            html: `
-                <div class="text-center">
-                    <i class="fas fa-times-circle text-danger mb-3" style="font-size: 3rem;"></i>
-                    <p class="mb-2">An error occurred during reassignment</p>
-                    <small class="text-muted">Please check your connection and try again</small>
-                </div>
-            `,
-            icon: 'error',
-            confirmButtonColor: '#dc3545',
-            confirmButtonText: 'OK'
-        });
-        
-        showReassignError('An error occurred during reassignment');
-    }
-}
-
-/**
- * Show/hide loading state in reassign modal
- */
-function showReassignLoading(show) {
-    const loader = document.getElementById('reassignLoader');
-    const container = document.getElementById('availablePanelsContainer');
-    
-    if (show) {
-        loader.style.display = 'block';
-        container.style.display = 'none';
-    } else {
-        loader.style.display = 'none';
-        container.style.display = 'block';
-    }
-}
-
-/**
- * Show error in reassign modal
- */
-function showReassignError(message) {
-    const container = document.getElementById('availablePanelsContainer');
-    container.innerHTML = `
-        <div class="alert alert-danger">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            ${message}
-        </div>
-    `;
-}
-
-/**
- * Reset reassign modal
- */
-function resetReassignModal() {
-    currentReassignData = {};
-    document.getElementById('availablePanelsContainer').innerHTML = '';
-    document.getElementById('reassignReason').value = '';
-    document.getElementById('confirmReassignBtn').disabled = true;
-    document.getElementById('confirmReassignBtn').innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
-    
-    // Reset any modified space values and styles
-    document.querySelectorAll('.panel-space-needed, .panel-remaining').forEach(element => {
-        element.style.color = '';
-        element.style.fontWeight = '';
-    });
-    
-    // Remove any search results
-    const noResultsDiv = document.getElementById('noSearchResults');
-    if (noResultsDiv) {
-        noResultsDiv.remove();
-    }
-}
 
 // Function to show customized note modal
 function showCustomizedNoteModal(note) {
@@ -4385,3 +3662,4 @@ function showCustomizedNoteModal(note) {
         </div>
     </div>
 </div>
+<!-- when panel save then  -->

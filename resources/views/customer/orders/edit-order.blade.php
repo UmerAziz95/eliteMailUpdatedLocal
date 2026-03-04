@@ -177,6 +177,33 @@
 
 
 @if(isset($order) && $order->reason)
+    @php
+        // Parse the rejection reason to extract domain-specific errors
+        $reason = $order->reason;
+        $domainErrors = [];
+        $generalMessage = '';
+        
+        // Try to extract domain-specific errors from the message
+        // Pattern: **domain.com** (Platform): Error message
+        preg_match_all('/\*\*([^*]+)\*\*\s*\(([^)]+)\):\s*([^•*]+)/i', $reason, $matches, PREG_SET_ORDER);
+        
+        if (!empty($matches)) {
+            foreach ($matches as $match) {
+                $domainErrors[] = [
+                    'domain' => trim($match[1]),
+                    'platform' => trim($match[2]),
+                    'error' => trim($match[3])
+                ];
+            }
+            // Extract general message (text before the domain errors)
+            $generalMessage = preg_replace('/Please review the errors below:.*$/s', '', $reason);
+            $generalMessage = trim($generalMessage);
+        } else {
+            // No domain-specific pattern found, show as general message
+            // But still try to clean up markdown-like syntax
+            $generalMessage = str_replace(['**', '*'], '', $reason);
+        }
+    @endphp
     <div class="mb-4">
         <div class="alert border-0 shadow-lg panel-rejection-alert mt-5"
             style="background-color: rgba(255, 0, 0, 0.32); border-left: 5px solid red !important; position: relative; overflow: hidden;">
@@ -190,13 +217,43 @@
                 </div>
                 <div class="flex-grow-1">
                     <h6 class="alert-heading mb-2 text-white fw-bold">
-                        Rejection Reason
+                        <i class="fa-solid fa-circle-xmark me-2"></i>Order Requires Attention
                     </h6>
-                    <div class="rejection-note-content">
-                        <p class="mb-0 text-white fw-medium small">
-                            {{ $order->reason }}
+                    
+                    @if(!empty($domainErrors))
+                        {{-- Domain-wise error display --}}
+                        <p class="mb-2 text-white-50 small">
+                            The following domain(s) encountered issues:
                         </p>
-                    </div>
+                        <div class="rejection-domains-list" style="max-height: 200px; overflow-y: auto; padding-right: 10px;">
+                            @foreach($domainErrors as $error)
+                                <div class="domain-error-item mb-2 p-2 rounded" style="background-color: rgba(0,0,0,0.2);">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="badge bg-danger me-2">{{ $error['domain'] }}</span>
+                                        <span class="badge bg-secondary">{{ $error['platform'] }}</span>
+                                    </div>
+                                    <p class="mb-0 text-white small ps-1">
+                                        <i class="fa-solid fa-arrow-right me-1 text-warning" style="font-size: 0.7rem;"></i>
+                                        {{ $error['error'] }}
+                                    </p>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="mt-3 pt-2" style="border-top: 1px solid rgba(255,255,255,0.2);">
+                            <p class="mb-0 text-white-50 small">
+                                <i class="fa-solid fa-info-circle me-1"></i>
+                                Please fix the issues above and resubmit your order.
+                            </p>
+                        </div>
+                    @else
+                        {{-- General message display --}}
+                        <div class="rejection-note-content" style="max-height: 150px; overflow-y: auto;">
+                            <p class="mb-0 text-white fw-medium small">
+                                {{ $generalMessage }}
+                            </p>
+                        </div>
+                    @endif
+                    
                     <div class="mt-3">
                         <span class="badge bg-warning text-dark px-2 rounded-1 py-1">
                             <i class="fa-solid fa-clock me-1"></i>
@@ -207,7 +264,31 @@
             </div>
         </div>
     </div>
+    
+    <style>
+        .rejection-domains-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .rejection-domains-list::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+        .rejection-domains-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+        .rejection-domains-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        .domain-error-item {
+            transition: background-color 0.2s ease;
+        }
+        .domain-error-item:hover {
+            background-color: rgba(0,0,0,0.3) !important;
+        }
+    </style>
 @endif
+
 <form id="editOrderForm" novalidate>
     @csrf
     <input type="hidden" name="user_id" value="{{ auth()->id() }}">
@@ -245,12 +326,28 @@
                 <label for="hosting">Domain hosting platform *</label>
                 <select id="hosting" name="hosting_platform" class="form-control" required>
                     @foreach($hostingPlatforms as $platform)
+                    @php
+                        $isSelected = false;
+                        $existingHostingPlatform = optional(optional($order)->reorderInfo)->count() > 0 
+                            ? optional($order->reorderInfo->first())->hosting_platform 
+                            : null;
+                        
+                        // Check if already selected in reorderInfo
+                        if ($existingHostingPlatform === $platform->value) {
+                            $isSelected = true;
+                        }
+                        // Default to Spaceship if provider_type is Private SMTP and no existing selection
+                        elseif (empty($existingHostingPlatform) && 
+                                $platform->value === 'spaceship' && 
+                                isset($order) && 
+                                $order->provider_type === 'Private SMTP') {
+                            $isSelected = true;
+                        }
+                    @endphp
                     <option value="{{ $platform->value }}" data-fields='@json($platform->fields)'
                         data-requires-tutorial="{{ $platform->requires_tutorial }}"
                         data-tutorial-link="{{ $platform->tutorial_link }}"
-                        data-import-note="{{ $platform->import_note ?? '' }}" {{ (optional(optional($order)->
-                        reorderInfo)->count() > 0 && $order->reorderInfo->first()->hosting_platform ===
-                        $platform->value) ? ' selected' : '' }}>
+                        data-import-note="{{ $platform->import_note ?? '' }}" {{ $isSelected ? ' selected' : '' }}>
                         {{ $platform->name }}
                     </option>
                     @endforeach
@@ -277,6 +374,78 @@
 
             <div class="platform" id="platform-fields-container">
                 <!-- Dynamic platform fields will be inserted here -->
+            </div>
+
+            {{-- Spaceship API Fields (shown only when Spaceship is selected) --}}
+            <div id="spaceship-api-fields" class="mb-3" style="display: none;">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="spaceship_api_key">Spaceship API Key *</label>
+                        <input type="text" id="spaceship_api_key" name="spaceship_api_key" 
+                            class="form-control" 
+                            value="{{ isset($order) && $order->getPlatformCredential('spaceship') ? $order->getPlatformCredential('spaceship')->getCredential('api_key', '') : '' }}"
+                            placeholder="Enter Spaceship API Key">
+                        <div class="invalid-feedback" id="spaceship_api_key-error"></div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="spaceship_api_secret_key">Spaceship API Secret Key *</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="spaceship_api_secret_key" name="spaceship_api_secret_key" 
+                                class="form-control" 
+                                value="{{ isset($order) && $order->getPlatformCredential('spaceship') ? $order->getPlatformCredential('spaceship')->getCredential('api_secret_key', '') : '' }}"
+                                placeholder="Enter Spaceship API Secret Key">
+                            <i class="fa-regular fa-eye password-toggle"></i>
+                        </div>
+                        <div class="invalid-feedback" id="spaceship_api_secret_key-error"></div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Namecheap API Fields (shown only when Namecheap is selected) --}}
+            <div id="namecheap-api-fields" class="mb-3" style="display: none;">
+                {{-- Whitelist Instruction Alert --}}
+                <div class="alert alert-info mb-3" style="background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460;">
+                    <h6 class="alert-heading" style="color: #0c5460;"><i class="fa-solid fa-info-circle me-2"></i>Namecheap API Whitelist Required</h6>
+                    <p class="mb-2" style="color: #0c5460;">To update domain nameservers via the Namecheap API, we require the API key from the customer. Additionally, the customer must whitelist our server's public IP to allow API access.</p>
+                    <p class="mb-2" style="color: #0c5460;"><strong>What the customer needs to do:</strong></p>
+                    <ol class="mb-2" style="color: #0c5460;">
+                        <li>Log in to Namecheap</li>
+                        <li>Go to <strong>Profile → Tools → API Access</strong></li>
+                        <li>Enable Namecheap API Access</li>
+                        <li>Add the following server IP to <strong>Whitelisted IPs</strong>: 
+                            <code id="namecheap-server-ip" class="user-select-all" style="background-color: #fff; color: #d63384; padding: 2px 6px; border-radius: 3px;">144.172.95.185</code>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="copyNamecheapIP(event)" title="Copy IP address">
+                                <i class="fa-regular fa-copy me-1"></i>Copy IP
+                            </button>
+                        </li>
+                        <li>Click <strong>Save</strong></li>
+                    </ol>
+                    <div class="mb-2">
+                        <div class="form-check">
+                            <input type="checkbox" id="namecheap_ip_whitelisted" name="namecheap_ip_whitelisted" class="form-check-input" value="1" required>
+                            <label class="form-check-label" for="namecheap_ip_whitelisted" style="color: #0c5460;">
+                                I confirm that I have whitelisted the IP address <strong>144.172.95.185</strong> in my Namecheap account *
+                            </label>
+                        </div>
+                        <div class="invalid-feedback d-block" id="namecheap_ip_whitelisted-error"></div>
+                    </div>
+                    <p class="mb-0 mt-2" style="color: #0c5460;"><small>Once this is completed, we will be able to update the domain nameservers automatically.</small></p>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="namecheap_api_key">Namecheap API Key *</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="namecheap_api_key" name="namecheap_api_key" 
+                                class="form-control" 
+                                value="{{ isset($order) && $order->getPlatformCredential('namecheap') ? $order->getPlatformCredential('namecheap')->getCredential('api_key', '') : '' }}"
+                                placeholder="Enter Namecheap API Key">
+                            <i class="fa-regular fa-eye password-toggle"></i>
+                        </div>
+                        <div class="invalid-feedback" id="namecheap_api_key-error"></div>
+                    </div>
+                </div>
             </div>
 
             
@@ -414,7 +583,10 @@
                     </div>
                 </div> -->
 
-                <div class="col-md-6 profile-picture" style="display: none;">
+                @php
+                    $isPrivateSMTP = isset($order) && ($order->provider_type === 'Private SMTP' || (isset($order->plan) && $order->plan->provider_type === 'Private SMTP'));
+                @endphp
+                <div class="col-md-6 profile-picture" style="display: none;" @if($isPrivateSMTP) style="display: none !important;" @endif>
                     <label>Profile Picture Link</label>
                     <input type="url" name="profile_picture_link" class="form-control"
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->profile_picture_link : '' }}">
@@ -2300,11 +2472,61 @@ $(document).ready(function() {
         const platformValue = selectedOption.val();
         
         const container = $('#platform-fields-container');
+        const spaceshipFields = $('#spaceship-api-fields');
+        const namecheapFields = $('#namecheap-api-fields');
         container.empty();
+        
+        // Show/hide Spaceship API fields based on selection
+        if (platformValue === 'spaceship') {
+            if (spaceshipFields.length) {
+                spaceshipFields.css('display', 'block');
+            }
+            // Make API key fields required
+            $('#spaceship_api_key, #spaceship_api_secret_key').prop('required', true);
+        } else {
+            if (spaceshipFields.length) {
+                spaceshipFields.css('display', 'none');
+            }
+            // Remove required attribute
+            $('#spaceship_api_key, #spaceship_api_secret_key').prop('required', false);
+        }
+        
+        // Show/hide Namecheap API fields based on selection
+        if (platformValue === 'namecheap') {
+            if (namecheapFields.length) {
+                namecheapFields.css('display', 'block');
+            }
+            // Make API key field and whitelist checkbox required
+            // Note: platform_login (username) is already required via platform fields
+            $('#namecheap_api_key, #namecheap_ip_whitelisted').prop('required', true);
+        } else {
+            if (namecheapFields.length) {
+                namecheapFields.css('display', 'none');
+            }
+            // Remove required attribute
+            $('#namecheap_api_key, #namecheap_ip_whitelisted').prop('required', false);
+        }
         
         if (fieldsData) {
             // Get existing values from the order if available
-            const existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
+            let existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
+            
+            // Get existing values from platform_credentials for Spaceship
+            const spaceshipCredential = @json(isset($order) && $order->getPlatformCredential('spaceship') ? $order->getPlatformCredential('spaceship')->credentials : null);
+            
+            // For Spaceship, also check platform_credentials for login/password
+            if (platformValue === 'spaceship' && spaceshipCredential) {
+                // Merge platform_credentials values into existingValues for login/password
+                if (!existingValues) {
+                    existingValues = {};
+                }
+                if (spaceshipCredential.platform_login) {
+                    existingValues.platform_login = spaceshipCredential.platform_login;
+                }
+                if (spaceshipCredential.platform_password) {
+                    existingValues.platform_password = spaceshipCredential.platform_password;
+                }
+            }
             
             // Use the new paired field generation
             container.append(generatePairedFields(fieldsData, existingValues));
@@ -2373,7 +2595,18 @@ $(document).ready(function() {
     initializePasswordToggles();
 
     // Handle platform changes
-    $('#hosting').on('change', updatePlatformFields);
+    $('#hosting').on('change', function() {
+        updatePlatformFields();
+    });
+    
+    // Trigger update on page load to show Spaceship fields if selected by default
+    const initialPlatform = $('#hosting').val();
+    if (initialPlatform === 'spaceship') {
+        // Small delay to ensure DOM is ready
+        setTimeout(function() {
+            updatePlatformFields();
+        }, 100);
+    }
 
         // Handle sending platform changes
         function updateSendingPlatformFields() {
@@ -2583,6 +2816,93 @@ $(document).ready(function() {
                 firstErrorField = accessTutorial;
             }
         }
+        
+        // Validate Spaceship API fields if Spaceship is selected
+        const hostingPlatform = $('#hosting').val();
+        if (hostingPlatform === 'spaceship') {
+            const apiKey = $('#spaceship_api_key').val()?.trim();
+            const apiSecretKey = $('#spaceship_api_secret_key').val()?.trim();
+            const platformLogin = $('#platform_login').val()?.trim();
+            const platformPassword = $('#platform_password').val()?.trim();
+
+            $('#spaceship_api_key, #spaceship_api_secret_key, #platform_login, #platform_password').removeClass('is-invalid');
+            $('#spaceship_api_key-error, #spaceship_api_secret_key-error, #platform_login-error, #platform_password-error').text('');
+
+            if (!apiKey) {
+                isValid = false;
+                $('#spaceship_api_key').addClass('is-invalid');
+                $('#spaceship_api_key-error').text('Spaceship API Key is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#spaceship_api_key');
+                }
+            }
+
+            if (!apiSecretKey) {
+                isValid = false;
+                $('#spaceship_api_secret_key').addClass('is-invalid');
+                $('#spaceship_api_secret_key-error').text('Spaceship API Secret Key is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#spaceship_api_secret_key');
+                }
+            }
+
+            // Validate existing Spaceship fields (login and password)
+            if (!platformLogin) {
+                isValid = false;
+                $('#platform_login').addClass('is-invalid');
+                $('#platform_login-error').text('Domain Hosting Platform - Login is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#platform_login');
+                }
+            }
+
+            if (!platformPassword) {
+                isValid = false;
+                $('#platform_password').addClass('is-invalid');
+                $('#platform_password-error').text('Domain Hosting Platform - Password is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#platform_password');
+                }
+            }
+        }
+        
+        // Validate Namecheap API fields if Namecheap is selected
+        if (hostingPlatform === 'namecheap') {
+            const platformLogin = $('#platform_login').val()?.trim(); // This is the Namecheap username
+            const apiKey = $('#namecheap_api_key').val()?.trim();
+            const ipWhitelisted = $('#namecheap_ip_whitelisted').is(':checked');
+
+            $('#platform_login, #namecheap_api_key, #namecheap_ip_whitelisted').removeClass('is-invalid');
+            $('#platform_login-error, #namecheap_api_key-error, #namecheap_ip_whitelisted-error').text('');
+
+            // platform_login is already validated by platform fields, but we ensure it's there for Namecheap
+            if (!platformLogin) {
+                isValid = false;
+                $('#platform_login').addClass('is-invalid');
+                $('#platform_login-error').text('Namecheap username is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#platform_login');
+                }
+            }
+
+            if (!apiKey) {
+                isValid = false;
+                $('#namecheap_api_key').addClass('is-invalid');
+                $('#namecheap_api_key-error').text('Namecheap API Key is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#namecheap_api_key');
+                }
+            }
+
+            if (!ipWhitelisted) {
+                isValid = false;
+                $('#namecheap_ip_whitelisted').addClass('is-invalid');
+                $('#namecheap_ip_whitelisted-error').text('This is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#namecheap_ip_whitelisted');
+                }
+            }
+        }
         // Validate dynamic prefix variant fields
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         for (let i = 1; i <= inboxesPerDomain; i++) {
@@ -2704,14 +3024,54 @@ $(document).ready(function() {
             originalTotalInboxes = parseInt(orderInfo.total_inboxes) || 0;
         }
 
-        // If current inboxes are less than original, show confirmation dialog
+        // Minimum inbox threshold: total_inboxes - 3
+        const minimumRequiredInboxes = Math.max(0, originalTotalInboxes - 3);
+        const missingInboxes = originalTotalInboxes - currentTotalInboxes;
+
+        // If current inboxes are less than original, check thresholds
         if (originalTotalInboxes > 0 && currentTotalInboxes < originalTotalInboxes) {
+            
+            // Case 1: More than 3 inboxes short - ONLY allow draft (no submit option)
+            if (currentTotalInboxes < minimumRequiredInboxes) {
+                Swal.fire({
+                    title: 'Cannot Submit Order',
+                    html: `
+                        <div style="text-align: left;">
+                            <p><strong style="color: #dc3545;">You must add at least ${minimumRequiredInboxes} inboxes to submit this order.</strong></p>
+                            <hr>
+                            <p><i class="fa-solid fa-inbox"></i> <strong>Required Minimum:</strong> ${minimumRequiredInboxes} inboxes</p>
+                            <p><i class="fa-solid fa-check-circle"></i> <strong>Currently Added:</strong> ${currentTotalInboxes} inboxes</p>
+                            <p><i class="fa-solid fa-exclamation-triangle" style="color: #ffc107;"></i> <strong>Missing:</strong> ${missingInboxes} inboxes</p>
+                            <hr>
+                            <p class="mb-0"><small>Please add more domains or save as draft to continue later.</small></p>
+                        </div>
+                    `,
+                    icon: 'error',
+                    showCancelButton: true,
+                    showConfirmButton: true,
+                    confirmButtonText: '<i class="fa-solid fa-file-pen"></i> Save as Draft',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#6c757d',
+                    cancelButtonColor: '#dc3545'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Save as draft only
+                        $('#is_draft').val('1');
+                        submitForm();
+                    }
+                    // If cancelled, do nothing
+                });
+                return false;
+            }
+            
+            // Case 2: Within 3 inboxes tolerance - show both draft and continue options
             Swal.fire({
                 title: 'Incomplete Order',
                 html: `
                     <p>You haven't finished adding all of your domains.</p>
                     <p><strong>Planned Total:</strong> ${originalTotalInboxes} inboxes</p>
                     <p><strong>Currently Used:</strong> ${currentTotalInboxes} inboxes</p>
+                    <p><strong>Missing:</strong> ${missingInboxes} inboxes</p>
                     <p>Are you sure you want to continue?</p>
                 `,
                 icon: 'warning',
@@ -2810,6 +3170,44 @@ $(document).ready(function() {
             error: function(xhr) {
                 Swal.close();
                 if (xhr.status === 422 && xhr.responseJSON.errors) {
+                    // Check if this is a status validation error
+                    if (xhr.responseJSON.errors.status && xhr.responseJSON.current_status) {
+                        const currentStatus = xhr.responseJSON.current_status;
+                        const allowedStatuses = xhr.responseJSON.allowed_statuses || ['draft', 'reject'];
+                        const canEdit = xhr.responseJSON.can_edit || false;
+                        
+                        console.log('Status validation error:', {
+                            current_status: currentStatus,
+                            allowed_statuses: allowedStatuses,
+                            can_edit: canEdit
+                        });
+                        
+                        Swal.fire({
+                            title: 'Cannot Edit Order',
+                            html: `
+                                <div class="text-start">
+                                    <p class="mb-3">${xhr.responseJSON.message}</p>
+                                    <div class="alert alert-warning">
+                                        <strong>Current Status:</strong> 
+                                        <span class="badge bg-warning text-dark">${currentStatus.toUpperCase()}</span>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        <strong>Allowed Statuses:</strong> 
+                                        ${allowedStatuses.map(s => `<span class="badge bg-info">${s.toUpperCase()}</span>`).join(' ')}
+                                    </div>
+                                </div>
+                            `,
+                            icon: 'warning',
+                            confirmButtonText: 'Go Back to Orders',
+                            allowOutsideClick: false
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.location.href = '{{ route("customer.orders") }}';
+                            }
+                        });
+                        return;
+                    }
+                    
                     // Handle validation errors from server
                     let firstErrorField = null;
                     Object.keys(xhr.responseJSON.errors).forEach(key => {
@@ -2826,10 +3224,14 @@ $(document).ready(function() {
                                 feedbackEl = field.closest('.form-group, .mb-3').find('.invalid-feedback');
                             }
                             if (!feedbackEl.length) {
-                                field.after(`<div class="invalid-feedback">${xhr.responseJSON.errors[key][0]}</div>`);
+                                feedbackEl = $(`<div class="invalid-feedback">${xhr.responseJSON.errors[key][0]}</div>`);
+                                field.after(feedbackEl);
                             } else {
                                 feedbackEl.text(xhr.responseJSON.errors[key][0]);
                             }
+                            // Ensure the feedback is displayed and stays visible (no auto-hide)
+                            feedbackEl.show();
+                            feedbackEl.css('display', 'block'); // Force display
                         }
                     });
                     
@@ -2841,12 +3243,17 @@ $(document).ready(function() {
                         }, 1500);
                     }
                     
-                    Swal.fire({
-                        title: 'Validation Error!',
-                        text: 'Please check the form for errors and try again.',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
+                    // Only show SweetAlert if the error is NOT for domains field
+                    // Domain validation errors should only show on the field itself
+                    const hasDomainError = xhr.responseJSON.errors && xhr.responseJSON.errors.domains;
+                    if (!hasDomainError) {
+                        Swal.fire({
+                            title: 'Validation Error!',
+                            text: 'Please check the form for errors and try again.',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
                 } else {
                     Swal.fire({
                         title: 'Error!',
@@ -2863,6 +3270,12 @@ $(document).ready(function() {
    function generatePrefixVariantFields(count) {
     const container = $('#prefix-variants-container');
     container.empty();
+    
+    // Check if provider_type is Private SMTP
+    @php
+        $isPrivateSMTP = isset($order) && ($order->provider_type === 'Private SMTP' || (isset($order->plan) && $order->plan->provider_type === 'Private SMTP'));
+    @endphp
+    const isPrivateSMTP = @json($isPrivateSMTP ?? false);
     
     // Add header
     container.append('<h5 class="mb-2 col-12">Email Persona - Prefix Variants</h5>');
@@ -2924,13 +3337,15 @@ $(document).ready(function() {
                             <p class="note">Last name for this email persona</p>
                         </div>
                         
-                        <div class="col-md-4">
+                        ${isPrivateSMTP ? '' : `
+                        <div class="col-md-4 profile-picture-field">
                             <label>Profile Picture Link</label>
                             <input type="url" name="prefix_variants_details[prefix_variant_${i}][profile_link]" 
                                 class="form-control" value="${existingDetails.profile_link || ''}" >
                             <div class="invalid-feedback" id="prefix_variant_${i}_profile_link-error"></div>
                             <p class="note">Profile picture URL for this persona</p>
                         </div>
+                        `}
 
                         <div class="col-md-12">
                             <label>Email Prefix ${i} *</label>
@@ -3040,7 +3455,7 @@ $(document).ready(function() {
         // Small delay to handle paste operations
         setTimeout(countDomains, 100);
     });
-    
+
     // Initial domain count on page load - with delay to ensure DOM is fully loaded
     setTimeout(() => {
         countDomains();
@@ -3059,6 +3474,33 @@ $(document).ready(function() {
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
 });
+
+// Copy Namecheap IP address to clipboard - Global function
+function copyNamecheapIP(event) {
+    const ipAddress = '144.172.95.185';
+    const button = event ? event.target.closest('button') : null;
+    const originalHTML = button ? button.innerHTML : '';
+    
+    navigator.clipboard.writeText(ipAddress).then(function() {
+        // Show success feedback
+        if (button) {
+            button.innerHTML = '<i class="fa-solid fa-check me-1"></i>Copied!';
+            button.classList.remove('btn-outline-secondary');
+            button.classList.add('btn-success');
+            
+            setTimeout(function() {
+                button.innerHTML = originalHTML;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-secondary');
+            }, 2000);
+        } else {
+            alert('IP address copied to clipboard: ' + ipAddress);
+        }
+    }).catch(function(err) {
+        console.error('Failed to copy IP address:', err);
+        alert('Failed to copy IP address. Please copy manually: ' + ipAddress);
+    });
+}
 </script>
 
 

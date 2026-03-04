@@ -166,23 +166,65 @@
 
     <div class="card">
         <div class="card-body">
-            <div class="table-responsive">
-                <table id="invoicesTable" class="w-100">
-                    <thead>
-                        <tr>
-                            <th>Invoice #</th>
-                            <th>Order ID #</th>
-                            <th>Date</th>
-                            {{-- <th>Due Date</th> --}}
-                            <th>Price</th>
-                            {{-- <th>Paid At</th> --}}
-                            {{-- <th>Subscription ID</th> --}}
-                            <th>Status</th>
-                            {{-- <th>Order Status</th> --}}
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                </table>
+            <ul class="nav nav-pills mb-3" role="tablist">
+                @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="pills-normal-tab" data-bs-toggle="pill"
+                        data-bs-target="#pills-normal" type="button" role="tab"
+                        aria-controls="pills-normal" aria-selected="true">
+                        <i class="fa-regular fa-file-lines me-1"></i>
+                        Normal Invoices
+                    </button>
+                </li>
+                @endif
+                @if(auth()->user()->customer_access === 'trial')
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {{ in_array(auth()->user()->customer_access, ['full', 'normal']) ? '' : 'active' }}" id="pills-trial-tab" data-bs-toggle="pill"
+                        data-bs-target="#pills-trial" type="button" role="tab"
+                        aria-controls="pills-trial" aria-selected="{{ in_array(auth()->user()->customer_access, ['full', 'normal']) ? 'false' : 'true' }}" tabindex="{{ in_array(auth()->user()->customer_access, ['full', 'normal']) ? '-1' : '0' }}">
+                        <i class="fa-solid fa-flask me-1"></i>
+                        Trial Invoices
+                    </button>
+                </li>
+                @endif
+            </ul>
+            <div class="tab-content" id="pills-tabContent">
+                @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
+                <div class="tab-pane fade show active" id="pills-normal" role="tabpanel" aria-labelledby="pills-normal-tab" tabindex="0">
+                    <div class="table-responsive">
+                        <table id="normalInvoicesTable" class="w-100">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Order ID #</th>
+                                    <th>Date</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+                @endif
+                @if(auth()->user()->customer_access === 'trial')
+                <div class="tab-pane fade {{ in_array(auth()->user()->customer_access, ['full', 'normal']) ? '' : 'show active' }}" id="pills-trial" role="tabpanel" aria-labelledby="pills-trial-tab" tabindex="0">
+                    <div class="table-responsive">
+                        <table id="trialInvoicesTable" class="w-100">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Order ID #</th>
+                                    <th>Date</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
     </div>
@@ -193,7 +235,25 @@
 <!-- <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script> -->
 <script>
     $(document).ready(function() {
-        var table = $('#invoicesTable').DataTable({
+        // Custom CSS for consistent styling
+        $('head').append(`
+            <style>
+                #normalInvoicesTable_wrapper .dataTables_length,
+                #normalInvoicesTable_wrapper .dataTables_filter,
+                #normalInvoicesTable_wrapper .dataTables_info,
+                #normalInvoicesTable_wrapper .dataTables_paginate,
+                #trialInvoicesTable_wrapper .dataTables_length,
+                #trialInvoicesTable_wrapper .dataTables_filter,
+                #trialInvoicesTable_wrapper .dataTables_info,
+                #trialInvoicesTable_wrapper .dataTables_paginate {
+                    padding: 0.5rem 0;
+                }
+            </style>
+        `);
+
+        // Normal Invoices DataTable
+        @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
+        var normalTable = $('#normalInvoicesTable').DataTable({
             responsive: {
                 details: {
                     display: $.fn.dataTable.Responsive.display.modal({
@@ -209,11 +269,8 @@
             ajax: {
                 url: "{{ route('customer.invoices.index') }}",
                 type: "GET",
-                error: function(xhr, error, thrown) {
-                    console.error('Error:', error);
-                    toastr.error('Error loading invoice data');
-                },
                 data: function(d) {
+                    d.invoice_type = 'normal';
                     d.status = $('#statusFilter').val();
                     d.startDate = $('#startDate').val();
                     d.endDate = $('#endDate').val();
@@ -221,6 +278,10 @@
                     d.orderId = $('#orderIdFilter').val();
                     d.orderStatus = $('#orderStatusFilter').val();
                     return d;
+                },
+                error: function(xhr, error, thrown) {
+                    console.error('Error:', error);
+                    toastr.error('Error loading invoice data');
                 }
             },
             columns: [
@@ -237,39 +298,13 @@
                         `;
                     }
                 },
-                // { 
-                //     data: 'created_at', name: 'created_at',
-                //     render: function(data, type, row) {
-                //         return `
-                //             <div class="d-flex gap-1 align-items-center opacity-50">
-                //                 <i class="ti ti-calendar-month"></i>
-                //                 <span>${data}</span>    
-                //             </div>
-                //         `;
-                //     }
-                // },
                 { 
                     data: 'amount', name: 'amount',
                     render: function(data, type, row) {
-                        return `
-                            <span class="text-warning">${data}</span>    
-                        `;
+                        return `<span class="text-warning">${data}</span>`;
                     } 
                 },
-                // { 
-                //     data: 'paid_at', name: 'paid_at',   
-                //     render: function(data, type, row) {
-                //         return `
-                //             <div class="d-flex gap-1 align-items-center opacity-50">
-                //                 <i class="ti ti-calendar-month"></i>
-                //                 <span>${data}</span>    
-                //             </div>
-                //         `;
-                //     }
-                // },
-                // { data: 'chargebee_subscription_id', name: 'chargebee_subscription_id' },
                 { data: 'status', name: 'status' },
-                // { data: 'status_manage_by_admin', name: 'status_manage_by_admin' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ],
             order: [[1, 'desc']],
@@ -282,10 +317,84 @@
                 }
             }
         });
+        @endif
+
+        // Trial Invoices DataTable
+        @if(auth()->user()->customer_access === 'trial')
+        var trialTable = $('#trialInvoicesTable').DataTable({
+            responsive: {
+                details: {
+                    display: $.fn.dataTable.Responsive.display.modal({
+                        header: function(row) {
+                            return 'Trial Invoice Details';
+                        }
+                    }),
+                    renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                }
+            },
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "{{ route('customer.invoices.index') }}",
+                type: "GET",
+                data: function(d) {
+                    d.invoice_type = 'trial';
+                    d.status = $('#statusFilter').val();
+                    d.startDate = $('#startDate').val();
+                    d.endDate = $('#endDate').val();
+                    d.priceRange = $('#priceRange').val();
+                    d.orderId = $('#orderIdFilter').val();
+                    d.orderStatus = $('#orderStatusFilter').val();
+                    return d;
+                },
+                error: function(xhr, error, thrown) {
+                    console.error('Error:', error);
+                    toastr.error('Error loading trial invoice data');
+                }
+            },
+            columns: [
+                { data: 'id', name: 'id', title: 'Invoice #' },
+                { data: 'order_id', name: 'order_id' },
+                { 
+                    data: 'created_at', name: 'created_at',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex gap-1 align-items-center opacity-50">
+                                <i class="ti ti-calendar-month"></i>
+                                <span>${data}</span>    
+                            </div>
+                        `;
+                    }
+                },
+                { 
+                    data: 'amount', name: 'amount',
+                    render: function(data, type, row) {
+                        return `<span class="text-warning">${data}</span>`;
+                    } 
+                },
+                { data: 'status', name: 'status' },
+                { data: 'action', name: 'action', orderable: false, searchable: false }
+            ],
+            order: [[1, 'desc']],
+            drawCallback: function(settings) {
+                if(settings.json && settings.json.counters) {
+                    $('#totalInvoices').text(settings.json.counters.total);
+                    $('#paidInvoices').text(settings.json.counters.paid);
+                    $('#pendingInvoices').text(settings.json.counters.pending);
+                    $('#failedInvoices').text(settings.json.counters.failed);
+                }
+            }
+        });
+        @endif
 
         // Apply filters when clicking the Filter button
         $('#applyFilters').on('click', function() {
-            table.draw();
+            @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
+            normalTable.draw();
+            @endif
+            @if(auth()->user()->customer_access === 'trial')
+            trialTable.draw();
+            @endif
         });
 
         // Clear filters when clicking the Clear button
@@ -296,16 +405,29 @@
             $('#priceRange').val('');
             $('#orderIdFilter').val('');
             $('#orderStatusFilter').val('');
-            table.draw();
+            @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
+            normalTable.draw();
+            @endif
+            @if(auth()->user()->customer_access === 'trial')
+            trialTable.draw();
+            @endif
         });
     });
 
-    function downloadInvoice(invoiceId) {
-        window.location.href = `/customer/invoices/${invoiceId}/download`;
+    function downloadInvoice(invoiceId, isTrial = false) {
+        if (isTrial) {
+            window.location.href = `/customer/pool-invoices/${invoiceId}/download`;
+        } else {
+            window.location.href = `/customer/invoices/${invoiceId}/download`;
+        }
     }
 
-    function viewInvoice(invoiceId) {
-        window.location.href = `/customer/invoices/${invoiceId}`;
+    function viewInvoice(invoiceId, isTrial = false) {
+        if (isTrial) {
+            window.location.href = `/customer/pool-invoices/${invoiceId}`;
+        } else {
+            window.location.href = `/customer/invoices/${invoiceId}`;
+        }
     }
 </script>
 @endpush

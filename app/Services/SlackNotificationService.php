@@ -18,7 +18,7 @@ class SlackNotificationService
     public static function send(string $type, $message): bool
     {
         try {
-            Log::channel('slack_notifications')->info("test 1 notification service============================");
+
 
             // Get the webhook settings for this type
             $setting = SlackSettings::where('type', $type)
@@ -33,17 +33,14 @@ class SlackNotificationService
 
             // Prepare payload based on message type
             $payload = [];
-             Log::channel('slack_notifications')->info("test 2 notification service============================");
 
             if (is_array($message)) {
-            Log::channel('slack_notifications')->info("test 3 notification service============================");
 
                 // If message is an array (structured message), use it directly
                 $payload = $message;
                 $payload['username'] = config('app.name', 'ProjectInbox');
                 $payload['icon_emoji'] = self::getEmojiForType($type);
             } else {
-            Log::channel('slack_notifications')->info("test 4 notification service============================");
 
                 // If message is a string, use simple format
                 $payload = [
@@ -57,7 +54,6 @@ class SlackNotificationService
             $response = Http::post($setting->url, $payload);
             
             if ($response->successful()) {
-                            Log::channel('slack_notifications')->info("test 5 notification service============================");
 
                 Log::channel('slack_notifications')->info("Slack notification sent successfully for type: {$type}", [
                     'type' => $type,
@@ -66,7 +62,6 @@ class SlackNotificationService
                 ]);
                 return true;
             } else {
-                            Log::channel('slack_notifications')->info("test 6 notification service============================");
 
                 Log::channel('slack_notifications')->error("Failed to send Slack notification. Response: " . $response->body(), [
                     'type' => $type,
@@ -77,7 +72,6 @@ class SlackNotificationService
             }
             
         } catch (\Exception $e) {
-                        Log::channel('slack_notifications')->info("test 7 notification service============================");
 
             Log::channel('slack_notifications')->error("Error sending Slack notification: " . $e->getMessage(), [
                 'type' => $type,
@@ -140,7 +134,8 @@ class SlackNotificationService
             'plan_name' => $planName,
             // 'split_count' => $splitCount,
             'created_by' => auth()->user() ? auth()->user()->name : 'System',
-            'created_at' => $order->created_at ? $order->created_at->format('Y-m-d H:i:s T') : 'N/A'
+            'created_at' => $order->created_at ? $order->created_at->format('Y-m-d H:i:s T') : 'N/A',
+            'provider_type' => $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null)
         ];
 
         // Prepare the message based on type
@@ -166,11 +161,62 @@ class SlackNotificationService
             'split_count' => $orderData['split_count'] ?? 0,
             'previous_status' => $orderData['previous_status'] ?? 'N/A',
             'new_status' => $orderData['new_status'] ?? 'N/A',
-            'updated_by' => auth()->user() ? auth()->user()->name : 'System'
+            'updated_by' => auth()->user() ? auth()->user()->name : 'System',
+            'provider_type' => $orderData['provider_type'] ?? 'N/A',
         ];
 
         // Prepare the message based on type
         $message = self::formatMessage('new-order-available', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
+     * Send delayed order notification to Slack (when order is in-progress for too long)
+     *
+     * @param array $orderData
+     * @return bool
+     */
+    public static function sendDelayedOrderNotification($orderData)
+    {
+        $data = [
+            'order_id' => $orderData['order_id'] ?? 'N/A',
+            'customer_name' => $orderData['customer_name'] ?? 'Unknown',
+            'customer_email' => $orderData['customer_email'] ?? 'Unknown',
+            'delay_hours' => $orderData['delay_hours'] ?? 24,
+            'pending_domains_count' => $orderData['pending_domains_count'] ?? 0,
+            'pending_domains' => $orderData['pending_domains'] ?? [],
+            'provider_type' => $orderData['provider_type'] ?? 'N/A',
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-delayed', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
+     * Send order fixed notification to Slack (when order status changes from reject to in-progress)
+     *
+     * @param array $orderData
+     * @return bool
+     */
+    public static function sendOrderFixedNotification($orderData)
+    {
+        $data = [
+            'order_id' => $orderData['order_id'] ?? $orderData['id'] ?? 'N/A',
+            'order_name' => $orderData['name'] ?? 'N/A',
+            'customer_name' => $orderData['customer_name'] ?? 'Unknown',
+            'customer_email' => $orderData['customer_email'] ?? 'Unknown',
+            'contractor_name' => $orderData['contractor_name'] ?? 'Unassigned',
+            'inbox_count' => $orderData['inbox_count'] ?? 0,
+            'split_count' => $orderData['split_count'] ?? 0,
+            'previous_status' => $orderData['previous_status'] ?? 'N/A',
+            'new_status' => $orderData['new_status'] ?? 'N/A',
+            'updated_by' => auth()->user() ? auth()->user()->name : 'System',
+            'provider_type' => $orderData['provider_type'] ?? 'N/A',
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-fixed', $data);
         return self::send('inbox-setup', $message);
     }
 
@@ -204,6 +250,9 @@ class SlackNotificationService
             $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
         }
 
+        // Get provider type from order or plan
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        
         $data = [
             'order_id' => $order->id,
             'order_name' => 'Order #' . $order->id,
@@ -213,7 +262,8 @@ class SlackNotificationService
             'inbox_count' => $inboxCount,
             'split_count' => $splitCount,
             'reason' => $reason ?: 'No reason provided',
-            'rejected_by' => auth()->user() ? auth()->user()->name : 'System'
+            'rejected_by' => auth()->user() ? auth()->user()->name : 'System',
+            'provider_type' => $providerType
         ];
 
         // Prepare the message based on type
@@ -261,6 +311,9 @@ class SlackNotificationService
             $workingTime = $hours > 0 ? "{$hours}h {$minutes}m" : "{$minutes}m";
         }
 
+        // Get provider type from order or plan
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        
         $data = [
             'order_id' => $order->id,
             'order_name' => 'Order #' . $order->id,
@@ -271,11 +324,60 @@ class SlackNotificationService
             'split_count' => $splitCount,
             'completed_at' => $completionTime ?: 'N/A',
             'working_time' => $workingTime ?: 'N/A',
-            'completed_by' => auth()->user() ? auth()->user()->name : 'System'
+            'completed_by' => auth()->user() ? auth()->user()->name : 'System',
+            'provider_type' => $providerType
         ];
 
         // Prepare the message based on type
         $message = self::formatMessage('order-completion', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
+     * Send order verification notification to Slack
+     *
+     * @param \App\Models\Order $order
+     * @return bool
+     */
+    public static function sendOrderVerificationNotification($order)
+    {
+        $data = [
+            'order_id' => $order->id,
+            'order_name' => 'Order #' . $order->id,
+            'customer_name' => $order->user ? $order->user->name : 'Unknown',
+            'customer_email' => $order->user ? $order->user->email : 'Unknown',
+            'contractor_name' => $order->assignedTo ? $order->assignedTo->name : 'Unassigned',
+            'verified_by' => auth()->user() ? auth()->user()->name : 'System',
+            'verified_at' => now()->format('Y-m-d H:i:s T'),
+            'completed_at' => $order->completed_at ? $order->completed_at->format('Y-m-d H:i:s T') : 'N/A',
+            'provider_type' => $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null)
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-verification', $data);
+        return self::send('inbox-setup', $message);
+    }
+
+    /**
+     * Send unverified completed order notification to Slack
+     *
+     * @param \App\Models\Order $order
+     * @return bool
+     */
+    public static function sendUnverifiedOrderNotification($order)
+    {
+        $data = [
+            'order_id' => $order->id,
+            'order_name' => 'Order #' . $order->id,
+            'customer_name' => $order->user ? $order->user->name : 'Unknown',
+            'customer_email' => $order->user ? $order->user->email : 'Unknown',
+            'contractor_name' => $order->assignedTo ? $order->assignedTo->name : 'Unassigned',
+            'completed_at' => $order->completed_at ? $order->completed_at->format('Y-m-d H:i:s T') : 'N/A',
+            'provider_type' => $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null)
+        ];
+
+        // Prepare the message based on type
+        $message = self::formatMessage('order-unverified', $data);
         return self::send('inbox-setup', $message);
     }
 
@@ -287,7 +389,6 @@ class SlackNotificationService
      */
     public static function sendOrderAssignmentNotification($order)
     {
-    Log::channel('slack_notifications')->info("test 1 slack notification sendOrderAssignmentNotification service============================");
 
         // Calculate inbox count and split count
         $inboxCount = 0;
@@ -310,6 +411,9 @@ class SlackNotificationService
             $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
         }
 
+        // Get provider type from order or plan
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        
         $data = [
             'order_id' => $order->id,
             'order_name' => 'Order #' . $order->id,
@@ -321,12 +425,12 @@ class SlackNotificationService
             'split_count' => $splitCount,
             'assigned_by' => auth()->user() ? auth()->user()->name : 'System',
             'status_manage_by_admin' => ucfirst($order->status_manage_by_admin),
-            'reassignment_note' => $order->reassignment_note
+            'reassignment_note' => $order->reassignment_note,
+            'provider_type' => $providerType
         ];
 
         // Prepare the message based on type
         $message = self::formatMessage('order-assignment', $data);
-        Log::channel('slack_notifications')->info("test 1 slack notification sendOrderAssignmentNotification service============================");
 
         return self::send('inbox-setup', $message);
     }
@@ -374,6 +478,9 @@ class SlackNotificationService
         }
         // get names
         $helpersNames = $helpers->pluck('name')->toArray();
+        // Get provider type from order or plan
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        
         $data = [
             'order_id' => $order->id,
             'order_name' => 'Order #' . $order->id,
@@ -388,7 +495,8 @@ class SlackNotificationService
             'reassigned_by' => auth()->user() ? auth()->user()->name : 'System',
             'status_manage_by_admin' => ucfirst($order->status_manage_by_admin),
             'reassignment_note' => $order->reassignment_note,
-            'helpers_names' => $helpersNames
+            'helpers_names' => $helpersNames,
+            'provider_type' => $providerType
         ];
 
         // Prepare the message based on type
@@ -429,6 +537,9 @@ class SlackNotificationService
 
         $oldContractor = \App\Models\User::find($oldAssignedTo);
 
+        // Get provider type from order or plan
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        
         $data = [
             'order_id' => $order->id,
             'order_name' => 'Order #' . $order->id,
@@ -440,7 +551,8 @@ class SlackNotificationService
             'split_count' => $splitCount,
             'unassigned_by' => auth()->user() ? auth()->user()->name : 'System',
             'status_manage_by_admin' => ucfirst($order->status_manage_by_admin),
-            'unassignment_note' => $order->unassignment_note
+            'unassignment_note' => $order->unassignment_note,
+            'provider_type' => $providerType
         ];
 
         // Prepare the message based on type
@@ -483,12 +595,24 @@ class SlackNotificationService
                 $removalTaskDate = 'Removal task shows at end of billing cycle';
             }
         }
+        
+        // Check if this is a Private SMTP order with automation enabled
+        $automationEnabled = config('mailin_ai.automation_enabled', false);
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        $isPrivateSMTPAutomation = $automationEnabled && strtolower($providerType) === 'private smtp';
+        
+        // Modify reason for automation flow
+        $displayReason = $reason ?: 'No reason provided';
+        if ($isPrivateSMTPAutomation) {
+            $displayReason = 'System will automatically delete mailboxes. ' . ($reason ?: 'Automated cleanup process initiated.');
+        }
+        
         $data = [
             'inbox_id' => $order->id,
             'order_id' => $order->id, // Keep for backward compatibility
             'customer_name' => $order->user ? $order->user->name : 'Unknown',
             'customer_email' => $order->user ? $order->user->email : 'Unknown',
-            'reason' => $reason ?: 'No reason provided',
+            'reason' => $displayReason,
             'cancelled_by' => auth()->user() ? auth()->user()->name : 'System',
             'cancellation_type' => $cancellationType,
             'removal_domains_task_date' => $removalTaskDate
@@ -718,6 +842,27 @@ class SlackNotificationService
     }
     
     /**
+     * Send assignment failed notification to Slack
+     *
+     * @param \App\Models\PoolOrder $poolOrder
+     * @param string $reason
+     * @return bool
+     */
+    public static function sendAssignmentFailedNotification($poolOrder, $reason)
+    {
+        $data = [
+            'order_id' => $poolOrder->id,
+            'customer_name' => $poolOrder->user ? $poolOrder->user->name : 'Unknown',
+            'quantity' => $poolOrder->quantity,
+            'reason' => $reason,
+            'created_at' => now()->format('Y-m-d H:i:s T')
+        ];
+
+        $message = self::formatMessage('assignment-failed', $data);
+        return self::send('trial-orders', $message);
+    }
+
+    /**
      * Format message based on type and data
      *
      * @param string $type
@@ -729,6 +874,39 @@ class SlackNotificationService
         $appName = config('app.name', 'ProjectInbox');
         
         switch ($type) {
+            case 'assignment-failed':
+                return [
+                    'text' => "⚠️ *Auto-Assignment Failed*",
+                    'attachments' => [
+                        [
+                            'color' => '#dc3545',
+                            'fields' => [
+                                [
+                                    'title' => 'Order ID',
+                                    'value' => $data['order_id'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Customer',
+                                    'value' => $data['customer_name'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Required Quantity',
+                                    'value' => $data['quantity'] ?? 'N/A',
+                                    'short' => true
+                                ],
+                                [
+                                    'title' => 'Reason',
+                                    'value' => $data['reason'] ?? 'N/A',
+                                    'short' => false
+                                ]
+                            ],
+                            'footer' => config('app.name', 'ProjectInbox') . ' - System Alert',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
             case 'invoice-generated-new':
                 Log::channel('slack_notifications')->info("Formatting message for type: {$type}", [
                     'data' => $data,
@@ -1274,68 +1452,221 @@ class SlackNotificationService
                 ];
                 
             case 'new-order-available':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                // Build fields array
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                ];
+                
+                // For Private SMTP: Show "Assigned to: Automation", otherwise show "Contractor Name"
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
+                        'title' => 'Contractor Name',
+                        'value' => $data['contractor_name'] ?? 'Unassigned',
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Inbox Count',
+                    'value' => $data['inbox_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                // For Private SMTP: Don't show Previous Status
+                if (!$isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Previous Status',
+                        'value' => ucfirst($data['previous_status'] ?? 'N/A'),
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'New Status',
+                    'value' => ucfirst($data['new_status'] ?? 'N/A'),
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Updated By',
+                    'value' => $data['updated_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Timestamp',
+                    'value' => now()->format('Y-m-d H:i:s T'),
+                    'short' => false
+                ];
+                
                 return [
                     'text' => "🆕 *New Order Available Notification*",
                     'attachments' => [
                         [
                             'color' => '#17a2b8',
-                            'fields' => [
-                                [
-                                    'title' => 'Order ID',
-                                    'value' => $data['order_id'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                // [
-                                //     'title' => 'Order Name',
-                                //     'value' => $data['order_name'] ?? 'N/A',
-                                //     'short' => true
-                                // ],
-                                [
-                                    'title' => 'Customer Name',
-                                    'value' => $data['customer_name'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                // [
-                                //     'title' => 'Customer Email',
-                                //     'value' => $data['customer_email'] ?? 'N/A',
-                                //     'short' => true
-                                // ],
-                                [
-                                    'title' => 'Contractor Name',
-                                    'value' => $data['contractor_name'] ?? 'Unassigned',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Inbox Count',
-                                    'value' => $data['inbox_count'] ?? '0',
-                                    'short' => true
-                                ],
-                                // [
-                                //     'title' => 'Split Count',
-                                //     'value' => $data['split_count'] ?? '0',
-                                //     'short' => true
-                                // ],
-                                [
-                                    'title' => 'Previous Status',
-                                    'value' => ucfirst($data['previous_status'] ?? 'N/A'),
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'New Status',
-                                    'value' => ucfirst($data['new_status'] ?? 'N/A'),
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Updated By',
-                                    'value' => $data['updated_by'] ?? 'System',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Timestamp',
-                                    'value' => now()->format('Y-m-d H:i:s T'),
-                                    'short' => false
-                                ]
-                            ],
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+                
+            case 'order-fixed':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                // Build fields array
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                ];
+                
+                // For Private SMTP: Show "Assigned to: Automation", otherwise show "Contractor Name"
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
+                        'title' => 'Contractor Name',
+                        'value' => $data['contractor_name'] ?? 'Unassigned',
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Inbox Count',
+                    'value' => $data['inbox_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                // For Private SMTP: Don't show Previous Status
+                if (!$isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Previous Status',
+                        'value' => ucfirst($data['previous_status'] ?? 'N/A'),
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'New Status',
+                    'value' => ucfirst($data['new_status'] ?? 'N/A'),
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Updated By',
+                    'value' => $data['updated_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Timestamp',
+                    'value' => now()->format('Y-m-d H:i:s T'),
+                    'short' => false
+                ];
+                
+                return [
+                    'text' => "✅ *Customer Has Fixed Order*",
+                    'attachments' => [
+                        [
+                            'color' => '#28a745',
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+                
+            case 'order-delayed':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                $pendingDomainsList = '';
+                if (isset($data['pending_domains']) && is_array($data['pending_domains']) && count($data['pending_domains']) > 0) {
+                    $pendingDomainsList = implode(', ', array_slice($data['pending_domains'], 0, 10));
+                    if (count($data['pending_domains']) > 10) {
+                        $pendingDomainsList .= '... (' . (count($data['pending_domains']) - 10) . ' more)';
+                    }
+                }
+                
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Delay Duration',
+                        'value' => ($data['delay_hours'] ?? 24) . ' hours',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Pending Domains',
+                        'value' => ($data['pending_domains_count'] ?? 0) . ' domain(s)',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Reason',
+                        'value' => 'Order is in-progress and pending Mailin confirmation. System automation is waiting for domain transfer completion.',
+                        'short' => false
+                    ],
+                ];
+                
+                if (!empty($pendingDomainsList)) {
+                    $fields[] = [
+                        'title' => 'Pending Domain Names',
+                        'value' => $pendingDomainsList,
+                        'short' => false
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Timestamp',
+                    'value' => now()->format('Y-m-d H:i:s T'),
+                    'short' => false
+                ];
+                
+                return [
+                    'text' => "⏳ *Order Delayed - Pending Mailin Confirmation*",
+                    'attachments' => [
+                        [
+                            'color' => '#ffc107',
+                            'fields' => $fields,
                             'footer' => $appName . ' Slack Integration',
                             'ts' => time()
                         ]
@@ -1343,63 +1674,72 @@ class SlackNotificationService
                 ];
                 
             case 'order-rejection':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Order Name',
+                        'value' => $data['order_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                ];
+                
+                // For Private SMTP: Show "Assigned To: Automation", otherwise show "Contractor Name"
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
+                        'title' => 'Contractor Name',
+                        'value' => $data['contractor_name'] ?? 'Unassigned',
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Inbox Count',
+                    'value' => $data['inbox_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Rejected By',
+                    'value' => $data['rejected_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Reason',
+                    'value' => $data['reason'] ?? 'No reason provided',
+                    'short' => false
+                ];
+                
+                $fields[] = [
+                    'title' => 'Timestamp',
+                    'value' => now()->format('Y-m-d H:i:s T'),
+                    'short' => true
+                ];
+                
                 return [
                     'text' => "❌ *Order Rejection Notification*",
                     'attachments' => [
                         [
                             'color' => '#dc3545',
-                            'fields' => [
-                                [
-                                    'title' => 'Order ID',
-                                    'value' => $data['order_id'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Order Name',
-                                    'value' => $data['order_name'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Customer Name',
-                                    'value' => $data['customer_name'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                // [
-                                //     'title' => 'Customer Email',
-                                //     'value' => $data['customer_email'] ?? 'N/A',
-                                //     'short' => true
-                                // ],
-                                [
-                                    'title' => 'Contractor Name',
-                                    'value' => $data['contractor_name'] ?? 'Unassigned',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Inbox Count',
-                                    'value' => $data['inbox_count'] ?? '0',
-                                    'short' => true
-                                ],
-                                // [
-                                //     'title' => 'Split Count',
-                                //     'value' => $data['split_count'] ?? '0',
-                                //     'short' => true
-                                // ],
-                                [
-                                    'title' => 'Rejected By',
-                                    'value' => $data['rejected_by'] ?? 'System',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Reason',
-                                    'value' => $data['reason'] ?? 'No reason provided',
-                                    'short' => false
-                                ],
-                                [
-                                    'title' => 'Timestamp',
-                                    'value' => now()->format('Y-m-d H:i:s T'),
-                                    'short' => true
-                                ]
-                            ],
+                            'fields' => $fields,
                             'footer' => $appName . ' Slack Integration',
                             'ts' => time()
                         ]
@@ -1407,68 +1747,212 @@ class SlackNotificationService
                 ];
                 
             case 'order-completion':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Order Name',
+                        'value' => $data['order_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                ];
+                
+                // For Private SMTP: Show "Assigned To: Automation", otherwise show "Contractor Name"
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
+                        'title' => 'Contractor Name',
+                        'value' => $data['contractor_name'] ?? 'Unassigned',
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Inbox Count',
+                    'value' => $data['inbox_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Split Count',
+                    'value' => $data['split_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Working Time',
+                    'value' => $data['working_time'] ?? 'N/A',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Completed By',
+                    'value' => $data['completed_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Completed At',
+                    'value' => $data['completed_at'] ?? 'N/A',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Timestamp',
+                    'value' => now()->format('Y-m-d H:i:s T'),
+                    'short' => false
+                ];
+                
                 return [
                     'text' => "✅ *Order Completion Notification*",
                     'attachments' => [
                         [
                             'color' => '#28a745',
-                            'fields' => [
-                                [
-                                    'title' => 'Order ID',
-                                    'value' => $data['order_id'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Order Name',
-                                    'value' => $data['order_name'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Customer Name',
-                                    'value' => $data['customer_name'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                // [
-                                //     'title' => 'Customer Email',
-                                //     'value' => $data['customer_email'] ?? 'N/A',
-                                //     'short' => true
-                                // ],
-                                [
-                                    'title' => 'Contractor Name',
-                                    'value' => $data['contractor_name'] ?? 'Unassigned',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Inbox Count',
-                                    'value' => $data['inbox_count'] ?? '0',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Split Count',
-                                    'value' => $data['split_count'] ?? '0',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Working Time',
-                                    'value' => $data['working_time'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Completed By',
-                                    'value' => $data['completed_by'] ?? 'System',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Completed At',
-                                    'value' => $data['completed_at'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Timestamp',
-                                    'value' => now()->format('Y-m-d H:i:s T'),
-                                    'short' => false
-                                ]
-                            ],
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'order-verification':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Email',
+                        'value' => $data['customer_email'] ?? 'N/A',
+                        'short' => true
+                    ],
+                ];
+                
+                // For Private SMTP: Show "Assigned To: Automation", otherwise show "Contractor Name"
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
+                        'title' => 'Contractor Name',
+                        'value' => $data['contractor_name'] ?? 'Unassigned',
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Verified By',
+                    'value' => $data['verified_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Verified At',
+                    'value' => $data['verified_at'] ?? 'N/A',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Completed At',
+                    'value' => $data['completed_at'] ?? 'N/A',
+                    'short' => true
+                ];
+                
+                return [
+                    'text' => "✅ *Order Verified*",
+                    'attachments' => [
+                        [
+                            'color' => '#28a745',
+                            'fields' => $fields,
+                            'footer' => $appName . ' Slack Integration',
+                            'ts' => time()
+                        ]
+                    ]
+                ];
+
+            case 'order-unverified':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Email',
+                        'value' => $data['customer_email'] ?? 'N/A',
+                        'short' => true
+                    ],
+                ];
+                
+                // For Private SMTP: Show "Assigned To: Automation", otherwise show "Contractor Name"
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
+                        'title' => 'Contractor Name',
+                        'value' => $data['contractor_name'] ?? 'Unassigned',
+                        'short' => true
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Completed At',
+                    'value' => $data['completed_at'] ?? 'N/A',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Status',
+                    'value' => '⚠️ Completed but Not Verified',
+                    'short' => true
+                ];
+                
+                return [
+                    'text' => "⚠️ *Unverified Completed Order*",
+                    'attachments' => [
+                        [
+                            'color' => '#ffc107',
+                            'fields' => $fields,
                             'footer' => $appName . ' Slack Integration',
                             'ts' => time()
                         ]
@@ -1476,6 +1960,9 @@ class SlackNotificationService
                 ];
                 
             case 'order-assignment':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
                 $fields = [
                     [
                         'title' => 'Order ID',
@@ -1492,36 +1979,50 @@ class SlackNotificationService
                         'value' => $data['customer_name'] ?? 'N/A',
                         'short' => true
                     ],
-                    [
+                ];
+                
+                // For Private SMTP: Show "Assigned To: Automation", otherwise show contractor info
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
                         'title' => 'Assigned To',
                         'value' => $data['contractor_name'] ?? 'Unassigned',
                         'short' => true
-                    ],
-                    [
+                    ];
+                    $fields[] = [
                         'title' => 'Contractor Email',
                         'value' => $data['contractor_email'] ?? 'N/A',
                         'short' => true
-                    ],
-                    [
-                        'title' => 'Inbox Count',
-                        'value' => $data['inbox_count'] ?? '0',
-                        'short' => true
-                    ],
-                    [
-                        'title' => 'Split Count',
-                        'value' => $data['split_count'] ?? '0',
-                        'short' => true
-                    ],
-                    [
-                        'title' => 'Assigned By',
-                        'value' => $data['assigned_by'] ?? 'System',
-                        'short' => true
-                    ],
-                    [
-                        'title' => 'Timestamp',
-                        'value' => now()->format('Y-m-d H:i:s T'),
-                        'short' => true
-                    ],
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Inbox Count',
+                    'value' => $data['inbox_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Split Count',
+                    'value' => $data['split_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Assigned By',
+                    'value' => $data['assigned_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Timestamp',
+                    'value' => now()->format('Y-m-d H:i:s T'),
+                    'short' => true
                 ];
 
                 // ✅ Add Reassignment Note only if not empty
@@ -1546,73 +2047,83 @@ class SlackNotificationService
                 ];
 
             case 'contractor-assignment':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
+                $fields = [
+                    [
+                        'title' => 'Order ID',
+                        'value' => $data['order_id'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Order Status',
+                        'value' => $data['order_status'] ?? 'N/A',
+                        'short' => true
+                    ],
+                    [
+                        'title' => 'Customer Name',
+                        'value' => $data['customer_name'] ?? 'N/A',
+                        'short' => true
+                    ],
+                ];
+                
+                // For Private SMTP: Show "Assigned To: Automation", otherwise show contractor info
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
+                        'title' => 'Contractor Name',
+                        'value' => $data['assigned_to'] ?? 'N/A',
+                        'short' => true
+                    ];
+                    $fields[] = [
+                        'title' => 'Assigned Helper(s)',
+                        'value' => $data['contractor_names'] ?? 'None',
+                        'short' => false
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Inbox Count',
+                    'value' => $data['inbox_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Request Status',
+                    'value' => '✅ ' . ($data['request_status'] ?? 'N/A'),
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Assigned By',
+                    'value' => $data['assigned_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Assigned At',
+                    'value' => $data['assigned_at'] ?? 'N/A',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Note',
+                    'value' => $data['shared_note'] ?? 'No note provided',
+                    'short' => false
+                ];
+                
                 return [
                     'text' => "👥 *Helper Assigned Notification*",
                     'attachments' => [
                         [
                             'color' => '#28a745',
-                            'fields' => [
-                                [
-                                    'title' => 'Order ID',
-                                    'value' => $data['order_id'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Order Status',
-                                    'value' => $data['order_status'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Customer Name',
-                                    'value' => $data['customer_name'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Contractor Name',
-                                    'value' => $data['assigned_to'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                // [
-                                //     'title' => 'Plan Name',
-                                //     'value' => $data['plan_name'] ?? 'N/A',
-                                //     'short' => true
-                                // ],
-                                [
-                                    'title' => 'Assigned Helper(s)',
-                                    'value' => $data['contractor_names'] ?? 'None',
-                                    'short' => false
-                                ],
-                                // [
-                                //     'title' => 'Contractor Count',
-                                //     'value' => $data['contractor_count'] ?? '0',
-                                //     'short' => true
-                                // ],
-                                [
-                                    'title' => 'Inbox Count',
-                                    'value' => $data['inbox_count'] ?? '0',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Request Status',
-                                    'value' => '✅ ' . ($data['request_status'] ?? 'N/A'),
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Assigned By',
-                                    'value' => $data['assigned_by'] ?? 'System',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Assigned At',
-                                    'value' => $data['assigned_at'] ?? 'N/A',
-                                    'short' => true
-                                ],
-                                [
-                                    'title' => 'Note',
-                                    'value' => $data['shared_note'] ?? 'No note provided',
-                                    'short' => false
-                                ],
-                            ],
+                            'fields' => $fields,
                             'footer' => $appName . ' - Contractor Management',
                             'ts' => time()
                         ]
@@ -2052,6 +2563,9 @@ class SlackNotificationService
                 ];
                 
             case 'order-reassignment':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
                 $fields = [
                     [
                         'title' => 'Order ID',
@@ -2068,41 +2582,55 @@ class SlackNotificationService
                         'value' => $data['customer_name'] ?? 'N/A',
                         'short' => true
                     ],
-                    [
+                ];
+                
+                // For Private SMTP: Show "Assigned To: Automation", otherwise show contractor info
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
                         'title' => 'Previous Contractor',
                         'value' => $data['old_contractor_name'] ?? 'Unknown',
                         'short' => true
-                    ],
-                    [
+                    ];
+                    $fields[] = [
                         'title' => 'New Contractor',
                         'value' => $data['new_contractor_name'] ?? 'Unknown',
                         'short' => true
-                    ],
-                    [
+                    ];
+                    $fields[] = [
                         'title' => 'New Contractor Email',
                         'value' => $data['new_contractor_email'] ?? 'N/A',
                         'short' => true
-                    ],
-                    [
-                        'title' => 'Inbox Count',
-                        'value' => $data['inbox_count'] ?? '0',
-                        'short' => true
-                    ],
-                    [
-                        'title' => 'Split Count',
-                        'value' => $data['split_count'] ?? '0',
-                        'short' => true
-                    ],
-                    [
-                        'title' => 'Reassigned By',
-                        'value' => $data['reassigned_by'] ?? 'System',
-                        'short' => true
-                    ],
-                    [
-                        'title' => 'Timestamp',
-                        'value' => now()->format('Y-m-d H:i:s T'),
-                        'short' => true
-                    ],
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Inbox Count',
+                    'value' => $data['inbox_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Split Count',
+                    'value' => $data['split_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Reassigned By',
+                    'value' => $data['reassigned_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Timestamp',
+                    'value' => now()->format('Y-m-d H:i:s T'),
+                    'short' => true
                 ];
 
                 // Add Reassignment Note only if not empty
@@ -2135,6 +2663,9 @@ class SlackNotificationService
                 ];
 
             case 'order-unassignment':
+                // Check if this is a Private SMTP order
+                $isPrivateSMTP = isset($data['provider_type']) && strtolower($data['provider_type']) === 'private smtp';
+                
                 $fields = [
                     [
                         'title' => 'Order ID',
@@ -2151,36 +2682,50 @@ class SlackNotificationService
                         'value' => $data['customer_name'] ?? 'N/A',
                         'short' => true
                     ],
-                    [
+                ];
+                
+                // For Private SMTP: Show "Assigned To: Automation", otherwise show contractor info
+                if ($isPrivateSMTP) {
+                    $fields[] = [
+                        'title' => 'Assigned To',
+                        'value' => 'Automation',
+                        'short' => true
+                    ];
+                } else {
+                    $fields[] = [
                         'title' => 'Previously Assigned To',
                         'value' => $data['old_contractor_name'] ?? 'Unknown',
                         'short' => true
-                    ],
-                    [
+                    ];
+                    $fields[] = [
                         'title' => 'Previous Contractor Email',
                         'value' => $data['old_contractor_email'] ?? 'N/A',
                         'short' => true
-                    ],
-                    [
-                        'title' => 'Inbox Count',
-                        'value' => $data['inbox_count'] ?? '0',
-                        'short' => true
-                    ],
-                    [
-                        'title' => 'Split Count',
-                        'value' => $data['split_count'] ?? '0',
-                        'short' => true
-                    ],
-                    [
-                        'title' => 'Unassigned By',
-                        'value' => $data['unassigned_by'] ?? 'System',
-                        'short' => true
-                    ],
-                    [
-                        'title' => 'Timestamp',
-                        'value' => now()->format('Y-m-d H:i:s T'),
-                        'short' => true
-                    ],
+                    ];
+                }
+                
+                $fields[] = [
+                    'title' => 'Inbox Count',
+                    'value' => $data['inbox_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Split Count',
+                    'value' => $data['split_count'] ?? '0',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Unassigned By',
+                    'value' => $data['unassigned_by'] ?? 'System',
+                    'short' => true
+                ];
+                
+                $fields[] = [
+                    'title' => 'Timestamp',
+                    'value' => now()->format('Y-m-d H:i:s T'),
+                    'short' => true
                 ];
 
                 // Add Unassignment Note only if not empty
@@ -2245,6 +2790,8 @@ class SlackNotificationService
     {
         $emojis = [
             'new-order-available' => ':new:',
+            'order-fixed' => ':white_check_mark:',
+            'order-delayed' => ':hourglass_flowing_sand:',
             'order-rejection' => ':no_entry_sign:',
             'order-completion' => ':white_check_mark:',
             'order-assignment' => ':bust_in_silhouette:',
@@ -2596,6 +3143,9 @@ class SlackNotificationService
             $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
         }
 
+        // Get provider type from order or plan
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        
         $data = [
             'order_id' => $order->id,
             'order_name' => 'Order #' . $order->id,
@@ -2612,7 +3162,8 @@ class SlackNotificationService
             'split_count' => $splitCount,
             'assigned_by' => auth()->user() ? auth()->user()->name : 'System',
             'request_status' => 'Confirmed',
-            'assigned_at' => now()->format('Y-m-d H:i:s T')
+            'assigned_at' => now()->format('Y-m-d H:i:s T'),
+            'provider_type' => $providerType
         ];
 
         // Prepare the message based on type
@@ -2651,6 +3202,9 @@ class SlackNotificationService
             $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
         }
 
+        // Get provider type from order or plan
+        $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+        
         $data = [
             'order_id' => $order->id,
             'order_name' => 'Order #' . $order->id,
@@ -2664,12 +3218,102 @@ class SlackNotificationService
             'split_count' => $splitCount,
             'changed_by' => auth()->user() ? auth()->user()->name : 'System',
             'order_status' => $order->status_manage_by_admin ? ucfirst(str_replace('_', ' ', $order->status_manage_by_admin)) : 'N/A',
-            'changed_at' => now()->format('Y-m-d H:i:s T')
+            'changed_at' => now()->format('Y-m-d H:i:s T'),
+            'provider_type' => $providerType
         ];
 
         // Prepare the message based on type
         $message = self::formatMessage('order-shared-status-change', $data);
         return self::send('inbox-setup', $message);
+    }
+
+    /**
+     * Send domain transfer task notification to Slack
+     *
+     * @param int $orderId
+     * @param array $transferredDomains Array of ['domain' => string, 'name_servers' => array, 'transfer_id' => int]
+     * @param \App\Models\Order $order
+     * @return bool
+     */
+    public static function sendDomainTransferTaskNotification($orderId, $transferredDomains, $order)
+    {
+        try {
+            // Build domains list with nameservers
+            $domainsList = '';
+            foreach ($transferredDomains as $index => $domainData) {
+                $nameServersList = !empty($domainData['name_servers']) 
+                    ? implode(', ', $domainData['name_servers']) 
+                    : 'N/A';
+                $domainsList .= ($index + 1) . ". *{$domainData['domain']}*\n";
+                $domainsList .= "   Nameservers: {$nameServersList}\n";
+                $domainsList .= "   Status: Pending\n\n";
+            }
+
+            $customer = $order->user;
+            $planName = $order->plan ? $order->plan->name : 'N/A';
+
+            $message = [
+                'text' => "🔄 *Domain Transfer Task Created*",
+                'attachments' => [
+                    [
+                        'color' => '#FFA500', // Orange color for pending tasks
+                        'title' => "Order #{$orderId} - Domain Transfer Required",
+                        'fields' => [
+                            [
+                                'title' => 'Order ID',
+                                'value' => "#{$orderId}",
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Customer',
+                                'value' => $customer ? "{$customer->name} ({$customer->email})" : 'N/A',
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Plan',
+                                'value' => $planName,
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Domains to Transfer',
+                                'value' => count($transferredDomains),
+                                'short' => true
+                            ],
+                            [
+                                'title' => 'Domain Details',
+                                'value' => trim($domainsList),
+                                'short' => false
+                            ]
+                        ],
+                        'footer' => config('app.name', 'ProjectInbox') . ' - Domain Transfer System',
+                        'ts' => time()
+                    ]
+                ]
+            ];
+
+            $result = self::send('inbox-setup', $message);
+            
+            if ($result) {
+                Log::channel('slack_notifications')->info('Domain transfer task notification sent successfully', [
+                    'order_id' => $orderId,
+                    'domains_count' => count($transferredDomains),
+                ]);
+            } else {
+                Log::channel('slack_notifications')->warning('Failed to send domain transfer task notification', [
+                    'order_id' => $orderId,
+                ]);
+            }
+            
+            return $result;
+            
+        } catch (\Exception $e) {
+            Log::channel('slack_notifications')->error('Error sending domain transfer task notification', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
     }
 
     /**

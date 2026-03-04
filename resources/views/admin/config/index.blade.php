@@ -60,24 +60,241 @@
     .timeline:not(.timeline-center) {
         padding-inline-start: .5rem;
     }
+
+    #logoThumbnail {
+        transition: all 0.3s ease;
+    }
+
+    #logoThumbnail:hover {
+        border-color: #007bff !important;
+        box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+    }
+
+    /* Provider Split Styles (matching Slack Settings) */
+    .webhook-form {
+        background-color: #ffffff1d;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .webhook-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .webhook-title {
+        color: var(--white-color);
+        font-weight: 600;
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .status-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        color: var(--extra-light);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-control {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--white-color);
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+    }
+
+    .form-control:focus {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-color: var(--second-primary);
+        color: var(--white-color);
+        box-shadow: 0 0 0 0.2rem rgba(var(--second-primary-rgb), 0.25);
+    }
+
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .btn-save {
+        background-color: var(--second-primary);
+        border-color: var(--second-primary);
+        color: white;
+    }
+
+    .btn-save:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+        color: white;
+    }
+
+    .form-switch {
+        padding-left: 2.5em;
+    }
+
+    .form-switch .form-check-input {
+        width: 2em;
+        margin-left: -2.5em;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255, 255, 255, 0.25%29'/%3e%3c/svg%3e");
+        background-color: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .form-switch .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255, 255, 255, 1.0%29'/%3e%3c/svg%3e");
+        box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+    }
+
+    .status-indicator {
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-left: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .status-indicator.enabled {
+        color: #28a745;
+        background-color: rgba(40, 167, 69, 0.1);
+        border: 1px solid rgba(40, 167, 69, 0.2);
+    }
+
+    .status-indicator.disabled {
+        color: #6c757d;
+        background-color: rgba(108, 117, 125, 0.1);
+        border: 1px solid rgba(108, 117, 125, 0.2);
+    }
+
+    .validation-error {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-text {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    /* Improved visibility for SMTP Provider Split Configuration helper text */
+    .provider-split-form .form-text,
+    .provider-split-form .form-text.text-muted {
+        color: rgba(255, 255, 255, 0.85) !important;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        opacity: 1;
+    }
+
+    /* Password Toggle Styles */
+    .password-wrapper {
+        position: relative;
+    }
+
+    .password-wrapper .form-control {
+        padding-right: 40px;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.8);
+        z-index: 10;
+        font-size: 1rem;
+        transition: color 0.2s ease;
+        background-color: transparent;
+        border: none;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .password-toggle:hover {
+        color: var(--white-color);
+    }
+
+    .password-toggle:active {
+        opacity: 0.8;
+    }
+
+    /* Simple Glassy Alert Styles for SMTP Provider Split Configuration */
+    #smtp_provider_split-pane .alert {
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    #smtp_provider_split-pane .alert-info {
+        background: rgba(13, 110, 253, 0.15) !important;
+        border-color: rgba(13, 110, 253, 0.3) !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
+
+    #smtp_provider_split-pane .alert-success {
+        background: rgba(25, 135, 84, 0.15) !important;
+        border-color: rgba(25, 135, 84, 0.3) !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
+
+    #smtp_provider_split-pane .alert-warning {
+        background: rgba(255, 193, 7, 0.15) !important;
+        border-color: rgba(255, 193, 7, 0.3) !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
+
+    #smtp_provider_split-pane .alert .alert-heading {
+        color: rgba(255, 255, 255, 0.95) !important;
+        font-weight: 600;
+    }
+
+    #smtp_provider_split-pane .alert p,
+    #smtp_provider_split-pane .alert ol,
+    #smtp_provider_split-pane .alert li {
+        color: rgba(255, 255, 255, 0.85) !important;
+    }
+
+    #smtp_provider_split-pane .alert strong {
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="row py-4">
 
-    <div class="col-xl-8 col-lg-5">
+    <div class="col-12">
         <ul class="nav nav-tabs border-0" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="chargebee-tab" data-bs-toggle="tab"
                     data-bs-target="#chargebee_configuration_tab-pane" type="button" role="tab" aria-controls="chargebee_configuration_tab-pane"
                     aria-selected="false"><i class="fa-solid fa-unlock"></i> Chargebee Configuration</button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="plan-tab" data-bs-toggle="tab" data-bs-target="#plans-tab-pane"
-                    type="button" role="tab" aria-controls="notify-tab-pane" aria-selected="false"><i
-                        class="fa-regular fa-gear"></i> Plan Configuration</button>
-            </li>
+            
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="notify-tab" data-bs-toggle="tab" data-bs-target="#backup-tab-pane"
                     type="button" role="tab" aria-controls="backup-tab-pane" aria-selected="false"><i
@@ -88,6 +305,21 @@
                     type="button" role="tab" aria-controls="system_configuration-tab-pane" aria-selected="false"><i
                         class="fa-regular fa-file"></i> System Configuration</button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="panel-config-tab" data-bs-toggle="tab" data-bs-target="#panel_configuration-pane"
+                    type="button" role="tab" aria-controls="panel_configuration-tab-pane" aria-selected="false"><i
+                        class="fa-solid fa-sliders"></i> Panel Configurations</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pool-config-tab" data-bs-toggle="tab" data-bs-target="#pool_configuration-pane"
+                    type="button" role="tab" aria-controls="pool_configuration-tab-pane" aria-selected="false"><i
+                        class="fa-solid fa-water"></i> Pool Configurations</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="smtp-provider-split-tab" data-bs-toggle="tab" data-bs-target="#smtp_provider_split-pane"
+                    type="button" role="tab" aria-controls="smtp_provider_split-tab-pane" aria-selected="false"><i
+                        class="fa-solid fa-envelope"></i> SMTP Provider Split</button>
+            </li>
         </ul>
 
         <div class="tab-content mt-4" id="myTabContent">
@@ -95,168 +327,98 @@
                 tabindex="0">
             </div>
 
-
+            <!-- Chargebee Configuration -->
             <div class="tab-pane fade active show" id="chargebee_configuration_tab-pane" role="tabpanel"
                 aria-labelledby="chargebe_configuration-tab" tabindex="0">
                 <div class="card mb-4 p-3">
                     <h5 class="card-header">Chargebee Configuration</h5>
                     <div class="card-body">
                         <form id="chargebeeConfigForm">
-                            <div class="alert text-warning alert-dismissible"
-                                style="background-color: rgba(255, 166, 0, 0.189)" role="alert">
-                                <h5 class="alert-heading mb-1">Note</h5>
-                                <span>Only one environment can be active at a time. Provide credentials accordingly.</span>
-                                <button type="button" class="btn-close text-warning" data-bs-dismiss="alert"
-                                        aria-label="Close"></button>
-                            </div>
+                            @csrf
+                            @php
+                                $chargebeeArray = [];
+                                if (isset($chargebeeConfigs)) {
+                                    foreach ($chargebeeConfigs as $config) {
+                                        $chargebeeArray[$config->key] = $config->value;
+                                    }
+                                }
+                            @endphp
 
-                            {{-- Environment Toggles --}}
-                            <div class="row mb-4">
-                                <div class="col-sm-6">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="liveSwitch">
-                                        <label class="form-check-label" for="liveSwitch">Use Live Environment</label>
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="sandboxSwitch">
-                                        <label class="form-check-label" for="sandboxSwitch">Use Sandbox Environment</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Live Credentials --}}
                             <div class="row gx-3">
                                 <div class="col-md-6 mb-3">
-                                    <label for="liveSiteKey" class="form-label">Live Site Key</label>
-                                    <input type="text" id="liveSiteKey" name="liveSiteKey" class="form-control" disabled>
+                                    <label for="chargebeePublishableKey" class="form-label">Publishable API Key</label>
+                                    <input type="text" id="chargebeePublishableKey" name="CHARGEBEE_PUBLISHABLE_API_KEY" 
+                                           class="form-control" 
+                                           value="{{ $chargebeeArray['CHARGEBEE_PUBLISHABLE_API_KEY'] ?? '' }}"
+                                           placeholder="Enter Publishable API Key">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="liveSecretKey" class="form-label">Live Secret Key</label>
-                                    <input type="text" id="liveSecretKey" name="liveSecretKey" class="form-control" disabled>
+                                    <label for="chargebeeSite" class="form-label">Chargebee Site</label>
+                                    <input type="text" id="chargebeeSite" name="CHARGEBEE_SITE" 
+                                           class="form-control" 
+                                           value="{{ $chargebeeArray['CHARGEBEE_SITE'] ?? '' }}"
+                                           placeholder="Enter Site Name">
                                 </div>
                             </div>
 
-                            {{-- Sandbox Credentials --}}
                             <div class="row gx-3">
-                                <div class="col-md-6 mb-3">
-                                    <label for="sandboxSiteKey" class="form-label">Sandbox Site Key</label>
-                                    <input type="text" id="sandboxSiteKey" name="sandboxSiteKey" class="form-control" disabled>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="sandboxSecretKey" class="form-label">Sandbox Secret Key</label>
-                                    <input type="text" id="sandboxSecretKey" name="sandboxSecretKey" class="form-control" disabled>
+                                <div class="col-md-12 mb-3">
+                                    <label for="chargebeeApiKey" class="form-label">Secret API Key</label>
+                                    <input type="text" id="chargebeeApiKey" name="CHARGEBEE_API_KEY" 
+                                           class="form-control" 
+                                           value="{{ $chargebeeArray['CHARGEBEE_API_KEY'] ?? '' }}"
+                                           placeholder="Enter Secret API Key">
                                 </div>
                             </div>
 
                             <div class="mt-4">
-                                <button type="submit" class="btn btn-primary">Save Configuration</button>
+
+                                <button type="submit" id="chargebeeConfigSubmit" class="btn btn-primary">Save Configuration</button>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
-
-
-
-           <div class="tab-pane fade" id="plans-tab-pane" role="tabpanel" aria-labelledby="plans-tab" tabindex="0">
-                <div class="card mb-4 p-3">
-                    <h5 class="card-header">Plan Configuration</h5>
-                    <div class="card-body">
-                        <form id="planConfigForm">
-                            <div class="row gx-4">
-                                {{-- Split Limit Value --}}
-                                <div class="col-md-6 mb-4">
-                                    <label for="splitLimitValue" class="form-label">Split Limit Value</label>
-                                    <input type="number" step="0.01" id="splitLimitValue" name="splitLimitValue" class="form-control"
-                                        placeholder="Enter split limit">
-                                </div>
-
-                                {{-- Chargebee Product Family ID --}}
-                                <div class="col-md-6 mb-4">
-                                    <label for="productFamilyId" class="form-label">Chargebee Product Family ID</label>
-                                    <input type="text" id="productFamilyId" name="productFamilyId" class="form-control"
-                                        placeholder="Enter Chargebee Product Family ID">
-                                </div>
-                            </div>
-
-                            <div class="mt-3">
-                                <button type="submit" class="btn btn-primary">Save Configuration</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
+            <!-- System Backup -->
             <div class="tab-pane fade" id="backup-tab-pane" role="tabpanel" aria-labelledby="backup-tab" tabindex="0">
                 <div class="card mb-4 p-3">
-                    <h5 class="card-header">Backup</h5>
+                    <h5 class="card-header">System Backups</h5>
                     <div class="card-body">
+                        <!-- Filters -->
+                        <div class="row g-3 align-items-end mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label" for="backupStart">Start Date</label>
+                                <input type="date" class="form-control" id="backupStart" value="{{ now()->subDays(30)->toDateString() }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="backupEnd">End Date</label>
+                                <input type="date" class="form-control" id="backupEnd" value="{{ now()->toDateString() }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="backupSizeMin">Min Size (MB)</label>
+                                <input type="number" min="0" step="1" class="form-control" id="backupSizeMin" placeholder="e.g. 10">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="backupSizeMax">Max Size (MB)</label>
+                                <input type="number" min="0" step="1" class="form-control" id="backupSizeMax" placeholder="e.g. 500">
+                            </div>
+                            <div class="col-md-2 d-flex gap-2">
+                                <button type="button" id="applyBackupFilters" class="btn btn-primary w-100">Apply</button>
+                                <button type="button" id="resetBackupFilters" class="btn btn-secondary w-100">Reset</button>
+                            </div>
+                        </div>
+
                         <div class="table-responsive">
-                            <table class="table table-bordered table-hover align-middle mb-0">
-                                <thead class="table-light">
+                            <table id="backupsTable" class="table table-bordered table-hover align-middle mb-0" style="width:100%">
+                                <thead>
                                     <tr>
-                                        <th>Backup Title</th>
-                                        <th>Occurred At</th>
+                                        <th>Backup File</th>
+                                        <th>File Size</th>
+                                        <th>Created At</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td>Daily Backup - July 16</td>
-                                        <td>16 Jul 2025, 03:00 AM</td>
-                                        <td class="text-center">
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
-                                                        data-bs-toggle="dropdown" aria-expanded="false">
-                                                    Actions
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li>
-                                                        <a class="dropdown-item" href="#">
-                                                            <i class="fa fa-download me-2 text-success"></i>Download
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <button type="button" class="dropdown-item text-danger">
-                                                            <i class="fa fa-trash me-2"></i>Delete
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>Weekly Backup - July 14</td>
-                                        <td>14 Jul 2025, 01:15 AM</td>
-                                        <td class="text-center">
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
-                                                        data-bs-toggle="dropdown" aria-expanded="false">
-                                                    Actions
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li>
-                                                        <a class="dropdown-item" href="#">
-                                                            <i class="fa fa-download me-2 text-success"></i>Download
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <button type="button" class="dropdown-item text-danger">
-                                                            <i class="fa fa-trash me-2"></i>Delete
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                    <!-- Empty state -->
-                                    <!-- <tr>
-                                        <td colspan="3" class="text-center text-muted">No backups found.</td>
-                                    </tr> -->
                                 </tbody>
                             </table>
                         </div>
@@ -264,58 +426,452 @@
                 </div>
             </div>
 
-
+            
             <div class="tab-pane fade" id="system_configuration-pane" role="tabpanel"
-     aria-labelledby="system_configuration-tab" tabindex="0">
-    <div class="card mb-4 p-3">
-        <h5 class="card-header">System Configuration</h5>
-        <div class="card-body">
-            <form id="systemConfigForm">
-                <div class="row gx-4">
-                    <div class="col-md-6 mb-3">
-                        <label for="systemName" class="form-label">System Name</label>
-                        <input type="text" class="form-control" id="systemName" name="systemName" placeholder="My Application">
-                    </div>
+                aria-labelledby="system_configuration-tab" tabindex="0">
+                <div class="card mb-4 p-3">
+                    <h5 class="card-header">System Configuration</h5>
+                    <div class="card-body">
+                        <form id="systemConfigForm">
+                            @csrf
+                            @php
+                                $systemArray = [];
+                                if (isset($systemConfigs)) {
+                                    foreach ($systemConfigs as $config) {
+                                        $systemArray[$config->key] = $config->value;
+                                    }
+                                }
+                            @endphp
+                            
+                            <div class="row gx-4">
+                                <div class="col-md-6 mb-3">
+                                    <label for="systemName" class="form-label">System Name</label>
+                                    <input type="text" class="form-control" id="systemName" name="SYSTEM_NAME" 
+                                           value="{{ $systemArray['SYSTEM_NAME'] ?? '' }}"
+                                           placeholder="My Application">
+                                </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label for="adminEmail" class="form-label">Admin Email</label>
-                        <input type="email" class="form-control" id="adminEmail" name="adminEmail" placeholder="admin@example.com">
-                    </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="adminEmail" class="form-label">Admin Email</label>
+                                    <input type="email" class="form-control" id="adminEmail" name="ADMIN_EMAIL" 
+                                           value="{{ $systemArray['ADMIN_EMAIL'] ?? '' }}"
+                                           placeholder="admin@example.com">
+                                </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label for="supportEmail" class="form-label">Support Email</label>
-                        <input type="email" class="form-control" id="supportEmail" name="supportEmail" placeholder="support@example.com">
-                    </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="supportEmail" class="form-label">Support Email</label>
+                                    <input type="email" class="form-control" id="supportEmail" name="SUPPORT_EMAIL" 
+                                           value="{{ $systemArray['SUPPORT_EMAIL'] ?? '' }}"
+                                           placeholder="support@example.com">
+                                </div>
 
-                      <div class="col-md-6 mb-3">
-                        <label for="logo" class="form-label">System Logo</label>
-                        <input type="file" class="form-control" id="logo" name="logo">
-                    </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="footerText" class="form-label">Footer Text</label>
+                                    <textarea class="form-control" id="footerText" name="FOOTER_TEXT" rows="3"
+                                              placeholder="© 2025 My Application. All rights reserved.">{{ $systemArray['FOOTER_TEXT'] ?? '' }}</textarea>
+                                </div>
+                                
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">System Logo</label>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <!-- Logo Preview Thumbnail -->
+                                        <div id="logoThumbnail" class="border rounded d-flex align-items-center justify-content-center" 
+                                             style="width: 80px; height: 80px; background-color: #f8f9fa; cursor: pointer; overflow: hidden;">
+                                            @if(!empty($systemArray['SYSTEM_LOGO']))
+                                                <img src="{{ asset($systemArray['SYSTEM_LOGO']) }}" id="logoThumbImg" alt="Logo" 
+                                                     style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                            @else
+                                                <i class="fa fa-image fa-2x text-muted" id="logoPlaceholderIcon"></i>
+                                                <img src="" id="logoThumbImg" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;">
+                                            @endif
+                                        </div>
+                                        
+                                        <!-- Upload Button and Info -->
+                                        <div class="flex-grow-1">
+                                            <input type="file" class="d-none" id="logo" name="logo" accept="image/*">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('logo').click()">
+                                                <i class="fa fa-upload me-1"></i> Upload Logo
+                                            </button>
+                                            <!-- Remove Logo Button -->
+                                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" id="removeLogo" style="display: {{ !empty($systemArray['SYSTEM_LOGO']) ? 'inline-block' : 'none' }};">
+                                                <i class="fa fa-trash me-1"></i> Remove
+                                            </button>
+                                            <div class="mt-2">
+                                                <small class="text-muted d-block">Accepted: JPG, PNG, GIF, SVG</small>
+                                                <small class="text-muted">Max size: 2MB</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check form-switch mt-4">
-                            <input class="form-check-input" type="checkbox" id="maintenanceMode" name="maintenanceMode">
-                            <label class="form-check-label" for="maintenanceMode">Enable Maintenance Mode</label>
+                            <!-- Hidden input to track logo removal -->
+                            <input type="hidden" id="removeLogo_input" name="remove_logo" value="0">
+
+                            <div class="mt-3">
+                                <button type="submit" id="systemConfigSubmit" class="btn btn-primary">Save Configuration</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="tab-pane fade" id="panel_configuration-pane" role="tabpanel"
+                 aria-labelledby="panel_configuration-tab" tabindex="0">
+                <div class="card mb-4 p-3">
+                    <h5 class="card-header">Panel Configurations</h5>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead class="">
+                                    <tr>
+                                        <th>Configuration Key</th>
+                                        <th>Label / Description</th>
+                                        <th>Type</th>
+                                        <th>Value</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $panelConfigs = collect($configurations ?? []);
+                                    @endphp
+                                    
+                                    @forelse ($panelConfigs as $config)
+                                        @php
+                                            $type = strtolower($config->type ?? 'string');
+                                            $rawValue = $config->value ?? '';
+                                            $displayValue = ($rawValue === null || $rawValue === '') ? '--' : $rawValue;
+                                            $badgeClass = null;
+
+                                            if ($type === 'boolean') {
+                                                $isTrue = filter_var($rawValue, FILTER_VALIDATE_BOOLEAN);
+                                                $displayValue = $isTrue ? 'true' : 'false';
+                                                $badgeClass = $isTrue ? 'bg-label-success' : 'bg-label-danger';
+                                            } elseif ($config->key === 'PROVIDER_TYPE') {
+                                                $badgeClass = 'bg-label-success';
+                                            } elseif ($type === 'number') {
+                                                $badgeClass = 'bg-label-warning';
+                                            }
+
+                                            $keySlug = \Illuminate\Support\Str::slug($config->key, '-');
+                                        @endphp
+                                        <tr>
+                                            <td><strong>{{ $config->key }}</strong></td>
+                                            <td id="desc-{{ $keySlug }}" class="text-muted">
+                                                {{ $config->description ?? '--' }}
+                                            </td>
+                                            <td>{{ strtoupper($config->type ?? 'STRING') }}</td>
+                                            <td id="value-{{ $keySlug }}">
+                                                @if ($badgeClass)
+                                                    <span class="badge {{ $badgeClass }}">{{ $displayValue }}</span>
+                                                @else
+                                                    {{ $displayValue }}
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary me-1"
+                                                        onclick="viewConfigHistory('{{ $config->key }}')">
+                                                    <i class="fa fa-clock-rotate-left me-1"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="editConfig('{{ $config->key }}')">
+                                                    <i class="fa fa-edit me-1"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No panel configurations found.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                  
+            <div class="tab-pane fade" id="pool_configuration-pane" role="tabpanel"
+                 aria-labelledby="pool_configuration-tab" tabindex="0">
+                <div class="card mb-4 p-3">
+                    <h5 class="card-header">Pool Configurations</h5>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead class="">
+                                    <tr>
+                                        <th>Configuration Key</th>
+                                        <th>Label / Description</th>
+                                        <th>Type</th>
+                                        <th>Value</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $poolConfigsCollection = collect($poolConfigs ?? []);
+                                    @endphp
 
-                    <div class="col-md-12 mb-3">
-                        <label for="footerText" class="form-label">Footer Text</label>
-                        <textarea class="form-control" id="footerText" name="footerText" rows="3"
-                                  placeholder="© 2025 My Application. All rights reserved."></textarea>
+                                    @forelse ($poolConfigsCollection as $config)
+                                        @php
+                                            $type = strtolower($config->type ?? 'string');
+                                            $rawValue = $config->value ?? '';
+                                            $displayValue = ($rawValue === null || $rawValue === '') ? '--' : $rawValue;
+                                            $badgeClass = null;
+
+                                            if ($type === 'boolean') {
+                                                $isTrue = filter_var($rawValue, FILTER_VALIDATE_BOOLEAN);
+                                                $displayValue = $isTrue ? 'true' : 'false';
+                                                $badgeClass = $isTrue ? 'bg-label-success' : 'bg-label-danger';
+                                            } elseif ($type === 'number') {
+                                                $badgeClass = 'bg-label-warning';
+                                            }
+
+                                            $keySlug = \Illuminate\Support\Str::slug($config->key, '-');
+                                        @endphp
+                                        <tr>
+                                            <td><strong>{{ $config->key }}</strong></td>
+                                            <td id="desc-{{ $keySlug }}" class="text-muted">
+                                                {{ $config->description ?? '--' }}
+                                            </td>
+                                            <td>{{ strtoupper($config->type ?? 'STRING') }}</td>
+                                            <td id="value-{{ $keySlug }}">
+                                                @if ($badgeClass)
+                                                    <span class="badge {{ $badgeClass }}">{{ $displayValue }}</span>
+                                                @else
+                                                    {{ $displayValue }}
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary me-1"
+                                                        onclick="viewConfigHistory('{{ $config->key }}')">
+                                                    <i class="fa fa-clock-rotate-left me-1"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        onclick="editConfig('{{ $config->key }}', null, null, null, 'pool')">
+                                                    <i class="fa fa-edit me-1"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No pool configurations found.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="mt-3">
-                    <button type="submit" class="btn btn-primary">Save Configuration</button>
+            <!-- SMTP Provider Split Configuration -->
+            <div class="tab-pane fade" id="smtp_provider_split-pane" role="tabpanel"
+                 aria-labelledby="smtp_provider_split-tab" tabindex="0">
+                <div class="row py-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="text-white">
+                                <i class="ti ti-mail me-2"></i>
+                                SMTP Provider Split Configuration
+                            </h2>
+                            <button type="button" class="btn btn-outline-light btn-sm" id="refreshProviderSplits">
+                                <i class="ti ti-refresh me-1"></i> Refresh
+                            </button>
+                        </div>
+
+                        <div class="alert alert-info glassy-alert" role="alert">
+                            <h5 class="alert-heading mb-1">
+                                <i class="ti ti-info-circle me-2"></i>
+                                How to Configure Provider Splits
+                            </h5>
+                            <p class="mb-2 mx-2">Configure how orders are split across different SMTP providers:</p>
+                            <ol class="mb-0">
+                                <li>Set the split percentage for each provider (only active providers count toward 100%)</li>
+                                <li>Enter email and password credentials for each provider (required)</li>
+                                <li>Set priority to determine execution order</li>
+                                <li>Enable/disable providers as needed</li>
+                                <li><strong>Important:</strong> Total percentage of active providers must equal 100%</li>
+                            </ol>
+                        </div>
+
+                        <!-- Provider Forms Container -->
+                        <div id="providerSplitFormsContainer">
+                            @php
+                                $providers = $providerSplits ?? collect();
+                                $activeTotalPercentage = 0;
+                            @endphp
+                            
+                            @forelse ($providers as $provider)
+                                @php
+                                    if ($provider->is_active) {
+                                        $activeTotalPercentage += floatval($provider->split_percentage ?? 0);
+                                    }
+                                @endphp
+                                <div class="webhook-form provider-split-form" id="form-{{ $provider->slug }}" data-provider-id="{{ $provider->id }}" data-slug="{{ $provider->slug }}">
+                                    <div class="webhook-header">
+                                        <h5 class="webhook-title">
+                                            <i class="ti ti-server me-2"></i>
+                                            {{ $provider->name }}
+                                        </h5>
+                                        <div class="status-toggle">
+                                            <label for="status-{{ $provider->slug }}" class="form-label mb-0">Enable</label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input status-switch" type="checkbox" role="switch" 
+                                                       id="status-{{ $provider->slug }}" 
+                                                       data-slug="{{ $provider->slug }}"
+                                                       {{ ($provider->is_active ?? true) ? 'checked' : '' }}>
+                                            </div>
+                                            <span class="status-indicator {{ ($provider->is_active ?? true) ? 'enabled' : 'disabled' }}" 
+                                                  id="status-text-{{ $provider->slug }}">
+                                                {{ ($provider->is_active ?? true) ? 'Enabled' : 'Disabled' }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <form class="provider-settings-form" data-provider-id="{{ $provider->id }}" data-slug="{{ $provider->slug }}">
+                                        @csrf
+                                        <input type="hidden" name="providers[{{ $provider->id }}][id]" value="{{ $provider->id }}">
+                                        
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="api_endpoint-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-link me-1"></i>
+                                                        API Endpoint
+                                                    </label>
+                                                    <input type="url" 
+                                                           class="form-control" 
+                                                           id="api_endpoint-{{ $provider->slug }}" 
+                                                           name="providers[{{ $provider->id }}][api_endpoint]" 
+                                                           placeholder="https://api.example.com" 
+                                                           value="{{ $provider->api_endpoint ?? '' }}">
+                                                    <small class="form-text text-muted">
+                                                        Enter the API endpoint URL for {{ $provider->name }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="email-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-mail me-1"></i>
+                                                        Email *
+                                                    </label>
+                                                    <input type="email" 
+                                                           class="form-control" 
+                                                           id="email-{{ $provider->slug }}" 
+                                                           name="providers[{{ $provider->id }}][email]" 
+                                                           placeholder="Enter Email" 
+                                                           value="{{ $provider->email ?? '' }}"
+                                                           required>
+                                                    <small class="form-text text-muted">
+                                                        Email for {{ $provider->name }} authentication
+                                                    </small>
+                                                    <div class="validation-error" id="email-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="password-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-lock me-1"></i>
+                                                        Password *
+                                                    </label>
+                                                    <div class="password-wrapper">
+                                                        <input type="password" 
+                                                               class="form-control" 
+                                                               id="password-{{ $provider->slug }}" 
+                                                               name="providers[{{ $provider->id }}][password]" 
+                                                               placeholder="Enter Password" 
+                                                               value="{{ $provider->password ?? '' }}"
+                                                               required>
+                                                        <i class="fa-regular fa-eye password-toggle"></i>
+                                                    </div>
+                                                    <small class="form-text text-muted">
+                                                        Password for {{ $provider->name }} authentication
+                                                    </small>
+                                                    <div class="validation-error" id="password-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="split_percentage-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-percentage me-1"></i>
+                                                        Split Percentage (%) *
+                                                    </label>
+                                                    <input type="number" 
+                                                           class="form-control split-percentage-input" 
+                                                           id="split_percentage-{{ $provider->slug }}" 
+                                                           name="providers[{{ $provider->id }}][split_percentage]" 
+                                                           value="{{ $provider->split_percentage ?? 0 }}"
+                                                           min="0" max="100" step="0.01" required>
+                                                    <small class="form-text text-muted">
+                                                        Percentage of orders for this provider
+                                                    </small>
+                                                    <div class="validation-error" id="percentage-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="priority-{{ $provider->slug }}" class="form-label">
+                                                        <i class="ti ti-sort-ascending me-1"></i>
+                                                        Priority *
+                                                    </label>
+                                                    <input type="number" 
+                                                           class="form-control priority-input" 
+                                                           id="priority-{{ $provider->slug }}" 
+                                                           name="providers[{{ $provider->id }}][priority]" 
+                                                           value="{{ $provider->priority ?? 0 }}"
+                                                           min="0"
+                                                           required>
+                                                    <small class="form-text text-muted">
+                                                        Lower number = higher priority (must be unique)
+                                                    </small>
+                                                    <div class="validation-error" id="priority-error-{{ $provider->slug }}" style="display: none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex gap-2 flex-wrap mt-3">
+                                            <button type="submit" class="btn btn-save btn-sm">
+                                                <i class="ti ti-device-floppy me-1"></i> Save Settings
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            @empty
+                                <div class="alert alert-info glassy-alert">
+                                    <i class="ti ti-info-circle me-2"></i>
+                                    No provider splits configured. Please run the seeder to add providers.
+                                </div>
+                            @endforelse
+                        </div>
+
+                        <!-- Total Percentage Display -->
+                        <div class="mt-4">
+                            <div class="alert alert-{{ abs($activeTotalPercentage - 100.00) > 0.01 ? 'warning' : 'success' }} glassy-alert" role="alert">
+                                <h6 class="alert-heading mb-1">
+                                    <i class="ti ti-{{ abs($activeTotalPercentage - 100.00) > 0.01 ? 'alert-triangle' : 'check' }} me-2"></i>
+                                    Active Providers Total Percentage
+                                </h6>
+                                <p class="mb-0">
+                                    <strong>Total: <span id="activeTotalPercentage">{{ number_format($activeTotalPercentage, 2) }}</span>%</strong>
+                                    @if (abs($activeTotalPercentage - 100.00) > 0.01)
+                                        <span class="ms-2">⚠ Total must equal 100% for active providers</span>
+                                    @else
+                                        <span class="ms-2">✓ Valid - Active providers total 100%</span>
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </div>
-    </div>
-</div>
-
+            </div>
 
         </div>
     </div>
@@ -505,6 +1061,62 @@
     </div>
 </div>
 
+<!-- Edit Configuration Offcanvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="editConfigOffcanvas" aria-labelledby="editConfigOffcanvasLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="editConfigOffcanvasLabel">Edit Configuration</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="editConfigForm">
+            <div class="mb-3">
+                <label for="configKey" class="form-label">Configuration Key</label>
+                <input type="text" class="form-control" id="configKey" readonly>
+            </div>
+            <div class="mb-3">
+                <label for="configDescription" class="form-label">Label / Description</label>
+                <textarea class="form-control" id="configDescription" rows="3" placeholder="Enter description"></textarea>
+                <small class="text-muted">This helps identify what this configuration is used for.</small>
+            </div>
+            <div class="mb-3" id="numberInput">
+                <label for="configValue" class="form-label">Value</label>
+                <input type="number" class="form-control" id="configValue" placeholder="Enter value">
+            </div>
+            <div class="mb-3" id="selectInput" style="display: none;">
+                <label for="configSelectValue" class="form-label">Value</label>
+                <select class="form-select" id="configSelectValue">
+                    @foreach($providerTypes ?? [] as $provider)
+                        <option value="{{ $provider }}">{{ $provider }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="mb-3" id="booleanInput" style="display: none;">
+                <label class="form-label">Value</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="configBoolValue" id="boolTrue" value="true">
+                        <label class="form-check-label" for="boolTrue">True</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="configBoolValue" id="boolFalse" value="false">
+                        <label class="form-check-label" for="boolFalse">False</label>
+                    </div>
+                </div>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary" id="saveConfigBtn">
+                    <i class="fa fa-save me-2"></i>Save Changes
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">
+                    <i class="fa fa-times me-2"></i>Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<x-panel.config-history-offcanvas />
+
 <div class="modal fade" style="scrollbar-width: none" id="edit" tabindex="-1" aria-labelledby="editLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
@@ -585,41 +1197,1029 @@
 
 @push('scripts')
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const liveSwitch = document.getElementById("liveSwitch");
-        const sandboxSwitch = document.getElementById("sandboxSwitch");
+    // Panel Configuration Edit Functions
+    let currentConfigKey = '';
+    let currentConfigType = '';
+    let isSelectInputMode = false;
+    let currentConfigSource = 'panel';
 
-        const liveSiteKey = document.getElementById("liveSiteKey");
-        const liveSecretKey = document.getElementById("liveSecretKey");
+    const configRoutes = {
+        panel: {
+            get: '{{ route("admin.panel.configurations.get") }}',
+            update: '{{ route("admin.panel.configurations.update") }}'
+        },
+        pool: {
+            get: '{{ route("admin.pool.configurations.get") }}',
+            update: '{{ route("admin.pool.configurations.update") }}'
+        }
+    };
 
-        const sandboxSiteKey = document.getElementById("sandboxSiteKey");
-        const sandboxSecretKey = document.getElementById("sandboxSecretKey");
-
-        function updateFields() {
-            if (liveSwitch.checked) {
-                sandboxSwitch.checked = false;
-                liveSiteKey.disabled = false;
-                liveSecretKey.disabled = false;
-                sandboxSiteKey.disabled = true;
-                sandboxSecretKey.disabled = true;
-            } else if (sandboxSwitch.checked) {
-                liveSwitch.checked = false;
-                sandboxSiteKey.disabled = false;
-                sandboxSecretKey.disabled = false;
-                liveSiteKey.disabled = true;
-                liveSecretKey.disabled = true;
-            } else {
-                liveSiteKey.disabled = true;
-                liveSecretKey.disabled = true;
-                sandboxSiteKey.disabled = true;
-                sandboxSecretKey.disabled = true;
-            }
+    function getConfigBadgeHtml(key, type, value) {
+        if (type === 'boolean') {
+            const badgeClass = value === 'true' ? 'bg-label-success' : 'bg-label-danger';
+            return `<span class="badge ${badgeClass}">${value}</span>`;
         }
 
-        liveSwitch.addEventListener("change", updateFields);
-        sandboxSwitch.addEventListener("change", updateFields);
+        if (key === 'PROVIDER_TYPE') {
+            return `<span class="badge bg-label-success">${value}</span>`;
+        }
 
-        updateFields(); // run once on load
+        if (type === 'number') {
+            return `<span class="badge bg-label-warning">${value}</span>`;
+        }
+
+        if (type === 'select' || isSelectInputMode) {
+            return `<span class="badge bg-label-info">${value}</span>`;
+        }
+
+        return '';
+    }
+
+    function editConfig(key, value = null, type = null, description = null, source = 'panel') {
+        // Show loading state
+        Swal.fire({
+            title: 'Loading...',
+            text: 'Fetching configuration data',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        currentConfigSource = source;
+        const fetchRoute = configRoutes[source]?.get;
+        if (!fetchRoute) {
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Invalid configuration source selected',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        // Fetch fresh data from the server
+        fetch(fetchRoute, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Close loading
+            Swal.close();
+            
+            if (data.success) {
+                // Find the configuration by key
+                const config = data.data.find(c => c.key === key);
+                
+                if (config) {
+                    currentConfigKey = config.key;
+                    currentConfigType = config.type;
+                    
+                    // Hide all input types first
+                    document.getElementById('numberInput').style.display = 'none';
+                    document.getElementById('selectInput').style.display = 'none';
+                    document.getElementById('booleanInput').style.display = 'none';
+                    isSelectInputMode = false;
+                    
+                    // Reset all input values
+                    document.getElementById('configValue').value = '';
+                    document.getElementById('configSelectValue').selectedIndex = 0;
+                    document.querySelectorAll('input[name="configBoolValue"]').forEach(radio => radio.checked = false);
+                    
+                    // Set form values with fresh data
+                    document.getElementById('configKey').value = config.key;
+                    document.getElementById('configDescription').value = config.description || '';
+                    
+                    // Show and set the appropriate input based on type
+                    if (config.type === 'boolean') {
+                        document.getElementById('booleanInput').style.display = 'block';
+                        
+                        if (config.value === 'true' || config.value === true) {
+                            document.getElementById('boolTrue').checked = true;
+                        } else {
+                            document.getElementById('boolFalse').checked = true;
+                        }
+                    } else if (config.type === 'select' || config.key === 'PROVIDER_TYPE') {
+                        document.getElementById('selectInput').style.display = 'block';
+                        isSelectInputMode = true;
+                        setTimeout(() => {
+                            document.getElementById('configSelectValue').value = config.value;
+                        }, 10);
+                    } else {
+                        document.getElementById('numberInput').style.display = 'block';
+                        document.getElementById('configValue').value = config.value;
+                        document.getElementById('configValue').type = config.type === 'number' ? 'number' : 'text';
+                        isSelectInputMode = false;
+                    }
+                    
+                    // Open offcanvas
+                    const offcanvas = new bootstrap.Offcanvas(document.getElementById('editConfigOffcanvas'));
+                    offcanvas.show();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Configuration not found',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Failed to fetch configuration',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while fetching the configuration',
+                confirmButtonText: 'OK'
+            });
+        });
+    }
+
+    document.getElementById('saveConfigBtn').addEventListener('click', function() {
+        let newValue;
+        let newDescription = document.getElementById('configDescription').value;
+        
+        if (currentConfigType === 'boolean') {
+            newValue = document.querySelector('input[name="configBoolValue"]:checked').value;
+        } else if (currentConfigType === 'select' || isSelectInputMode) {
+            newValue = document.getElementById('configSelectValue').value;
+        } else {
+            newValue = document.getElementById('configValue').value;
+        }
+
+        // Validate input
+        if (!newValue && currentConfigType !== 'boolean') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please enter a value',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+        
+        // Show loading
+        Swal.fire({
+            title: 'Updating Configuration',
+            text: 'Please wait...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Make AJAX call to save to the backend
+        const updateRoute = configRoutes[currentConfigSource]?.update;
+        if (!updateRoute) {
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Invalid configuration source selected',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        fetch(updateRoute, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                key: currentConfigKey,
+                value: newValue,
+                type: currentConfigType,
+                description: newDescription
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the table display
+                const keySlug = currentConfigKey.toLowerCase().replace(/_/g, '-');
+                const valueCell = document.getElementById(`value-${keySlug}`);
+                const descCell = document.getElementById(`desc-${keySlug}`);
+                
+                // Update description
+                if (descCell) {
+                    descCell.textContent = newDescription;
+                }
+                
+                // Update value with appropriate badge style
+                const badgeHtml = getConfigBadgeHtml(currentConfigKey, currentConfigType, newValue);
+                if (badgeHtml) {
+                    valueCell.innerHTML = badgeHtml;
+                } else {
+                    valueCell.textContent = newValue;
+                }
+                
+                // Close offcanvas
+                const offcanvasElement = document.getElementById('editConfigOffcanvas');
+                const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+                if (offcanvas) {
+                    offcanvas.hide();
+                }
+                
+                // Show success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Configuration updated successfully',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Failed to update configuration',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while updating the configuration',
+                confirmButtonText: 'OK'
+            });
+        });
+    });
+
+    // Reset form when offcanvas is closed
+    document.getElementById('editConfigOffcanvas').addEventListener('hidden.bs.offcanvas', function () {
+        // Clear all inputs
+        document.getElementById('configKey').value = '';
+        document.getElementById('configDescription').value = '';
+        document.getElementById('configValue').value = '';
+        document.getElementById('configSelectValue').selectedIndex = 0;
+        document.querySelectorAll('input[name="configBoolValue"]').forEach(radio => radio.checked = false);
+        
+        // Hide all input sections
+        document.getElementById('numberInput').style.display = 'none';
+        document.getElementById('selectInput').style.display = 'none';
+        document.getElementById('booleanInput').style.display = 'none';
+        
+        // Reset tracking variables
+        currentConfigKey = '';
+        currentConfigType = '';
+        isSelectInputMode = false;
+    });
+
+    // Chargebee Configuration Form
+    document.getElementById('chargebeeConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = {};
+        formData.forEach((value, key) => {
+            if (key !== '_token') {
+                data[key] = value;
+            }
+        });
+
+        // Show loading
+        Swal.fire({
+            title: 'Saving...',
+            text: 'Updating Chargebee configuration',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch('{{ route("admin.chargebee.configurations.update") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            // enabled submit button
+            document.getElementById('chargebeeConfigSubmit').disabled = false;
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: data.message || 'Chargebee configuration updated successfully',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Failed to update Chargebee configuration',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('chargebeeConfigSubmit').disabled = false;
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while saving',
+                confirmButtonText: 'OK'
+            });
+        });
+    });
+
+    // Logo Thumbnail Click - Show Larger Preview
+    document.getElementById('logoThumbnail').addEventListener('click', function() {
+        const logoThumbImg = document.getElementById('logoThumbImg');
+        if (logoThumbImg.src && logoThumbImg.style.display !== 'none') {
+            Swal.fire({
+                imageUrl: logoThumbImg.src,
+                imageAlt: 'System Logo',
+                showConfirmButton: false,
+                showCloseButton: true,
+                width: 'auto',
+                padding: '2rem',
+                background: '#fff'
+            });
+        }
+    });
+
+    // Logo Preview Handler
+    document.getElementById('logo').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/svg+xml'];
+            if (!validTypes.includes(file.type)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid File Type',
+                    text: 'Please select a valid image file (JPG, PNG, GIF, SVG)',
+                    confirmButtonText: 'OK'
+                });
+                e.target.value = '';
+                return;
+            }
+
+            // Validate file size (2MB)
+            if (file.size > 2048000) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: 'Image size should not exceed 2MB',
+                    confirmButtonText: 'OK'
+                });
+                e.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const logoThumbImg = document.getElementById('logoThumbImg');
+                const logoPlaceholderIcon = document.getElementById('logoPlaceholderIcon');
+                const removeLogoBtn = document.getElementById('removeLogo');
+                const removeLogoInput = document.getElementById('removeLogo_input');
+                
+                // Reset remove flag since user is uploading a new logo
+                if (removeLogoInput) {
+                    removeLogoInput.value = '0';
+                }
+                
+                // Update thumbnail
+                logoThumbImg.src = event.target.result;
+                logoThumbImg.style.display = 'block';
+                
+                // Hide placeholder icon
+                if (logoPlaceholderIcon) {
+                    logoPlaceholderIcon.style.display = 'none';
+                }
+                
+                // Show remove button
+                if (removeLogoBtn) {
+                    removeLogoBtn.style.display = 'inline-block';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Remove Logo Handler
+    document.getElementById('removeLogo').addEventListener('click', function() {
+        Swal.fire({
+            title: 'Remove Logo?',
+            text: 'Are you sure you want to remove the system logo?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, remove it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const logoInput = document.getElementById('logo');
+                const logoThumbImg = document.getElementById('logoThumbImg');
+                const logoPlaceholderIcon = document.getElementById('logoPlaceholderIcon');
+                const removeLogoBtn = document.getElementById('removeLogo');
+                const removeLogoInput = document.getElementById('removeLogo_input');
+                
+                // Set hidden input to indicate logo should be removed
+                if (removeLogoInput) {
+                    removeLogoInput.value = '1';
+                }
+                
+                // Clear file input
+                logoInput.value = '';
+                
+                // Reset thumbnail to placeholder
+                logoThumbImg.src = '';
+                logoThumbImg.style.display = 'none';
+                
+                // Show placeholder icon
+                if (logoPlaceholderIcon) {
+                    logoPlaceholderIcon.style.display = 'inline-block';
+                }
+                
+                // Hide remove button
+                removeLogoBtn.style.display = 'none';
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Removed!',
+                    text: 'Logo has been removed. Save to apply changes.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    });
+
+    // System Configuration Form
+    document.getElementById('systemConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+
+        // Show loading
+        Swal.fire({
+            title: 'Saving...',
+            text: 'Updating System configuration',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch('{{ route("admin.system.configurations.update") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            // enabled submit button
+            document.getElementById('systemConfigSubmit').disabled = false;
+            if (data.success) {
+                // Reset the remove_logo flag after successful save
+                const removeLogoInput = document.getElementById('removeLogo_input');
+                if (removeLogoInput) {
+                    removeLogoInput.value = '0';
+                }
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: data.message || 'System configuration updated successfully',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Failed to update System configuration',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('systemConfigSubmit').disabled = false;
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while saving',
+                confirmButtonText: 'OK'
+            });
+        });
+    });
+
+    // Delete Backup Handler
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-backup-btn') || e.target.closest('.delete-backup-btn')) {
+            const button = e.target.classList.contains('delete-backup-btn') ? e.target : e.target.closest('.delete-backup-btn');
+            const filename = button.getAttribute('data-file');
+            
+            Swal.fire({
+                title: 'Delete Backup?',
+                text: 'Are you sure you want to delete this backup file? This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Deleting...',
+                        text: 'Please wait while we delete the backup file',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Delete backup
+                    fetch('{{ route("admin.backup.delete") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            file: filename
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Prefer DataTables reload if available
+                            if (window.backupsTable) {
+                                window.backupsTable.ajax.reload(null, false);
+                            } else {
+                                // Fallback: remove the row directly
+                                const row = button.closest('tr');
+                                if (row) { row.remove(); }
+                            }
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted!',
+                                text: data.message || 'Backup file has been deleted successfully.',
+                                timer: 1200,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.message || 'Failed to delete backup file',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'An error occurred while deleting the backup',
+                            confirmButtonText: 'OK'
+                        });
+                    });
+                }
+            });
+        }
+    });
+    // Initialize backups DataTable and filter actions
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof $ !== 'undefined' && document.getElementById('backupsTable')) {
+            const $table = $('#backupsTable');
+            const listUrl = '{{ route("admin.backup.list") }}';
+
+            window.backupsTable = $table.DataTable({
+                responsive: true,
+                processing: true,
+                serverSide: false,
+                searching: false,
+                ajax: {
+                    url: listUrl,
+                    data: function(d) {
+                        d.start_date = document.getElementById('backupStart')?.value || '';
+                        d.end_date = document.getElementById('backupEnd')?.value || '';
+                        d.size_min = document.getElementById('backupSizeMin')?.value || '';
+                        d.size_max = document.getElementById('backupSizeMax')?.value || '';
+                    },
+                    dataSrc: function(json) { return json.data || []; }
+                },
+                columns: [
+                    { data: 'name', render: function(data){
+                        return `<i class="fa fa-file-archive me-2 text-primary"></i>${data}`;
+                    }},
+                    { data: 'size_human' },
+                    { data: 'date' },
+                    { data: null, orderable: false, searchable: false, className: 'text-center', render: function(data, type, row){
+                        const downloadUrl = '{{ route("admin.backup.download") }}' + '?file=' + encodeURIComponent(row.name);
+                        return `<a href="${downloadUrl}" class="btn btn-sm btn-success me-1" title="Download Backup"><i class="fa fa-download"></i></a>
+                                <button type="button" class="btn btn-sm btn-danger delete-backup-btn" data-file="${row.name}" title="Delete Backup"><i class="fa fa-trash"></i></button>`;
+                    }}
+                ],
+                order: [[2, 'desc']]
+            });
+
+            const apply = document.getElementById('applyBackupFilters');
+            const reset = document.getElementById('resetBackupFilters');
+            if (apply) apply.addEventListener('click', () => window.backupsTable.ajax.reload());
+            if (reset) reset.addEventListener('click', () => {
+                document.getElementById('backupStart').value = '{{ now()->subDays(30)->toDateString() }}';
+                document.getElementById('backupEnd').value = '{{ now()->toDateString() }}';
+                document.getElementById('backupSizeMin').value = '';
+                document.getElementById('backupSizeMax').value = '';
+                window.backupsTable.ajax.reload();
+            });
+        }
+    });
+
+    // SMTP Provider Split Configuration
+    $(document).ready(function() {
+        // Utility Functions
+        const showSwalLoading = (title = 'Processing...', text = 'Please wait') => {
+            Swal.fire({
+                title: title,
+                text: text,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                customClass: {
+                    popup: 'swal-dark'
+                }
+            });
+        };
+
+        const closeSwalLoading = () => {
+            Swal.close();
+        };
+
+        const calculateActiveTotalPercentage = () => {
+            let total = 0;
+            document.querySelectorAll('.provider-split-form').forEach(form => {
+                const statusSwitch = form.querySelector('.status-switch');
+                if (statusSwitch && statusSwitch.checked) {
+                    const percentageInput = form.querySelector('.split-percentage-input');
+                    if (percentageInput) {
+                        total += parseFloat(percentageInput.value || 0);
+                    }
+                }
+            });
+            
+            const totalElement = document.getElementById('activeTotalPercentage');
+            const alertDiv = totalElement?.closest('.alert');
+            
+            if (totalElement) {
+                totalElement.textContent = total.toFixed(2);
+            }
+            
+            if (alertDiv) {
+                const isValid = Math.abs(total - 100.00) <= 0.01;
+                alertDiv.className = `alert alert-${isValid ? 'success' : 'warning'} glassy-alert`;
+                
+                // Update icon and text (remove inline styles for glassy look)
+                const heading = alertDiv.querySelector('.alert-heading');
+                if (heading) {
+                    heading.style.color = ''; // Remove inline color for glassy styling
+                    const icon = heading.querySelector('i');
+                    if (icon) {
+                        icon.className = `ti ti-${isValid ? 'check' : 'alert-triangle'} me-2`;
+                    }
+                }
+                
+                // Update message text
+                const messageSpan = alertDiv.querySelector('p .ms-2');
+                if (messageSpan) {
+                    messageSpan.textContent = isValid 
+                        ? '✓ Valid - Active providers total 100%' 
+                        : '⚠ Total must equal 100% for active providers';
+                    messageSpan.style.color = ''; // Remove inline color for glassy styling
+                }
+                
+                // Remove inline paragraph color for glassy styling
+                const paragraph = alertDiv.querySelector('p');
+                if (paragraph) {
+                    paragraph.style.color = '';
+                }
+                
+                // Update status text
+                const statusText = paragraph?.querySelector('span.ms-2');
+                if (statusText) {
+                    statusText.style.color = isValid ? '#155724' : '#721c24';
+                    statusText.textContent = isValid 
+                        ? '✓ Valid - Active providers total 100%' 
+                        : '⚠ Total must equal 100% for active providers';
+                }
+            }
+            
+            return total;
+        };
+
+        const updateStatusDisplay = (slug, enabled) => {
+            const statusText = document.getElementById(`status-text-${slug}`);
+            const checkbox = document.getElementById(`status-${slug}`);
+            
+            if (checkbox) {
+                checkbox.checked = enabled;
+            }
+            
+            if (statusText) {
+                statusText.textContent = enabled ? 'Enabled' : 'Disabled';
+                statusText.className = `status-indicator ${enabled ? 'enabled' : 'disabled'}`;
+            }
+            
+            // Recalculate total percentage
+            calculateActiveTotalPercentage();
+        };
+
+        // Handle status toggle change
+        $('.status-switch').on('change', function() {
+            const slug = $(this).data('slug');
+            const isChecked = $(this).is(':checked');
+            updateStatusDisplay(slug, isChecked);
+        });
+
+        // Handle form submission
+        $('.provider-settings-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const form = $(this);
+            const providerId = form.data('provider-id');
+            const slug = form.data('slug');
+            const formData = new FormData(this);
+            const statusCheckbox = $(`#status-${slug}`);
+            
+            // Get all providers data
+            const providers = [];
+            document.querySelectorAll('.provider-split-form').forEach(providerForm => {
+                const providerFormEl = $(providerForm);
+                const providerId = providerFormEl.data('provider-id');
+                const slug = providerFormEl.data('slug');
+                const statusSwitch = providerFormEl.find('.status-switch');
+                
+                const priorityValue = providerFormEl.find(`#priority-${slug}`).val();
+                const priority = priorityValue !== '' && !isNaN(priorityValue) ? parseInt(priorityValue) : null;
+                
+                providers.push({
+                    id: providerId,
+                    api_endpoint: providerFormEl.find(`#api_endpoint-${slug}`).val() || null,
+                    email: providerFormEl.find(`#email-${slug}`).val() || '',
+                    password: providerFormEl.find(`#password-${slug}`).val() || '',
+                    split_percentage: parseFloat(providerFormEl.find(`#split_percentage-${slug}`).val() || 0),
+                    priority: priority,
+                    is_active: statusSwitch.is(':checked') ? true : false,
+                });
+            });
+
+            const submitBtn = form.find('button[type="submit"]');
+            const originalText = submitBtn.html();
+            
+            // Validate priorities are unique
+            const priorities = providers
+                .map(p => p.priority)
+                .filter(p => p !== null && p !== undefined && p !== '');
+            
+            const uniquePriorities = [...new Set(priorities)];
+            if (priorities.length !== uniquePriorities.length) {
+                // Find duplicates
+                const duplicates = priorities.filter((p, index) => priorities.indexOf(p) !== index);
+                const duplicateValues = [...new Set(duplicates)];
+                
+                // Ensure button is enabled before showing error
+                submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error!',
+                    text: `Priority values must be unique. Duplicate priority found: ${duplicateValues.join(', ')}`,
+                    customClass: {
+                        popup: 'swal-dark'
+                    }
+                }).then(() => {
+                    // Ensure button is enabled after user closes the alert
+                    submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                });
+                return;
+            }
+            
+            // Validate active providers total percentage
+            const activeTotal = providers
+                .filter(p => p.is_active)
+                .reduce((sum, p) => sum + p.split_percentage, 0);
+
+            if (Math.abs(activeTotal - 100.00) > 0.01) {
+                // Ensure button is enabled before showing error
+                submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error!',
+                    text: `Total split percentage for active providers must equal 100%. Current total: ${activeTotal.toFixed(2)}%`,
+                    customClass: {
+                        popup: 'swal-dark'
+                    }
+                }).then(() => {
+                    // Ensure button is enabled after user closes the alert
+                    submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                });
+                return;
+            }
+            
+            showSwalLoading('Saving Settings...', 'Please wait while we save your provider configuration');
+            submitBtn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-1"></i> Saving...');
+            
+            $.ajax({
+                url: '{{ route("admin.provider.splits.update") }}',
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json'
+                },
+                data: JSON.stringify({ providers: providers }),
+                contentType: 'application/json',
+                success: function(response) {
+                    if (response.success) {
+                        closeSwalLoading();
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: response.message || 'Provider split configuration updated successfully',
+                            timer: 2000,
+                            showConfirmButton: false,
+                            customClass: {
+                                popup: 'swal-dark'
+                            }
+                        });
+                        
+                        // Recalculate total
+                        calculateActiveTotalPercentage();
+                    } else {
+                        closeSwalLoading();
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response.message || 'Something went wrong!',
+                            customClass: {
+                                popup: 'swal-dark'
+                            }
+                        }).then(() => {
+                            // Ensure button is enabled after user closes the alert
+                            submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Something went wrong!';
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        errorMessage = Object.values(xhr.responseJSON.errors).flat().join(', ');
+                    }
+                    
+                    closeSwalLoading();
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: errorMessage,
+                        customClass: {
+                            popup: 'swal-dark'
+                        }
+                    }).then(() => {
+                        // Ensure button is enabled after user closes the alert
+                        submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                    });
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).removeAttr('disabled').html(originalText);
+                }
+            });
+        });
+
+        // Calculate total percentage on input change
+        $('.split-percentage-input').on('input', function() {
+            calculateActiveTotalPercentage();
+            // Ensure all save buttons are enabled when user changes values
+            $('.provider-settings-form').each(function() {
+                const btn = $(this).find('button[type="submit"]');
+                btn.prop('disabled', false).removeAttr('disabled');
+            });
+        });
+
+        // Validate priority uniqueness on input change
+        $('.priority-input').on('input', function() {
+            const currentValue = $(this).val();
+            const currentSlug = $(this).closest('.provider-split-form').data('slug');
+            const errorElement = $(`#priority-error-${currentSlug}`);
+            
+            // Clear previous errors
+            errorElement.hide().text('');
+            $(this).removeClass('is-invalid');
+            
+            if (currentValue === '' || currentValue === null) {
+                return;
+            }
+            
+            // Check for duplicates
+            let hasDuplicate = false;
+            $('.priority-input').each(function() {
+                const otherSlug = $(this).closest('.provider-split-form').data('slug');
+                if (otherSlug !== currentSlug && $(this).val() === currentValue && $(this).val() !== '') {
+                    hasDuplicate = true;
+                    return false; // break loop
+                }
+            });
+            
+            if (hasDuplicate) {
+                $(this).addClass('is-invalid');
+                errorElement.text('This priority is already used by another provider').show();
+            }
+        });
+
+        // Handle refresh
+        $('#refreshProviderSplits').on('click', function() {
+            const btn = $(this);
+            const originalText = btn.html();
+            
+            btn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-1"></i> Refreshing...');
+            
+            showSwalLoading('Refreshing Settings...', 'Please wait while we reload the page');
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        });
+
+        // Initialize total percentage calculation
+        calculateActiveTotalPercentage();
+
+        // Initialize password toggle functionality for SMTP Provider Split Configuration
+        function initializePasswordToggles() {
+            $('.password-toggle').off('click').on('click', function() {
+                const input = $(this).closest('.password-wrapper').find('input');
+                const icon = $(this);
+
+                if (input.attr('type') === 'password') {
+                    input.attr('type', 'text');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    input.attr('type', 'password');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                }
+            });
+        }
+
+        // Initialize password toggles on page load
+        initializePasswordToggles();
     });
 </script>
 @endpush

@@ -76,8 +76,23 @@ class SendDraftOrderNotifications extends Command
                     $this->line("🔍 [DRY RUN] Would send email to: {$order->user->email} for Order #{$orderId}");
                 } else {
                     // Send the email
-                    // Mail::to($order->user->email)->queue(new DraftOrderNotificationMail($order, $order->user));
-                    Mail::to($order->user->email)->later(now()->addMinutes(1), new DraftOrderNotificationMail($order, $order->user));
+                    try {
+                        // Mail::to($order->user->email)->queue(new DraftOrderNotificationMail($order, $order->user));
+                        Mail::to($order->user->email)->later(now()->addMinutes(1), new DraftOrderNotificationMail($order, $order->user));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send draft order notification', [
+                            'recipient_email' => $order->user->email,
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'order_id' => $order->id,
+                            'chargebee_invoice_id' => $order->chargebee_invoice_id,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'SendDraftOrderNotifications::handle - draft order notification'
+                        ]);
+                        throw $e; // Re-throw to be caught by outer try-catch
+                    }
                     // Update the notification timestamp
                     $order->update(['last_draft_notification_sent_at' => Carbon::now()]);
                     

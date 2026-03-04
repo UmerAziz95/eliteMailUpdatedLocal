@@ -208,6 +208,7 @@
         </div>
     </div>
 @endif
+
 <form id="editOrderForm" novalidate>
     @csrf
     <input type="hidden" name="user_id" value="{{ auth()->id() }}">
@@ -245,12 +246,28 @@
                 <label for="hosting">Domain hosting platform *</label>
                 <select id="hosting" name="hosting_platform" class="form-control" required>
                     @foreach($hostingPlatforms as $platform)
+                    @php
+                        $isSelected = false;
+                        $existingHostingPlatform = optional(optional($order)->reorderInfo)->count() > 0 
+                            ? optional($order->reorderInfo->first())->hosting_platform 
+                            : null;
+                        
+                        // Check if already selected in reorderInfo
+                        if ($existingHostingPlatform === $platform->value) {
+                            $isSelected = true;
+                        }
+                        // Default to Spaceship if provider_type is Private SMTP and no existing selection
+                        elseif (empty($existingHostingPlatform) && 
+                                $platform->value === 'spaceship' && 
+                                isset($order) && 
+                                $order->provider_type === 'Private SMTP') {
+                            $isSelected = true;
+                        }
+                    @endphp
                     <option value="{{ $platform->value }}" data-fields='@json($platform->fields)'
                         data-requires-tutorial="{{ $platform->requires_tutorial }}"
                         data-tutorial-link="{{ $platform->tutorial_link }}"
-                        data-import-note="{{ $platform->import_note ?? '' }}" {{ (optional(optional($order)->
-                        reorderInfo)->count() > 0 && $order->reorderInfo->first()->hosting_platform ===
-                        $platform->value) ? ' selected' : '' }}>
+                        data-import-note="{{ $platform->import_note ?? '' }}" {{ $isSelected ? ' selected' : '' }}>
                         {{ $platform->name }}
                     </option>
                     @endforeach
@@ -278,6 +295,78 @@
 
             <div class="platform" id="platform-fields-container">
                 <!-- Dynamic platform fields will be inserted here -->
+            </div>
+
+            {{-- Spaceship API Fields (shown only when Spaceship is selected) --}}
+            <div id="spaceship-api-fields" class="mb-3" style="display: none;">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="spaceship_api_key">Spaceship API Key *</label>
+                        <input type="text" id="spaceship_api_key" name="spaceship_api_key" 
+                            class="form-control" 
+                            value="{{ isset($order) && $order->getPlatformCredential('spaceship') ? $order->getPlatformCredential('spaceship')->getCredential('api_key', '') : '' }}"
+                            placeholder="Enter Spaceship API Key">
+                        <div class="invalid-feedback" id="spaceship_api_key-error"></div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="spaceship_api_secret_key">Spaceship API Secret Key *</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="spaceship_api_secret_key" name="spaceship_api_secret_key" 
+                                class="form-control" 
+                                value="{{ isset($order) && $order->getPlatformCredential('spaceship') ? $order->getPlatformCredential('spaceship')->getCredential('api_secret_key', '') : '' }}"
+                                placeholder="Enter Spaceship API Secret Key">
+                            <i class="fa-regular fa-eye password-toggle"></i>
+                        </div>
+                        <div class="invalid-feedback" id="spaceship_api_secret_key-error"></div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Namecheap API Fields (shown only when Namecheap is selected) --}}
+            <div id="namecheap-api-fields" class="mb-3" style="display: none;">
+                {{-- Whitelist Instruction Alert --}}
+                <div class="alert alert-info mb-3" style="background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460;">
+                    <h6 class="alert-heading" style="color: #0c5460;"><i class="fa-solid fa-info-circle me-2"></i>Namecheap API Whitelist Required</h6>
+                    <p class="mb-2" style="color: #0c5460;">To update domain nameservers via the Namecheap API, we require the API key from the customer. Additionally, the customer must whitelist our server's public IP to allow API access.</p>
+                    <p class="mb-2" style="color: #0c5460;"><strong>What the customer needs to do:</strong></p>
+                    <ol class="mb-2" style="color: #0c5460;">
+                        <li>Log in to Namecheap</li>
+                        <li>Go to <strong>Profile → Tools → API Access</strong></li>
+                        <li>Enable Namecheap API Access</li>
+                        <li>Add the following server IP to <strong>Whitelisted IPs</strong>: 
+                            <code id="namecheap-server-ip" class="user-select-all" style="background-color: #fff; color: #d63384; padding: 2px 6px; border-radius: 3px;">144.172.95.185</code>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="copyNamecheapIP(event)" title="Copy IP address">
+                                <i class="fa-regular fa-copy me-1"></i>Copy IP
+                            </button>
+                        </li>
+                        <li>Click <strong>Save</strong></li>
+                    </ol>
+                    <div class="mb-2">
+                        <div class="form-check">
+                            <input type="checkbox" id="namecheap_ip_whitelisted" name="namecheap_ip_whitelisted" class="form-check-input" value="1" required>
+                            <label class="form-check-label" for="namecheap_ip_whitelisted" style="color: #0c5460;">
+                                I confirm that I have whitelisted the IP address <strong>144.172.95.185</strong> in my Namecheap account *
+                            </label>
+                        </div>
+                        <div class="invalid-feedback d-block" id="namecheap_ip_whitelisted-error"></div>
+                    </div>
+                    <p class="mb-0 mt-2" style="color: #0c5460;"><small>Once this is completed, we will be able to update the domain nameservers automatically.</small></p>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="namecheap_api_key">Namecheap API Key *</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="namecheap_api_key" name="namecheap_api_key" 
+                                class="form-control" 
+                                value="{{ isset($order) && $order->getPlatformCredential('namecheap') ? $order->getPlatformCredential('namecheap')->getCredential('api_key', '') : '' }}"
+                                placeholder="Enter Namecheap API Key">
+                            <i class="fa-regular fa-eye password-toggle"></i>
+                        </div>
+                        <div class="invalid-feedback" id="namecheap_api_key-error"></div>
+                    </div>
+                </div>
             </div>
 
             
@@ -420,7 +509,10 @@
                     </div>
                 </div> -->
 
-                <div class="col-md-6 profile-picture" style="display: none;">
+                @php
+                    $isPrivateSMTP = isset($order) && ($order->provider_type === 'Private SMTP' || (isset($order->plan) && $order->plan->provider_type === 'Private SMTP'));
+                @endphp
+                <div class="col-md-6 profile-picture" style="display: none;" @if($isPrivateSMTP) style="display: none !important;" @endif>
                     <label>Profile Picture Link</label>
                     <input type="url" name="profile_picture_link" class="form-control"
                         value="{{ isset($order) && optional($order->reorderInfo)->first() ? $order->reorderInfo->first()->profile_picture_link : '' }}">
@@ -2302,14 +2394,65 @@ $(document).ready(function() {
         const fieldsData = selectedOption.data('fields');
         const requiresTutorial = selectedOption.data('requires-tutorial');
         const tutorialLink = selectedOption.data('tutorial-link');
+        const importNote = selectedOption.data('import-note');
         const platformValue = selectedOption.val();
         
         const container = $('#platform-fields-container');
+        const spaceshipFields = $('#spaceship-api-fields');
+        const namecheapFields = $('#namecheap-api-fields');
         container.empty();
+        
+        // Show/hide Spaceship API fields based on selection
+        if (platformValue === 'spaceship') {
+            if (spaceshipFields.length) {
+                spaceshipFields.css('display', 'block');
+            }
+            // Make API key fields required
+            $('#spaceship_api_key, #spaceship_api_secret_key').prop('required', true);
+        } else {
+            if (spaceshipFields.length) {
+                spaceshipFields.css('display', 'none');
+            }
+            // Remove required attribute
+            $('#spaceship_api_key, #spaceship_api_secret_key').prop('required', false);
+        }
+        
+        // Show/hide Namecheap API fields based on selection
+        if (platformValue === 'namecheap') {
+            if (namecheapFields.length) {
+                namecheapFields.css('display', 'block');
+            }
+            // Make API key field and whitelist checkbox required
+            // Note: platform_login (username) is already required via platform fields
+            $('#namecheap_api_key, #namecheap_ip_whitelisted').prop('required', true);
+        } else {
+            if (namecheapFields.length) {
+                namecheapFields.css('display', 'none');
+            }
+            // Remove required attribute
+            $('#namecheap_api_key, #namecheap_ip_whitelisted').prop('required', false);
+        }
         
         if (fieldsData) {
             // Get existing values from the order if available
-            const existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
+            let existingValues = @json(optional(optional($order)->reorderInfo)->count() > 0 ? $order->reorderInfo->first() : null);
+            
+            // Get existing values from platform_credentials for Spaceship
+            const spaceshipCredential = @json(isset($order) && $order->getPlatformCredential('spaceship') ? $order->getPlatformCredential('spaceship')->credentials : null);
+            
+            // For Spaceship, also check platform_credentials for login/password
+            if (platformValue === 'spaceship' && spaceshipCredential) {
+                // Merge platform_credentials values into existingValues for login/password
+                if (!existingValues) {
+                    existingValues = {};
+                }
+                if (spaceshipCredential.platform_login) {
+                    existingValues.platform_login = spaceshipCredential.platform_login;
+                }
+                if (spaceshipCredential.platform_password) {
+                    existingValues.platform_password = spaceshipCredential.platform_password;
+                }
+            }
             
             // Use the new paired field generation
             container.append(generatePairedFields(fieldsData, existingValues));
@@ -2328,10 +2471,7 @@ $(document).ready(function() {
             $('#other_platform').removeClass('is-invalid');
             $('#other-platform-error').text('');
         }
-
         // Handle tutorial section visibility
-        const importNote = selectedOption.data('import-note');
-        
         if (requiresTutorial && tutorialLink) {
             $('#tutorial_section').show();
             $('.tutorial-link').attr('href', tutorialLink);
@@ -2381,7 +2521,18 @@ $(document).ready(function() {
     initializePasswordToggles();
 
     // Handle platform changes
-    $('#hosting').on('change', updatePlatformFields);
+    $('#hosting').on('change', function() {
+        updatePlatformFields();
+    });
+    
+    // Trigger update on page load to show Spaceship fields if selected by default
+    const initialPlatform = $('#hosting').val();
+    if (initialPlatform === 'spaceship') {
+        // Small delay to ensure DOM is ready
+        setTimeout(function() {
+            updatePlatformFields();
+        }, 100);
+    }
 
         // Handle sending platform changes
         function updateSendingPlatformFields() {
@@ -2591,6 +2742,94 @@ $(document).ready(function() {
                 firstErrorField = accessTutorial;
             }
         }
+        
+        // Validate Spaceship API fields if Spaceship is selected
+        const hostingPlatform = $('#hosting').val();
+        if (hostingPlatform === 'spaceship') {
+            const apiKey = $('#spaceship_api_key').val()?.trim();
+            const apiSecretKey = $('#spaceship_api_secret_key').val()?.trim();
+            const platformLogin = $('#platform_login').val()?.trim();
+            const platformPassword = $('#platform_password').val()?.trim();
+
+            $('#spaceship_api_key, #spaceship_api_secret_key, #platform_login, #platform_password').removeClass('is-invalid');
+            $('#spaceship_api_key-error, #spaceship_api_secret_key-error, #platform_login-error, #platform_password-error').text('');
+
+            if (!apiKey) {
+                isValid = false;
+                $('#spaceship_api_key').addClass('is-invalid');
+                $('#spaceship_api_key-error').text('Spaceship API Key is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#spaceship_api_key');
+                }
+            }
+
+            if (!apiSecretKey) {
+                isValid = false;
+                $('#spaceship_api_secret_key').addClass('is-invalid');
+                $('#spaceship_api_secret_key-error').text('Spaceship API Secret Key is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#spaceship_api_secret_key');
+                }
+            }
+
+            // Validate existing Spaceship fields (login and password)
+            if (!platformLogin) {
+                isValid = false;
+                $('#platform_login').addClass('is-invalid');
+                $('#platform_login-error').text('Domain Hosting Platform - Login is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#platform_login');
+                }
+            }
+
+            if (!platformPassword) {
+                isValid = false;
+                $('#platform_password').addClass('is-invalid');
+                $('#platform_password-error').text('Domain Hosting Platform - Password is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#platform_password');
+                }
+            }
+        }
+        
+        // Validate Namecheap API fields if Namecheap is selected
+        if (hostingPlatform === 'namecheap') {
+            const platformLogin = $('#platform_login').val()?.trim(); // This is the Namecheap username
+            const apiKey = $('#namecheap_api_key').val()?.trim();
+            const ipWhitelisted = $('#namecheap_ip_whitelisted').is(':checked');
+
+            $('#platform_login, #namecheap_api_key, #namecheap_ip_whitelisted').removeClass('is-invalid');
+            $('#platform_login-error, #namecheap_api_key-error, #namecheap_ip_whitelisted-error').text('');
+
+            // platform_login is already validated by platform fields, but we ensure it's there for Namecheap
+            if (!platformLogin) {
+                isValid = false;
+                $('#platform_login').addClass('is-invalid');
+                $('#platform_login-error').text('Namecheap username is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#platform_login');
+                }
+            }
+
+            if (!apiKey) {
+                isValid = false;
+                $('#namecheap_api_key').addClass('is-invalid');
+                $('#namecheap_api_key-error').text('Namecheap API Key is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#namecheap_api_key');
+                }
+            }
+
+            if (!ipWhitelisted) {
+                isValid = false;
+                $('#namecheap_ip_whitelisted').addClass('is-invalid');
+                $('#namecheap_ip_whitelisted-error').text('This is required');
+                if (!firstErrorField) {
+                    firstErrorField = $('#namecheap_ip_whitelisted');
+                }
+            }
+        }
+        
         // Validate dynamic prefix variant fields
         const inboxesPerDomain = parseInt($('#inboxes_per_domain').val()) || 1;
         for (let i = 1; i <= inboxesPerDomain; i++) {
@@ -2875,6 +3114,12 @@ $(document).ready(function() {
     const container = $('#prefix-variants-container');
     container.empty();
     
+    // Check if provider_type is Private SMTP
+    @php
+        $isPrivateSMTP = isset($order) && ($order->provider_type === 'Private SMTP' || (isset($order->plan) && $order->plan->provider_type === 'Private SMTP'));
+    @endphp
+    const isPrivateSMTP = @json($isPrivateSMTP ?? false);
+    
     // Add header
     container.append('<h5 class="mb-2 col-12">Email Persona - Prefix Variants</h5>');
     
@@ -2935,13 +3180,15 @@ $(document).ready(function() {
                             <p class="note">Last name for this email persona</p>
                         </div>
                         
-                        <div class="col-md-4">
+                        ${isPrivateSMTP ? '' : `
+                        <div class="col-md-4 profile-picture-field">
                             <label>Profile Picture Link</label>
                             <input type="url" name="prefix_variants_details[prefix_variant_${i}][profile_link]" 
                                 class="form-control" value="${existingDetails.profile_link || ''}" >
                             <div class="invalid-feedback" id="prefix_variant_${i}_profile_link-error"></div>
                             <p class="note">Profile picture URL for this persona</p>
                         </div>
+                        `}
 
                         <div class="col-md-12">
                             <label>Email Prefix ${i} *</label>
@@ -3070,6 +3317,33 @@ $(document).ready(function() {
     // Initialize tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
 });
+
+// Copy Namecheap IP address to clipboard - Global function
+function copyNamecheapIP(event) {
+        const ipAddress = '144.172.95.185';
+        const button = event ? event.target.closest('button') : null;
+        const originalHTML = button ? button.innerHTML : '';
+        
+        navigator.clipboard.writeText(ipAddress).then(function() {
+            // Show success feedback
+            if (button) {
+                button.innerHTML = '<i class="fa-solid fa-check me-1"></i>Copied!';
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-success');
+                
+                setTimeout(function() {
+                    button.innerHTML = originalHTML;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-secondary');
+                }, 2000);
+            } else {
+                alert('IP address copied to clipboard: ' + ipAddress);
+            }
+        }).catch(function(err) {
+            console.error('Failed to copy IP address:', err);
+            alert('Failed to copy IP address. Please copy manually: ' + ipAddress);
+        });
+    }
 </script>
 
 

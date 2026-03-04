@@ -27,6 +27,7 @@ class EventServiceProvider extends ServiceProvider
      */
     protected $observers = [
         \App\Models\SupportTicket::class => [\App\Observers\SupportTicketObserver::class],
+        \App\Models\PoolOrderMigrationTask::class => [\App\Observers\PoolOrderMigrationTaskObserver::class],
     ];
 
     /**

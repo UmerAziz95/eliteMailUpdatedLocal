@@ -26,10 +26,14 @@ use App\Models\OrderPanelSplit;
 use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use App\Services\PanelReassignmentService;
 use App\Services\OrderContractorReassignmentService;
 use App\Services\SlackNotificationService;
 use App\Services\TextExportService;
+use App\Services\EmailExportService;
+use App\Services\OrderSplitResetService;
+use App\Services\OrderCapacityService;
 class OrderController extends Controller
 {
     private $statuses;
@@ -205,7 +209,14 @@ class OrderController extends Controller
             ->get();
         $sendingPlatforms = \App\Models\SendingPlatform::get();
         
-        return view('admin.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order'));
+        // Get domain transfer errors for display
+        $domainTransferErrors = \App\Models\DomainTransfer::where('order_id', $order->id)
+            ->where('status', 'pending')
+            ->where('name_server_status', 'failed')
+            ->whereNotNull('error_message')
+            ->get();
+        
+        return view('admin.orders.edit-order', compact('plan', 'hostingPlatforms', 'sendingPlatforms', 'order', 'domainTransferErrors'));
     }
 
     public function getOrders(Request $request)
@@ -320,11 +331,37 @@ class OrderController extends Controller
                                 <i class="fa-solid fa-history"></i> &nbsp;Log View
                             </a>
                         </li>
+                        <li>
+                            <a href="javascript:;" class="dropdown-item order-fixed-manually" data-order-id="' . $order->id . '">
+                                <i class="fa-solid fa-wrench text-warning"></i> &nbsp;Order Fixed Manually
+                            </a>
+                        </li>
+                        '. ($order->is_verified == 0 && auth()->user()->hasPermissionTo('Verify Order') ? '
+                        <li>
+                            <a href="javascript:void(0);"
+                                class="dropdown-item text-success verify-order-btn"
+                                data-order-id="' . $order->id . '">
+                                <i class="fa-solid fa-circle-check"></i> &nbsp;Verify Order
+                            </a>
+                        </li>' : '' ) . '
                     </ul>
                 </div>';
 
                 })
                 ->editColumn('id', function ($order) {
+                    // Provider type icon
+                    $providerIcon = '';
+                    if ($order->provider_type) {
+                        $providerType = strtolower($order->provider_type);
+                        if ($providerType === 'google') {
+                            $providerIcon = '<i class="fa-brands fa-google text-danger me-1" title="Google"></i>';
+                        } elseif ($providerType === 'microsoft365' || $providerType === 'microsoft 365') {
+                            $providerIcon = '<i class="fa-brands fa-microsoft text-primary me-1" title="Microsoft 365"></i>';
+                        } elseif ($providerType === 'smtp') {
+                            $providerIcon = '<i class="fa-solid fa-envelope text-info me-1" title="SMTP"></i>';
+                        }
+                    }
+                    
                     // Determine icon color based on shared status and helpers assignment
                     $iconColor = 'text-secondary'; // default color
                     if ($order->is_shared) {
@@ -335,20 +372,37 @@ class OrderController extends Controller
                     
                     $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes ' . $iconColor . ' me-2" title="Shared Order"></i>' : '';
                     $share_request_link = '<a href="' . route('admin.orders.shared-order-requests') . '" class="text-primary">' . $sharedIcon . '</a>';
-                    $order_view_link = '<a href="' . route('admin.orders.view', $order->id) . '">' . $order->id . '</a>';
+                    $order_view_link = '<a href="' . route('admin.orders.view', $order->id) . '">' . $providerIcon . $order->id . '</a>';
                     return $order_view_link . ' ' . $share_request_link;
                 })
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d M, Y') : '';
                 })
                 ->editColumn('status', function ($order) {
+
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
-                    $statusKey = $status;
-                    // dd($order->status_manage_by_admin, $statusKey);
-                    $statusClass = $this->statuses[$statusKey] ?? 'secondary';
-                    return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
-                        . ucfirst($status) . '</span>';
-                })
+                    $statusClass = $this->statuses[$status] ?? 'secondary';
+                
+                    $verificationIcon = '';
+                
+                    if ($status === 'completed') {
+                        if ((int) $order->is_verified === 1) {
+                            $verificationIcon = '<i class="fa-solid fa-circle-check text-success" title="Verified"></i>';
+                        } else {
+                            $verificationIcon = '<i class="fa-solid fa-circle-xmark text-danger" title="Not Verified"></i>';
+                        }
+                    }
+                
+                    return '
+                        <div class="d-inline-flex align-items-center gap-1">
+                            <span class="py-1 px-2 text-nowrap text-' . $statusClass . '
+                                border border-' . $statusClass . ' rounded-2 bg-transparent">
+                                ' . ucfirst($status) . '
+                            </span>
+                            ' . ($verificationIcon ? '<span>' . $verificationIcon . '</span>' : '') . '
+                        </div>
+                    ';
+                })                
                 ->addColumn('name', function ($order) {
                     return $order->user ? $order->user->name : 'N/A';
                 })
@@ -458,6 +512,77 @@ class OrderController extends Controller
     
         return response()->json(['success' => true, 'message' => 'Status updated']);
     }
+
+    public function verifyOrder(Request $request, $id)
+    {
+        try {
+            $order = Order::findOrFail($id);
+
+            // Check if order is already verified
+            if ($order->is_verified == 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order #' . $order->id . ' is already verified.'
+                ], 400);
+            }
+
+            // Check permission
+            if (!auth()->user()->hasPermissionTo('Verify Order')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to verify orders.'
+                ], 403);
+            }
+
+            // Update the order verification status
+            $order->is_verified = 1;
+            $order->save();
+
+            // Log the verification action
+            if (class_exists(\App\Services\ActivityLogService::class)) {
+                \App\Services\ActivityLogService::log(
+                    'order_verified',
+                    'Order #' . $order->id . ' has been verified',
+                    $order,
+                    [
+                        'order_id' => $order->id,
+                        'admin_user' => Auth::id(),
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->header('User-Agent')
+                    ],
+                    Auth::id()
+                );
+            }
+
+            // Send Slack notification
+            try {
+                \App\Services\SlackNotificationService::sendOrderVerificationNotification($order);
+                \Log::channel('slack_notifications')->info('Order verification notification sent', [
+                    'order_id' => $order->id
+                ]);
+            } catch (\Exception $e) {
+                \Log::channel('slack_notifications')->error('Failed to send order verification notification', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order #' . $order->id . ' has been verified successfully.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error verifying order: ' . $e->getMessage(), [
+                'order_id' => $id,
+                'error' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error verifying order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
     
 
     public function subscriptionCancelProcess(Request $request)
@@ -491,26 +616,50 @@ class OrderController extends Controller
                 // Get user details and send email
                 $user = $order->user;
                 try {
-                    Mail::to($user->email)
-                        ->queue(new OrderStatusChangeMail(
-                            $order,
-                            $user,
-                            $oldStatus,
-                            $newStatus,
-                            $reason,
-                            false
-                        ));
+                    try {
+                        Mail::to($user->email)
+                            ->queue(new OrderStatusChangeMail(
+                                $order,
+                                $user,
+                                $oldStatus,
+                                $newStatus,
+                                $reason,
+                                false
+                            ));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order status change email to user', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'order_id' => $order->id,
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Admin\\OrderController::changeStatus'
+                        ]);
+                    }
 
                     // Only send email to admin
-                    Mail::to(config('mail.admin_address', 'admin@example.com'))
-                        ->queue(new OrderStatusChangeMail(
-                            $order,
-                            $user,
-                            $oldStatus,
-                            $newStatus,
-                            $reason,
-                            true
-                        ));
+                    try {
+                        Mail::to(config('mail.admin_address', 'admin@example.com'))
+                            ->queue(new OrderStatusChangeMail(
+                                $order,
+                                $user,
+                                $oldStatus,
+                                $newStatus,
+                                $reason,
+                                true
+                            ));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order status change email to admin', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'order_id' => $order->id,
+                            'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Admin\\OrderController::changeStatus'
+                        ]);
+                    }
+                    
                     Log::info('Order status change email sent', [
                         'order_id' => $order->id,
                         'assigned_to' => $order->assigned_to
@@ -520,19 +669,36 @@ class OrderController extends Controller
                     if($order->assigned_to){
                         $assignedUser = User::find($order->assigned_to);
                         if ($assignedUser) {
-                            Mail::to($assignedUser->email)
-                                ->queue(new OrderStatusChangeMail(
-                                    $order,
-                                    $user,
-                                    $oldStatus,
-                                    $newStatus,
-                                    $reason,
-                                    true
-                                ));
+                            try {
+                                Mail::to($assignedUser->email)
+                                    ->queue(new OrderStatusChangeMail(
+                                        $order,
+                                        $user,
+                                        $oldStatus,
+                                        $newStatus,
+                                        $reason,
+                                        true
+                                    ));
+                            } catch (\Exception $e) {
+                                \Log::channel('email-failures')->error('Failed to send order status change email to contractor', [
+                                    'exception' => $e->getMessage(),
+                                    'stack_trace' => $e->getTraceAsString(),
+                                    'order_id' => $order->id,
+                                    'contractor_id' => $assignedUser->id,
+                                    'contractor_email' => $assignedUser->email,
+                                    'timestamp' => now()->toDateTimeString(),
+                                    'context' => 'Admin\\OrderController::changeStatus'
+                                ]);
+                            }
                         }
                     }
                 } catch (\Exception $e) {
-                    Log::error('Failed to send order status change emails: ' . $e->getMessage());
+                    \Log::channel('email-failures')->error('Failed to send order status change emails - general error', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'order_id' => $order->id,
+                        'timestamp' => now()->toDateTimeString()
+                    ]);
                 }
     
                 // Log the activity
@@ -724,6 +890,7 @@ class OrderController extends Controller
                             'id' => $split->id,
                             'order_panel_id' => $orderPanel->id,
                             'panel_id' => $orderPanel->panel_id,
+                            'panel_sr_no' => optional($orderPanel->panel)->panel_sr_no ?? $orderPanel->panel_id ?? null,
                             'inboxes_per_domain' => $split->inboxes_per_domain,
                             'domains' => $domains,
                             'domains_count' => count($domains),
@@ -741,7 +908,11 @@ class OrderController extends Controller
                     'customer_image' => $order->user->profile_image ? asset('storage/profile_images/' . $order->user->profile_image) : null,
                     'total_inboxes' => $reorderInfo ? $reorderInfo->total_inboxes : $totalInboxes,
                     'inboxes_per_domain' => $inboxesPerDomain,
+                    'provider_type' => $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null),
                     'contractor_name' => $order->assignedTo ? $order->assignedTo->name : null,
+                    'plan' => $order->plan ? [
+                        'provider_type' => $order->plan->provider_type
+                    ] : null,
                     'total_domains' => $totalDomainsCount,
                     'status' => $order->status_manage_by_admin ?? 'pending',
                     'status_manage_by_admin' => (function() use ($order) {
@@ -812,6 +983,7 @@ class OrderController extends Controller
                         'id' => $split->id,
                         'panel_id' => $orderPanel->panel_id,
                         'panel_title' => $orderPanel->panel->title ?? 'N/A',
+                        'panel_sr_no' => optional($orderPanel->panel)->panel_sr_no ?? $orderPanel->panel_id ?? null,
                         'order_panel_id' => $orderPanel->id,
                         'inboxes_per_domain' => $split->inboxes_per_domain,
                         'order_panel'=>$orderPanel,
@@ -849,6 +1021,7 @@ class OrderController extends Controller
                         return '<span style="font-size: 11px !important;" class="py-1 px-1 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
                             . ucfirst($status) . '</span>';
                     })(),
+                    'provider_type' => $order->provider_type,
                 ],
                 'reorder_info' => $reorderInfo ? [
                     'total_inboxes' => $reorderInfo->total_inboxes,
@@ -872,7 +1045,8 @@ class OrderController extends Controller
                     'is_shared' => $order->is_shared == 1 ? 1 : 0,
                     'shared_note' => $order->shared_note ?? null,
                     'helpers_ids' => $order->helpers_ids ?? [],
-                    'helpers_names' => $order->helpers_ids ? User::whereIn('id', $order->helpers_ids)->pluck('name')->toArray() : []
+                    'helpers_names' => $order->helpers_ids ? User::whereIn('id', $order->helpers_ids)->pluck('name')->toArray() : [],
+                    'backup_codes' => $reorderInfo->backup_codes ?? [],
                 ] : null,
                 'splits' => $splitsData
             ]);
@@ -1013,33 +1187,64 @@ class OrderController extends Controller
             // Send emails if needed
             try {
                 $user = $order->user;
-                Mail::to($user->email)
-                    ->queue(new OrderStatusChangeMail(
-                        $order,
-                        $user,
-                        $oldStatus,
-                        $newStatus,
-                        $reason,
-                        false
-                    ));
+                try {
+                    Mail::to($user->email)
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            false
+                        ));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send order panel status change email to user', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'order_id' => $order->id,
+                        'order_panel_id' => $orderPanel->id,
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'Admin\\OrderController::changePanelStatus'
+                    ]);
+                }
 
                 // Send email to admin
-                Mail::to(config('mail.admin_address', 'admin@example.com'))
-                    ->queue(new OrderStatusChangeMail(
-                        $order,
-                        $user,
-                        $oldStatus,
-                        $newStatus,
-                        $reason,
-                        true
-                    ));
+                try {
+                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            true
+                        ));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send order panel status change email to admin', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'order_id' => $order->id,
+                        'order_panel_id' => $orderPanel->id,
+                        'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'Admin\\OrderController::changePanelStatus'
+                    ]);
+                }
 
                 Log::info('Order panel status change email sent', [
                     'order_id' => $order->id,
                     'order_panel_id' => $orderPanel->id
                 ]);
             } catch (\Exception $e) {
-                Log::error('Failed to send order panel status change emails: ' . $e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send order panel status change emails - general error', [
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'order_id' => $order->id,
+                    'order_panel_id' => $orderPanel->id,
+                    'timestamp' => now()->toDateTimeString()
+                ]);
             }
 
             return response()->json([
@@ -1911,7 +2116,9 @@ class OrderController extends Controller
             // Validate the request
             $validator = Validator::make($request->all(), [
                 'status' => 'required|in:pending,completed,cancelled,rejected,in-progress,reject,cancelled_force',
-                'reason' => 'nullable|string|max:500'
+                'reason' => 'nullable|string|max:500',
+                'provider_type' => 'nullable|in:Google,Microsoft 365',
+                'microsoft_csv' => 'nullable|file|mimes:csv,txt|max:10240' // Max 10MB
             ]);
 
             if ($validator->fails()) {
@@ -1925,6 +2132,43 @@ class OrderController extends Controller
             $adminId = Auth::id();
             $newStatus = $request->input('status');
             $reason = $request->input('reason');
+            $providerType = $request->input('provider_type');
+
+            // Validate provider_type is required when status is completed
+            if ($newStatus === 'completed' && !$providerType) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Provider type is required when status is completed'
+                ], 422);
+            }
+
+            // Validate CSV file for Microsoft 365
+            if ($newStatus === 'completed' && $providerType === 'Microsoft 365') {
+                if (!$request->hasFile('microsoft_csv')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'CSV file is required for Microsoft 365 provider type'
+                    ], 422);
+                }
+
+                $order = Order::with('reorderInfo', 'orderPanels.orderPanelSplits')->findOrFail($orderId);
+                
+                // Get total inboxes from reorder info
+                $totalInboxes = $order->reorderInfo->first()->total_inboxes ?? 0;
+
+                // Process and validate CSV file
+                $csvFile = $request->file('microsoft_csv');
+                $csvData = $this->processMicrosoftCsv($csvFile, $totalInboxes, $order);
+                
+                if (!$csvData['success']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $csvData['message'],
+                        'data' => $csvData['data'] ?? []
+                    ], 422);
+                }
+            }
+
             if($newStatus == 'reject' || $newStatus == 'cancelled') {
                 if(!$reason) {
                     return response()->json([
@@ -1959,22 +2203,23 @@ class OrderController extends Controller
             $oldStatus = $order->status_manage_by_admin;
             
             // Don't allow status change if it's the same
-            if ($oldStatus === $newStatus) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order is already in the selected status.'
-                ], 400);
-            }
+            // if ($oldStatus === $newStatus) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Order is already in the selected status.'
+            //     ], 400);
+            // }
             
             // Update order status using the correct column
             $order->status_manage_by_admin = $newStatus;
             
-            // Set completion timestamp if status is completed
+            // Set completion timestamp and provider type if status is completed
             if ($newStatus === 'completed') {
                 if (!$order->assigned_to) {
                     $order->assigned_to = $adminId;
                 }
                 $order->completed_at = now();
+                $order->provider_type = $providerType;
             }
             
             // Add reason if provided
@@ -1994,6 +2239,7 @@ class OrderController extends Controller
                     'old_status' => $oldStatus,
                     'new_status' => $newStatus,
                     'reason' => $reason,
+                    'provider_type' => $providerType,
                     'changed_by' => $adminId,
                     'changed_by_type' => 'admin'
                 ],
@@ -2017,26 +2263,49 @@ class OrderController extends Controller
             // Send email notifications
             try {
                 $user = $order->user;
-                Mail::to($user->email)
-                    ->queue(new OrderStatusChangeMail(
-                        $order,
-                        $user,
-                        $oldStatus,
-                        $newStatus,
-                        $reason,
-                        false
-                    ));
+                try {
+                    Mail::to($user->email)
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            false
+                        ));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send order status change email to user', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'order_id' => $order->id,
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'Admin\\OrderController::changeOrderStatus'
+                    ]);
+                }
 
                 // Send email to admin
-                Mail::to(config('mail.admin_address', 'admin@example.com'))
-                    ->queue(new OrderStatusChangeMail(
-                        $order,
-                        $user,
-                        $oldStatus,
-                        $newStatus,
-                        $reason,
-                        true
-                    ));
+                try {
+                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                        ->queue(new OrderStatusChangeMail(
+                            $order,
+                            $user,
+                            $oldStatus,
+                            $newStatus,
+                            $reason,
+                            true
+                        ));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send order status change email to admin', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'order_id' => $order->id,
+                        'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'Admin\\OrderController::changeOrderStatus'
+                    ]);
+                }
 
                 Log::info('Order status change email sent', [
                     'order_id' => $order->id,
@@ -2047,19 +2316,36 @@ class OrderController extends Controller
                 if($order->assigned_to){
                     $assignedUser = User::find($order->assigned_to);
                     if ($assignedUser) {
-                        Mail::to($assignedUser->email)
-                            ->queue(new OrderStatusChangeMail(
-                                $order,
-                                $user,
-                                $oldStatus,
-                                $newStatus,
-                                $reason,
-                                true
-                            ));
+                        try {
+                            Mail::to($assignedUser->email)
+                                ->queue(new OrderStatusChangeMail(
+                                    $order,
+                                    $user,
+                                    $oldStatus,
+                                    $newStatus,
+                                    $reason,
+                                    true
+                                ));
+                        } catch (\Exception $e) {
+                            \Log::channel('email-failures')->error('Failed to send order status change email to contractor', [
+                                'exception' => $e->getMessage(),
+                                'stack_trace' => $e->getTraceAsString(),
+                                'order_id' => $order->id,
+                                'contractor_id' => $assignedUser->id,
+                                'contractor_email' => $assignedUser->email,
+                                'timestamp' => now()->toDateTimeString(),
+                                'context' => 'Admin\\OrderController::changeOrderStatus'
+                            ]);
+                        }
                     }
                 }
             } catch (\Exception $e) {
-                Log::error('Failed to send order status change emails: ' . $e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send order status change emails - general error', [
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'order_id' => $order->id,
+                    'timestamp' => now()->toDateTimeString()
+                ]);
             }
             
             return response()->json([
@@ -2088,6 +2374,127 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Change order provider type (Google or Microsoft 365)
+     */
+    public function changeProviderType(Request $request, $orderId)
+    {
+        try {
+            // Validate the request
+            $validator = Validator::make($request->all(), [
+                'provider_type' => 'required|in:Google,Microsoft 365',
+                'reason' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            
+            $adminId = Auth::id();
+            $newProviderType = $request->input('provider_type');
+            $reason = $request->input('reason');
+
+            // Find the order with the relationships we need to clean up
+            $order = Order::with(['reorderInfo', 'orderPanels.orderPanelSplits', 'orderTracking'])->findOrFail($orderId);
+
+            $oldProviderType = $order->provider_type;
+            
+            // Don't allow change if it's the same
+            if ($oldProviderType === $newProviderType) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order already has the selected provider type.'
+                ], 400);
+            }
+
+            // Validate that the target provider has enough panel space for this order (shared logic with command)
+            $capacityService = app(OrderCapacityService::class);
+            $capacityCheck = $capacityService->validateProviderCapacity($order, $newProviderType);
+            if (!$capacityCheck['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $capacityCheck['message'] ?? 'Insufficient capacity for provider change.',
+                    'data' => $capacityCheck['data'] ?? []
+                ], 422);
+            }
+            
+            $splitResetService = app(OrderSplitResetService::class);
+            $splitCleanup = DB::transaction(function () use ($order, $newProviderType, $splitResetService, $adminId, $reason) {
+                // Update provider type
+                $order->provider_type = $newProviderType;
+                $order->save();
+
+                // Clear existing splits and re-queue split creation with the new provider
+                return $splitResetService->resetOrderSplits($order, $adminId, $reason, false);
+            });
+            // call cmd this php artisan panels:check-capacity with flag provider.
+            \Artisan::call('panels:check-capacity', [
+                '--provider' => $newProviderType
+            ]);
+            // Log the activity
+            ActivityLogService::log(
+                'admin_order_provider_type_updated',
+                "Admin changed order provider type from '{$oldProviderType}' to '{$newProviderType}'" . ($reason ? " with reason: {$reason}" : ""),
+                $order,
+                [
+                    'order_id' => $orderId,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => $newProviderType,
+                    'reason' => $reason,
+                    'split_cleanup' => $splitCleanup,
+                    'changed_by' => $adminId,
+                    'changed_by_type' => 'admin'
+                ],
+                $adminId
+            );
+            
+            // Create notification for customer
+            Notification::create([
+                'user_id' => $order->user_id,
+                'type' => 'order_provider_type_change',
+                'title' => 'Order Provider Type Updated',
+                'message' => "Your order #{$orderId} provider type has been changed to {$newProviderType}",
+                'data' => [
+                    'order_id' => $orderId,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => $newProviderType,
+                    'reason' => $reason,
+                    'split_cleanup' => $splitCleanup
+                ]
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Provider type successfully changed from '{$oldProviderType}' to '{$newProviderType}'",
+                'data' => [
+                    'order_id' => $orderId,
+                    'old_provider_type' => $oldProviderType,
+                    'new_provider_type' => $newProviderType,
+                    'reason' => $reason
+                ]
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
+            
+        } catch (Exception $e) {
+            Log::error("Error in changeProviderType for order {$orderId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change provider type: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
 
     /**
      * Get available panels for reassignment
@@ -2295,12 +2702,12 @@ class OrderController extends Controller
         }
     }
 
-    /**  
+    /**
      * Export CSV file with smart data selection based on order_emails availability
-     * If order_emails data exists for order panels, usev that data
-     * Otherwise, fall back to the existing domain-based generation method
+     * If batch data exists: exports batch-wise CSVs in a ZIP
+     * If no batch data: exports domain-wise chunked CSVs (200 emails per file) in a ZIP
      */
-    public function exportCsvSplitDomainsSmartById($splitId)
+    public function exportCsvSplitDomainsSmartById($splitId, EmailExportService $emailExportService)
     {
         try {
             // Find the order panel split
@@ -2315,18 +2722,8 @@ class OrderController extends Controller
             $order = $orderPanelSplit->orderPanel->order;
             $orderPanelId = $orderPanelSplit->order_panel_id;
 
-            // Check if order_emails data is available for this order panel
-            $orderEmails = OrderEmail::whereHas('orderSplit', function($query) use ($orderPanelId) {
-                $query->where('order_panel_id', $orderPanelId);
-            })->get();
-
-            // If order_emails data exists, use it for CSV generation
-            if ($orderEmails->count() > 0) {
-                return $this->exportCsvFromOrderEmails($splitId, $orderEmails);
-            }
-
-            // Otherwise, fall back to the existing domain-based method
-            return $this->exportCsvSplitDomainsById($splitId);
+            // Use the service to handle the export
+            return $emailExportService->exportSmartZip($splitId, $orderPanelId, $order, $orderPanelSplit);
 
         } catch (\Exception $e) {
             Log::error('Error exporting CSV with smart selection: ' . $e->getMessage());
@@ -2335,6 +2732,356 @@ class OrderController extends Controller
     }
 
     /**
+     * Export CSV for Private SMTP orders using domains from reorder_info
+     * 
+     * @param \App\Models\Order $order
+     * @param int|null $splitId (null for orders without splits)
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    private function exportPrivateSmtpCsv($order, $splitId = null)
+    {
+        try {
+            $reorderInfo = $order->reorderInfo->first();
+            
+            if (!$reorderInfo) {
+                throw new \Exception('ReorderInfo not found for this order.');
+            }
+
+            // Get domains from reorder_info.domains (comma-separated string)
+            $domainsString = $reorderInfo->domains ?? '';
+            if (empty($domainsString)) {
+                throw new \Exception('No domains found in reorder_info for this order.');
+            }
+
+            // Parse domains (handle comma and newline separated)
+            $domains = array_filter(
+                preg_split('/[\r\n,]+/', $domainsString),
+                function($domain) {
+                    return !empty(trim($domain));
+                }
+            );
+            $domains = array_map('trim', $domains);
+
+            if (empty($domains)) {
+                throw new \Exception('No valid domains found after parsing.');
+            }
+
+            // Get prefix variants from reorder_info
+            $prefixVariants = [];
+            if ($reorderInfo->prefix_variants) {
+                if (is_string($reorderInfo->prefix_variants)) {
+                    $decoded = json_decode($reorderInfo->prefix_variants, true);
+                    if (is_array($decoded)) {
+                        // Extract values from associative array like {"prefix_variant_1": "john", "prefix_variant_2": "jane"}
+                        $prefixVariants = array_values($decoded);
+                    } else {
+                        // Comma-separated string
+                        $prefixVariants = array_map('trim', explode(',', $reorderInfo->prefix_variants));
+                    }
+                } elseif (is_array($reorderInfo->prefix_variants)) {
+                    $prefixVariants = array_values($reorderInfo->prefix_variants);
+                }
+            }
+
+            // Default prefixes if none found
+            if (empty($prefixVariants)) {
+                $prefixVariants = ['info', 'contact'];
+            }
+
+            // Get prefix variant details for first_name, last_name, password
+            $prefixVariantDetails = [];
+            if ($reorderInfo->prefix_variants_details) {
+                if (is_string($reorderInfo->prefix_variants_details)) {
+                    $decoded = json_decode($reorderInfo->prefix_variants_details, true);
+                    if (is_array($decoded)) {
+                        $prefixVariantDetails = $decoded;
+                    }
+                } elseif (is_array($reorderInfo->prefix_variants_details)) {
+                    $prefixVariantDetails = $reorderInfo->prefix_variants_details;
+                }
+            }
+
+            // Get inboxes per domain
+            $inboxesPerDomain = (int) ($reorderInfo->inboxes_per_domain ?? 1);
+            if ($inboxesPerDomain <= 0) {
+                $inboxesPerDomain = 1;
+            }
+
+            // Limit prefix variants to inboxes_per_domain
+            $prefixVariants = array_slice($prefixVariants, 0, $inboxesPerDomain);
+
+            // Generate CSV filename
+            $filename = "order_{$order->id}_split_{$splitId}_private_smtp_" . date('Y-m-d_His') . ".csv";
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($domains, $prefixVariants, $prefixVariantDetails, $order) {
+                $file = fopen('php://output', 'w');
+                
+                // Add CSV headers (Google Workspace format)
+                fputcsv($file, [
+                    'First Name',
+                    'Last Name',
+                    'Email Address',
+                    'Password',
+                    'Org Unit Path [Required]'
+                ]);
+
+                $counter = 0;
+                // Generate emails: prefix@domain for each combination
+                foreach ($domains as $domain) {
+                    foreach ($prefixVariants as $index => $prefix) {
+                        $emailAddress = $prefix . '@' . $domain;
+                        
+                        // Get first and last name from prefix_variants_details
+                        $prefixKey = 'prefix_variant_' . ($index + 1);
+                        $firstName = '';
+                        $lastName = '';
+                        $password = '';
+                        
+                        if (isset($prefixVariantDetails[$prefixKey])) {
+                            $details = $prefixVariantDetails[$prefixKey];
+                            $firstName = $details['first_name'] ?? '';
+                            $lastName = $details['last_name'] ?? '';
+                            $password = $details['password'] ?? '';
+                        }
+                        
+                        // If no details found, try to parse prefix intelligently
+                        if (empty($firstName) && empty($lastName)) {
+                            // If prefix contains a dot (e.g., "mitsu.bee"), split by dot
+                            if (strpos($prefix, '.') !== false) {
+                                $parts = explode('.', $prefix, 2);
+                                $firstName = ucfirst(str_replace('.', '', $parts[0]));
+                                $lastName = ucfirst(str_replace('.', '', $parts[1]));
+                            }
+                            // Try to find capital letter in the middle for compound names
+                            elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]+.*)$/', $prefix, $matches)) {
+                                $firstName = $matches[1];
+                                $lastName = $matches[2];
+                            }
+                            // If prefix has PascalCase short form (e.g., RyanL -> Ryan, L)
+                            elseif (preg_match('/^([A-Z][a-z]+)([A-Z][a-z]*)$/', $prefix, $matches)) {
+                                $firstName = $matches[1];
+                                $lastName = $matches[2] ?: $matches[1];
+                            }
+                            // If it starts with lowercase and has uppercase
+                            elseif (preg_match('/^([a-z]+)([A-Z].*)$/', $prefix, $matches)) {
+                                $firstName = ucfirst($matches[1]);
+                                $lastName = $matches[2];
+                            }
+                            // Single word - use as both first and last name
+                            else {
+                                $firstName = ucfirst($prefix);
+                                $lastName = ucfirst($prefix);
+                            }
+                        }
+                        
+                        // Generate password if not found in details
+                        if (empty($password)) {
+                            $password = $this->customEncrypt($order->id);
+                        }
+                        
+                        // Write CSV row
+                        fputcsv($file, [
+                            $firstName,
+                            $lastName,
+                            $emailAddress,
+                            $password,
+                            '/' // Org Unit Path [Required]
+                        ]);
+                        
+                        $counter++;
+                    }
+                }
+
+                fclose($file);
+            };
+
+            Log::info('Private SMTP CSV export initiated', [
+                'order_id' => $order->id,
+                'split_id' => $splitId ?? 'N/A (no split)',
+                'domains_count' => count($domains),
+                'prefix_variants_count' => count($prefixVariants),
+                'total_emails' => count($domains) * count($prefixVariants)
+            ]);
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting Private SMTP CSV: ' . $e->getMessage(), [
+                'order_id' => $order->id ?? null,
+                'split_id' => $splitId ?? 'N/A (no split)'
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Export CSV for SMTP orders (without split) - called from order view page
+     * 
+     * @param int $orderId
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function exportSmtpOrderCsv($orderId)
+    {
+        try {
+            $order = Order::with('reorderInfo')->findOrFail($orderId);
+            
+            // Check if this is a Private SMTP or SMTP order
+            $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+            if (strtolower($providerType ?? '') !== 'private smtp' && strtolower($providerType ?? '') !== 'smtp') {
+                return back()->with('error', 'This order is not a Private SMTP or SMTP order.');
+            }
+
+            $reorderInfo = $order->reorderInfo->first();
+            
+            if (!$reorderInfo) {
+                throw new \Exception('ReorderInfo not found for this order.');
+            }
+
+            // Get domains from reorder_info.domains (comma-separated string)
+            $domainsString = $reorderInfo->domains ?? '';
+            if (empty($domainsString)) {
+                throw new \Exception('No domains found in reorder_info for this order.');
+            }
+
+            // Parse domains (handle comma and newline separated)
+            $domains = array_filter(
+                preg_split('/[\r\n,]+/', $domainsString),
+                function($domain) {
+                    return !empty(trim($domain));
+                }
+            );
+            $domains = array_map('trim', $domains);
+
+            if (empty($domains)) {
+                throw new \Exception('No valid domains found after parsing.');
+            }
+
+            // Get prefix variants from reorder_info
+            $prefixVariants = [];
+            if ($reorderInfo->prefix_variants) {
+                if (is_string($reorderInfo->prefix_variants)) {
+                    $decoded = json_decode($reorderInfo->prefix_variants, true);
+                    if (is_array($decoded)) {
+                        // Extract values from associative array like {"prefix_variant_1": "john", "prefix_variant_2": "jane"}
+                        $prefixVariants = array_values($decoded);
+                    } else {
+                        // Comma-separated string
+                        $prefixVariants = array_map('trim', explode(',', $reorderInfo->prefix_variants));
+                    }
+                } elseif (is_array($reorderInfo->prefix_variants)) {
+                    $prefixVariants = array_values($reorderInfo->prefix_variants);
+                }
+            }
+
+            // Default prefixes if none found
+            if (empty($prefixVariants)) {
+                $prefixVariants = ['info', 'contact'];
+            }
+
+            // Get prefix variant details for first_name, last_name, password
+            $prefixVariantDetails = [];
+            if ($reorderInfo->prefix_variants_details) {
+                if (is_string($reorderInfo->prefix_variants_details)) {
+                    $decoded = json_decode($reorderInfo->prefix_variants_details, true);
+                    if (is_array($decoded)) {
+                        $prefixVariantDetails = $decoded;
+                    }
+                } elseif (is_array($reorderInfo->prefix_variants_details)) {
+                    $prefixVariantDetails = $reorderInfo->prefix_variants_details;
+                }
+            }
+
+            // Get inboxes per domain
+            $inboxesPerDomain = (int) ($reorderInfo->inboxes_per_domain ?? 1);
+            if ($inboxesPerDomain <= 0) {
+                $inboxesPerDomain = 1;
+            }
+
+            // Limit prefix variants to inboxes_per_domain
+            $prefixVariants = array_slice($prefixVariants, 0, $inboxesPerDomain);
+
+            // Generate CSV filename
+            $filename = "order_{$order->id}_smtp_" . date('Y-m-d_His') . ".csv";
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($domains, $prefixVariants, $prefixVariantDetails, $order) {
+                $file = fopen('php://output', 'w');
+                
+                // Add CSV headers (Google Workspace format)
+                fputcsv($file, [
+                    'First Name',
+                    'Last Name',
+                    'Email Address',
+                    'Password',
+                    'Org Unit Path [Required]'
+                ]);
+
+                $counter = 0;
+                // Generate emails: prefix@domain for each combination
+                foreach ($domains as $domain) {
+                    foreach ($prefixVariants as $index => $prefix) {
+                        $emailAddress = $prefix . '@' . $domain;
+                        
+                        // Get first and last name from prefix_variants_details
+                        $prefixKey = 'prefix_variant_' . ($index + 1);
+                        $firstName = '';
+                        $lastName = '';
+                        $password = '';
+                        
+                        if (isset($prefixVariantDetails[$prefixKey])) {
+                            $details = $prefixVariantDetails[$prefixKey];
+                            $firstName = $details['first_name'] ?? '';
+                            $lastName = $details['last_name'] ?? '';
+                            $password = $details['password'] ?? '';
+                        }
+                        
+                        // Generate password if not found in details
+                        if (empty($password)) {
+                            $password = $this->customEncrypt($order->id);
+                        }
+                        
+                        // Write CSV row
+                        fputcsv($file, [
+                            $firstName,
+                            $lastName,
+                            $emailAddress,
+                            $password,
+                            '/' // Org Unit Path [Required]
+                        ]);
+                        
+                        $counter++;
+                    }
+                }
+
+                fclose($file);
+            };
+
+            Log::info('SMTP Order CSV export initiated', [
+                'order_id' => $order->id,
+                'provider_type' => $providerType,
+                'domains_count' => count($domains),
+                'prefix_variants_count' => count($prefixVariants),
+                'total_emails' => count($domains) * count($prefixVariants)
+            ]);
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting SMTP Order CSV: ' . $e->getMessage(), [
+                'order_id' => $orderId
+            ]);
+            return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
+        }
+    }    /**
      * Export CSV using existing order_emails data
      */
     private function exportCsvFromOrderEmails($splitId, $orderEmails)
@@ -2531,7 +3278,7 @@ class OrderController extends Controller
                     $contractorNames
                 );
             } catch (\Exception $e) {
-                Log::error('Failed to send Slack notification for contractor assignment: ' . $e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send Slack notification for contractor assignment: ' . $e->getMessage());
             }
 
             return response()->json([
@@ -2950,12 +3697,36 @@ class OrderController extends Controller
                     $reorderInfo = $order->reorderInfo->first();
                     
                     // Send notification to the customer
-                    Mail::to($user->email)
-                        ->queue(new \App\Mail\OrderEditedMail($order, $user, $reorderInfo, [], false));
+                    try {
+                        Mail::to($user->email)
+                            ->queue(new \App\Mail\OrderEditedMail($order, $user, $reorderInfo, [], false));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order edited email to customer', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'order_id' => $order->id,
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Admin\\OrderController::updateOrderByAdmin'
+                        ]);
+                    }
+                    
                     // dd(config('mail.admin_address', 'admin@example.com'));
                     // Send notification to admin
-                    Mail::to(config('mail.admin_address', 'admin@example.com'))
-                        ->queue(new \App\Mail\OrderEditedMail($order, $user, $reorderInfo, [], true));
+                    try {
+                        Mail::to(config('mail.admin_address', 'admin@example.com'))
+                            ->queue(new \App\Mail\OrderEditedMail($order, $user, $reorderInfo, [], true));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order edited email to admin', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'order_id' => $order->id,
+                            'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Admin\\OrderController::updateOrderByAdmin'
+                        ]);
+                    }
                     
                     // Check if the order has an assigned contractor
                     if ($order->assigned_to ) {
@@ -2964,16 +3735,29 @@ class OrderController extends Controller
                         // dd($contractor);
                         // Send notification to the assigned contractor if found
                         if ($contractor) {
-                            Mail::to($contractor->email)
-                                ->queue(new \App\Mail\OrderEditedMail($order, $user, $reorderInfo, [], true));
+                            try {
+                                Mail::to($contractor->email)
+                                    ->queue(new \App\Mail\OrderEditedMail($order, $user, $reorderInfo, [], true));
+                            } catch (\Exception $e) {
+                                \Log::channel('email-failures')->error('Failed to send order edited email to contractor', [
+                                    'exception' => $e->getMessage(),
+                                    'stack_trace' => $e->getTraceAsString(),
+                                    'order_id' => $order->id,
+                                    'contractor_id' => $contractor->id,
+                                    'contractor_email' => $contractor->email,
+                                    'timestamp' => now()->toDateTimeString(),
+                                    'context' => 'Admin\\OrderController::updateOrderByAdmin'
+                                ]);
+                            }
                         }
-                    } else {
-                        // No assigned contractor, log this information
-                        Log::info('No contractor assigned to order #' . $order->id . ' for edit notification');
                     }
                 } catch (\Exception $e) {
-                    Log::error('Failed to send order edit notification emails: ' . $e->getMessage());
-                    // Continue execution - don't let email failure stop the process
+                    Log::error('Failed to process order edited emails', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'order_id' => $order->id,
+                        'timestamp' => now()->toDateTimeString()
+                    ]);
                 }
             }
             // status is pending then pannelCreationAndOrderSplitOnPannels
@@ -3027,4 +3811,486 @@ class OrderController extends Controller
             ], 422);
         }
     }
+
+    /**
+     * Process Microsoft 365 CSV file and save emails with batch logic
+     * Expected CSV headers: Display name, Username, Password, Licenses (optional)
+     */
+    private function processMicrosoftCsv($csvFile, $expectedTotalInboxes, $order)
+    {
+        try {
+            $csvPath = $csvFile->getRealPath();
+            $csvData = array_map('str_getcsv', file($csvPath));
+            
+            // Get header row and data rows
+            $header = array_map('trim', array_shift($csvData));
+            
+            // Validate required columns (case-insensitive)
+            $requiredColumns = ['Display name', 'Username', 'Password'];
+            $headerLower = array_map('strtolower', $header);
+            $requiredLower = array_map('strtolower', $requiredColumns);
+            
+            $missingColumns = [];
+            foreach ($requiredLower as $required) {
+                if (!in_array($required, $headerLower)) {
+                    $missingColumns[] = $required;
+                }
+            }
+            
+            if (!empty($missingColumns)) {
+                return [
+                    'success' => false,
+                    'message' => 'CSV missing required columns: ' . implode(', ', $missingColumns),
+                    'data' => ['required_columns' => $requiredColumns, 'found_columns' => $header]
+                ];
+            }
+            
+            // Validate row count matches expected
+            $actualRows = count($csvData);
+            if ($actualRows !== $expectedTotalInboxes) {
+                return [
+                    'success' => false,
+                    'message' => "CSV row count mismatch. Expected: {$expectedTotalInboxes}, Found: {$actualRows}",
+                    'data' => [
+                        'expected_inboxes' => $expectedTotalInboxes,
+                        'found_rows' => $actualRows,
+                        'difference' => abs($expectedTotalInboxes - $actualRows)
+                    ]
+                ];
+            }
+
+            // Get column indexes (case-insensitive search)
+            $displayNameIndex = false;
+            $usernameIndex = false;
+            $passwordIndex = false;
+            $licensesIndex = false;
+            
+            foreach ($header as $index => $col) {
+                $colLower = strtolower(trim($col));
+                if ($colLower === 'display name') $displayNameIndex = $index;
+                if ($colLower === 'username') $usernameIndex = $index;
+                if ($colLower === 'password') $passwordIndex = $index;
+                if ($colLower === 'licenses') $licensesIndex = $index;
+            }
+
+            // Get order panel splits for batch assignment
+            $splits = $order->orderPanels()->with('orderPanelSplits')->get()
+                ->flatMap(function($panel) {
+                    return $panel->orderPanelSplits;
+                })->sortBy('id');
+
+            if ($splits->isEmpty()) {
+                return [
+                    'success' => false,
+                    'message' => 'No panel splits found for this order'
+                ];
+            }
+
+            DB::beginTransaction();
+
+            try {
+                // Delete existing emails for this order
+                OrderEmail::where('order_id', $order->id)->delete();
+
+                $batchNumber = 1;
+                $emailsInCurrentBatch = 0;
+                $currentSplitIndex = 0;
+                $emailsPerSplit = ceil($actualRows / $splits->count());
+                $emailsProcessedForCurrentSplit = 0;
+                $totalProcessed = 0;
+
+                foreach ($csvData as $row) {
+                    // Skip empty rows
+                    if (empty(array_filter($row))) {
+                        continue;
+                    }
+
+                    // Get current split
+                    $currentSplit = $splits[$currentSplitIndex];
+
+                    // Extract display name (could be "FirstName LastName" or just one name)
+                    $displayName = trim($row[$displayNameIndex] ?? '');
+                    $nameParts = explode(' ', $displayName, 2);
+                    $firstName = $nameParts[0] ?? '';
+                    $lastName = $nameParts[1] ?? '';
+
+                    // Prepare email data using orders table structure
+                    $emailData = [
+                        'order_id' => $order->id,
+                        'user_id' => $order->user_id,
+                        'order_split_id' => $currentSplit->id,
+                        'contractor_id' => $order->assigned_to,
+                        'batch_id' => $batchNumber,
+                        'name' => $firstName,
+                        'last_name' => $lastName,
+                        'email' => trim($row[$usernameIndex] ?? ''),
+                        'password' => trim($row[$passwordIndex] ?? ''), // Save password from CSV
+                        'profile_picture' => ($licensesIndex !== false && isset($row[$licensesIndex])) ? trim($row[$licensesIndex]) : null,
+                    ];
+
+                    // Create email record
+                    OrderEmail::create($emailData);
+
+                    $emailsInCurrentBatch++;
+                    $emailsProcessedForCurrentSplit++;
+                    $totalProcessed++;
+
+                    // Move to next batch after 200 emails
+                    if ($emailsInCurrentBatch >= 200) {
+                        $batchNumber++;
+                        $emailsInCurrentBatch = 0;
+                    }
+
+                    // Move to next split when we've processed enough emails for current split
+                    if ($emailsProcessedForCurrentSplit >= $emailsPerSplit && $currentSplitIndex < $splits->count() - 1) {
+                        $currentSplitIndex++;
+                        $emailsProcessedForCurrentSplit = 0;
+                    }
+                }
+
+                DB::commit();
+
+                Log::info('Microsoft 365 CSV processed successfully', [
+                    'order_id' => $order->id,
+                    'total_emails' => $totalProcessed,
+                    'total_batches' => $batchNumber,
+                    'total_splits' => $splits->count()
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => "Successfully imported {$totalProcessed} emails across {$batchNumber} batches",
+                    'data' => [
+                        'total_emails' => $totalProcessed,
+                        'total_batches' => $batchNumber,
+                        'total_splits' => $splits->count()
+                    ]
+                ];
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error processing Microsoft 365 CSV', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error processing CSV file: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Run the fix mailboxes command for an order and stream output via SSE
+     * 
+     * @param int $orderId
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function runFixMailboxesCommand($orderId)
+    {
+        $order = Order::find($orderId);
+        
+        if (!$order) {
+            return response()->json(['error' => 'Order not found'], 404);
+        }
+
+        // Set up SSE headers
+        return response()->stream(function () use ($orderId, $order) {
+            // Disable output buffering
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Send initial message
+            $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Starting mailbox creation for Order #{$orderId}"]);
+            $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Order Status: {$order->status_manage_by_admin}"]);
+            $this->sendSSE(['type' => 'progress', 'percent' => 5]);
+            
+            try {
+                // Run the artisan command and capture output
+                $exitCode = \Artisan::call('mailin:create-mailboxes-for-active-domains', [
+                    'order_id' => $orderId
+                ]);
+                
+                // Get the output
+                $output = \Artisan::output();
+                
+                // Parse and send output line by line
+                $lines = explode("\n", $output);
+                $totalLines = count($lines);
+                $currentLine = 0;
+                
+                $stats = [
+                    'created' => 0,
+                    'skipped' => 0,
+                    'failed' => 0,
+                    'activeDomains' => 0
+                ];
+                
+                $needsRetry = false;
+                
+                foreach ($lines as $line) {
+                    $currentLine++;
+                    $trimmedLine = trim($line);
+                    
+                    if (empty($trimmedLine)) {
+                        continue;
+                    }
+                    
+                    // Parse statistics from output
+                    if (preg_match('/Active domains:\s*(\d+)/', $trimmedLine, $matches)) {
+                        $stats['activeDomains'] = (int)$matches[1];
+                        $this->sendSSE(['type' => 'stats', 'activeDomains' => $stats['activeDomains']]);
+                    }
+                    
+                    if (preg_match('/Created:\s*(\d+)/', $trimmedLine, $matches) || 
+                        preg_match('/Saved\s+(\d+)\s+new\s+mailboxes/', $trimmedLine, $matches)) {
+                        $stats['created'] = (int)$matches[1];
+                        $this->sendSSE(['type' => 'stats', 'created' => $stats['created']]);
+                    }
+                    
+                    // Count skipped mailboxes - extract number from summary or count individual skips
+                    if (preg_match('/Mailboxes skipped.*?:\s*(\d+)/i', $trimmedLine, $matches)) {
+                        // Summary line like "Mailboxes skipped (already exist): 9"
+                        $stats['skipped'] = (int)$matches[1];
+                        $this->sendSSE(['type' => 'stats', 'skipped' => $stats['skipped']]);
+                    } elseif (preg_match('/^Skipping \(exists/i', $trimmedLine)) {
+                        // Individual skip line like "Skipping (exists in DB): email@domain.com"
+                        $stats['skipped']++;
+                        $this->sendSSE(['type' => 'stats', 'skipped' => $stats['skipped']]);
+                    }
+                    
+                    if (preg_match('/Error|Failed|failed/i', $trimmedLine) && !preg_match('/error_message/i', $trimmedLine)) {
+                        $stats['failed']++;
+                        $this->sendSSE(['type' => 'stats', 'failed' => $stats['failed']]);
+                    }
+                    
+                    // Check if retry is needed
+                    if (preg_match('/mailboxes missing|incomplete|not all mailboxes|NOT changed/i', $trimmedLine)) {
+                        $needsRetry = true;
+                    }
+                    
+                    // Determine log level
+                    $level = 'info';
+                    if (strpos($trimmedLine, '✓') !== false || preg_match('/success|completed|COMPLETED/i', $trimmedLine)) {
+                        $level = 'success';
+                    } elseif (strpos($trimmedLine, '✗') !== false || preg_match('/error|failed/i', $trimmedLine)) {
+                        $level = 'error';
+                    } elseif (strpos($trimmedLine, '⚠') !== false || preg_match('/warning|skipping|missing/i', $trimmedLine)) {
+                        $level = 'warning';
+                    }
+                    
+                    // Send log line
+                    $this->sendSSE(['type' => 'log', 'level' => $level, 'message' => $trimmedLine]);
+                    
+                    // Update progress
+                    $progress = min(95, 5 + (($currentLine / $totalLines) * 90));
+                    $this->sendSSE(['type' => 'progress', 'percent' => round($progress)]);
+                    
+                    // Small delay to prevent overwhelming the browser
+                    usleep(10000); // 10ms
+                }
+                
+                // Send completion message
+                $success = $exitCode === 0 && $stats['failed'] === 0;
+                
+                // Reload order to check if it was completed
+                $order->refresh();
+                $orderCompleted = $order->status_manage_by_admin === 'completed';
+                
+                $this->sendSSE([
+                    'type' => 'complete',
+                    'success' => $success,
+                    'needsRetry' => $needsRetry && !$orderCompleted,
+                    'orderStatus' => $order->status_manage_by_admin,
+                    'exitCode' => $exitCode
+                ]);
+                
+                $this->sendSSE(['type' => 'progress', 'percent' => 100]);
+                
+                // Log activity
+                ActivityLogService::log(
+                    'order_fixed_manually',
+                    "Manual mailbox creation executed for Order #{$orderId}",
+                    $order,
+                    [
+                        'exit_code' => $exitCode,
+                        'stats' => $stats,
+                        'order_status' => $order->status_manage_by_admin
+                    ],
+                    Auth::id()
+                );
+                
+            } catch (\Exception $e) {
+                $this->sendSSE(['type' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
+                $this->sendSSE(['type' => 'complete', 'success' => false, 'needsRetry' => false]);
+                
+                Log::error('Error running fix mailboxes command', [
+                    'order_id' => $orderId,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+            
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
+     * Send SSE event
+     */
+    private function sendSSE($data)
+    {
+        echo "data: " . json_encode($data) . "\n\n";
+        
+        if (ob_get_level()) {
+            ob_flush();
+        }
+        flush();
+    }
+
+    /**
+     * Run the delete mailboxes command for an order and stream output via SSE
+     * 
+     * @param int $orderId
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function runDeleteMailboxesCommand($orderId)
+    {
+        $order = Order::find($orderId);
+        
+        if (!$order) {
+            return response()->json(['error' => 'Order not found'], 404);
+        }
+
+        // Set up SSE headers
+        return response()->stream(function () use ($orderId, $order) {
+            // Disable output buffering
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Send initial message
+            $this->sendSSE(['type' => 'log', 'level' => 'warning', 'message' => "⚠️ Starting mailbox deletion for Order #{$orderId}"]);
+            $this->sendSSE(['type' => 'log', 'level' => 'info', 'message' => "Order Status: {$order->status_manage_by_admin}"]);
+            $this->sendSSE(['type' => 'progress', 'percent' => 5]);
+            
+            try {
+                // Run the artisan command and capture output
+                $exitCode = \Artisan::call('order:delete-mailboxes', [
+                    'order_id' => $orderId
+                ]);
+                
+                // Get the output
+                $output = \Artisan::output();
+                
+                // Parse and send output line by line
+                $lines = explode("\n", $output);
+                $totalLines = count($lines);
+                $currentLine = 0;
+                
+                $stats = [
+                    'deleted' => 0,
+                    'failed' => 0
+                ];
+                
+                foreach ($lines as $line) {
+                    $currentLine++;
+                    $trimmedLine = trim($line);
+                    
+                    if (empty($trimmedLine)) {
+                        continue;
+                    }
+                    
+                    // Parse statistics from output
+                    if (preg_match('/Deleted from Mailin\.ai:\s*(\d+)/i', $trimmedLine, $matches)) {
+                        $stats['deleted'] = (int)$matches[1];
+                        $this->sendSSE(['type' => 'stats', 'deleted' => $stats['deleted']]);
+                    }
+                    
+                    if (preg_match('/Failed deletions:\s*(\d+)/i', $trimmedLine, $matches)) {
+                        $stats['failed'] = (int)$matches[1];
+                        $this->sendSSE(['type' => 'stats', 'failed' => $stats['failed']]);
+                    }
+                    
+                    // Count individual deletions
+                    if (preg_match('/✓ Deleted from Mailin/i', $trimmedLine)) {
+                        $stats['deleted']++;
+                        $this->sendSSE(['type' => 'stats', 'deleted' => $stats['deleted']]);
+                    }
+                    
+                    // Determine log level
+                    $level = 'info';
+                    if (strpos($trimmedLine, '✓') !== false || preg_match('/Deleted from Mailin/i', $trimmedLine)) {
+                        $level = 'success';
+                    } elseif (strpos($trimmedLine, '✗') !== false || preg_match('/error|failed/i', $trimmedLine)) {
+                        $level = 'error';
+                    } elseif (strpos($trimmedLine, '⚠') !== false || preg_match('/warning|No mailbox/i', $trimmedLine)) {
+                        $level = 'warning';
+                    }
+                    
+                    // Send log line
+                    $this->sendSSE(['type' => 'log', 'level' => $level, 'message' => $trimmedLine]);
+                    
+                    // Update progress
+                    $progress = min(95, 5 + (($currentLine / $totalLines) * 90));
+                    $this->sendSSE(['type' => 'progress', 'percent' => round($progress)]);
+                    
+                    // Small delay to prevent overwhelming the browser
+                    usleep(10000); // 10ms
+                }
+                
+                // Send completion message
+                $success = $exitCode === 0;
+                
+                $this->sendSSE([
+                    'type' => 'complete',
+                    'success' => $success,
+                    'needsRetry' => false,
+                    'exitCode' => $exitCode
+                ]);
+                
+                $this->sendSSE(['type' => 'progress', 'percent' => 100]);
+                
+                // Log activity
+                ActivityLogService::log(
+                    'order_mailboxes_deleted',
+                    "Manual mailbox deletion executed for Order #{$orderId}",
+                    $order,
+                    [
+                        'exit_code' => $exitCode,
+                        'stats' => $stats,
+                        'order_status' => $order->status_manage_by_admin
+                    ],
+                    Auth::id()
+                );
+                
+            } catch (\Exception $e) {
+                $this->sendSSE(['type' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
+                $this->sendSSE(['type' => 'complete', 'success' => false, 'needsRetry' => false]);
+                
+                Log::error('Error running delete mailboxes command', [
+                    'order_id' => $orderId,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+            
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
 }
+

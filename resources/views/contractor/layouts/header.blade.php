@@ -237,7 +237,18 @@
                             <div class="text">Payments</div>
                         </div>
                     </a>
-                </li> -->
+                </li>
+
+                <!-- Pool Domains -->
+                <li class="nav-item">
+                    <a class="nav-link px-3 d-flex align-items-center {{ Route::is('contractor.pool-domains.index') ? 'active' : '' }}"
+                        href="{{ route('contractor.pool-domains.index') }}">
+                        <div class="d-flex align-items-center" style="gap: 13px">
+                            <div class="icons"><i class="ti ti-database fs-5"></i></div>
+                            <div class="text">Pool Domains</div>
+                        </div>
+                    </a>
+                </li>
 
                 <!-- Support -->
                 <li class="nav-item">

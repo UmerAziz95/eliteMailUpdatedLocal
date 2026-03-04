@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\SpecialPlanController;
+use App\Http\Controllers\Admin\PoolPlanController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\AdminOrderEmailController;
 use App\Http\Controllers\Admin\AdminInvoiceController;
@@ -24,7 +25,8 @@ use App\Http\Controllers\Customer\PlanController as CustomerPlanController;
 use App\Http\Controllers\Customer\InvoiceController as CustomerInvoiceController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Admin\FeatureController;
-use App\Http\Controllers\Customer\SubscriptionController as CustomerSubscriptionController;           
+use App\Http\Controllers\Customer\SubscriptionController as CustomerSubscriptionController;
+use App\Http\Controllers\Customer\PoolPlanController as CustomerPoolPlanController;
 
 // Contractor
 use App\Http\Controllers\Contractor\OrderController as ContractorOrderController;
@@ -33,6 +35,7 @@ use App\Http\Controllers\Contractor\OrderQueueController as ContractorOrderQueue
 
 // Customer
 use App\Http\Controllers\Customer\OrderEmailController as CustomerOrderEmailController;
+use App\Http\Controllers\PoolController;
 //role
 use App\Http\Controllers\CustomRolePermissionController;
 use App\Http\Controllers\Admin\MediaHandlerController;
@@ -45,7 +48,7 @@ use App\Http\Controllers\Admin\AdminSettingsController;
 //coupons
 use App\Http\Controllers\Admin\AdminCouponController;
 // domain health dashboard
-use App\Http\Controllers\Admin\DomainHealthDashboardController; 
+use App\Http\Controllers\Admin\DomainHealthDashboardController;
 
 use App\Models\User;
 use App\Services\AccountCreationGHL;
@@ -82,16 +85,16 @@ Route::view('/plans', 'plans');
 // Storage file download route for Slack attachments
 Route::get('/storage/{path}', function ($path) {
     $filePath = storage_path('app/public/' . $path);
-    
+
     if (!file_exists($filePath)) {
         abort(404, 'File not found');
     }
-    
+
     // Check if download parameter is present
     if (request()->has('download')) {
         return response()->download($filePath);
     }
-    
+
     // Otherwise, serve the file normally
     return response()->file($filePath);
 })->where('path', '.*')->name('storage.download');
@@ -103,6 +106,12 @@ Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('doLogin');
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// CSRF: refresh token endpoint for forms to fetch a fresh token before submit
+Route::get('/refresh-csrf', function () {
+    Session::regenerateToken();
+    return response()->json(['token' => csrf_token()]);
+})->name('refresh-csrf');
+
 Route::get('/test-admin', [AuthController::class, 'testAdmin'])->name('test.admin');
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
@@ -113,8 +122,8 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name(
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password')->middleware('auth');
-Route::get('/role/assign',[CustomRolePermissionController::class,'assign'])->name('role.assign');
-Route::get('/role/addpermission',[CustomRolePermissionController::class,'addPermissionMod'])->name('role.addpermission');
+Route::get('/role/assign', [CustomRolePermissionController::class, 'assign'])->name('role.assign');
+Route::get('/role/addpermission', [CustomRolePermissionController::class, 'addPermissionMod'])->name('role.addpermission');
 // verfiy email address
 Route::get('/email_verification/{encrypted}', [AuthController::class, 'showVerifyEmailForm'])->name('verify_email.request');
 Route::get('/resend-verfication-code/{encrypted}', [AuthController::class, 'resendVerificationEmail'])->name('resend.verification');
@@ -124,9 +133,12 @@ Route::post('/onboarding/store', [AuthController::class, 'companyOnBoardingStore
 
 //public plans
 Route::get('/plans/public/{encrypted}', [AuthController::class, 'viewPublicPlans'])->name('public.plnas');
-Route::get('/plans/{id?}/discounted', [\App\Http\Controllers\DiscountedPlanController::class,'index' ])->name('discounted.plans');
-Route::get('/discounted/user/verify/{encrypted}/{discord_id?}', [\App\Http\Controllers\DiscountedPlanController::class,'verifyDiscountedUser' ])->name('discounted.plans.verify');
-Route::get('/discounted/user/redirect/{subscription_id}',[\App\Http\Controllers\DiscountedPlanController::class,'redirectToDashboard'])->name('discounted.plans.redirect');
+Route::get('/plans/{id?}/discounted', [\App\Http\Controllers\DiscountedPlanController::class, 'index'])->name('discounted.plans');
+Route::get('/discounted/user/verify/{encrypted}/{discord_id?}', [\App\Http\Controllers\DiscountedPlanController::class, 'verifyDiscountedUser'])->name('discounted.plans.verify');
+Route::get('/discounted/user/redirect/{subscription_id}', [\App\Http\Controllers\DiscountedPlanController::class, 'redirectToDashboard'])->name('discounted.plans.redirect');
+
+// Public disclaimer route (no auth required)
+Route::get('/api/disclaimer/{type}', [App\Http\Controllers\Admin\DisclaimerController::class, 'getActiveDisclaimer'])->name('api.disclaimer.get');
 
 // Chargebee webhooks (no auth required)
 Route::post('/webhook/chargebee/master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'handleChargebeeWebhook'])->name('webhook.chargebee.master-plan');
@@ -140,56 +152,60 @@ Route::prefix('cron')->name('admin.')->controller(CronController::class)->group(
 
 Route::get('/subscription/success', [CustomerPlanController::class, 'subscriptionSuccess'])->name('customer.subscription.success');
 
+// Pool Plan Routes
+Route::get('/pool-subscription/success', [CustomerPoolPlanController::class, 'subscriptionSuccess'])->name('customer.pool-subscription.success');
+Route::get('/pool-subscription/cancel', [CustomerPoolPlanController::class, 'subscriptionCancel'])->name('customer.pool-subscription.cancel');
+Route::post('/pool-plans/{id}/subscribe/{encrypted?}', [CustomerPoolPlanController::class, 'initiateSubscription'])->name('customer.pool.plans.subscribe');
 
 Route::post('customer/plans/{id}/subscribe/{encrypted?}', [CustomerPlanController::class, 'initiateSubscription'])->name('customer.plans.subscribe');
 Route::post('customer/discounted/plans/{id}/subscribe/{encrypted?}/user_id/{user_id}', [\App\Http\Controllers\DiscountedPlanController::class, 'initiateSubscription'])->name('customer.discounted.plans.subscribe');
 Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group(function () {
     //listing routes
-    Route::get('/profile', [AdminController::class, 'profile'])->name('profile'); 
+    Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
 
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
-       Route::middleware('view.only')->group(function () {
+    Route::middleware('view.only')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');
-        
+
         Route::get('/pricing', [PlanController::class, 'index'])->name('pricing');
         Route::post('/generate-static-link', [StaticLinkController::class, 'generateStaticLink'])->name('generate-static-link');
         //create admin 
         // set contractor role sub-admin
-        Route::get('/set/subadmin/{id}', function($id){
-            try{
+        Route::get('/set/subadmin/{id}', function ($id) {
+            try {
                 $user = User::findOrFail($id);
                 $user->role_id = 1; // Set to subadmin role
                 $user->save();
                 return response()->json([
-                    'success' => true, 
+                    'success' => true,
                     'message' => 'User role updated to subadmin successfully',
                     'user' => $user->name,
                     'new_role_id' => $user->role_id
                 ]);
             } catch (\Exception $e) {
                 return response()->json([
-                    'success' => false, 
+                    'success' => false,
                     'error' => $e->getMessage()
                 ], 500);
             }
         })->name('set.subadmin');
 
         // set contractor role to team leader
-        Route::get('/set/teamleader/{id}', function($id){
-            try{
+        Route::get('/set/teamleader/{id}', function ($id) {
+            try {
                 $user = User::findOrFail($id);
                 $user->role_id = 2; // Set to team leader role
                 $user->save();
                 return response()->json([
-                    'success' => true, 
+                    'success' => true,
                     'message' => 'User role updated to team leader successfully',
                     'user' => $user->name,
                     'new_role_id' => $user->role_id
                 ]);
             } catch (\Exception $e) {
                 return response()->json([
-                    'success' => false, 
+                    'success' => false,
                     'error' => $e->getMessage()
                 ], 500);
             }
@@ -205,7 +221,47 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         // Plans routes
         Route::resource('plans', PlanController::class);
         Route::get('plans-with-features', [PlanController::class, 'getPlansWithFeatures'])->name('plans.with.features');
-        
+
+        // Manual Panel Assignment Routes (must be before resource route)
+        Route::get('pools/available-panels', [PoolController::class, 'getAvailablePanels'])->name('pools.getAvailablePanels');
+        Route::post('pools/validate-assignments', [PoolController::class, 'validateManualAssignments'])->name('pools.validateManualAssignments');
+        Route::get('pools/panels/{panel}/capacity', [PoolController::class, 'getPanelCapacity'])->name('pools.getPanelCapacity');
+
+        // Pools routes
+        Route::resource('pools', PoolController::class);
+        Route::post('pools/{pool}/assign', [PoolController::class, 'assign'])->name('pools.assign');
+        Route::post('pools/{pool}/complete', [PoolController::class, 'complete'])->name('pools.complete');
+        Route::get('pools/import/data', [PoolController::class, 'importData'])->name('pools.import.data');
+        Route::get('pools/import-data/{id}', [PoolController::class, 'importDataById'])->name('pools.import-data');
+        Route::post('pools/capacity-check', [PoolController::class, 'capacityCheck'])->name('pools.capacity-check');
+        Route::post('pools/{pool}/change-provider', [PoolController::class, 'changeProvider'])->name('pools.change-provider');
+
+        // SMTP Providers routes (for Select2 dropdown)
+        Route::get('smtp-providers', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'index'])->name('smtp-providers.index');
+        Route::post('smtp-providers', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'store'])->name('smtp-providers.store');
+        Route::get('smtp-providers/all', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'all'])->name('smtp-providers.all');
+        Route::put('smtp-providers/{smtpProvider}', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'update'])->name('smtp-providers.update');
+        Route::delete('smtp-providers/{smtpProvider}', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'destroy'])->name('smtp-providers.destroy');
+        // SMTP Providers admin page routes
+        Route::get('smtp-providers/page', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'indexView'])->name('smtp-providers.page');
+        Route::get('smtp-providers/data', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'dataTable'])->name('smtp-providers.data');
+        Route::get('smtp-providers/{smtpProvider}/show', [\App\Http\Controllers\Admin\SmtpProviderController::class, 'show'])->name('smtp-providers.show');
+
+        // Pool Panels routes
+        Route::get('/pool-panels/next-id', [App\Http\Controllers\PoolPanelController::class, 'getNextId'])->name('pool-panels.next-id');
+        Route::get('pool-panels/data', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanelsData'])->name('pool-panels.data');
+        Route::get('pool-panels/{poolPanel}/pools', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanelPools'])->name('pool-panels.pools');
+        Route::get('pools/{poolId}/pool-panels/{poolPanelId}/available-for-reassignment', [App\Http\Controllers\PoolPanelController::class, 'getAvailablePoolPanelsForReassignment'])->name('pool-panels.available-for-reassignment');
+        Route::post('pool-panels/reassign', [App\Http\Controllers\PoolPanelController::class, 'reassignPoolPanelSplit'])->name('pool-panels.reassign');
+        Route::get('pools/{poolId}/pool-panels/reassignment-history', [App\Http\Controllers\PoolPanelController::class, 'getReassignmentHistory'])->name('pool-panels.reassignment-history');
+        Route::resource('pool-panels', App\Http\Controllers\PoolPanelController::class);
+        Route::get('pool-panels/{id}/get', [App\Http\Controllers\PoolPanelController::class, 'getPoolPanel'])->name('pool-panels.get');
+        Route::post('pool-panels/{id}/toggle-status', [App\Http\Controllers\PoolPanelController::class, 'toggleStatus'])->name('pool-panels.toggle-status');
+        Route::post('pool-panels/{id}/archive', [App\Http\Controllers\PoolPanelController::class, 'archive'])->name('pool-panels.archive');
+        Route::get('pool-panels-capacity/alert', [App\Http\Controllers\PoolPanelController::class, 'getCapacityAlert'])->name('pool-panels.capacity-alert');
+        Route::post('/pool/{poolId}/change-provider-type', [App\Http\Controllers\PoolController::class, 'changeProviderType'])->name('pool.change-provider-type');
+
+
         // Special Plans routes (is_discounted = 3)
         Route::get('special-plans', [SpecialPlanController::class, 'index'])->name('special-plans.index');
         Route::post('special-plans', [SpecialPlanController::class, 'storeSpecialPlan'])->name('special-plans.store');
@@ -213,33 +269,64 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::put('special-plans/{id}', [SpecialPlanController::class, 'update'])->name('special-plans.update');
         Route::delete('special-plans/{id}', [SpecialPlanController::class, 'destroy'])->name('special-plans.destroy');
         Route::get('special-plans-with-features', [SpecialPlanController::class, 'getPlansWithFeatures'])->name('special-plans.with.features');
-        
+
         // Special Plans Features routes
         Route::post('special-plans/features', [SpecialPlanController::class, 'storeFeature'])->name('special-plans.features.store');
-        
+
         // Special Plans Master Plan routes
         Route::get('special-plans/master-plan/{id?}', [SpecialPlanController::class, 'show'])->name('special-plans.master-plan.show');
-        Route::post('special-plans/master-plan', [SpecialPlanController::class, 'storeMasterPlan'])->name('special-plans.master-plan.store');
-        
-        // Special Plans Static Link Generation
+
+        // Pool Pricing Plans routes 
+        Route::get('pool-pricing', [PoolPlanController::class, 'index'])->name('pool-pricing.index');
+        Route::resource('pool-plans', PoolPlanController::class);
+        Route::get('pool-plans-with-features', [PoolPlanController::class, 'getPlansWithFeatures'])->name('pool-plans.with.features');
+        Route::post('pool-plans/duplicate', [PoolPlanController::class, 'duplicate'])->name('pool-plans.duplicate');
+        Route::post('pool-plans/sync-chargebee', [PoolPlanController::class, 'syncWithChargebee'])->name('pool-plans.sync-chargebee');
+        Route::post('pool-plans/generate-static-link', [StaticLinkController::class, 'generatePoolStaticLink'])->name('pool-plans.generate-static-link');
+
+
+        // Admin Pool Domains listing
+        Route::get('pool-domains', [\App\Http\Controllers\Admin\PoolDomainController::class, 'index'])->name('pool-domains.index');
+        Route::get('pool-domains/email-counts', [\App\Http\Controllers\Admin\PoolDomainController::class, 'getEmailCounts'])->name('pool-domains.email-counts');
+        Route::get('pool-domains/test', [\App\Http\Controllers\Admin\PoolDomainController::class, 'test'])->name('pool-domains.test');
+        Route::post('pool-domains/refresh-cache', [\App\Http\Controllers\Admin\PoolDomainController::class, 'refreshCache'])->name('pool-domains.refresh-cache');
+        Route::post('pool-domains/update', [\App\Http\Controllers\Admin\PoolDomainController::class, 'update'])->name('pool-domains.update');
+        Route::post('pool-domains/update-status', [\App\Http\Controllers\Admin\PoolDomainController::class, 'updateStatus'])->name('pool-domains.update-status');
+        Route::post('pool-domains/bulk-update-days', [\App\Http\Controllers\Admin\PoolDomainController::class, 'bulkUpdateEndDate'])->name('pool-domains.bulk-update-days');
+
+        // Pool Orders Management
+        Route::get('pool-orders/list', [\App\Http\Controllers\Admin\PoolDomainController::class, 'poolOrdersList'])->name('pool-orders.list');
+        Route::get('pool-orders/all', [\App\Http\Controllers\Admin\PoolDomainController::class, 'allPoolOrders'])->name('pool-orders.all');
+        Route::get('pool-orders/in-queue', [\App\Http\Controllers\Admin\PoolDomainController::class, 'inQueueOrders'])->name('pool-orders.in-queue');
+        Route::get('pool-orders/{id}/view', [\App\Http\Controllers\Admin\PoolDomainController::class, 'viewPoolOrder'])->name('pool-orders.view');
+        Route::get('pool-orders/{id}/edit', [CustomerPoolPlanController::class, 'editPoolOrder'])->name('pool-orders.edit');
+        Route::put('pool-orders/{id}', [CustomerPoolPlanController::class, 'updatePoolOrder'])->name('pool-orders.update');
+        Route::get('pool-orders/{id}/download-domains-csv', [\App\Http\Controllers\Admin\PoolDomainController::class, 'downloadDomainsCsv'])->name('pool-orders.download-domains-csv');
+        Route::post('pool-orders/cancel', [\App\Http\Controllers\Admin\PoolDomainController::class, 'cancelPoolOrder'])->name('pool-orders.cancel');
+        Route::post('pool-orders/lock-out-of-instantly', [\App\Http\Controllers\Admin\PoolDomainController::class, 'lockOutOfInstantly'])->name('pool-orders.lock-out-of-instantly');
+        Route::post('pool-orders/assign-to-me', [\App\Http\Controllers\Admin\PoolDomainController::class, 'assignToMe'])->name('pool-orders.assign-to-me');
+        Route::post('pool-orders/change-status', [\App\Http\Controllers\Admin\PoolDomainController::class, 'changePoolOrderStatus'])->name('pool-orders.change-status');
+        Route::get('pool-orders/invoices/{invoiceId}/download', [\App\Http\Controllers\Admin\PoolDomainController::class, 'downloadPoolInvoice'])->name('pool-orders.invoices.download');
+
+        Route::post('special-plans/master-plan', [SpecialPlanController::class, 'storeMasterPlan'])->name('special-plans.master-plan.store');        // Special Plans Static Link Generation
         Route::post('special-plans/generate-static-link', [StaticLinkController::class, 'generateStaticLink'])->name('special-plans.generate-static-link');
-        
+
         // Master Plan routes
         Route::get('master-plan/{id?}', [App\Http\Controllers\Admin\MasterPlanController::class, 'show'])->name('master-plan.show');
         Route::post('master-plan', [App\Http\Controllers\Admin\MasterPlanController::class, 'store'])->name('master-plan.store');
         Route::get('master-plan/data', [App\Http\Controllers\Admin\MasterPlanController::class, 'data'])->name('master-plan.data');
         Route::get('master-plan/exists', [App\Http\Controllers\Admin\MasterPlanController::class, 'exists'])->name('master-plan.exists');
         Route::post('master-plan/force-sync', [App\Http\Controllers\Admin\MasterPlanController::class, 'forceSync'])->name('master-plan.force-sync');
-    
+
         // Features routes
         Route::get('features/list', [FeatureController::class, 'list'])->name('features.list');
         Route::post('features/store', [FeatureController::class, 'store'])->name('features.store');
         Route::put('features/{feature}', [FeatureController::class, 'update'])->name('features.update');
         Route::delete('features/{feature}', [FeatureController::class, 'destroy'])->name('features.destroy');
         //subscription controller
-        Route::get('subscriptions',[SubscriptionController::class,'index'])->name('subs.view'); //active subscriptions listings
-        Route::get('cancelled_subscriptions',[SubscriptionController::class,'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
-        Route::get('subscriptions_detail',[SubscriptionController::class,'index'])->name('subs.detail.view');
+        Route::get('subscriptions', [SubscriptionController::class, 'index'])->name('subs.view'); //active subscriptions listings
+        Route::get('cancelled_subscriptions', [SubscriptionController::class, 'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
+        Route::get('subscriptions_detail', [SubscriptionController::class, 'index'])->name('subs.detail.view');
         Route::get('/subscription/cancel', [SubscriptionController::class, 'subscriptionCancel'])->name('subscription.cancel');
         // Reactivate a cancelled subscription (revert to active and remove domain removal task)
         Route::get('/subscription/reactivate/{id}', [\App\Http\Controllers\SubscriptionController::class, 'reactivate'])->name('subscription.reactivate');
@@ -258,9 +345,11 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/{id}/split/view', [AdminOrderController::class, 'splitView'])->name('orders.split.view');
         Route::get('/orders/{orderId}/splits', [AdminOrderController::class, 'getOrderSplits'])->name('orders.splits');
         Route::post('/update-order-status', [AdminOrderController::class, 'updateOrderStatus'])->name('orders.updateOrderStatus');
+        Route::post('/orders/{id}/verify', [AdminOrderController::class, 'verifyOrder'])->name('orders.verify');
         Route::post('/orders/panel/status/process', [AdminOrderController::class, 'processPanelStatus'])->name('order.panel.status.process');
         Route::get('/orders/{orderId}/emails', [AdminOrderEmailController::class, 'getEmails']);
         Route::get('/orders/panel/{orderPanelId}/emails', [AdminOrderEmailController::class, 'getPanelEmails']);
+        Route::get('/orders/panel/{orderPanelId}/emails/batches', [AdminOrderEmailController::class, 'getPanelEmailsByBatch']);
         Route::get('/orders/panel/{orderPanelId}/emails/check', [AdminOrderEmailController::class, 'checkEmailsExist']);
         Route::get('/orders/panel/{orderPanelId}/emails/download-csv', [AdminOrderEmailController::class, 'downloadCsv'])->name('order.panel.email.downloadCsv');
         Route::post('/orders/panel/email/bulk-import', [AdminOrderEmailController::class, 'bulkImport'])->name('order.panel.email.bulkImport');
@@ -274,27 +363,31 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.domains');
         // Route::get('/orders/split/{splitId}/export-csv-domains', [AdminOrderController::class, 'exportCsvSplitDomainsById'])->name('orders.split.export.csv.domains');
         Route::get('/orders/split/{splitId}/export-csv-smart', [AdminOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.smart');
+        Route::get('/orders/{orderId}/export-smtp-csv', [AdminOrderController::class, 'exportSmtpOrderCsv'])->name('orders.export.smtp.csv');
         Route::get('/orders/split/{splitId}/export-txt-domains', [AdminOrderController::class, 'exportTxtSplitDomainsSmartById'])->name('orders.split.export.txt.domains');
         Route::get('/orders/split/{splitId}/export-txt-comprehensive', [AdminOrderController::class, 'exportComprehensiveTextReport'])->name('orders.split.export.txt.comprehensive');
         Route::get('/orders/split/{splitId}/export-txt-generated-emails', [AdminOrderController::class, 'exportTxtGeneratedEmails'])->name('orders.split.export.txt.generated.emails');
         Route::post('/orders/{orderId}/assign-to-me', [AdminOrderController::class, 'assignOrderToMe'])->name('orders.assign-to-me');
         Route::post('/orders/{orderId}/change-status', [AdminOrderController::class, 'changeStatus'])->name('orders.change-status');
-        
+        Route::post('/orders/{orderId}/change-provider-type', [AdminOrderController::class, 'changeProviderType'])->name('orders.change-provider-type');
+        Route::get('/orders/{orderId}/run-fix-mailboxes', [AdminOrderController::class, 'runFixMailboxesCommand'])->name('orders.run-fix-mailboxes');
+        Route::get('/orders/{orderId}/run-delete-mailboxes', [AdminOrderController::class, 'runDeleteMailboxesCommand'])->name('orders.run-delete-mailboxes');
+
         // Shared Orders routes
         Route::get('/shared-order-requests', [AdminOrderController::class, 'sharedOrderRequests'])->name('orders.shared-order-requests');
         Route::post('/orders/{orderId}/toggle-shared', [AdminOrderController::class, 'toggleSharedStatus'])->name('orders.toggle-shared');
         Route::post('/orders/{orderId}/assign-contractors', [AdminOrderController::class, 'assignContractors'])->name('orders.assign-contractors');
         Route::get('/orders/shared/data', [AdminOrderController::class, 'getSharedOrders'])->name('orders.shared.data');
         Route::get('/orders/contractors', [AdminOrderController::class, 'getContractors'])->name('orders.contractors');
-        
+
         // Panel Reassignment routes
         Route::get('/orders/{orderId}/order-panels/{orderPanelId}/available-for-reassignment', [AdminOrderController::class, 'getAvailablePanelsForReassignment'])->name('orders.order-panels.available-for-reassignment');
         Route::post('/orders/panels/reassign', [AdminOrderController::class, 'reassignPanelSplit'])->name('orders.panels.reassign');
         Route::get('/orders/{orderId}/reassignment-history', [AdminOrderController::class, 'getReassignmentHistory'])->name('orders.reassignment-history');
-        
+
         // Contractor Reassignment routes 
         Route::get('/order/dashboard', [AdminOrderController::class, 'getOrderDashboardData'])->name('order.dashboard');
-    
+
         //contractors 
         Route::get('/contractor', [AdminContractorController::class, 'index'])->name('contractorList');
         Route::post('contractor/store', [AdminContractorController::class, 'store'])->name('contractor.store');
@@ -306,17 +399,22 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/invoices/{invoiceId}', [AdminInvoiceController::class, 'show'])->name('invoices.show');
         Route::get('/invoices/{invoiceId}/download', [AdminInvoiceController::class, 'download'])->name('invoices.download');
         Route::get('/invoices', [AdminInvoiceController::class, 'index'])->name('invoices.index');
+
+        // Pool invoices
+        Route::get('/pool-invoices/{invoiceId}', [AdminInvoiceController::class, 'showPoolInvoice'])->name('pool-invoices.show');
+        Route::get('/pool-invoices/{invoiceId}/download', [AdminInvoiceController::class, 'downloadPoolInvoice'])->name('pool-invoices.download');
+
         // roles permission 
-        Route::get('/role',[CustomRolePermissionController::class,'index'])->name('role.index');
-        Route::get('/role/create',[CustomRolePermissionController::class,'index'])->name('role.create');
-        Route::post('/role/store',[CustomRolePermissionController::class,'store'])->name('role.store');
+        Route::get('/role', [CustomRolePermissionController::class, 'index'])->name('role.index');
+        Route::get('/role/create', [CustomRolePermissionController::class, 'index'])->name('role.create');
+        Route::post('/role/store', [CustomRolePermissionController::class, 'store'])->name('role.store');
         Route::get('/roles/{id}', [CustomRolePermissionController::class, 'getRole'])->name('roles.get');
-        Route::get('/role/update',[CustomRolePermissionController::class,'index'])->name('role.update');
-        Route::get('/role/destroy',[CustomRolePermissionController::class,'index'])->name('role.destroy');
+        Route::get('/role/update', [CustomRolePermissionController::class, 'index'])->name('role.update');
+        Route::get('/role/destroy', [CustomRolePermissionController::class, 'index'])->name('role.destroy');
         //payments
-        Route::get('/payments',[CustomRolePermissionController::class,'assign'])->name('payments');
+        Route::get('/payments', [CustomRolePermissionController::class, 'assign'])->name('payments');
         //settings
-        Route::get('/ticket_conversation',[MediaHandlerController::class,'ticket_conversation'])->name('ticket_conversation');
+        Route::get('/ticket_conversation', [MediaHandlerController::class, 'ticket_conversation'])->name('ticket_conversation');
         //profile
         Route::post('profile/update', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
 
@@ -330,7 +428,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/revenue-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueStats'])->name('revenue.stats');
         Route::get('/ticket-stats', [App\Http\Controllers\Admin\DashboardController::class, 'getTicketStats'])->name('ticket.stats');
         Route::get('/revenue-totals', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueTotals'])->name('revenue.totals');
-        
+
         //panels/
         Route::get('/panels/dashboard', [AdminPanelController::class, 'index'])->name('panels.index');
         Route::get('/panels/data', [AdminPanelController::class, 'getPanelsData'])->name('panels.data');
@@ -347,7 +445,7 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::post('/panels/{id}/archive', [AdminPanelController::class, 'archive'])->name('panels.archive');
         Route::post('/panels/run-capacity-check', [AdminPanelController::class, 'runPanelCapacityCheck'])->name('panels.run-capacity-check');
         Route::get('/panels/next-id', [AdminPanelController::class, 'getNextId'])->name('panels.next-id');
-       
+
         // Order Queue Routes
         Route::get('/order_queue', [App\Http\Controllers\Admin\OrderQueueController::class, 'index'])->name('orderQueue.order_queue');
         Route::get('/order_queue/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getOrdersData'])->name('orderQueue.data');
@@ -361,58 +459,100 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/assigned/order/data', [App\Http\Controllers\Admin\OrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
 
         //settings
-        Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
-        Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
-        
+        Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings.index');
+        Route::get('/system/config', [AdminSettingsController::class, 'sysConfing'])->name('system.config');
+        Route::get('/panel-configurations', [AdminSettingsController::class, 'getPanelConfigurations'])->name('panel.configurations.get');
+        Route::post('/panel-configurations/update', [AdminSettingsController::class, 'updateConfiguration'])->name('panel.configurations.update');
+        Route::get('/pool-configurations', [AdminSettingsController::class, 'getPoolConfigurations'])->name('pool.configurations.get');
+        Route::post('/pool-configurations/update', [AdminSettingsController::class, 'updatePoolConfigurations'])->name('pool.configurations.update');
+        Route::get('/configurations/{key}/history', [AdminSettingsController::class, 'getConfigurationHistory'])->name('configurations.history');
+        Route::get('/chargebee-configurations', [AdminSettingsController::class, 'getChargebeeConfigurations'])->name('chargebee.configurations.get');
+        Route::post('/chargebee-configurations/update', [AdminSettingsController::class, 'updateChargebeeConfigurations'])->name('chargebee.configurations.update');
+        Route::get('/system-configurations', [AdminSettingsController::class, 'getSystemConfigurations'])->name('system.configurations.get');
+        Route::post('/system-configurations/update', [AdminSettingsController::class, 'updateSystemConfigurations'])->name('system.configurations.update');
+        Route::get('/provider-splits', [AdminSettingsController::class, 'getProviderSplits'])->name('provider.splits.get');
+        Route::post('/provider-splits/update', [AdminSettingsController::class, 'updateProviderSplits'])->name('provider.splits.update');
+        Route::get('/backup/list', [AdminSettingsController::class, 'listBackups'])->name('backup.list');
+        Route::get('/backup/download', [AdminSettingsController::class, 'downloadBackup'])->name('backup.download');
+        Route::post('/backup/delete', [AdminSettingsController::class, 'deleteBackup'])->name('backup.delete');
+
         // GHL Settings Routes
-         Route::get('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'index'])->name('ghl-settings.index');
+        Route::get('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'index'])->name('ghl-settings.index');
         Route::post('/ghl-settings', [App\Http\Controllers\Admin\GhlSettingsController::class, 'update'])->name('ghl-settings.update');
         Route::post('/ghl-settings/test-connection', [App\Http\Controllers\Admin\GhlSettingsController::class, 'testConnection'])->name('ghl-settings.test-connection');
         Route::get('/ghl-settings/get', [App\Http\Controllers\Admin\GhlSettingsController::class, 'getSettings'])->name('ghl-settings.get');
-        
+
         // Task Queue Routes
         Route::get('taskInQueue', [App\Http\Controllers\Admin\TaskQueueController::class, 'index'])->name("taskInQueue.index");
         Route::get('taskInQueue/data', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
-        Route::get('taskInQueue/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTaskDetails'])->name("taskInQueue.details");
-        Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
-        Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
-        
-        // Migration Panel Reassignment Task Routes
+
+        // Migration Panel Reassignment Task Routes (specific routes must come before generic {id} routes)
         Route::get('taskInQueue/shifted-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getShiftedTasks'])->name("taskInQueue.shifted-tasks");
         Route::get('taskInQueue/shifted/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getShiftedTaskDetails'])->name("taskInQueue.shifted.details");
         Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
         Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
+        // Pool Migration Task Routes (specific routes must come before generic {id} routes)
+        Route::get('taskInQueue/pool-migration-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolMigrationTasks'])->name("taskInQueue.pool-migration-tasks");
+        Route::get('taskInQueue/pool-migration/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolMigrationTaskDetails'])->name("taskInQueue.pool-migration-details");
+        Route::post('taskInQueue/pool-migration/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignPoolMigrationTaskToMe'])->name("taskInQueue.pool-migration-assign");
+        Route::put('taskInQueue/pool-migration/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updatePoolMigrationTaskStatus'])->name("taskInQueue.pool-migration-status");
+        Route::post('taskInQueue/pool-migration/{id}/reassign', [App\Http\Controllers\Admin\TaskQueueController::class, 'reassignPoolMigrationTask'])->name("taskInQueue.pool-migration-reassign");
+
+        // Pool Panel Reassignment Task Routes (specific routes must come before generic {id} routes)
+        Route::get('taskInQueue/pool-panel-reassignment-tasks', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolPanelReassignmentTasks'])->name("taskInQueue.pool-panel-reassignment-tasks");
+        Route::get('taskInQueue/pool-panel-reassignment/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getPoolPanelReassignmentTaskDetails'])->name("taskInQueue.pool-panel-reassignment-details");
+        Route::post('taskInQueue/pool-panel-reassignment/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignPoolPanelReassignmentTaskToMe'])->name("taskInQueue.pool-panel-reassignment-assign");
+
+        // Generic task routes (must come AFTER specific routes to avoid conflicts)
+        Route::get('taskInQueue/{id}/details', [App\Http\Controllers\Admin\TaskQueueController::class, 'getTaskDetails'])->name("taskInQueue.details");
+        Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Admin\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
+        Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Admin\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
+
         // My Task Routes
         Route::get('myTask', [App\Http\Controllers\Admin\MyTaskController::class, 'index'])->name("myTask.index");
         Route::get('myTask/data', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");
+
+        // Specific routes must come before generic {taskId} routes
+        Route::get('myTask/pool-migration-tasks', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyPoolMigrationTasks'])->name("myTask.pool-migration-tasks");
+        Route::get('myTask/pool-panel-reassignment-tasks', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyPoolPanelReassignmentTasks'])->name("myTask.pool-panel-migration-tasks");
+
+        // Generic task routes (must come AFTER specific routes)
         Route::get('myTask/{taskId}/details', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
         Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Admin\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
         Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Admin\MyTaskController::class, 'completeTask'])->name("myTask.complete");
+        Route::post('myTask/pool-panel-reassignment/{taskId}/complete', [App\Http\Controllers\Admin\MyTaskController::class, 'completePoolPanelReassignmentTask'])->name("myTask.reassignmentTask.complete");
 
-
-       //profile settings
-        Route::get('/settings',[AdminSettingsController::class,'index'])->name('settings.index');
+        //profile settings
+        Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings.index');
         //system configurations
-       Route::get('/system/config',[AdminSettingsController::class,'sysConfing'])->name('system.config');
-      
-       //coupons
+        Route::get('/system/config', [AdminSettingsController::class, 'sysConfing'])->name('system.config');
+
+        //coupons
         Route::get('/coupons', [AdminCouponController::class, 'index'])->name('coupons.index');
         Route::get('/coupons/data', [AdminCouponController::class, 'couponsData'])->name('coupons.data');
         Route::post('coupons', [AdminCouponController::class, 'store'])->name('coupons.store');
         Route::delete('coupons/{coupon}', [AdminCouponController::class, 'destroy'])->name('coupons.destroy');
         Route::get('coupons/plans/list', [AdminCouponController::class, 'plansList'])->name('coupons.plan.list');
         //discord settings
-        Route::get('disocrd/settings',[App\Http\Controllers\SettingController::class,'index'])->name('discord.settings');
-        Route::post('disocrd/send/message',[App\Http\Controllers\SettingController::class,'sendDiscordMessage'])->name('discord.message.send');
-        Route::post('disocrd/settings/save',[App\Http\Controllers\SettingController::class,'saveDiscordSettings'])->name('discord.settings.save');
-        Route::post('/discord/settings/toggle-cron',[App\Http\Controllers\SettingController::class,'toggleDiscordCron'])->name('discord.toggle.cron');
-        
+        Route::get('disocrd/settings', [App\Http\Controllers\SettingController::class, 'index'])->name('discord.settings');
+        Route::post('disocrd/send/message', [App\Http\Controllers\SettingController::class, 'sendDiscordMessage'])->name('discord.message.send');
+        Route::post('disocrd/settings/save', [App\Http\Controllers\SettingController::class, 'saveDiscordSettings'])->name('discord.settings.save');
+        Route::post('/discord/settings/toggle-cron', [App\Http\Controllers\SettingController::class, 'toggleDiscordCron'])->name('discord.toggle.cron');
+
         //slack settings
-        Route::get('slack/settings',[App\Http\Controllers\Admin\SlackSettingsController::class,'index'])->name('slack.settings');
-        Route::post('slack/settings/save',[App\Http\Controllers\Admin\SlackSettingsController::class,'store'])->name('slack.settings.save');
-        Route::post('slack/settings/test',[App\Http\Controllers\Admin\SlackSettingsController::class,'testWebhook'])->name('slack.settings.test');
-        Route::delete('slack/settings/{id}',[App\Http\Controllers\Admin\SlackSettingsController::class,'destroy'])->name('slack.settings.delete');
+        Route::get('slack/settings', [App\Http\Controllers\Admin\SlackSettingsController::class, 'index'])->name('slack.settings');
+        Route::post('slack/settings/save', [App\Http\Controllers\Admin\SlackSettingsController::class, 'store'])->name('slack.settings.save');
+        Route::post('slack/settings/test', [App\Http\Controllers\Admin\SlackSettingsController::class, 'testWebhook'])->name('slack.settings.test');
+        Route::delete('slack/settings/{id}', [App\Http\Controllers\Admin\SlackSettingsController::class, 'destroy'])->name('slack.settings.delete');
+
+        //disclaimer settings
+        Route::get('disclaimers', [App\Http\Controllers\Admin\DisclaimerController::class, 'index'])->name('disclaimers.index');
+        Route::post('disclaimers/save', [App\Http\Controllers\Admin\DisclaimerController::class, 'store'])->name('disclaimers.save');
+        Route::get('disclaimers/{type}', [App\Http\Controllers\Admin\DisclaimerController::class, 'show'])->name('disclaimers.show');
+        Route::put('disclaimers/{id}/status', [App\Http\Controllers\Admin\DisclaimerController::class, 'updateStatus'])->name('disclaimers.update-status');
+        Route::delete('disclaimers/{id}', [App\Http\Controllers\Admin\DisclaimerController::class, 'destroy'])->name('disclaimers.delete');
+
         Route::get('/discord/settvings/get', [App\Http\Controllers\SettingController::class, 'getCronSettings'])->name('discord.settings.get');
 
         //domain health dashboard   
@@ -423,8 +563,8 @@ Route::middleware(['custom_role:1,2,5'])->prefix('admin')->name('admin.')->group
         Route::get('/domains/listings/{id?}', [DomainHealthDashboardController::class, 'domainsListings'])->name('domains.domains.listings');
         Route::get('/domains/health/report/{id}', [DomainHealthDashboardController::class, 'domainsHelthReport'])->name('domains.health.report');
         //internal order manager
-        Route::get('/internal-order-manager', [InternalOrderManagerController::class, 'index'])->name('internal_order_management.index');   
-        Route::get('/internal-order-manager/order/{id?}', [InternalOrderManagerController::class, 'newOrder'])->name('internal_order_management.new_order');   
+        Route::get('/internal-order-manager', [InternalOrderManagerController::class, 'index'])->name('internal_order_management.index');
+        Route::get('/internal-order-manager/order/{id?}', [InternalOrderManagerController::class, 'newOrder'])->name('internal_order_management.new_order');
         Route::post('/orders/reorder', [InternalOrderManagerController::class, 'store'])->name('orders.reorder.store');
         Route::get('/internal-order-manager/data', [InternalOrderManagerController::class, 'getInternalOrders'])->name('internal_order_management.data');
         Route::post('/internal-order-manager/update-status', [InternalOrderManagerController::class, 'updateStatus'])->name('internal_order_management.update_status');
@@ -470,12 +610,12 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
     Route::get('/orders/data', [CustomerOrderController::class, 'getOrders'])->name('orders.data');
     // Route::get('/orders/import/{id}', [CustomerOrderController::class, 'getOrderImportData'])->name('orders.import');
-    
+
     // Domain fixing routes for rejected order panels
     Route::get('/orders/{id}/fix-domains', [CustomerOrderController::class, 'showFixDomains'])->name('orders.fix-domains');
     Route::post('/orders/{id}/fix-domains', [CustomerOrderController::class, 'updateFixedDomains'])->name('orders.update-fixed-domains');
-  
-   
+
+
     Route::get('/profile', function () {
         return view('customer.profile.profile');
     })->name('profile');
@@ -491,28 +631,44 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::post('/plans/update-payment-method', [CustomerPlanController::class, 'updatePaymentMethod'])->name('plans.update-payment-method');
     Route::post('/plans/card-details', [CustomerPlanController::class, 'getCardDetails'])->name('plans.card-details');
     Route::post('/plans/delete-payment-method', [CustomerPlanController::class, 'deletePaymentMethod'])->name('plans.delete-payment-method');
-    
+
     // Subscription handling routes
     Route::get('/subscription/cancel', [CustomerPlanController::class, 'subscriptionCancel'])->name('subscription.cancel');
     Route::post('/subscription/cancel-process', [CustomerPlanController::class, 'subscriptionCancelProcess'])->name('subscription.cancel.process');
 
 
     //subscriptions controller
-    Route::get('subscriptions',[CustomerSubscriptionController::class,'index'])->name('subscriptions.view'); //active subscriptions listings
-    Route::get('cancelled_subscriptions',[CustomerSubscriptionController::class,'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
-    Route::get('subscriptions_detail',[CustomerSubscriptionController::class,'index'])->name('subs.detail.view');
+    Route::get('subscriptions', [CustomerSubscriptionController::class, 'index'])->name('subscriptions.view'); //active subscriptions listings
+    Route::get('cancelled_subscriptions', [CustomerSubscriptionController::class, 'cancelled_subscriptions'])->name('subs.cancelled-subscriptions'); // inactive subscriptions listings
+    Route::get('subscriptions_detail', [CustomerSubscriptionController::class, 'index'])->name('subs.detail.view');
     // Invoice routes
     Route::get('/invoices', [CustomerInvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/data', [CustomerInvoiceController::class, 'getInvoices'])->name('invoices.data');
     Route::get('/invoices/{invoiceId}/download', [CustomerInvoiceController::class, 'download'])->name('invoices.download');
     Route::get('/invoices/{invoiceId}', [CustomerInvoiceController::class, 'show'])->name('invoices.show');
 
+    // Pool Invoice routes
+    Route::get('/pool-invoices/{invoiceId}', [CustomerInvoiceController::class, 'showPoolInvoice'])->name('pool-invoices.show');
+    Route::get('/pool-invoices/{invoiceId}/download', [CustomerInvoiceController::class, 'downloadPoolInvoice'])->name('pool-invoices.download');
+
+    // Pool Order routes
+    Route::get('/pool-orders', [CustomerPoolPlanController::class, 'myPoolOrders'])->name('pool-orders.index');
+    Route::get('/pool-orders/data', [CustomerPoolPlanController::class, 'getPoolOrdersData'])->name('pool-orders.data');
+    Route::get('/pool-orders/{id}', [CustomerPoolPlanController::class, 'showPoolOrder'])->name('pool-orders.show');
+    Route::get('/pool-orders/{id}/edit', [CustomerPoolPlanController::class, 'editPoolOrder'])->name('pool-orders.edit');
+    Route::put('/pool-orders/{id}', [CustomerPoolPlanController::class, 'updatePoolOrder'])->name('pool-orders.update');
+    Route::post('/pool-orders/{id}/cancel', [CustomerPoolPlanController::class, 'cancelPoolSubscription'])->name('pool-orders.cancel');
+    // Pool order invoices (DataTables + export)
+    Route::get('/pool-orders/{id}/invoices/data', [CustomerPoolPlanController::class, 'getPoolInvoicesData'])->name('pool-orders.invoices.data');
+    Route::get('/pool-orders/{id}/invoices/export', [CustomerPoolPlanController::class, 'exportPoolInvoices'])->name('pool-orders.invoices.export');
+    Route::get('/pool-orders/invoices/{invoiceId}/download', [CustomerPoolPlanController::class, 'downloadPoolInvoice'])->name('pool-orders.invoices.download');
+
     // Order Email routes 
     Route::get('/orders/{orderId}/emails', [CustomerOrderEmailController::class, 'getEmails']);
     Route::post('/orders/emails', [CustomerOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [CustomerOrderEmailController::class, 'delete']);
     Route::get('/orders/emails/{id}/export', [CustomerOrderEmailController::class, 'exportCsv'])->name('orders.email.exportCsv');
-    
+
     // Order Import routes
     Route::get('/orders/import/data', [CustomerOrderController::class, 'getOrdersForImport'])->name('orders.import.data');
     Route::get('/orders/import-data/{id}', [CustomerOrderController::class, 'importOrderData'])->name('orders.import-data');
@@ -525,13 +681,13 @@ Route::middleware(['custom_role:3'])->prefix('customer')->name('customer.')->gro
     Route::post('/support/tickets/{id}/reply', [App\Http\Controllers\Customer\SupportTicketController::class, 'reply'])->name('support.tickets.reply');
     Route::post('/update-address', [App\Http\Controllers\Customer\ProfileController::class, 'updateAddress'])->name('address.update');
     //custom checkout 
-    
+
 });
 
 // Info: Contractor Access
 Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')->group(function () {
     Route::get('/activity/data', [App\Http\Controllers\AppLogController::class, 'getContractorActivity'])->name('activity.data');
-    
+
     // Order Queue Routes
     Route::get('/order_queue', [ContractorOrderQueueController::class, 'index'])->name('orderQueue.order_queue');
     Route::get('/order_queue/data', [ContractorOrderQueueController::class, 'getOrdersData'])->name('orderQueue.data');
@@ -543,10 +699,10 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     // My Orders
     Route::get('/my-orders', [ContractorOrderQueueController::class, 'myOrders'])->name('orderQueue.my_orders');
     Route::get('/assigned/order/data', [ContractorOrderQueueController::class, 'getAssignedOrdersData'])->name('assigned.orders.data');
-    
+
     Route::get('/orders/{id}/view', [ContractorOrderController::class, 'view'])->name('orders.view');
     Route::get('/orders/{id}/split/view', [ContractorOrderController::class, 'splitView'])->name('orders.split.view');
-    
+
     Route::get('/orders', [ContractorOrderController::class, 'index'])->name('orders');
     Route::get('/orders/data', [ContractorOrderController::class, 'getOrders'])->name('orders.data');
     Route::post('/update-order-status', [ContractorOrderController::class, 'updateStatus'])->name('orders.update.status');
@@ -557,19 +713,42 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/order/email/bulk-import', [ContractorOrderController::class, 'orderImportProcess'])->name('order.email.bulkImport');
     Route::post('/order/panel/email/bulk-import', [ContractorOrderController::class, 'orderSplitImportProcess'])->name('order.panel.email.bulkImport');
     Route::get('/order/panel/{orderPanelId}/email/download-csv', [ContractorOrderController::class, 'downloadPanelCsv'])->name('order.panel.email.downloadCsv');
-    
+    // Contractor: Email batches view for a panel
+    Route::get('/orders/panel/{orderPanelId}/emails/batches', [ContractorOrderController::class, 'getPanelEmailsByBatch']);
+
     Route::get('/dashboard', [App\Http\Controllers\Contractor\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/orders-history', [App\Http\Controllers\Contractor\DashboardController::class, 'getOrdersHistory'])->name('orders.history');
-    
+
+    // Contractor Pool Domains listing
+    Route::get('pool-domains', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'index'])->name('pool-domains.index');
+    Route::get('pool-domains/test', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'test'])->name('pool-domains.test');
+    Route::post('pool-domains/refresh-cache', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'refreshCache'])->name('pool-domains.refresh-cache');
+    Route::post('pool-domains/update', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'update'])->name('pool-domains.update');
+    Route::post('pool-domains/update-status', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'updateStatus'])->name('pool-domains.update-status');
+
+    // Pool Orders Management
+    Route::get('pool-orders/list', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'poolOrdersList'])->name('pool-orders.list');
+    Route::get('pool-orders/all', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'allPoolOrders'])->name('pool-orders.all');
+    Route::get('pool-orders/in-queue', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'inQueueOrders'])->name('pool-orders.in-queue');
+    Route::get('pool-orders/{id}/view', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'viewPoolOrder'])->name('pool-orders.view');
+    Route::get('pool-orders/{id}/edit', [CustomerPoolPlanController::class, 'editPoolOrder'])->name('pool-orders.edit');
+    Route::put('pool-orders/{id}', [CustomerPoolPlanController::class, 'updatePoolOrder'])->name('pool-orders.update');
+    Route::get('pool-orders/{id}/download-domains-csv', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'downloadDomainsCsv'])->name('pool-orders.download-domains-csv');
+    Route::post('pool-orders/cancel', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'cancelPoolOrder'])->name('pool-orders.cancel');
+    Route::post('pool-orders/lock-out-of-instantly', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'lockOutOfInstantly'])->name('pool-orders.lock-out-of-instantly');
+    Route::post('pool-orders/assign-to-me', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'assignToMe'])->name('pool-orders.assign-to-me');
+    Route::post('pool-orders/change-status', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'changePoolOrderStatus'])->name('pool-orders.change-status');
+    Route::get('pool-orders/invoices/{invoiceId}/download', [\App\Http\Controllers\Contractor\PoolDomainController::class, 'downloadPoolInvoice'])->name('pool-orders.invoices.download');
+
     Route::get('/pricing', function () {
         return view('contractor.pricing.pricing');
     })->name('pricing');
-    
+
     Route::get('/payments', function () {
         return view('contractor.payments.payments');
     })->name('payments');
     Route::get('/support', function () {
-       
+
         return view('contractor.support.support');
     })->name('support');
     Route::get('/profile', function () {
@@ -578,23 +757,23 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::get('/settings', function () {
         return view('contractor.settings.settings');
     })->name('settings');
-    
+
     // Order Email routes
     Route::get('/orders/{orderId}/emails', [ContractorOrderEmailController::class, 'getEmails']);
     Route::post('/orders/emails', [ContractorOrderEmailController::class, 'store']);
     Route::delete('/orders/emails/{id}', [ContractorOrderEmailController::class, 'delete']);
-    
+
     // Split Panel Email routes
     Route::get('/orders/panel/{orderPanelId}/emails', [ContractorOrderController::class, 'getSplitEmails']);
     Route::post('/orders/panel/emails', [ContractorOrderController::class, 'storeSplitEmails']);
     Route::delete('/orders/panel/emails/{id}', [ContractorOrderController::class, 'deleteSplitEmail']);
-    
+
     // CSV Export routes 
     Route::get('/orders/split/{splitId}/export-txt-domains', [ContractorOrderController::class, 'exportTxtSplitDomainsSmartById'])->name('orders.split.export.txt.domains');
     Route::get('/orders/{orderId}/export-csv-split-domains', [ContractorOrderController::class, 'exportCsvSplitDomains'])->name('orders.export.csv.split.domains');
     Route::get('/orders/split/{splitId}/export-csv-domains', [ContractorOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.domains');
     Route::get('/orders/split/{splitId}/export-csv-smart', [ContractorOrderController::class, 'exportCsvSplitDomainsSmartById'])->name('orders.split.export.csv.smart');
-    
+
     // Support ticket routes
     Route::get('/support', [App\Http\Controllers\Contractor\SupportTicketController::class, 'index'])->name('support');
     Route::get('/support/tickets', [App\Http\Controllers\Contractor\SupportTicketController::class, 'getTickets'])->name('support.tickets');
@@ -610,71 +789,94 @@ Route::middleware(['custom_role:4'])->prefix('contractor')->name('contractor.')-
     Route::post('/orders/{orderId}/toggle-shared', [ContractorOrderController::class, 'toggleSharedStatus'])->name('orders.toggle-shared');
     Route::post('/orders/{orderId}/change-status', [ContractorOrderController::class, 'changeStatus'])->name('orders.change-status');
     Route::post('/orders/{orderId}/reject', [ContractorPanelController::class, 'rejectOrder'])->name('orders.reject');
-    
+
     // Shared Orders Routes
     Route::get('/shared-orders', [ContractorOrderController::class, 'sharedOrders'])->name('shared-orders');
     Route::get('/shared-orders/data', [ContractorOrderController::class, 'getSharedOrdersData'])->name('shared-orders.data');
-    
-    Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');    
+
+    Route::get('/panels/test', [ContractorPanelController::class, 'test'])->name('panels.test');
 
     // Task Queue Routes
     Route::get('taskInQueue', [App\Http\Controllers\Contractor\TaskQueueController::class, 'index'])->name("taskInQueue.index");
     Route::get('taskInQueue/data', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getTasksData'])->name("taskInQueue.data");
-    Route::get('taskInQueue/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getTaskDetails'])->name("taskInQueue.details");
-    Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
-    Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
-    
-    // Migration Pending Tasks Routes  
+
+    // Migration Pending Tasks Routes (specific routes must come before generic {id} routes)
     Route::get('taskInQueue/shifted-tasks', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedTasks'])->name("taskInQueue.shifted-tasks");
     Route::get('taskInQueue/shifted-pending', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedPendingTasks'])->name("taskInQueue.shifted-pending");
     Route::get('taskInQueue/shifted/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getShiftedTaskDetails'])->name("taskInQueue.shifted.details");
     Route::post('taskInQueue/shifted/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignShiftedTaskToMe'])->name("taskInQueue.shifted.assign");
     Route::put('taskInQueue/shifted/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateShiftedTaskStatus'])->name("taskInQueue.shifted.updateStatus");
 
+    // Pool Migration Tasks Routes (specific routes must come before generic {id} routes)
+    Route::get('taskInQueue/pool-migration-tasks', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getPoolMigrationTasks'])->name("taskInQueue.pool-migration-tasks");
+    Route::get('taskInQueue/pool-migration/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getPoolMigrationTaskDetails'])->name("taskInQueue.pool-migration-details");
+    Route::post('taskInQueue/pool-migration/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignPoolMigrationTaskToMe'])->name("taskInQueue.pool-migration-assign");
+    Route::put('taskInQueue/pool-migration/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updatePoolMigrationTaskStatus'])->name("taskInQueue.pool-migration-status");
+
+    // Generic task routes (must come AFTER specific routes to avoid conflicts)
+    Route::get('taskInQueue/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getTaskDetails'])->name("taskInQueue.details");
+    Route::post('taskInQueue/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignTaskToMe'])->name("taskInQueue.assign");
+    Route::put('taskInQueue/{id}/status', [App\Http\Controllers\Contractor\TaskQueueController::class, 'updateTaskStatus'])->name("taskInQueue.updateStatus");
+
+    Route::get('taskInQueue/pool-panel-reassignment-tasks', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getPoolPanelReassignmentTasks'])->name("taskInQueue.pool-panel-reassignment-tasks");
+    Route::get('taskInQueue/pool-panel-reassignment/{id}/details', [App\Http\Controllers\Contractor\TaskQueueController::class, 'getPoolPanelReassignmentTaskDetails'])->name("taskInQueue.pool-panel-reassignment-details");
+    Route::post('taskInQueue/pool-panel-reassignment/{id}/assign', [App\Http\Controllers\Contractor\TaskQueueController::class, 'assignPoolPanelReassignmentTaskToMe'])->name("taskInQueue.pool-panel-reassignment-assign");
+
     // My Task Routes
     Route::get('myTask', [App\Http\Controllers\Contractor\MyTaskController::class, 'index'])->name("myTask.index");
     Route::get('myTask/data', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyTasksData'])->name("myTask.data");
-    Route::get('myTask/{taskId}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
+
+    // Specific routes must come before generic {taskId} routes
     Route::get('myTask/shifted/{id}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getShiftedTaskDetails'])->name("myTask.shifted.details");
+    Route::get('myTask/pool-migration-tasks', [App\Http\Controllers\Contractor\MyTaskController::class, 'getMyPoolMigrationTasks'])->name("myTask.pool-migration-tasks");
+    Route::get('myTask/pool-migration/{id}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getPoolMigrationTaskDetails'])->name("myTask.pool-migration-details");
+    Route::put('myTask/pool-migration/{id}/status', [App\Http\Controllers\Contractor\MyTaskController::class, 'updatePoolMigrationTaskStatus'])->name("myTask.pool-migration-status");
+    Route::get('myTask/pool-panel-reassignment-tasks', [App\Http\Controllers\Admin\MyTaskController::class, 'getMyPoolPanelReassignmentTasks'])->name("myTask.pool-panel-migration-tasks");
+
+
+    // Generic task routes (must come AFTER specific routes)
+    Route::get('myTask/{taskId}/details', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskDetails'])->name("myTask.details");
     Route::get('myTask/{taskId}/completion-summary', [App\Http\Controllers\Contractor\MyTaskController::class, 'getTaskCompletionSummary'])->name("myTask.completion.summary");
     Route::post('myTask/{taskId}/complete', [App\Http\Controllers\Contractor\MyTaskController::class, 'completeTask'])->name("myTask.complete");
+    Route::post('myTask/pool-panel-reassignment/{taskId}/complete', [App\Http\Controllers\Contractor\MyTaskController::class, 'completePoolPanelReassignmentTask'])->name("myTask.reassignmentTask.complete");
+
 
     // Domains Removal Tasks
     Route::post('/orders/{order}/check-contractor-helpers', [AdminOrderController::class, 'checkContractorInHelpers'])->name('orders.check-contractor-helpers');
     Route::post('/orders/{order}/reassign-contractor', [AdminOrderController::class, 'reassignContractor'])->name('orders.reassign-contractor');
 
-}); 
+});
 // Static Plans Routes
 // Route::middleware(['auth'])->group(function () {
-    Route::get('/static-plans/{encrypted?}', [\App\Http\Controllers\StaticPlansController::class, 'index'])->name('static-plans');
-    Route::post('/static-plans/select', [\App\Http\Controllers\StaticPlansController::class, 'selectPlan'])->name('static-plans.select');
-    Route::post('/static-plans/clear-session', [\App\Http\Controllers\StaticPlansController::class, 'clearSession'])->name('static-plans.clear-session');
+Route::get('/static-plans/{encrypted?}', [\App\Http\Controllers\StaticPlansController::class, 'index'])->name('static-plans');
+Route::post('/static-plans/select', [\App\Http\Controllers\StaticPlansController::class, 'selectPlan'])->name('static-plans.select');
+Route::post('/static-plans/clear-session', [\App\Http\Controllers\StaticPlansController::class, 'clearSession'])->name('static-plans.clear-session');
 // });
 
 // Simple Static Link Route
 Route::get('/static-link', function (Request $request) {
     $encryptedData = $request->get('data');
-    
+
     if (!$encryptedData) {
         return redirect()->route('login')->withErrors(['error' => 'Invalid link']);
     }
-    
+
     try {
         $linkData = json_decode(decrypt($encryptedData), true);
-        
-        if (!$linkData || !isset($linkData['type']) || $linkData['type'] !== 'static_plan') {
+        // pool_static_plan also allow
+        if (!$linkData || !isset($linkData['type']) || !in_array($linkData['type'], ['static_plan', 'pool_static_plan'])) {
             return redirect()->route('login')->withErrors(['error' => 'Invalid link format']);
         }
-        
+
         // Set session data for static plan access
         session([
+            'static_type' => $linkData['type'],
             'static_link_hit' => true,
             'static_plan_data' => [
-                'master_plan_id' => $linkData['master_plan_id'],
-                'chargebee_plan_id' => $linkData['chargebee_plan_id']
+                'master_plan_id' => $linkData['master_plan_id'] ?? null,
+                'chargebee_plan_id' => $linkData['chargebee_plan_id'] ?? null
             ]
         ]);
-        
         if (auth()->check()) {
             // User is already logged in, create encrypted data and redirect to static plans page
             $user = auth()->user();
@@ -685,9 +887,9 @@ Route::get('/static-link', function (Request $request) {
             // User is not logged in, redirect to login
             return redirect()->route('login');
         }
-        
+
     } catch (\Exception $e) {
-        return redirect()->route('login')->withErrors(['error' => 'Invalid or expired link']);
+        return redirect()->route('login')->withErrors(['error' => $e->getMessage()]);
     }
 })->name('static-link');
 
@@ -739,13 +941,12 @@ Route::get('/settings', function () {
 });
 
 
-    
+
 Route::get('/notification', function () {
     return view('admin/notification/notification');
 });
-Route::get('/chargebee/webhook', function () {
-    Log::info('Chargebee Webhook Triggered');
-});
+// Chargebee webhook handler (handles both /chargebee/webhook and /webhook/chargebee/webhook)
+// Route::post('/chargebee/webhook', [App\Http\Controllers\Webhook\ChargebeeWebhookController::class, 'handle'])->name('chargebee.webhook.direct');
 
 Route::post('/webhook/invoice', [App\Http\Controllers\Customer\PlanController::class, 'handleInvoiceWebhook'])->name('webhook.invoice');
 Route::post('/webhook/payment/done', [App\Http\Controllers\Customer\PlanController::class, 'handlePaymentWebhook'])->name('webhook.payment.done');
@@ -772,23 +973,23 @@ Route::get('/delete-order', [App\Http\Controllers\Customer\OrderController::clas
 Route::get('/update-order-status-lower-case', [App\Http\Controllers\Customer\OrderController::class, 'updateOrderStatusToLowerCase'])->name('updateOrderStatusToLowerCase');
 
 // Temporary test route to verify panel assignment data
-Route::get('/test-panel-assignments', function() {
+Route::get('/test-panel-assignments', function () {
     $orders = \App\Models\Order::with([
-        'user', 
-        'plan', 
+        'user',
+        'plan',
         'reorderInfo',
-        'orderPanels.userOrderPanelAssignments' => function($query) {
+        'orderPanels.userOrderPanelAssignments' => function ($query) {
             $query->with(['orderPanel', 'orderPanelSplit']);
         }
     ])->get();
-    
+
     $testData = [];
-    foreach($orders as $order) {
+    foreach ($orders as $order) {
         $assignmentData = [];
-        
+
         // Check panel assignments
-        foreach($order->orderPanels as $orderPanel) {
-            foreach($orderPanel->userOrderPanelAssignments as $assignment) {
+        foreach ($order->orderPanels as $orderPanel) {
+            foreach ($orderPanel->userOrderPanelAssignments as $assignment) {
                 $assignmentData[] = [
                     'type' => 'panel',
                     'space_assigned' => $assignment->orderPanel->space_assigned ?? 'N/A',
@@ -797,7 +998,7 @@ Route::get('/test-panel-assignments', function() {
                 ];
             }
         }
-        
+
         $testData[] = [
             'order_id' => $order->id,
             'order_name' => $order->user->first_name . ' ' . $order->user->last_name,
@@ -805,7 +1006,7 @@ Route::get('/test-panel-assignments', function() {
             'panel_assignments' => $assignmentData
         ];
     }
-    
+
     return response()->json($testData);
 });
 
@@ -823,7 +1024,7 @@ Route::get('/cron/run-draft-notifications', function () {
             'output' => $output,
             'message' => $exitCode === 0 ? 'Command executed successfully' : 'Command failed'
         ]);
-        
+
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
@@ -833,15 +1034,15 @@ Route::get('/cron/run-draft-notifications', function () {
 })->name('cron.run-draft-notifications');
 
 //
-  //notification markers
-        Route::get('/customer/notifications/mark-all-as-read',[NotificationController::class, 'markAllAsReadNoti'])->name('notifications.mark-all-as-read');
-        Route::get('/customer/notifications/mark-all-as-unread',[NotificationController::class, 'markAllAsUnReadNoti'])->name('notifications.mark-all-as-unread');
-        Route::get('/notifications/mark-all-as-read/{id}',[NotificationController::class, 'markAllAsReadById'])->name('notifications.mark-all-as-read-by-id');
-        Route::get('/notifications/mark-all-as-unread/{id}',[NotificationController::class, 'markAllAsUnRead'])->name('notifications.mark-all-as-unread-by-id');
-  
-        //notification markers
-        Route::get('/contractor/notifications/mark-all-as-read',[NotificationController::class, 'markAllAsReadNoti'])->name('contractor.notifications.mark-all-as-read');
-        Route::get('/contractor/notifications/mark-all-as-unread',[NotificationController::class, 'markAllAsUnReadNoti'])->name('contractor.notifications.mark-all-as-unread');
+//notification markers
+Route::get('/customer/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsReadNoti'])->name('notifications.mark-all-as-read');
+Route::get('/customer/notifications/mark-all-as-unread', [NotificationController::class, 'markAllAsUnReadNoti'])->name('notifications.mark-all-as-unread');
+Route::get('/notifications/mark-all-as-read/{id}', [NotificationController::class, 'markAllAsReadById'])->name('notifications.mark-all-as-read-by-id');
+Route::get('/notifications/mark-all-as-unread/{id}', [NotificationController::class, 'markAllAsUnRead'])->name('notifications.mark-all-as-unread-by-id');
+
+//notification markers
+Route::get('/contractor/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsReadNoti'])->name('contractor.notifications.mark-all-as-read');
+Route::get('/contractor/notifications/mark-all-as-unread', [NotificationController::class, 'markAllAsUnReadNoti'])->name('contractor.notifications.mark-all-as-unread');
 
 
 
@@ -859,7 +1060,7 @@ Route::get('/cron/run-domain-removal-queue', function () {
             'output' => $output,
             'message' => $exitCode === 0 ? 'Command executed successfully' : 'Command failed'
         ]);
-        
+
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
@@ -873,14 +1074,14 @@ Route::get('/test-discord-cron', [\App\Http\Controllers\SettingController::class
 //
 
 Route::get('/go/{slug}', function ($slug) {
- 
+
     $record = ShortEncryptedLink::where('slug', $slug)->firstOrFail();
-    
+
     try {
         // First try to decrypt as JSON (new format for static plans)
         $decryptedData = decrypt($record->encrypted_url);
         $linkData = json_decode($decryptedData, true);
-        
+
         if ($linkData && isset($linkData['type']) && $linkData['type'] === 'static_plan') {
             // Handle static plan link
             session([
@@ -890,7 +1091,7 @@ Route::get('/go/{slug}', function ($slug) {
                     'chargebee_plan_id' => $linkData['chargebee_plan_id']
                 ]
             ]);
-            
+
             if (auth()->check()) {
                 // User is already logged in, create encrypted data and redirect to static plans page
                 $user = auth()->user();
@@ -905,7 +1106,7 @@ Route::get('/go/{slug}', function ($slug) {
     } catch (\Exception $e) {
         // Fall back to old decryption method for existing links
     }
-    
+
     // Original behavior for existing links
     $originalUrl = Crypt::decryptString($record->encrypted_url);
     return redirect()->away($originalUrl);
@@ -924,7 +1125,7 @@ Route::get('/cron/run-domain-removal-slack-alerts', function () {
             'output' => $output,
             'message' => $exitCode === 0 ? 'Domain removal Slack alerts sent successfully' : 'Command failed'
         ]);
-        
+
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
@@ -958,7 +1159,7 @@ Route::get('/ghl/update-contact', function () {
         // $user->billing_country = $invoice->billingAddress->country ?? null;
         if ($ghlService->isEnabled()) {
             $ghlResult = $ghlService->updateContactToCustomer($user, 'customer');
-            
+
             if ($ghlResult) {
                 return $ghlResult;
             } else {
@@ -999,9 +1200,9 @@ Route::middleware(['custom_role:1'])->get('/logs:clear', function () {
                 $clearedFiles[] = basename($file);
             }
         }
-        
+
         return response()->json([
-            'success' => true, 
+            'success' => true,
             'message' => 'Logs cleared successfully',
             'cleared_by' => $adminName,
             'cleared_files' => $clearedFiles,
@@ -1030,7 +1231,7 @@ Route::get('/test-exception', function () {
         'Debug exception generated',
         'Test error simulation active'
     ];
-    
+
     $randomMessage = $messages[array_rand($messages)];
     throw new \Exception($randomMessage . ' - ' . now()->format('Y-m-d H:i:s'));
 });

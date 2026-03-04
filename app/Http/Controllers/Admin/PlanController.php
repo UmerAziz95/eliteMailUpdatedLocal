@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Feature;
 use App\Models\Plan;
+use App\Models\Configuration;
 use Illuminate\Http\Request;
 
 class PlanController extends Controller
@@ -14,7 +15,8 @@ class PlanController extends Controller
         $plans = Plan::where('is_active',1)->get();
         $getMostlyUsed = Plan::getMostlyUsed();
         $features = Feature::where('is_active', true)->get();
-        return view('admin.pricing.pricing', compact('plans', 'features', 'getMostlyUsed'));
+        $defaultProviderType = Configuration::get('PROVIDER_TYPE', 'Google');
+        return view('admin.pricing.pricing', compact('plans', 'features', 'getMostlyUsed', 'defaultProviderType'));
     }
 
     public function store(Request $request)
@@ -31,7 +33,8 @@ class PlanController extends Controller
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
                 'currency_code' => 'nullable|string|size:3',
-                'is_discounted' => 'nullable|boolean'
+                'is_discounted' => 'nullable|boolean',
+                'provider_type' => 'nullable|string|in:Google,Microsoft 365,Private SMTP'
             ]);
 
             $min = $request->min_inbox;
@@ -106,6 +109,10 @@ class PlanController extends Controller
                 throw new \Exception($chargeBeePlan['message']);
             }
 
+            // Get provider_type from request, or fallback to Configuration table, default to 'Google'
+            $providerType = $request->input('provider_type') 
+                ?: Configuration::get('PROVIDER_TYPE', 'Google');
+
             // Local Plan Creation
             $plan = Plan::create([
                 'name' => $request->name,
@@ -116,7 +123,8 @@ class PlanController extends Controller
                 'min_inbox' => $min,
                 'max_inbox' => $max,
                 'is_discounted' => $isDiscounted,
-                'is_active' => true
+                'is_active' => true,
+                'provider_type' => $providerType
             ]);
 
             // Attach Features (if any)
@@ -259,7 +267,8 @@ class PlanController extends Controller
                 'feature_ids.*' => 'exists:features,id',
                 'feature_values' => 'nullable|array',
                 'currency_code' => 'nullable|string|size:3',
-                'is_discounted' => 'nullable|boolean'
+                'is_discounted' => 'nullable|boolean',
+                'provider_type' => 'nullable|string|in:Google,Microsoft 365,Private SMTP'
             ]);
 
             $min = $request->min_inbox;
@@ -329,6 +338,10 @@ class PlanController extends Controller
                 // ...
             }
 
+            // Get provider_type from request, or fallback to Configuration table, default to 'Google'
+            $providerType = $request->input('provider_type') 
+                ?: Configuration::get('PROVIDER_TYPE', 'Google');
+
             // --- Local Plan Update ---
             $plan->update([
                 'name' => $request->name,
@@ -338,7 +351,8 @@ class PlanController extends Controller
                 'description' => $request->description,
                 'min_inbox' => $min,
                 'max_inbox' => $max,
-                'is_discounted' => $isDiscounted
+                'is_discounted' => $isDiscounted,
+                'provider_type' => $providerType
             ]);
 
             // Sync features

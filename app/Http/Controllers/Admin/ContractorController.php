@@ -27,7 +27,13 @@ class ContractorController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+            $statusValue = $request->input('status');
+            // If status filter is 0 (inactive), query for -1
+            if ($statusValue == '0') {
+                $query->where('status', -1);
+            } else {
+                $query->where('status', $statusValue);
+            }
         }
            // Only apply search to the query builder — NOT to a Collection
            if ($request->has('search') && $request->input('search.value') != '') {
@@ -48,6 +54,7 @@ class ContractorController extends Controller
                    return '<i class="ti ti-contract me-2 text-primary"></i>Contractor';
                })
                ->addColumn('status', function ($row) {
+                   // Treat status -1 as inactive, 1 as active
                    $statusText = $row->status == 1 ? 'active' : 'inactive';
                    $statusClass = $row->status == 1 ? 'active_status' : 'inactive_status';
                    return '<span class="' . $statusClass . '">' . ucfirst($statusText) . '</span>';
@@ -87,7 +94,7 @@ class ContractorController extends Controller
                    'counters' => [
                        'total' => User::where('role_id', 4)->count(),
                        'active' => User::where('status', 1)->where('role_id', 4)->count(),
-                       'inactive' => User::where('status', 0)->where('role_id', 4)->count(),
+                       'inactive' => User::where('status', -1)->where('role_id', 4)->count(),
                    ]
                ])
                ->make(true);
@@ -107,11 +114,17 @@ class ContractorController extends Controller
              'status' => 'required|in:0,1',
          ]);
      
+         // Convert status 0 (inactive) to -1
+         $status = (int) $validated['status'];
+         if ($status === 0) {
+             $status = -1;
+         }
+     
          $user = User::create([
              'name'     => $validated['full_name'],
              'email'    => $validated['email'],
              'password' => Hash::make($validated['password']),
-             'status'   => (int) $validated['status'],
+             'status'   => $status,
              'role_id'  => 4,
          ]);
      
@@ -140,8 +153,14 @@ class ContractorController extends Controller
    public function edit($id)
    {
        $user = User::findOrFail($id);
+       
+       // Convert status -1 back to 0 for the form
+       $userData = $user->toArray();
+       if ($user->status == -1) {
+           $userData['status'] = 0;
+       }
 
-       return response()->json($user); // Used to populate the form
+       return response()->json($userData); // Used to populate the form
    }
 
    public function update(Request $request, $id)
@@ -159,7 +178,13 @@ class ContractorController extends Controller
    
        $user->name = $validated['full_name'];
        $user->email = $validated['email'];
-       $user->status = $validated['status'];
+       
+       // Convert status 0 (inactive) to -1
+       $status = (int) $validated['status'];
+       if ($status === 0) {
+           $status = -1;
+       }
+       $user->status = $status;
    
        if (!empty($validated['password'])) {
            $user->password = Hash::make($validated['password']);
@@ -190,7 +215,7 @@ class ContractorController extends Controller
    public function destroy($id)
    {
        $user = User::findOrFail($id);
-       $user->status = 0;
+       $user->status = -1; // Set to -1 for inactive instead of 0
        $user->save();
    
        // Log the deactivation action

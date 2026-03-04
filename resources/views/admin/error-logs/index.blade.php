@@ -167,6 +167,98 @@
         70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
         100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
     }
+
+    /* Pagination Styling */
+    .errorlogs-pagination {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 0.85rem 1.25rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    @media (min-width: 768px) {
+        .errorlogs-pagination {
+            flex-direction: row;
+            justify-content: center;
+        }
+    }
+
+    .pagination-pill {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.4rem 0.9rem;
+        border-radius: 999px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        color: #cfd4ff;
+        white-space: nowrap;
+    }
+
+    #paginationContainer .pagination {
+        margin: 0;
+        display: flex;
+        gap: 0.45rem;
+        list-style: none;
+        padding: 0;
+    }
+
+    #paginationContainer .pagination .page-item {
+        margin: 0;
+    }
+
+    #paginationContainer .pagination .page-link {
+        background: linear-gradient(145deg, #26263d, #1c1c2f);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #d4dcff !important;
+        padding: 0.55rem 0.75rem;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: grid;
+        place-items: center;
+        min-width: 44px;
+        min-height: 44px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    #paginationContainer .pagination .page-link:hover:not(.disabled) {
+        background: linear-gradient(145deg, #2f3052, #24243c);
+        border-color: rgba(255, 255, 255, 0.18);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45);
+    }
+
+    #paginationContainer .pagination .page-item.active .page-link {
+        background: linear-gradient(145deg, #1f8bff, #0f6bff);
+        border-color: rgba(255, 255, 255, 0.18);
+        color: #fff !important;
+        box-shadow: 0 14px 30px rgba(15, 107, 255, 0.35);
+        font-weight: 700;
+    }
+
+    #paginationContainer .pagination .page-item.disabled .page-link {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.04);
+        color: rgba(255, 255, 255, 0.35) !important;
+        cursor: not-allowed;
+        pointer-events: none;
+        box-shadow: none;
+    }
+
+    #paginationContainer {
+        padding: 1rem 0;
+    }
+
+    #paginationContainer .d-flex {
+        background: transparent;
+        padding: 0;
+        border-radius: 12px;
+    }
 </style>
 @endpush
 
@@ -361,7 +453,7 @@
         <div id="paginationContainer">
             @if($errorLogs->hasPages())
                 <div class="d-flex justify-content-center mt-4">
-                    {{ $errorLogs->appends(request()->query())->links() }}
+                    {{ $errorLogs->appends(request()->query())->links('admin.error-logs.pagination') }}
                 </div>
             @endif
         </div>
@@ -629,7 +721,7 @@
             clearInterval(autoRefreshInterval);
             isAutoRefreshEnabled = false;
             $('#autoRefreshText').text('Enable Auto Refresh');
-            $('#autoRefreshToggle').removeClass('btn-outline-success').addClass('btn-outline-info');
+            $('#autoRefreshToggle').removeClass('auto-refresh-enabled btn-outline-success').addClass('btn-outline-info');
         } else {
             // Enable auto refresh
             autoRefreshInterval = setInterval(function() {
@@ -637,7 +729,7 @@
             }, REFRESH_INTERVAL);
             isAutoRefreshEnabled = true;
             $('#autoRefreshText').text('Disable Auto Refresh');
-            $('#autoRefreshToggle').removeClass('btn-outline-info').addClass('btn-outline-success');
+            $('#autoRefreshToggle').removeClass('btn-outline-info').addClass('btn-outline-success auto-refresh-enabled');
         }
     }
 

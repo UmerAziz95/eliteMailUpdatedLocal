@@ -33,6 +33,7 @@ return [
     'chargebee' => [
         'site' => env('CHARGEBEE_SITE'),
         'api_key' => env('CHARGEBEE_API_KEY'),
+        'item_family_id' => env('CHARGEBEE_ITEM_FAMILY_ID', 'cbdemo_omnisupport-solutions'),
     ],
 
     'ghl' => [

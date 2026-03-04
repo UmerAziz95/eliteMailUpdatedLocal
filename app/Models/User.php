@@ -39,6 +39,8 @@ class User extends Authenticatable
         'ghl_contact_id',
         'type',
         'is_internal',
+        'customer_access',
+        'access_type',
     ];
 
     /**

@@ -108,7 +108,7 @@
                             </div>
                             @endif
                           
-                            <form action="{{ route('doLogin') }}" method="POST">
+                            <form id="login-form" action="{{ route('doLogin') }}" method="POST">
                                 @csrf
                                 <div class="input-group">
                                     @if(isset($discord_setting_page_session) && $discord_setting_page_session != null)
@@ -186,6 +186,51 @@
                 icon.classList.add('fa-eye-slash');
             }
         });
+    </script>
+
+    <script>
+        (function () {
+            const form = document.getElementById('login-form');
+            if (!form) return;
+
+            const meta = document.querySelector('meta[name="csrf-token"]');
+
+            function setCsrfToken(token) {
+                const tokenInput = form.querySelector('input[name="_token"]');
+                if (tokenInput) tokenInput.value = token;
+                if (meta) meta.setAttribute('content', token);
+                if (window.axios) {
+                    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token;
+                }
+                if (window.$ && $.ajaxSetup) {
+                    $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': token } });
+                }
+            }
+
+            let submitting = false;
+            form.addEventListener('submit', async function (e) {
+                if (submitting) return; // avoid loops
+                e.preventDefault();
+                submitting = true;
+                try {
+                    const resp = await fetch(`${baseurl}/refresh-csrf`, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (resp && resp.ok) {
+                        const data = await resp.json();
+                        if (data && data.token) {
+                            setCsrfToken(data.token);
+                        }
+                    }
+                } catch (err) {
+                    // Ignore and proceed with existing token
+                }
+                // Now submit the form with the (possibly) refreshed token
+                form.submit();
+            }, { capture: true });
+        })();
     </script>
 
 </body>

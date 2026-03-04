@@ -29,6 +29,7 @@ use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Artisan;
+use App\Models\Configuration;
 
 class InternalOrderManagerController extends Controller
 {
@@ -251,6 +252,7 @@ class InternalOrderManagerController extends Controller
 
             // Get requested plan
             $plan = Plan::findOrFail($determinedPlanId);
+            $defaultProviderType = \App\Models\Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
             
             Log::info('Plan determined successfully', [
                 'total_inboxes' => $calculatedTotalInboxes,
@@ -348,6 +350,7 @@ class InternalOrderManagerController extends Controller
                         'currency' => 'USD',
                         'payment_method' => 'internal',
                         'payment_status' => 'paid',
+                        'provider_type' => $defaultProviderType,
                     ]);
                 } else {
                     // Create new order if it doesn't exist
@@ -361,6 +364,7 @@ class InternalOrderManagerController extends Controller
                         'payment_method' => 'internal',
                         'payment_status' => 'paid',
                         'internal_order_id' => $internalOrder->id,
+                        'provider_type' => $defaultProviderType,
                     ]);
                 }
 
@@ -576,7 +580,8 @@ class InternalOrderManagerController extends Controller
                         // 'payment_method' => 'internal',
                         // 'payment_status' => 'paid', // Internal orders are considered pre-paid
                         'internal_order_id' => $internalOrder->id, // Link to internal order
-                        'is_internal' => 1
+                        'is_internal' => 1,
+                        'provider_type' => $defaultProviderType,
                     ]);
 
                     // Create ReorderInfo record with detailed configuration

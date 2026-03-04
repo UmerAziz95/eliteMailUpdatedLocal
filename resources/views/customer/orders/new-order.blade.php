@@ -652,7 +652,6 @@ $(document).ready(function() {
                     let firstErrorField = null;
                     
                     Object.keys(xhr.responseJSON.errors).forEach(key => {
-                        toastr.error(xhr.responseJSON.errors[key][0]);
                         const field = $(`[name="${key}"]`);
                         if (field.length) {
                             field.addClass('is-invalid');
@@ -673,8 +672,15 @@ $(document).ready(function() {
                             } else {
                                 feedbackEl.text(xhr.responseJSON.errors[key][0]);
                             }
-                            // Ensure the feedback is displayed
+                            // Ensure the feedback is displayed and stays visible (no auto-hide)
                             feedbackEl.show();
+                            feedbackEl.css('display', 'block'); // Force display
+                        }
+                        
+                        // Only show toastr for non-domain errors
+                        // Domain errors should only show on the field itself
+                        if (key !== 'domains') {
+                            toastr.error(xhr.responseJSON.errors[key][0]);
                         }
                     });
                     

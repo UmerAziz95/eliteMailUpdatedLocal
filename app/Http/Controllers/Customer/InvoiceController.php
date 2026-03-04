@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Invoice;
+use App\Models\PoolInvoice;
 use DataTables;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +30,11 @@ class InvoiceController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
+            // Route to appropriate handler based on invoice type
+            if ($request->invoice_type === 'trial') {
+                return $this->getTrialInvoices($request);
+            }
+
             $query = Invoice::with('order')->where('user_id', auth()->id());
 
             // Apply status filter
@@ -127,6 +133,90 @@ class InvoiceController extends Controller
         }
         $statuses = $this->statuses;
         return view('customer.invoices.index', compact('statuses'));
+    }
+
+    /**
+     * Get trial invoices (pool invoices) data for DataTables
+     */
+    private function getTrialInvoices(Request $request)
+    {
+        $query = PoolInvoice::with(['poolOrder', 'user'])->where('user_id', auth()->id());
+
+        // Apply status filter
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        // Apply date range filter
+        if ($request->startDate) {
+            $query->whereDate('created_at', '>=', $request->startDate);
+        }
+        if ($request->endDate) {
+            $query->whereDate('created_at', '<=', $request->endDate);
+        }
+
+        // Apply price range filter
+        if ($request->priceRange) {
+            list($min, $max) = explode('-', $request->priceRange);
+            if ($max === '+') {
+                $query->where('amount', '>=', $min);
+            } else {
+                $query->whereBetween('amount', [$min, $max]);
+            }
+        }
+
+        // Apply order ID filters
+        if ($request->orderId) {
+            $query->where('pool_order_id', $request->orderId);
+        }
+
+        // Apply order status filter
+        if ($request->orderStatus) {
+            $query->whereHas('poolOrder', function($q) use ($request) {
+                $q->where('status_manage_by_admin', $request->orderStatus);
+            });
+        }
+
+        $data = $query->select([
+            'pool_invoices.id',
+            'pool_invoices.pool_order_id',
+            'pool_invoices.user_id',
+            'pool_invoices.amount',
+            'pool_invoices.status',
+            'pool_invoices.created_at',
+            'pool_invoices.updated_at',
+        ]);
+
+        return DataTables::of($data)
+            ->addColumn('action', function($row) {
+                $row->isTrial = true;
+                return view('customer.invoices.actions', compact('row'))->render();
+            })
+            ->addColumn('order_id', function($row) {
+                return $row->pool_order_id;
+            })
+            ->editColumn('created_at', function($row) {
+                return $row->created_at ? $row->created_at->format('d F, Y') : '';
+            })
+            ->editColumn('amount', function($row) {
+                return '$' . number_format($row->amount, 2);
+            })
+            ->editColumn('status', function($row) {
+                $statusClass = $row->status == 'paid' ? 'success' : 'warning';
+                return '<span class="py-1 px-2 text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">' 
+                    . ucfirst($row->status) . '</span>';
+            })
+            ->rawColumns(['action', 'status'])
+            ->addIndexColumn()
+            ->with([
+                'counters' => [
+                    'total' => PoolInvoice::where('user_id', auth()->id())->count(),
+                    'paid' => PoolInvoice::where('user_id', auth()->id())->where('status', 'paid')->count(),
+                    'pending' => PoolInvoice::where('user_id', auth()->id())->where('status', 'pending')->count(),
+                    'failed' => PoolInvoice::where('user_id', auth()->id())->where('status', 'failed')->count(),
+                ]
+            ])
+            ->make(true);
     }
 
     public function getInvoices(Request $request)
@@ -333,6 +423,110 @@ class InvoiceController extends Controller
             }
 
             return back()->with('error', 'Error downloading invoice');
+        }
+    }
+
+    /**
+     * Show the specified pool invoice
+     *
+     * @param int $invoiceId
+     * @return \Illuminate\Http\Response
+     */
+    public function showPoolInvoice($invoiceId)
+    {
+        try {
+            $invoice = PoolInvoice::with(['user', 'poolOrder'])
+                ->where('user_id', auth()->id())
+                ->where('id', $invoiceId)
+                ->firstOrFail();
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $invoice
+                ]);
+            }
+
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'customer-pool-invoice-view', 
+                'Viewed pool invoice: ' . $invoiceId, 
+                $invoice, 
+                [
+                    'invoice_id' => $invoiceId,
+                    'pool_order_id' => $invoice->pool_order_id,
+                    'amount' => $invoice->amount,
+                    'status' => $invoice->status,
+                    'view_date' => now()->toDateTimeString(),
+                    'ip_address' => request()->ip()
+                ]
+            );
+
+            return view('customer.invoices.show-pool', compact('invoice'));
+        } catch (Exception $e) {
+            Log::error('Error showing pool invoice: ' . $e->getMessage());
+            
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pool invoice not found or access denied'
+                ], 404);
+            }
+
+            return abort(404);
+        }
+    }
+
+    /**
+     * Download the specified pool invoice
+     *
+     * @param int $invoiceId
+     * @return \Illuminate\Http\Response
+     */
+    public function downloadPoolInvoice($invoiceId)
+    {
+        try {
+            // Check if user has access to this pool invoice
+            $poolInvoice = PoolInvoice::with(['user', 'poolOrder'])
+                ->where('user_id', auth()->id())
+                ->where('id', $invoiceId)
+                ->firstOrFail();
+
+            // Generate PDF using dompdf
+            $pdf = \PDF::loadView('customer.pool-invoices.pdf', compact('poolInvoice'));
+            
+            // Generate filename
+            $filename = 'pool_invoice_' . $invoiceId . '.pdf';
+
+            // Create a new activity log using the custom log service
+            ActivityLogService::log(
+                'customer-pool-invoice-download', 
+                'Downloaded pool invoice: ' . $invoiceId, 
+                $poolInvoice, 
+                [
+                    'invoice_id' => $invoiceId,
+                    'pool_order_id' => $poolInvoice->pool_order_id,
+                    'amount' => $poolInvoice->amount,
+                    'status' => $poolInvoice->status,
+                    'download_date' => now()->toDateTimeString(),
+                    'ip_address' => request()->ip()
+                ]
+            );
+
+            // Return PDF file as download
+            return $pdf->download($filename);
+
+        } catch (Exception $e) {
+            Log::error('Error downloading pool invoice: ' . $e->getMessage());
+            
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error downloading pool invoice'
+                ], 500);
+            }
+
+            return back()->with('error', 'Error downloading pool invoice');
         }
     }
 }

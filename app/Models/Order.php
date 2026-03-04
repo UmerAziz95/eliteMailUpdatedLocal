@@ -33,6 +33,7 @@ class Order extends Model
         'meta',
         'plan_id',
         'status_manage_by_admin',
+        'provider_type',
         'reason',
         'last_draft_notification_sent_at',
         'completed_at',
@@ -201,6 +202,41 @@ class Order extends Model
     public function domainHealthChecks()
     {
         return $this->hasMany(DomainHealthCheck::class);
+    }
+    
+    /**
+     * Get platform credentials for this order.
+     */
+    public function platformCredentials()
+    {
+        return $this->hasMany(PlatformCredential::class);
+    }
+
+    /**
+     * Get platform credential for a specific platform type.
+     *
+     * @param string $platformType
+     * @return PlatformCredential|null
+     */
+    public function getPlatformCredential(string $platformType)
+    {
+        return $this->platformCredentials()->where('platform_type', $platformType)->first();
+    }
+
+    /**
+     * Get domain transfers for this order.
+     */
+    public function domainTransfers()
+    {
+        return $this->hasMany(DomainTransfer::class);
+    }
+
+    /**
+     * Get used emails record for this order (emails that were deleted from Mailin.ai)
+     */
+    public function usedEmailsInOrder()
+    {
+        return $this->hasOne(UsedEmailsInOrder::class);
     }
     
 

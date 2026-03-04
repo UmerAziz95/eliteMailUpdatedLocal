@@ -83,8 +83,63 @@ class OrderObserver
                 'reason' => $reason
             ]);
             
+            // Send Slack notification if order status changes from reject to in-progress (customer fixed order)
+            if (strtolower($previousStatus) === 'reject' && strtolower($newStatus) === 'in-progress') {
+                try {
+                    // Calculate inbox count and split count
+                    $inboxCount = 0;
+                    $splitCount = 0;
+                    
+                    if ($order->orderPanels && $order->orderPanels->count() > 0) {
+                        foreach ($order->orderPanels as $orderPanel) {
+                            $splitCount += $orderPanel->orderPanelSplits ? $orderPanel->orderPanelSplits->count() : 0;
+                            
+                            foreach ($orderPanel->orderPanelSplits as $split) {
+                                if ($split->domains && is_array($split->domains)) {
+                                    $inboxCount += count($split->domains) * ($split->inboxes_per_domain ?? 1);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // If no splits found, try to get from reorderInfo
+                    if ($inboxCount === 0 && $order->reorderInfo && $order->reorderInfo->first()) {
+                        $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
+                    }
+                    
+                    // Get provider type from order or plan
+                    $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+                    
+                    $orderData = [
+                        'id' => $order->id,
+                        'order_id' => $order->id,
+                        'name' => 'Order #' . $order->id,
+                        'customer_name' => $order->user ? $order->user->name : 'Unknown',
+                        'customer_email' => $order->user ? $order->user->email : 'Unknown',
+                        'contractor_name' => $order->assignedTo ? $order->assignedTo->name : 'Unassigned',
+                        'inbox_count' => $inboxCount,
+                        'split_count' => $splitCount,
+                        'previous_status' => $previousStatus,
+                        'new_status' => $newStatus,
+                        'provider_type' => $providerType,
+                        'updated_by' => auth()->user() ? auth()->user()->name : 'System'
+                    ];
+                    
+                    SlackNotificationService::sendOrderFixedNotification($orderData);
+                    \Log::channel('slack_notifications')->info('OrderObserver: Slack notification sent for order fixed (reject to in-progress)', [
+                        'order_id' => $order->id,
+                        'previous_status' => $previousStatus,
+                        'new_status' => $newStatus
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for order fixed', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
             // Send Slack notification if order status changes from draft to any other status
-            if ((strtolower($previousStatus) === 'draft' && strtolower($newStatus) !== 'draft') || 
+            elseif ((strtolower($previousStatus) === 'draft' && strtolower($newStatus) !== 'draft') || 
                 (strtolower($previousStatus) === 'reject' && strtolower($newStatus) === 'pending')) {
                 try {
                     // Calculate inbox count and split count
@@ -108,6 +163,9 @@ class OrderObserver
                         $inboxCount = $order->reorderInfo->first()->total_inboxes ?? 0;
                     }
                     
+                    // Get provider type from order or plan
+                    $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+                    
                     $orderData = [
                         'id' => $order->id,
                         'order_id' => $order->id,
@@ -118,7 +176,9 @@ class OrderObserver
                         'inbox_count' => $inboxCount,
                         'split_count' => $splitCount,
                         'previous_status' => $previousStatus,
-                        'new_status' => $newStatus
+                        'new_status' => $newStatus,
+                        'provider_type' => $providerType,
+                        'updated_by' => auth()->user() ? auth()->user()->name : 'System'
                     ];
                     // if new status is not equal to cancelled
                     if (strtolower($newStatus) !== 'cancelled') {
@@ -162,6 +222,27 @@ class OrderObserver
                     ]);
                 } catch (\Exception $e) {
                     \Log::channel('slack_notifications')->error('OrderObserver: Failed to send Slack notification for rejected order', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+                
+                // Delete mailboxes from Mailin.ai when order is rejected
+                try {
+                    $orderId = $order->id;
+                    dispatch(function () use ($orderId) {
+                        \Illuminate\Support\Facades\Artisan::call('order:delete-mailboxes', [
+                            'order_id' => $orderId
+                        ]);
+                    })->afterResponse();
+                    
+                    \Log::channel('mailin-ai')->info('OrderObserver: Dispatched command to delete mailboxes for rejected order', [
+                        'order_id' => $order->id,
+                        'previous_status' => $previousStatus,
+                        'new_status' => $newStatus
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::channel('mailin-ai')->error('OrderObserver: Failed to dispatch mailbox deletion command', [
                         'order_id' => $order->id,
                         'error' => $e->getMessage()
                     ]);

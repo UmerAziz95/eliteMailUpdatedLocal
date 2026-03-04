@@ -85,6 +85,41 @@ class SidebarNavigationSeeder extends Seeder
                 'sub_menu' => [],
                 'order' => 8
             ],
+            [
+                'name' => 'Pool Pricing',
+                'icon' => 'ti ti-devices-dollar fs-5',
+                'route' => 'admin.pool-pricing.index',
+                'permission' => 'Pool Pricing',
+                'sub_menu' => [],
+                'order' => 8.5
+            ],
+            // pool panels
+            [
+                'name' => 'Pool Panels',
+                'icon' => 'ti ti-file-invoice fs-5',
+                'route' => 'admin.pool-panels.index',
+                'permission' => 'Pool Panels',
+                'sub_menu' => [],
+                'order' => 8.6
+            ],
+            // pools
+            [
+                'name' => 'Pools',
+                'icon' => 'ti ti-pool fs-5',
+                'route' => 'admin.pools.index',
+                'permission' => 'Pools',
+                'sub_menu' => [],
+                'order' => 8.7
+            ],
+            // pool-domains
+            [
+                "name" => "Trial Orders",
+                "icon" => "ti ti-world fs-5",
+                "route" => "admin.pool-domains.index",
+                "permission" => "Pool Domains",
+                'sub_menu' => [],
+                'order' => 8.8
+            ],
             // [
             //     'name' => 'Special Plans',
             //     'icon' => 'ti ti-star fs-5',
@@ -222,13 +257,32 @@ class SidebarNavigationSeeder extends Seeder
                 'sub_menu' => [],
                 'order' => 24
             ],
+            // Disclaimer
+            [
+                "name" => "Disclaimers",
+                "icon" => "ti ti-alert-circle fs-5",
+                "route" => "admin.disclaimers.index",
+                "permission" => "Disclaimers",
+                'sub_menu' => [],
+                'order' => 25
+            ],
+            
             [
                 "name" => "Team Leader Dashboard",
                 "icon" => "ti ti-dashboard fs-5",
                 "route" => "admin.team_leader.dashboard",
                 "permission" => "Team Leader Dashboard",
                 'sub_menu' => []
-            ]
+            ],
+            // smtp providers
+            [
+                'name' => 'Smtp Providers',
+                'icon' => 'ti ti-circle fs-5',
+                'route' => 'admin.smtp-providers.page',
+                'permission' => 'Smtp Providers',
+                'sub_menu' => [],
+                'order' => 26
+            ],
 
         ];
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MasterPlan;
 use App\Models\Plan;
 use App\Models\Feature;
+use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -66,6 +67,7 @@ public function show($id=null)
                 'external_name' => 'required|string|max:255',
                 // 'internal_name' => 'required|string|max:255|regex:/^[a-z0-9_]+$/',
                 'description' => 'required|string|max:1000',
+                'provider_type' => 'nullable|string|in:Google,Microsoft 365,Private SMTP',
                 'volume_items' => 'required|array|min:1',
                 'volume_items.*.id' => 'sometimes|integer|exists:plans,id',
                 'volume_items.*.min_inbox' => 'required|integer|min:0',
@@ -201,6 +203,10 @@ public function show($id=null)
             try {
                 DB::beginTransaction();
 
+                // Get provider_type from request, or fallback to Configuration table, default to 'Google'
+                $providerType = $request->input('provider_type') 
+                    ?: Configuration::get('PROVIDER_TYPE', 'Google');
+
                 // Check if this is creating a new plan (not updating an existing one)
                 $isNewPlan = !$request->masterPlanId;
                 $isDiscounted = $request->discountMode === 'Discounted';
@@ -232,7 +238,7 @@ public function show($id=null)
                     ]);
                     
                     // Update volume items instead of deleting and recreating
-                    $this->updateVolumeItems($masterPlan, $volumeItems);
+                    $this->updateVolumeItems($masterPlan, $volumeItems, $providerType);
                     
                     $message = 'Master plan updated successfully';
                 } else {
@@ -247,7 +253,7 @@ public function show($id=null)
                     ]);
                     
                     // Create volume items in plans table
-                    $this->createVolumeItems($masterPlan, $volumeItems);
+                    $this->createVolumeItems($masterPlan, $volumeItems, $providerType);
                     
                     $message = 'Master plan created successfully';
                 }            
@@ -659,7 +665,7 @@ public function show($id=null)
     /**
      * Update volume items (intelligent update instead of delete/recreate)
      */
-    private function updateVolumeItems($masterPlan, $volumeItems)
+    private function updateVolumeItems($masterPlan, $volumeItems, $providerType = null)
     {
         // Get existing volume items
         $existingItems = $masterPlan->volumeItems()->with('features')->get();
@@ -694,7 +700,7 @@ public function show($id=null)
                     'tier_discount_type' => $volumeItem['tier_discount_type'] ?? null,
                     'actual_price_before_discount' => $volumeItem['actual_price_before_discount'] ?? null,
                     'is_discounted' => $volumeItem['discountMode'] ?? 0,
-                    
+                    'provider_type' => $providerType ?: Configuration::get('PROVIDER_TYPE', 'Google'),
                 ]);
                 
                 // Update features
@@ -703,7 +709,7 @@ public function show($id=null)
                 $updatedItemIds[] = $existingItem->id;
             } else {
                 // Create new item
-                $newItem = $this->createSingleVolumeItem($masterPlan, $volumeItem);
+                $newItem = $this->createSingleVolumeItem($masterPlan, $volumeItem, $providerType);
                 $updatedItemIds[] = $newItem->id;
             }
         }
@@ -717,18 +723,20 @@ public function show($id=null)
     /**
      * Create volume items for a new master plan
      */
-    private function createVolumeItems($masterPlan, $volumeItems)
+    private function createVolumeItems($masterPlan, $volumeItems, $providerType = null)
     {
         foreach ($volumeItems as $volumeItem) {
-            $this->createSingleVolumeItem($masterPlan, $volumeItem);
+            $this->createSingleVolumeItem($masterPlan, $volumeItem, $providerType);
         }
     }
     
     /**
      * Create a single volume item
      */
-    private function createSingleVolumeItem($masterPlan, $volumeItem)
+    private function createSingleVolumeItem($masterPlan, $volumeItem, $providerType = null)
     {
+        // Get provider_type from parameter or fallback to Configuration
+        $finalProviderType = $providerType ?: Configuration::get('PROVIDER_TYPE', 'Google');
         
         $plan = Plan::create([
             'master_plan_id' => $masterPlan->id,
@@ -742,7 +750,8 @@ public function show($id=null)
             'tier_discount_value' => $volumeItem['tier_discount_value'] ?? null,
             'tier_discount_type' => $volumeItem['tier_discount_type'] ?? null,
             'actual_price_before_discount' => $volumeItem['actual_price_before_discount'] ?? null,
-            'is_discounted' => $volumeItem['discountMode'] ?? 0
+            'is_discounted' => $volumeItem['discountMode'] ?? 0,
+            'provider_type' => $finalProviderType
         ]); 
         
         // Attach features if any

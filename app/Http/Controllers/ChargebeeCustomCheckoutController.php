@@ -720,8 +720,17 @@ private function getOrCreateUser($customer, $billingData)
 
         try {
             Mail::to($user->email)->queue(new SendPasswordMail($user, $randomPassword));
-        } catch (\Exception $e) {  
-            Log::error("Failed to send user credentials: {$user->email} - " . $e->getMessage());
+        } catch (\Exception $e) {
+            \Log::channel('email-failures')->error('Failed to send user credentials email', [
+                'recipient_email' => $user->email,
+                'exception' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => $user->id,
+                'timestamp' => now()->toDateTimeString(),
+                'context' => 'ChargebeeCustomCheckoutController::createUserFromWebhook'
+            ]);
         }
     }
 
@@ -757,6 +766,16 @@ private function updateUserBilling($user, $billingData)
 
 private function createOrUpdateOrder($invoice, $user, $planId, array $subscription, $customer)
 {
+    // Get provider_type from plan if available, otherwise from Configuration
+    $plan = \App\Models\Plan::find($planId);
+    $providerType = $plan->provider_type 
+        ?? \App\Models\Configuration::get('PROVIDER_TYPE', 'Google');
+    
+    // Ensure it's one of the valid order provider types
+    if (!in_array($providerType, ['Google', 'Microsoft 365', 'Private SMTP'])) {
+        $providerType = 'Google';
+    }
+    
     $order = Order::firstOrCreate(
         ['chargebee_invoice_id' => $invoice["id"]],
         [
@@ -769,6 +788,7 @@ private function createOrUpdateOrder($invoice, $user, $planId, array $subscripti
             'currency' => $invoice["currency_code"],
             'paid_at' => Carbon::createFromTimestamp($invoice["paid_at"]),
             'meta' => json_encode(compact('invoice', 'customer', 'subscription')),
+            'provider_type' => $providerType,
         ]
     );
 
@@ -934,13 +954,49 @@ private function logActivities($user, $order, $planId, $subscription, $existingI
 private function sendOrderEmails($order, $user)
 {
     try {
-        Mail::to($user->email)->queue(new OrderCreatedMail($order, $user, false));
+        try {
+            Mail::to($user->email)->queue(new OrderCreatedMail($order, $user, false));
+        } catch (\Exception $e) {
+            \Log::channel('email-failures')->error('Failed to send order created email to user', [
+                'recipient_email' => $user->email,
+                'exception' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'order_id' => $order->id,
+                'user_id' => $user->id,
+                'timestamp' => now()->toDateTimeString(),
+                'context' => 'ChargebeeCustomCheckoutController::sendOrderEmails'
+            ]);
+        }
+        
         $superAdmins = User::where('role_id', 1)->get();
         foreach ($superAdmins as $admin) {
-            Mail::to($admin->email)->queue(new OrderCreatedMail($order, $user, true));
+            try {
+                Mail::to($admin->email)->queue(new OrderCreatedMail($order, $user, true));
+            } catch (\Exception $e) {
+                \Log::channel('email-failures')->error('Failed to send order created email to admin', [
+                    'recipient_email' => $admin->email,
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'order_id' => $order->id,
+                    'admin_id' => $admin->id,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'ChargebeeCustomCheckoutController::sendOrderEmails'
+                ]);
+            }
         }
     } catch (\Exception $e) {
-        Log::error('Failed to send order emails: ' . $e->getMessage());
+        \Log::channel('email-failures')->error('Failed to send order emails - general error', [
+            'exception' => $e->getMessage(),
+            'stack_trace' => $e->getTraceAsString(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'order_id' => $order->id,
+            'timestamp' => now()->toDateTimeString()
+        ]);
     }
 }
 
@@ -952,7 +1008,17 @@ private function notifyContractorsIfUnassigned($order)
             try {
                 Mail::to($contractor->email)->queue(new OrderCreatedMail($order, $contractor, true));
             } catch (\Exception $e) {
-                Log::error('Contractor email failed: ' . $e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send order notification to contractor', [
+                    'recipient_email' => $contractor->email,
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'order_id' => $order->id,
+                    'contractor_id' => $contractor->id,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'ChargebeeCustomCheckoutController::notifyContractorsIfUnassigned'
+                ]);
             }
         }
     }

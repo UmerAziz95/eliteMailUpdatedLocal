@@ -133,6 +133,43 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
         ],
+
+        'webhook' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/webhooks/webhook.log'),
+            'level' => env('WEBHOOK_LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'chargebee_webhook' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/webhooks/chargebee.log'),
+            'level' => env('WEBHOOK_LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'ghl_webhook' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/webhooks/ghl.log'),
+            'level' => env('WEBHOOK_LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'email-failures' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/email-failures.log'),
+            'level' => 'error',
+            // 'days' => 30,
+            'replace_placeholders' => true,
+        ],
+
+        'mailin-ai' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/mailin-ai.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            // 'days' => 14,
+            'replace_placeholders' => true,
+        ],
     ],
 
 ];

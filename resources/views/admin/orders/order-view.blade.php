@@ -41,10 +41,16 @@
                 class="border border-{{ $order->status_manage_by_admin == 'cancelled' ? 'warning' : ' success' }} rounded-2 py-1 px-2 text-{{ $order->status_manage_by_admin == 'reject' ? ' warning' : 'success' }} bg-transparent">
                 {{ ucfirst($order->status_manage_by_admin ?? '') }}
             </div>
+            @php
+                $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+                $isPrivateSMTP = strtolower($providerType ?? '') === 'private smtp';
+            @endphp
             @can('Order Reassign')
-            <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
-                <i class="fa fa-user-edit"></i> Reassign Contractor
-            </button>
+                @if(!$isPrivateSMTP)
+                <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#reassignContractorModal">
+                    <i class="fa fa-user-edit"></i> Reassign Contractor
+                </button>
+                @endif
             @endcan
         </div>
     </div>
@@ -224,12 +230,26 @@ $(function() {
             <div class="row">
                 <div class="col-md-6">
                     <div class="card p-3 mb-3">
-                        <h6 class="d-flex align-items-center gap-2">
-                            <div class="d-flex align-items-center justify-content-center"
-                                style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
-                                <i class="fa-regular fa-envelope"></i>
+                        <h6 class="d-flex align-items-center justify-content-between gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center"
+                                    style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
+                                    <i class="fa-regular fa-envelope"></i>
+                                </div>
+                                Email configurations
                             </div>
-                            Email configurations
+                            @php
+                                $providerType = $order->provider_type ?? ($order->plan ? $order->plan->provider_type : null);
+                                $isSmtpOrder = in_array(strtolower($providerType ?? ''), ['private smtp', 'smtp']);
+                            @endphp
+                            @if($isSmtpOrder && optional($order->reorderInfo)->count() > 0)
+                                <a href="{{ route('admin.orders.export.smtp.csv', $order->id) }}" 
+                                   class="btn btn-sm btn-success" 
+                                   title="Download CSV with all email accounts"
+                                   target="_blank">
+                                    <i class="fa-solid fa-download me-1"></i>Download CSV
+                                </a>
+                            @endif
                         </h6>
 
                         @if (optional($order->reorderInfo)->count() > 0)

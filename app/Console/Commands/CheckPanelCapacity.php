@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderPanel;
 use App\Models\OrderPanelSplit;
 use App\Models\ReorderInfo;
+use App\Models\Configuration;
 use App\Mail\AdminPanelNotificationMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +26,9 @@ class CheckPanelCapacity extends Command
      */
     protected $signature = 'panels:check-capacity 
                             {--dry-run : Run without sending actual emails}
-                            {--force : Force send even if already sent today}';    /**
+                            {--force : Force send even if already sent today}
+                            {--provider= : Force provider type (Google or Microsoft 365) instead of configuration}';    
+    /**
      * The console command description.
      *
      * @var string
@@ -36,6 +39,11 @@ class CheckPanelCapacity extends Command
      * Panel capacity
      */
     public $PANEL_CAPACITY;
+
+    /**
+     * Provider type used when fetching panels
+     */
+    public $PROVIDER_TYPE;
     
     /**
      * Maximum inboxes per panel split
@@ -57,8 +65,11 @@ class CheckPanelCapacity extends Command
     public function __construct()
     {
         parent::__construct();
-        $this->PANEL_CAPACITY = env('PANEL_CAPACITY', 1790); // Default to 1790 if not set in config
-        $this->MAX_SPLIT_CAPACITY = env('MAX_SPLIT_CAPACITY', 358); // Maximum inboxes per split
+        // Provider type will be set in handle() method after options are available
+        $this->PROVIDER_TYPE = null;
+        // Capacities will be initialized in handle() method
+        $this->PANEL_CAPACITY = null;
+        $this->MAX_SPLIT_CAPACITY = null;
     }
     
     /**
@@ -73,8 +84,15 @@ class CheckPanelCapacity extends Command
     {
         $isDryRun = $this->option('dry-run');
         $isForce = $this->option('force');
+        $forceProvider = $this->option('provider');
+        
+        // Initialize provider type and capacities
+        $this->initializeProviderSettings($forceProvider);
         
         $this->info('🔍 Starting panel capacity check...');
+        $this->info("   Provider: {$this->PROVIDER_TYPE}");
+        $this->info("   Panel Capacity: {$this->PANEL_CAPACITY}");
+        $this->info("   Max Split Capacity: {$this->MAX_SPLIT_CAPACITY}");
         
         try {            
             // Update order status to completed where space is available
@@ -93,6 +111,43 @@ class CheckPanelCapacity extends Command
     }    
     
     /**
+     * Initialize provider type and capacity settings
+     */
+    private function initializeProviderSettings(?string $forceProvider): void
+    {
+        // Determine provider type
+        if ($forceProvider) {
+            // Use forced provider from command option
+            $this->PROVIDER_TYPE = $forceProvider;
+            $this->info("🔧 Using forced provider type: {$forceProvider}");
+        } else {
+            // Use configuration table
+            $this->PROVIDER_TYPE = Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+            $this->info("📋 Using provider type from configuration: {$this->PROVIDER_TYPE}");
+        }
+        
+        // Resolve provider-specific panel capacity with sensible fallbacks
+        if (strtolower($this->PROVIDER_TYPE) === 'microsoft 365') {
+            $this->PANEL_CAPACITY = Configuration::get('MICROSOFT_365_CAPACITY', env('MICROSOFT_365_CAPACITY', env('PANEL_CAPACITY', 1790)));
+            $this->MAX_SPLIT_CAPACITY = Configuration::get('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MICROSOFT_365_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
+        } else {
+            $this->PANEL_CAPACITY = Configuration::get('GOOGLE_PANEL_CAPACITY', env('GOOGLE_PANEL_CAPACITY', env('PANEL_CAPACITY', 1790)));
+            $this->MAX_SPLIT_CAPACITY = Configuration::get('GOOGLE_MAX_SPLIT_CAPACITY', env('GOOGLE_MAX_SPLIT_CAPACITY', env('MAX_SPLIT_CAPACITY', 358)));
+        }
+    
+        // Provider-specific split toggles
+        $enableMaxSplit = true;
+        if (strtolower($this->PROVIDER_TYPE) === 'microsoft 365') {
+            $enableMaxSplit = Configuration::get('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', env('ENABLE_MICROSOFT_365_MAX_SPLIT_CAPACITY', true));
+        } else {
+            $enableMaxSplit = Configuration::get('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', env('ENABLE_GOOGLE_MAX_SPLIT_CAPACITY', true));
+        }
+        if (!$enableMaxSplit) {
+            $this->MAX_SPLIT_CAPACITY = $this->PANEL_CAPACITY;
+        }
+    }
+    
+    /**
      * Get available panel space for specific order size
      */
     private function getAvailablePanelSpaceForOrder(int $orderSize, int $inboxesPerDomain): int
@@ -101,6 +156,7 @@ class CheckPanelCapacity extends Command
             // For large orders, prioritize full capacity panels
             $fullCapacityPanels = Panel::where('is_active', 1)
                                         ->where('limit', $this->PANEL_CAPACITY)
+                                        ->where('provider_type', $this->PROVIDER_TYPE)
                                         // ->where('remaining_limit', $this->PANEL_CAPACITY)
                                         ->where('remaining_limit', '>=', $inboxesPerDomain)
                                         ->get();
@@ -119,6 +175,7 @@ class CheckPanelCapacity extends Command
             // For smaller orders, use any panel with remaining space that can accommodate at least one domain
             $availablePanels = Panel::where('is_active', 1)
                                     ->where('limit', $this->PANEL_CAPACITY)
+                                    ->where('provider_type', $this->PROVIDER_TYPE)
                                     ->where('remaining_limit', '>=', $inboxesPerDomain)
                                     ->get();
             
@@ -159,13 +216,28 @@ class CheckPanelCapacity extends Command
         foreach ($pendingOrders as $order) {
             $totalProcessed++;            
             
+            // Get the actual Order model to check provider type
+            $orderModel = Order::find($order->order_id);
+            
+            // Skip Private SMTP orders (they don't use panel assignment)
+            if ($orderModel && $orderModel->provider_type === 'Private SMTP') {
+                $this->info("   ⏭️  Skipping Order ID {$order->order_id} - Private SMTP (uses Mailin.ai automation)");
+                Log::info("Skipping panel assignment for Private SMTP order", [
+                    'order_id' => $order->order_id,
+                    'provider_type' => $orderModel->provider_type
+                ]);
+                continue;
+            }
+            
             // Get order-specific available space
             $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
             // dd($orderSpecificSpace, $order->total_inboxes, $order->inboxes_per_domain, $this->PANEL_CAPACITY, $this->MAX_SPLIT_CAPACITY);
             if ($order->total_inboxes <= $orderSpecificSpace) {
                 try {
-                    // Get the actual Order model for panel split creation
-                    $orderModel = Order::find($order->order_id);
+                    // Get the actual Order model for panel split creation (if not already fetched)
+                    if (!$orderModel) {
+                        $orderModel = Order::find($order->order_id);
+                    }
                     
                     if ($orderModel) {
                         // Create panel splits before updating status
@@ -218,6 +290,11 @@ class CheckPanelCapacity extends Command
                     $remainingTotalInboxes += $order->total_inboxes;
                 }
             } else {
+                // Skip Private SMTP orders from insufficient space tracking (they don't use panel assignment)
+                if ($orderModel && $orderModel->provider_type === 'Private SMTP') {
+                    continue;
+                }
+                
                 $orderSpecificSpace = $this->getAvailablePanelSpaceForOrder($order->total_inboxes, $order->inboxes_per_domain);
                 $this->warn("   ⚠ Order ID {$order->order_id}: {$order->total_inboxes} inboxes - Insufficient space");
                 $this->warn("     Order-specific available space: {$orderSpecificSpace}");
@@ -351,27 +428,40 @@ class CheckPanelCapacity extends Command
             // get panel greater than max split 
             $availablePanelCount = Panel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
+                ->where('provider_type', $this->PROVIDER_TYPE)
                 ->where('remaining_limit', '>=', $this->MAX_SPLIT_CAPACITY)
                 ->count();
             $totalPanelsNeeded -= $availablePanelCount; // Adjust total panels needed based on available panels
-            Mail::to($admin->email)->send(
-                new AdminPanelNotificationMail(
-                    $totalPanelsNeeded,
-                    $totalSpaceNeeded,
-                    0, // Available space is 0 since orders couldn't be processed
-                    $this->insufficientSpaceOrders
-                )
-            );
+            try {
+                Mail::to($admin->email)->send(
+                    new AdminPanelNotificationMail(
+                        $totalPanelsNeeded,
+                        $totalSpaceNeeded,
+                        0, // Available space is 0 since orders couldn't be processed
+                        $this->insufficientSpaceOrders
+                    )
+                );
+            } catch (\Exception $mailException) {
+                \Log::channel('email-failures')->error('Failed to send insufficient space notification', [
+                    'recipient_email' => $admin->email,
+                    'exception' => $mailException->getMessage(),
+                    'stack_trace' => $mailException->getTraceAsString(),
+                    'file' => $mailException->getFile(),
+                    'line' => $mailException->getLine(),
+                    'admin_id' => $admin->id,
+                    'total_panels_needed' => $totalPanelsNeeded,
+                    'total_space_needed' => $totalSpaceNeeded,
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'CheckPanelCapacity::sendInsufficientSpaceEmail'
+                ]);
+                throw $mailException; // Re-throw to be caught by outer try-catch
+            }
             
             $this->info("   ✓ Sent insufficient space notification to: {$admin->email}");
             return true;
             
         } catch (\Exception $e) {
             $this->error("   ✗ Failed to send to {$admin->email}: " . $e->getMessage());
-            Log::error('Failed to send insufficient space notification', [
-                'admin_email' => $admin->email,
-                'error' => $e->getMessage()
-            ]);
             return false;
         }
     }
@@ -382,6 +472,15 @@ class CheckPanelCapacity extends Command
     private function pannelCreationAndOrderSplitOnPannels($order)
     {
         try {
+            // Skip panel assignment if order uses Mailin.ai automation (Private SMTP)
+            if ($order->provider_type === 'Private SMTP') {
+                Log::info("Skipping panel assignment for automated order #{$order->id}", [
+                    'order_id' => $order->id,
+                    'provider_type' => $order->provider_type
+                ]);
+                return;
+            }
+            
             // Wrap everything in a database transaction for consistency
             DB::beginTransaction();
             
@@ -453,6 +552,7 @@ class CheckPanelCapacity extends Command
             // Exclude panels that have already been used for this order
             $availablePanel = Panel::where('is_active', true)
                 ->where('limit', $this->PANEL_CAPACITY)
+                ->where('provider_type', $this->PROVIDER_TYPE)
                 // ->where('remaining_limit', '>', 0)
                 ->where('remaining_limit', '>=', $reorderInfo->inboxes_per_domain)
                 ->whereNotIn('id', $usedPanelIds) // Exclude already used panels
@@ -550,6 +650,7 @@ class CheckPanelCapacity extends Command
     {
         return Panel::where('is_active', true)
             ->where('limit', $this->PANEL_CAPACITY)
+            ->where('provider_type', $this->PROVIDER_TYPE)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with least available space first
             ->first();
@@ -561,6 +662,7 @@ class CheckPanelCapacity extends Command
     {
         return Panel::where('is_active', true)
             ->where('limit', $this->PANEL_CAPACITY)
+            ->where('provider_type', $this->PROVIDER_TYPE)
             ->where('remaining_limit', '>=', $spaceNeeded)
             ->orderBy('remaining_limit', 'desc') // Use panel with most available space first for efficiency
             ->first();

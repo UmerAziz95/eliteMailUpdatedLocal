@@ -112,7 +112,7 @@
                         <div class="text-white position-relative w-100" style="z-index: 9">
                             <h5 class="fw-bold">Your adventure starts here 🚀</h5>
                             <p>
-                                Join thousands of teams rethinking how they purchase Google inboxes for cold email.
+                                Join thousands of teams rethinking how they purchase inboxes for cold email.
                             </p>
 
                             <form id="registerForm">

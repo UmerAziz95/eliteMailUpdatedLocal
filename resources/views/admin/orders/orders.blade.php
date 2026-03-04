@@ -914,50 +914,6 @@
         opacity: 0.5;
     }
 
-    /* Panel Reassignment Styles */
-    .panel-option {
-        transition: all 0.2s ease;
-        border: 2px solid transparent !important;
-    }
-
-    .panel-option:hover:not(.bg-light) {
-        background-color: rgba(13, 110, 253, 0.05) !important;
-        border-color: #0d6efd !important;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .panel-option.border-primary {
-        border-color: #0d6efd !important;
-        background-color: rgba(13, 110, 253, 0.1) !important;
-    }
-
-    .panel-option.bg-light {
-        opacity: 0.7;
-    }
-
-    .panel-option .badge {
-        font-size: 0.7em;
-    }
-
-    #reassignPanelModal .modal-body {
-        max-height: 70vh;
-        overflow-y: auto;
-    }
-
-    #availablePanelsContainer {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
-    .reassign-panel-info {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-    }
-
     /* Highlight row on hover */
     .dataTable tbody tr:hover {
         background-color: var(--filter-color) !important;
@@ -1647,6 +1603,27 @@
                             <!-- <option value="in-progress">In Progress</option> -->
                         </select>
                     </div>
+                    
+                    <div class="mb-3" id="providerTypeWrapper" style="display: none;">
+                        <label for="providerType" class="form-label">Provider Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="providerType">
+                            <option value="">-- Select Provider Type --</option>
+                            <option value="Google">Google</option>
+                            <option value="Microsoft 365">Microsoft 365</option>
+                        </select>
+                        <small class="">Required when status is Completed</small>
+                    </div>
+                    <div class="mb-3" id="microsoftCsvWrapper" style="display: none;">
+                        <label for="microsoftCsvFile" class="form-label">
+                            Import CSV File for Microsoft 365 <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" class="form-control" id="microsoftCsvFile" accept=".csv">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            CSV must contain: Display name, Username, Password, Licenses (optional). Total rows must match order's total inboxes.
+                        </small>
+                        <div id="csvValidationMessage" class="mt-2" style="display: none;"></div>
+                    </div>
                     <div class="mb-3">
                         <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
                         <textarea class="form-control" id="statusReason" rows="3"
@@ -1666,54 +1643,7 @@
     </div>
 </section>
 
-<!-- Panel Reassignment Modal -->
-<div class="modal fade" id="reassignPanelModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="reassignModalLabel">Reassign Panel</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Panel Reassignment:</strong> Select a target panel within the same order to reassign the
-                        split(s) to.
-                        This will move all domains and capacity from the current panel to the selected panel.
-                    </div>
-                </div>
-
-                <!-- Loading State -->
-                <div id="reassignLoader" class="text-center py-4" style="display: none;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2 text-muted">Loading available panels...</p>
-                </div>
-
-                <!-- Available Panels Container -->
-                <div id="availablePanelsContainer">
-                    <!-- Dynamic content will be loaded here -->
-                </div>
-
-                <!-- Reason Input -->
-                <div class="mt-3" style="display: none;">
-                    <label for="reassignReason" class="form-label">Reason for Reassignment (Optional)</label>
-                    <textarea class="form-control" id="reassignReason" rows="2"
-                        placeholder="Enter reason for panel reassignment..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning" id="confirmReassignBtn" disabled
-                    onclick="confirmReassignment()">
-                    <i class="fas fa-exchange-alt me-1"></i>Select Panel First
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+@include('components.panel.reassign-modal')
 
 <!-- Action Log -->
 <div class="offcanvas offcanvas-end text-bg-dark" style="min-width: 30rem" tabindex="-1" id="actionLogCanvas"
@@ -1746,6 +1676,9 @@
         </div>
     </div>
 </div>
+
+<!-- Order Fixed Manually Canvas -->
+@include('components.order.order-fixed-manually-canvas')
 
 <!-- Customized Note Modal -->
 <div class="modal fade" id="customizedNoteModal" tabindex="-1" aria-labelledby="customizedNoteModalLabel"
@@ -1917,6 +1850,9 @@
         </div>
     </div>
 </div>
+
+<!-- Change Provider Type Modal -->
+@include('components.order.change-provider-type')
 
 @endsection
 
@@ -2339,10 +2275,20 @@
                             name: 'contractor_name',
                             searchable:false,
                             render: function(data, type, row) {
+                                // Check if this is a Private SMTP order
+                                const providerType = row.provider_type || (row.plan ? row.plan.provider_type : null);
+                                const isPrivateSMTP = providerType && providerType.toLowerCase() === 'private smtp';
+                                
+                                // For Private SMTP, show "Automation" instead of "Unassigned"
+                                const displayValue = isPrivateSMTP ? 'Automation' : (data || 'Unassigned');
+                                
+                                // Use robot icon for Automation, person icon for others
+                                const iconClass = isPrivateSMTP ? 'ti ti-robot fs-6' : 'ti ti-user fs-6';
+                                
                                 return `
                                 <div class="d-flex align-items-center gap-1">
-                                    <i class="ti ti-user fs-6"></i>
-                                    <span>${data}</span>
+                                    <i class="${iconClass}"></i>
+                                    <span>${displayValue}</span>
                                 </div>
                             `;
                             }
@@ -3100,12 +3046,21 @@
                                             <small class="text-white">${new Date(order.created_at).toLocaleDateString()}</small>
                                         </div>
                                         <div>
-                                            ${helpersCount === 0 ? `
-                                                <button class="btn btn-sm btn-outline-success" onclick="openAssignContractorsModal(${order.id})" title="Assign Contractors">
-                                                    <i class="fa-solid fa-users me-1"></i>
-                                                    Add Helpers
-                                                </button>
-                                            ` : ''}
+                                            ${(() => {
+                                                const providerType = order.provider_type || (order.plan ? order.plan.provider_type : null);
+                                                const isPrivateSMTP = providerType && providerType.toLowerCase() === 'private smtp';
+                                                
+                                                if (isPrivateSMTP) {
+                                                    return ''; // Don't show assign buttons for Private SMTP
+                                                }
+                                                
+                                                return helpersCount === 0 ? `
+                                                    <button class="btn btn-sm btn-outline-success" onclick="openAssignContractorsModal(${order.id})" title="Assign Contractors">
+                                                        <i class="fa-solid fa-users me-1"></i>
+                                                        Add Helpers
+                                                    </button>
+                                                ` : '';
+                                            })()}
                                             <button class="btn btn-sm btn-outline-warning toggle-shared" data-order-id="${order.id}" title="Unshare Order">
                                                 <i class="fa-solid fa-share-from-square me-1"></i>
                                                 Unshare
@@ -3207,7 +3162,7 @@
 
             const ordersHtml = `
                 <div class="mb-4">
-                    <h6>PNL- ${panel?.id || 'N/A'}</h6>
+                    <h6>PNL- ${ panel?.sr_no || panel?.id || 'N/A'}</h6>
                     <p class="">${panel?.description || 'No description'}</p>
                 </div>
                 
@@ -4188,11 +4143,17 @@
                             <h6>
                                 ${orderInfo.status_manage_by_admin || orderInfo.status.charAt(0).toUpperCase() + orderInfo.status.slice(1)}
                                 ${createTimerBadge(orderInfo, 0)}
+                                ${orderInfo.provider_type ? `
+                                    <span class="badge ${orderInfo.provider_type === 'Google' ? 'bg-primary' : 'bg-info'} ms-2" style="font-size: 11px;">
+                                        <i class="${orderInfo.provider_type === 'Google' ? 'fab fa-google' : 'fab fa-microsoft'}"></i>
+                                        ${orderInfo.provider_type}
+                                    </span>
+                                ` : ''}
                             </h6>
                             <p class="text-white small mb-0">Customer: ${orderInfo.customer_name || 'N/A'} | Date: ${formatDate(orderInfo.created_at)}</p>
                         </div>
                         <div class="d-flex gap-2">
-                            ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' ? `
+                            ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' && orderInfo?.status !== 'cancellation-in-process' ? `
                                 <button class="btn btn-warning btn-sm px-3 py-2" 
                                         onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
                                         style="font-size: 13px;">
@@ -4201,19 +4162,39 @@
                                 </button>
                             ` : ''}
 
-                            <button class="btn btn-outline-primary btn-sm px-3 py-2" 
-                                    onclick="openAssignContractorsModal(${orderInfo?.id})"
+                            
+                            <button class="btn btn-info btn-sm px-3 py-2" 
+                                    onclick="openChangeProviderTypeModal(${orderInfo?.id}, '${orderInfo?.provider_type || ''}')"
                                     style="font-size: 13px;">
-                                <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
-                                Add Helper
+                                <i class="${orderInfo?.provider_type === 'Google' ? 'fab fa-google' : orderInfo?.provider_type === 'Microsoft 365' ? 'fab fa-microsoft' : 'fas fa-exchange-alt'} me-1" style="font-size: 12px;"></i>
+                                ${orderInfo?.provider_type ? `Change Provider (${orderInfo.provider_type})` : 'Set Provider'}
                             </button>
+                            
 
-                            <button class="btn btn-outline-secondary btn-sm px-3 py-2" 
-                                    onclick="openReassignContractorModal(${orderInfo?.id})"
-                                    style="font-size: 13px;">
-                                <i class="fas fa-user-edit me-1" style="font-size: 12px;"></i>
-                                Reassign Contractor
-                            </button>
+                            ${(() => {
+                                const providerType = orderInfo?.provider_type || (orderInfo?.plan ? orderInfo.plan.provider_type : null);
+                                const isPrivateSMTP = providerType && providerType.toLowerCase() === 'private smtp';
+                                
+                                if (isPrivateSMTP) {
+                                    return ''; // Don't show assign/reassign buttons for Private SMTP
+                                }
+                                
+                                return `
+                                    <button class="btn btn-outline-primary btn-sm px-3 py-2" 
+                                            onclick="openAssignContractorsModal(${orderInfo?.id})"
+                                            style="font-size: 13px;">
+                                        <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
+                                        Add Helper
+                                    </button>
+
+                                    <button class="btn btn-outline-secondary btn-sm px-3 py-2" 
+                                            onclick="openReassignContractorModal(${orderInfo?.id})"
+                                            style="font-size: 13px;">
+                                        <i class="fas fa-user-edit me-1" style="font-size: 12px;"></i>
+                                        Reassign Contractor
+                                    </button>
+                                `;
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -4265,11 +4246,17 @@
                         <h6>
                             ${orderInfo.status_manage_by_admin}
                             ${createTimerBadge(orderInfo, 0)}
+                            ${orderInfo.provider_type ? `
+                                <span class="badge ${orderInfo.provider_type === 'Google' ? 'bg-primary' : 'bg-info'} ms-2" style="font-size: 11px;">
+                                    <i class="${orderInfo.provider_type === 'Google' ? 'fab fa-google' : 'fab fa-microsoft'}"></i>
+                                    ${orderInfo.provider_type}
+                                </span>
+                            ` : ''}
                         </h6>
                         <p class="text-white small mb-0">Customer: ${orderInfo.customer_name} | Date: ${formatDate(orderInfo.created_at)}</p>
                     </div>
                     <div class="d-flex gap-2">
-                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' ? `
+                        ${orderInfo?.status !== 'cancelled' && orderInfo?.status !== 'removed' && orderInfo?.status !== 'cancellation-in-process' ? `
                             <button class="btn btn-warning btn-sm px-3 py-2" 
                                     onclick="openChangeStatusModal(${orderInfo?.id}, '${orderInfo?.status}')"
                                     style="font-size: 13px;">
@@ -4278,19 +4265,39 @@
                             </button>
                         ` : ''}
 
-                        <button class="btn btn-outline-primary btn-sm px-3 py-2" 
-                                onclick="openAssignContractorsModal(${orderInfo?.id})"
+                        
+                        <button class="btn btn-info btn-sm px-3 py-2" 
+                                onclick="openChangeProviderTypeModal(${orderInfo?.id}, '${orderInfo?.provider_type || ''}')"
                                 style="font-size: 13px;">
-                            <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
-                            Add Helper
+                            <i class="${orderInfo?.provider_type === 'Google' ? 'fab fa-google' : orderInfo?.provider_type === 'Microsoft 365' ? 'fab fa-microsoft' : 'fas fa-exchange-alt'} me-1" style="font-size: 12px;"></i>
+                            ${orderInfo?.provider_type ? `Change Provider (${orderInfo.provider_type})` : 'Set Provider'}
                         </button>
+                        
 
-                        <button class="btn btn-outline-secondary btn-sm px-3 py-2" 
-                                onclick="openReassignContractorModal(${orderInfo?.id})"
-                                style="font-size: 13px;">
-                            <i class="fas fa-user-edit me-1" style="font-size: 12px;"></i>
-                            Reassign Contractor
-                        </button>
+                        ${(() => {
+                            const providerType = orderInfo?.provider_type || (orderInfo?.plan ? orderInfo.plan.provider_type : null);
+                            const isPrivateSMTP = providerType && providerType.toLowerCase() === 'private smtp';
+                            
+                            if (isPrivateSMTP) {
+                                return ''; // Don't show assign/reassign buttons for Private SMTP
+                            }
+                            
+                            return `
+                                <button class="btn btn-outline-primary btn-sm px-3 py-2" 
+                                        onclick="openAssignContractorsModal(${orderInfo?.id})"
+                                        style="font-size: 13px;">
+                                    <i class="fas fa-user-plus me-1" style="font-size: 12px;"></i>
+                                    Add Helper
+                                </button>
+
+                                <button class="btn btn-outline-secondary btn-sm px-3 py-2" 
+                                        onclick="openReassignContractorModal(${orderInfo?.id})"
+                                        style="font-size: 13px;">
+                                    <i class="fas fa-user-edit me-1" style="font-size: 12px;"></i>
+                                    Reassign Contractor
+                                </button>
+                            `;
+                        })()}
                     </div>
                 </div>
                 ${orderInfo.is_shared == 1 ? `
@@ -4330,7 +4337,7 @@
                                 <th scope="row">${index + 1}</th>
                                 <td>
                                     <span class="badge bg-info" style="font-size: 10px;">
-                                        PNL-${split.panel_id || 'N/A'}
+                                        PNL-${ split.panel_sr_no || split.panel_id || 'N/A'}
                                     </span>
                                 </td>
                                 <td>
@@ -4471,6 +4478,11 @@
                             <span>${reorderInfo?.sequencer_password || 'N/A'}</span>
                         </div>
 
+                        <div class="d-flex flex-column mb-3">
+                            <span class="opacity-50">Backup Codes</span>
+                            <span>${reorderInfo?.backup_codes || 'N/A'}</span>
+                        </div>
+
                         <div class="d-flex flex-column">
                             <span class="opacity-50 mb-3">
                                 <i class="fa-solid fa-globe me-2"></i>All Domains & Panel Breaks
@@ -4486,7 +4498,7 @@
                                             <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold; display:none;">
                                                 Panel Break ${String(index + 1).padStart(2, '0')}
                                             </span>
-                                            <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>
+                                            <small class="fw-bold text-uppercase">PNL-${ split.panel_sr_no || split.panel_id || 'N/A'} | ${split.panel_title || 'N/A'}</small>
                                         </div>
                                         <div class="d-flex align-items-center">
                                             <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
@@ -5386,6 +5398,8 @@
         // Reset form
         document.getElementById('newStatus').value = '';
         document.getElementById('statusReason').value = '';
+        document.getElementById('providerType').value = '';
+        document.getElementById('providerTypeWrapper').style.display = 'none';
         
         // Store order ID for later use
         document.getElementById('changeStatusModal').setAttribute('data-order-id', orderId);
@@ -5395,11 +5409,40 @@
         modal.show();
     }
 
+    // Add event listener for status change to show/hide provider type
+    $(document).ready(function() {
+        $('#newStatus').on('change', function() {
+            const selectedStatus = $(this).val();
+            if (selectedStatus === 'completed') {
+                $('#providerTypeWrapper').slideDown();
+            } else {
+                $('#providerTypeWrapper').slideUp();
+                $('#microsoftCsvWrapper').slideUp();
+                $('#providerType').val('');
+                $('#microsoftCsvFile').val('');
+            }
+        });
+
+        // Show/hide CSV upload based on provider type
+        $('#providerType').on('change', function() {
+            const selectedProvider = $(this).val();
+            if (selectedProvider === 'Microsoft 365') {
+                $('#microsoftCsvWrapper').slideDown();
+            } else {
+                $('#microsoftCsvWrapper').slideUp();
+                $('#microsoftCsvFile').val('');
+                $('#csvValidationMessage').hide();
+            }
+        });
+    });
+
     async function updateOrderStatus() {
         const modal = document.getElementById('changeStatusModal');
         const orderId = modal.getAttribute('data-order-id');
         const newStatus = document.getElementById('newStatus').value;
         const reason = document.getElementById('statusReason').value;
+        const providerType = document.getElementById('providerType').value;
+        const csvFileInput = document.getElementById('microsoftCsvFile');
         
         if (!newStatus) {
             Swal.fire({
@@ -5410,6 +5453,42 @@
             });
             return;
         }
+
+        // Validate provider type when status is completed
+        if (newStatus === 'completed' && !providerType) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Provider Type',
+                text: 'Please select a provider type (Google or Microsoft 365) before completing the order',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
+        // Validate CSV file for Microsoft 365
+        if (newStatus === 'completed' && providerType === 'Microsoft 365') {
+            if (!csvFileInput.files || csvFileInput.files.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing CSV File',
+                    text: 'Please upload a CSV file with email accounts for Microsoft 365',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+            
+            const file = csvFileInput.files[0];
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid File Type',
+                    text: 'Please upload a valid CSV file',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+        }
+        
         // status is reject or cancelled
         if ((newStatus === 'reject' || newStatus === 'cancelled' || newStatus === 'cancelled_force') && !reason) {
             Swal.fire({
@@ -5441,7 +5520,7 @@
         // Show SweetAlert2 loading dialog
         Swal.fire({
             title: 'Updating Status...',
-            text: 'Please wait while we update the order status.',
+            text: 'Please wait while we update the order status and process the CSV file.',
             icon: 'info',
             allowOutsideClick: false,
             allowEscapeKey: false,
@@ -5452,30 +5531,39 @@
         });
         
         try {
+            // Use FormData for file upload
+            const formData = new FormData();
+            formData.append('status', newStatus);
+            formData.append('reason', reason);
+            formData.append('provider_type', providerType);
+            
+            // Add CSV file if Microsoft 365
+            if (newStatus === 'completed' && providerType === 'Microsoft 365' && csvFileInput.files.length > 0) {
+                formData.append('microsoft_csv', csvFileInput.files[0]);
+            }
+
             const response = await fetch(`/admin/orders/${orderId}/change-status`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({
-                    status: newStatus,
-                    reason: reason
-                })
+                body: formData
             });
             
-            if (!response.ok) {
-                throw new Error('Failed to update status');
-            }
-            
             const result = await response.json();
+            
+            if (!response.ok) {
+                // Extract error message from server response
+                const errorMessage = result.message || result.error || 'Failed to update status';
+                throw new Error(errorMessage);
+            }
             
             if (result.success) {
                 // Close loading dialog and show success
                 await Swal.fire({
                     title: 'Success!',
-                    text: 'Status updated successfully!',
+                    text: result.message || 'Status updated successfully!',
                     icon: 'success',
                     confirmButtonColor: '#28a745',
                     timer: 3000,
@@ -5513,7 +5601,7 @@
             // Close loading dialog and show error
             await Swal.fire({
                 title: 'Error!',
-                text: 'Error updating status: ' + error.message,
+                text: error.message || 'An unexpected error occurred',
                 icon: 'error',
                 confirmButtonColor: '#dc3545'
             });
@@ -5860,541 +5948,6 @@
             }
         });
 
-    // Panel Reassignment Functions
-    let currentReassignData = {};
-
-    /**
-     * Open the panel reassignment modal
-     */
-    function openReassignModal(orderId, currentPanelId, orderPanelId, panelTitle) {
-        currentReassignData = {
-            orderId: orderId,
-            currentPanelId: currentPanelId,
-            orderPanelId: orderPanelId,
-            panelTitle: panelTitle
-        };
-
-        // Update modal title
-        document.getElementById('reassignModalLabel').innerHTML = `Reassign Panel: ${'PNL-'+currentPanelId +" "+ panelTitle}`;
-        
-        // Load available panels using orderPanelId
-        loadAvailablePanels(orderId, orderPanelId);
-        
-        // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('reassignPanelModal'));
-        modal.show();
-    }
-
-    /**
-     * Load available panels for reassignment
-     */
-    async function loadAvailablePanels(orderId, orderPanelId) {
-        try {
-            showReassignLoading(true);
-            
-            const response = await fetch(`/admin/orders/${orderId}/order-panels/${orderPanelId}/available-for-reassignment`);
-            const data = await response.json();
-            
-            if (data.success) {
-                renderAvailablePanels(data.panels);
-            } else {
-                showReassignError(data.error || 'Failed to load available panels');
-            }
-        } catch (error) {
-            console.error('Error loading available panels:', error);
-            showReassignError('Failed to load available panels');
-        } finally {
-            showReassignLoading(false);
-        }
-    }
-
-    /**
-     * Render available panels in the modal
-     */
-    function renderAvailablePanels(panels) {
-        const container = document.getElementById('availablePanelsContainer');
-        
-        if (!panels || panels.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-4">
-                    <i class="fas fa-info-circle text-muted mb-3" style="font-size: 2rem;"></i>
-                    <p class="text-muted mb-0">No panels available for reassignment</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Add search input
-        const searchHtml = `
-            <div class="mb-3">
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0">
-                        <i class="fas fa-search text-muted"></i>
-                    </span>
-                    <input type="text" class="form-control border-start-0" id="panelSearchInput" 
-                           placeholder="Search panels by ID or title..." onkeyup="filterPanels()">
-                </div>
-            </div>
-        `;
-        
-        const panelsHtml = panels.map(panel => `
-            <div class="panel-option mb-2 border rounded-3 shadow-sm position-relative overflow-hidden panel-card" 
-                 data-panel-id="${panel.panel_id}"
-                 data-panel-title="${panel.panel_title.toLowerCase()}"
-                 data-space-needed="${panel.space_needed || 0}"
-                 data-panel-limit="${panel.panel_limit}"
-                 data-panel-remaining="${panel.panel_remaining_limit}"
-                 ${panel.is_reassignable ? `onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}', ${panel.space_needed || 0}, ${panel.panel_remaining_limit})"` : ''} 
-                 style="${panel.is_reassignable ? 'cursor: pointer; transition: all 0.2s ease;' : 'cursor: not-allowed; opacity: 0.6;'}">
-                
-                ${panel.is_reassignable ? '' : '<div class="position-absolute top-0 start-0 w-100 h-100 bg-light bg-opacity-75 d-flex align-items-center justify-content-center" style="z-index: 2;"><span class="badge bg-warning text-dark">Insufficient Space</span></div>'}
-                
-                <div class="p-3">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <div class="d-flex align-items-center">
-                            <div class="panel-icon me-2">
-                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary bg-gradient" 
-                                     style="width: 35px; height: 35px;">
-                                    <i class="fas fa-server text-white"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">
-                                    <span class="badge bg-info bg-gradient me-2 px-2 py-1 small">PNL-${panel.panel_id}</span>
-                                    <span class="panel-title-text">${panel.panel_title}</span>
-                                </h6>
-                            </div>
-                        </div>
-                        
-                        ${panel.is_reassignable ? 
-                            `<button type="button" class="btn btn-outline-primary btn-sm px-3 select-btn" 
-                                 onclick="selectTargetPanel(${panel.panel_id}, '${panel.panel_title}', ${panel.space_needed || 0}, ${panel.panel_remaining_limit})">
-                                <i class="fas fa-arrow-right me-1"></i>Select
-                            </button>` : ''
-                        }
-                    </div>
-                    
-                    <div class="row g-2 mt-1">
-                        <div class="col-3">
-                            <div class="text-center p-2 rounded bg-light">
-                                <div class="fw-bold text-success panel-space-needed" style="font-size: 0.9rem;">${panel.space_needed || 0}</div>
-                                <small class="text-muted">Need</small>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="text-center p-2 rounded bg-light">
-                                <div class="fw-bold text-primary" style="font-size: 0.9rem;">${panel.total_orders || 0}</div>
-                                <small class="text-muted">Orders</small>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="text-center p-2 rounded bg-light">
-                                <div class="fw-bold text-warning" style="font-size: 0.9rem;">${panel.panel_limit}</div>
-                                <small class="text-muted">Limit</small>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="text-center p-2 rounded bg-light">
-                                <div class="fw-bold text-danger panel-remaining" style="font-size: 0.9rem;">${panel.panel_remaining_limit}</div>
-                                <small class="text-muted">Free</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-
-        container.innerHTML = searchHtml + '<div id="panelsList">' + panelsHtml + '</div>';
-        
-        // Add CSS for hover effects
-        const style = document.createElement('style');
-        style.textContent = `
-            .panel-card{
-                border: 1px solid #dee2e6;
-            }
-            .panel-card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-            }
-            .panel-card.selected {
-                border-color: #0d6efd !important;
-                background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%) !important;
-                box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
-            }
-            .badge-sm {
-                font-size: 0.7rem;
-                padding: 0.25rem 0.5rem;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    /**
-     * Filter panels based on search input
-     */
-    function filterPanels() {
-        const searchTerm = document.getElementById('panelSearchInput').value.toLowerCase();
-        const panelCards = document.querySelectorAll('.panel-card');
-        let visibleCount = 0;
-        
-        panelCards.forEach(card => {
-            const panelId = card.getAttribute('data-panel-id');
-            const panelTitle = card.getAttribute('data-panel-title');
-            
-            const isVisible = panelId.includes(searchTerm) || panelTitle.includes(searchTerm);
-            
-            if (isVisible) {
-                card.style.display = 'block';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-            }
-        });
-        
-        // Show/hide no results message
-        const panelsList = document.getElementById('panelsList');
-        let noResultsDiv = document.getElementById('noSearchResults');
-        
-        if (visibleCount === 0 && searchTerm.length > 0) {
-            if (!noResultsDiv) {
-                noResultsDiv = document.createElement('div');
-                noResultsDiv.id = 'noSearchResults';
-                noResultsDiv.className = 'text-center py-4';
-                noResultsDiv.innerHTML = `
-                    <i class="fas fa-search text-muted mb-2" style="font-size: 1.5rem;"></i>
-                    <p class="text-muted mb-0">No panels found matching "${searchTerm}"</p>
-                `;
-                panelsList.appendChild(noResultsDiv);
-            }
-        } else if (noResultsDiv) {
-            noResultsDiv.remove();
-        }
-    }
-
-    /**
-     * Select target panel for reassignment
-     */
-    function selectTargetPanel(targetPanelId, targetPanelTitle, spaceNeeded = 0, remainingSpace = 0) {
-        // Remove previous selection
-        document.querySelectorAll('.panel-card').forEach(option => {
-            option.classList.remove('selected');
-        });
-
-        // Highlight selected panel
-        const selectedPanel = document.querySelector(`[data-panel-id="${targetPanelId}"]`);
-        if (selectedPanel) {
-            selectedPanel.classList.add('selected');
-        }
-
-        // Update space values dynamically
-        updatePanelSpaceValues(targetPanelId, spaceNeeded);
-
-        // Store selection
-        currentReassignData.targetPanelId = targetPanelId;
-        currentReassignData.targetPanelTitle = targetPanelTitle;
-        currentReassignData.spaceNeeded = spaceNeeded;
-        currentReassignData.remainingSpace = remainingSpace;
-
-        // Enable reassign button
-        const reassignBtn = document.getElementById('confirmReassignBtn');
-        reassignBtn.disabled = false;
-        reassignBtn.innerHTML = `<i class="fas fa-exchange-alt me-1"></i>Reassign to ${targetPanelTitle}`;
-    }
-
-    /**
-     * Update panel space values after selection
-     */
-    function updatePanelSpaceValues(selectedPanelId, spaceToMove) {
-        // Get current space needed from the selected order panel (from currentReassignData)
-        const currentSpaceNeeded = spaceToMove;
-        
-        // First, reset all panels to their original values
-        document.querySelectorAll('.panel-card').forEach(panelOption => {
-            const originalSpaceNeeded = parseInt(panelOption.getAttribute('data-space-needed')) || 0;
-            const originalRemaining = parseInt(panelOption.getAttribute('data-panel-remaining')) || 0;
-            
-            const spaceNeededElement = panelOption.querySelector('.panel-space-needed');
-            const remainingElement = panelOption.querySelector('.panel-remaining');
-            
-            // Reset to original values and styles
-            if (spaceNeededElement) {
-                spaceNeededElement.textContent = originalSpaceNeeded;
-                spaceNeededElement.style.color = '';
-                spaceNeededElement.style.fontWeight = '';
-            }
-            if (remainingElement) {
-                remainingElement.textContent = originalRemaining;
-                remainingElement.style.color = '';
-                remainingElement.style.fontWeight = '';
-            }
-        });
-        
-        // Then update only the selected panel to show new values after reassignment
-        document.querySelectorAll('.panel-card').forEach(panelOption => {
-            const panelId = panelOption.getAttribute('data-panel-id');
-            const originalSpaceNeeded = parseInt(panelOption.getAttribute('data-space-needed')) || 0;
-            const originalRemaining = parseInt(panelOption.getAttribute('data-panel-remaining')) || 0;
-            
-            const spaceNeededElement = panelOption.querySelector('.panel-space-needed');
-            const remainingElement = panelOption.querySelector('.panel-remaining');
-            // not need to add on need 
-            if (panelId == selectedPanelId) {
-                // This panel will receive the space
-                const newSpaceNeeded = originalSpaceNeeded + currentSpaceNeeded;
-                const newRemaining = originalRemaining - currentSpaceNeeded;
-                
-                // if (spaceNeededElement) {
-                //     spaceNeededElement.textContent = newSpaceNeeded;
-                //     spaceNeededElement.style.color = '#198754'; // Green for increase
-                //     spaceNeededElement.style.fontWeight = 'bold';
-                // }
-                if (remainingElement) {
-                    remainingElement.textContent = newRemaining;
-                    remainingElement.style.color = newRemaining < 0 ? '#dc3545' : '#dc3545'; // Red
-                    remainingElement.style.fontWeight = 'bold';
-                }
-            }
-        });
-    }
-
-    /**
-     * Confirm panel reassignment
-     */
-    async function confirmReassignment() {
-        if (!currentReassignData.targetPanelId) {
-            showReassignError('Please select a target panel');
-            return;
-        }
-
-        try {
-            // Show SweetAlert2 confirmation dialog
-            const result = await Swal.fire({
-                title: 'Confirm Panel Reassignment?',
-                html: `
-                    <div class="text-start">
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                    <div class="card-body text-center text-white">
-                                        <i class="fas fa-exchange-alt fs-2 mb-2"></i>
-                                        <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.currentPanelId}</h4>
-                                        <p class="mb-1 fw-semibold">${currentReassignData.panelTitle}</p>
-                                        <small class="text-white-50">From Panel</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
-                                    <div class="card-body text-center text-white">
-                                        <i class="fas fa-arrow-right fs-2 mb-2"></i>
-                                        <h4 class="card-title mb-1 fw-bold">PNL-${currentReassignData.targetPanelId}</h4>
-                                        <p class="mb-1 fw-semibold">${currentReassignData.targetPanelTitle}</p>
-                                        <small class="text-white-50">To Panel</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                                    <div class="card-body text-center text-white">
-                                        <i class="fas fa-inbox fs-2 mb-2"></i>
-                                        <h4 class="card-title mb-1 fw-bold">${currentReassignData.spaceNeeded || 0}</h4>
-                                        <small class="text-white-50">Spaces to Transfer</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="alert alert-warning mt-3 mb-0" style="font-size: 14px;">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Note:</strong> After this action is completed, the selected spaces will be transferred from the source panel to the destination panel.
-                        </div>
-                    </div>
-                `,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#ffc107',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="fas fa-exchange-alt me-1"></i>Confirm Reassignment',
-                cancelButtonText: '<i class="fas fa-times me-1"></i>Cancel',
-                reverseButtons: true,
-                customClass: {
-                    popup: 'swal-wide'
-                }
-            });
-
-            // If user cancels, return early
-            if (!result.isConfirmed) {
-                return;
-            }
-
-            // Show SweetAlert2 loading dialog
-            Swal.fire({
-                title: 'Reassigning Panel...',
-                html: `
-                    <div class="text-center">
-                        <div class="spinner-border text-warning mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p>Please wait while we reassign the panel...</p>
-                        <small class="text-muted">This may take a few moments</small>
-                    </div>
-                `,
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                customClass: {
-                    popup: 'swal-loading'
-                }
-            });
-
-            const formData = {
-                from_order_panel_id: currentReassignData.orderPanelId,
-                to_panel_id: currentReassignData.targetPanelId,
-                reason: result.value.reason
-            };
-
-            const response = await fetch('/admin/orders/panels/reassign', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify(formData)
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                // Close loading dialog and show success
-                await Swal.fire({
-                    title: 'Reassignment Successful!',
-                    html: `
-                        <div class="text-center">
-                            <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
-                            <p class="mb-2">${data.message}</p>
-                            <small class="text-muted">Panel has been successfully reassigned</small>
-                        </div>
-                    `,
-                    icon: 'success',
-                    confirmButtonColor: '#28a745',
-                    timer: 3000,
-                    timerProgressBar: true,
-                    showConfirmButton: true,
-                    confirmButtonText: 'Great!'
-                });
-                
-                // Close modal
-                bootstrap.Modal.getInstance(document.getElementById('reassignPanelModal')).hide();
-                
-                // Refresh the order splits view if it's open
-                if (document.getElementById('orderSplitsContainer')) {
-                    viewOrderSplits(currentReassignData.orderId);
-                }
-                
-                // Reset form
-                resetReassignModal();
-                
-                // Refresh the orders list
-                if (typeof loadOrders === 'function') {
-                    loadOrders(currentFilters, 1, false);
-                }
-            } else {
-                // Close loading dialog and show error
-                await Swal.fire({
-                    title: 'Reassignment Failed!',
-                    html: `
-                        <div class="text-center">
-                            <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
-                            <p class="mb-2">${data.message || 'Reassignment failed'}</p>
-                            <small class="text-muted">Please try again or contact support</small>
-                        </div>
-                    `,
-                    icon: 'error',
-                    confirmButtonColor: '#dc3545',
-                    confirmButtonText: 'Try Again'
-                });
-                
-                showReassignError(data.message || 'Reassignment failed');
-            }
-        } catch (error) {
-            console.error('Error during reassignment:', error);
-            
-            // Close loading dialog and show error
-            await Swal.fire({
-                title: 'Error!',
-                html: `
-                    <div class="text-center">
-                        <i class="fas fa-times-circle text-danger mb-3" style="font-size: 3rem;"></i>
-                        <p class="mb-2">An error occurred during reassignment</p>
-                        <small class="text-muted">Please check your connection and try again</small>
-                    </div>
-                `,
-                icon: 'error',
-                confirmButtonColor: '#dc3545',
-                confirmButtonText: 'OK'
-            });
-            
-            showReassignError('An error occurred during reassignment');
-        }
-    }
-
-    /**
-     * Show/hide loading state in reassign modal
-     */
-    function showReassignLoading(show) {
-        const loader = document.getElementById('reassignLoader');
-        const container = document.getElementById('availablePanelsContainer');
-        
-        if (show) {
-            loader.style.display = 'block';
-            container.style.display = 'none';
-        } else {
-            loader.style.display = 'none';
-            container.style.display = 'block';
-        }
-    }
-
-    /**
-     * Show error in reassign modal
-     */
-    function showReassignError(message) {
-        const container = document.getElementById('availablePanelsContainer');
-        container.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                ${message}
-            </div>
-        `;
-    }
-
-    /**
-     * Reset reassign modal
-     */
-    function resetReassignModal() {
-        currentReassignData = {};
-        document.getElementById('availablePanelsContainer').innerHTML = '';
-        document.getElementById('reassignReason').value = '';
-        document.getElementById('confirmReassignBtn').disabled = true;
-        document.getElementById('confirmReassignBtn').innerHTML = '<i class="fas fa-exchange-alt me-1"></i>Select Panel First';
-        
-        // Reset any modified space values and styles
-        document.querySelectorAll('.panel-space-needed, .panel-remaining').forEach(element => {
-            element.style.color = '';
-            element.style.fontWeight = '';
-        });
-        
-        // Remove any search results
-        const noResultsDiv = document.getElementById('noSearchResults');
-        if (noResultsDiv) {
-            noResultsDiv.remove();
-        }
-    }
-
-    // Reset modal when it's hidden
-    document.getElementById('reassignPanelModal').addEventListener('hidden.bs.modal', function () {
-        resetReassignModal();
-    });
-
     // Status Filter Counter Highlighting Functionality
     $(document).ready(function() {
         // Initialize - highlight "All" by default
@@ -6590,6 +6143,85 @@
             Reassign Contractor
         `);
         $(this).removeData('order-id');
+    });
+
+    // Handle verify order button click
+    $(document).on('click', '.verify-order-btn', function(e) {
+        e.preventDefault();
+        const orderId = $(this).data('order-id');
+        
+        if (!orderId) {
+            toastr.error('Invalid order data');
+            return;
+        }
+
+        // Show SweetAlert confirmation
+        Swal.fire({
+            title: 'Verify Order?',
+            html: `Are you sure you want to verify <strong>Order #${orderId}</strong>?<br><br>This action will mark the order as verified.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Verify Order',
+            cancelButtonText: 'Cancel',
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Verifying...',
+                    text: 'Please wait while we verify the order.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    allowEnterKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Make AJAX call to verify order
+                $.ajax({
+                    url: `{{ route('admin.orders.verify', ':id') }}`.replace(':id', orderId),
+                    type: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                        'Accept': 'application/json'
+                    },
+                    success: function(response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Order Verified!',
+                            html: `Order <strong>#${orderId}</strong> has been verified successfully.`,
+                            confirmButtonColor: '#28a745',
+                            timer: 2000,
+                            timerProgressBar: true
+                        }).then(() => {
+                            // Refresh all DataTables
+                            refreshAllDataTables();
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Failed to verify order';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else if (xhr.status === 403) {
+                            errorMessage = 'You do not have permission to verify orders.';
+                        } else if (xhr.status === 400) {
+                            errorMessage = xhr.responseJSON?.message || 'Order is already verified.';
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Verification Failed',
+                            text: errorMessage,
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                });
+            }
+        });
     });
 
 </script>

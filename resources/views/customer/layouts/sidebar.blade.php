@@ -37,19 +37,8 @@
             </li>
 
 
-            <!-- Orders -->
-            <!-- <li class="nav-item">
-                <a class="nav-link px-3 d-flex align-items-center {{ request()->is('pricing') ? 'active' : '' }}"
-                    href="{{ url('customer/pricing') }}">
-                    <div class="d-flex align-items-center" style="gap: 13px">
-                        <div class="icons"><i class="ti ti-devices-dollar fs-5"></i></div>
-                        <div class="text">Plan</div>
-                    </div>
-                </a>
-            </li> -->
-
-            <!-- pricing -->
-            {{-- <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">Product</p> --}}
+            <!-- Orders - Show for full and normal customer_access users -->
+            @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.orders') ? 'active' : '' }}"
                     href="{{ route('customer.orders') }}">
@@ -59,8 +48,10 @@
                     </div>
                 </a>
             </li>
+            @endif
 
-            <!-- Subscriptions -->
+            <!-- Subscriptions - Show for full and normal customer_access users -->
+            @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.subscriptions.view') ? 'active' : '' }}"
                     href="{{ route('customer.subscriptions.view') }}">
@@ -70,9 +61,26 @@
                     </div>
                 </a>
             </li>
+            @endif
 
-             <!-- invoices -->
-             <li class="nav-item">
+            
+            
+            <!-- Pool Orders - Show for trial customer_access users -->
+            @if(auth()->user()->customer_access === 'trial' || auth()->user()->customer_access === 'full')
+            <li class="nav-item">
+                <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.pool-orders.index') ? 'active' : '' }}"
+                    href="{{ route('customer.pool-orders.index') }}">
+                    <div class="d-flex align-items-center" style="gap: 13px">
+                        <div class="icons"><i class="ti ti-package fs-5"></i></div>
+                        <div class="text">Trial Orders</div>
+                    </div>
+                </a>
+            </li>
+            @endif
+            
+             <!-- invoices - Show for full and normal customer_access users -->
+            @if(in_array(auth()->user()->customer_access, ['full', 'normal','trial']))
+            <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.invoices.index') ? 'active' : '' }}"
                     href="{{ route('customer.invoices.index') }}">
                     <div class="d-flex align-items-center" style="gap: 13px">
@@ -81,9 +89,11 @@
                     </div>
                 </a>
             </li>
+            @endif
 
             <!-- Support -->
             {{-- <p class="text fw-lighter my-2 text-uppercase text-white" style="font-size: 13px;">organization</p> --}}
+            @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
             <li class="nav-item">
                 <a class="nav-link px-3 d-flex align-items-center {{ Route::is('customer.support') ? 'active' : '' }}"
                     href="{{ route('customer.support') }}">
@@ -93,9 +103,10 @@
                     </div>
                 </a>
             </li>
+            @endif
         </ul>
     </div>
-    
+    @if(in_array(auth()->user()->customer_access, ['full', 'normal']))
     <div style="background-color: var(--second-primary); border: 2px solid #7669ff;"
         class="py-4 px-3 rounded-3 my-3 mx-xxl-3">
         <div class="d-flex flex-column mb-3">
@@ -106,6 +117,7 @@
             class="mt-1 shadow border-0 rounded-2 py-2 px-4 text-white animate-gradient"
             href="{{ route('customer.pricing') }}">Buy Now</a>
     </div>
+    @endif
 
     <div>
         <a href="/customer/settings" class="nav-link fs-6 py-2 mb-0 px-3 d-flex align-items-center gap-2">

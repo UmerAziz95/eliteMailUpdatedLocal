@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\PaymentFailure;
 use Illuminate\Support\Facades\DB;
 use App\Mail\FailedPaymentNotificationMail;
+use App\Models\Configuration;
 class PlanController extends Controller
 {
     public function index()
@@ -206,16 +207,96 @@ class PlanController extends Controller
     {
         try {
             $hostedPageId = $request->input('id');
+            Log::info('Subscription success called', ['hosted_page_id' => $hostedPageId, 'request_data' => $request->all()]);
+            
             if (!$hostedPageId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Missing hosted page ID in request.'
                 ]);
             }
+            
+            // Log initial request data for better tracking when hosted_page_id exists
+            $initialRequestLogData = [
+                'user_id' => Auth::check() ? auth()->id() : null,
+                'chargebee_invoice_id' => null,
+                'chargebee_subscription_id' => null,
+                'customer_id' => null,
+                'plan_id' => null,
+                'amount' => null,
+                'invoice_data' => null,
+                'customer_data' => null,
+                'subscription_data' => null,
+                'response' => [
+                    'hosted_page_id' => $hostedPageId,
+                    'request_data' => $request->all(),
+                    'request_url' => $request->fullUrl(),
+                    'request_ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'timestamp' => now()->toISOString(),
+                    'stage' => 'initial_request'
+                ]
+            ];
+            // First check if log already exists for this hosted_page_id to avoid update
+            $checkExistingLog = OrderPaymentLog::where('hosted_page_id', $hostedPageId)->first();
+            if(!$checkExistingLog) {
+                $this->logInitialPaymentData($hostedPageId, $initialRequestLogData, 'pending');
+            }
 
             $result = \ChargeBee\ChargeBee\Models\HostedPage::retrieve($hostedPageId);
             $hostedPage = $result->hostedPage();
+            
+            if (!$hostedPage) {
+                Log::error('Hosted page not found', ['hosted_page_id' => $hostedPageId]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hosted page not found.'
+                ], 404);
+            }
+            
             $content = $hostedPage->content();
+            
+            // Retry mechanism: If content is null, retry up to 2 times with 3-second delays
+            $retryCount = 0;
+            $maxRetries = 2;
+            
+            while (!$content && $retryCount < $maxRetries) {
+                $retryCount++;
+                Log::warning('Hosted page content is null, retrying...', [
+                    'hosted_page_id' => $hostedPageId, 
+                    'user_id' => auth()->id(),
+                    'retry_attempt' => $retryCount,
+                    'max_retries' => $maxRetries
+                ]);
+                
+                sleep(3); // Wait 3 seconds before retry
+                
+                // Retrieve hosted page again
+                $result = \ChargeBee\ChargeBee\Models\HostedPage::retrieve($hostedPageId);
+                $hostedPage = $result->hostedPage();
+                
+                if ($hostedPage) {
+                    $content = $hostedPage->content();
+                }
+            }
+            
+            // If still null after retries, return error
+            if (!$content) {
+                Log::error('Hosted page content is null after retries', [
+                    'hosted_page_id' => $hostedPageId, 
+                    'user_id' => auth()->id(),
+                    'total_retries' => $retryCount
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid hosted page content. Please try again or contact support.'
+                ], 400);
+            }
+            
+            Log::info('Hosted page content retrieved successfully', [
+                'hosted_page_id' => $hostedPageId,
+                'retries_needed' => $retryCount
+            ]);
 
             $subscription = $content->subscription() ?? null;
             $customer = $content->customer() ?? null;
@@ -244,8 +325,9 @@ class PlanController extends Controller
                 }
             }
             
-            // Log initial payment data
+            // Log initial payment data with complete details
             $initialLogData = [
+                'user_id' => Auth::check() ? auth()->id() : null,
                 'chargebee_invoice_id' => $invoice ? $invoice->id : null,
                 'chargebee_subscription_id' => $subscription ? $subscription->id : null,
                 'customer_id' => $customer ? $customer->id : null,
@@ -256,12 +338,34 @@ class PlanController extends Controller
                 'response' => [
                     'hosted_page_status' => $hostedPage->status ?? null,
                     'hosted_page_type' => $hostedPage->type ?? null,
-                    'timestamp' => now()->toISOString()
+                    'hosted_page_state' => $hostedPage->state ?? null,
+                    'request_data' => $request->all(),
+                    'request_url' => $request->fullUrl(),
+                    'request_ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'timestamp' => now()->toISOString(),
+                    'stage' => 'data_retrieved',
+                    'retries_needed' => $retryCount ?? 0
                 ]
             ];
             
             $paymentStatus = $invoice ? $invoice->status : 'unknown';
+            
             $this->logInitialPaymentData($hostedPageId, $initialLogData, $paymentStatus);
+            
+            // Check if subscription exists before accessing shipping address
+            if (!$subscription) {
+                Log::error('Subscription is null in subscriptionSuccess', [
+                    'hosted_page_id' => $hostedPageId,
+                    'user_id' => auth()->id(),
+                    'has_customer' => !is_null($customer),
+                    'has_invoice' => !is_null($invoice)
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Subscription data not found.'
+                ], 400);
+            }
             
             $shippingAddress = $subscription->getValues()['shipping_address'] ?? null;
             //shipping address
@@ -311,7 +415,14 @@ class PlanController extends Controller
                     try {
                         Mail::to($user->email)->queue(new SendPasswordMail($user, $randomPassword));
                     } catch (\Exception $e) {
-                        Log::error('Failed to send user credentials : '.$user->email.' '.$e->getMessage());
+                        \Log::channel('email-failures')->error('Failed to send user credentials email', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Customer\\PlanController::chargebeeHandleSubscriptionActivated'
+                        ]);
                     }
                 }
                 Auth::login($user);
@@ -388,6 +499,11 @@ class PlanController extends Controller
 
             // create session for set observer_total_inboxes
             $request->session()->put('observer_total_inboxes', $subscription->subscriptionItems[0]->quantity ?? 1);
+          
+            // Get provider_type from plan if available, otherwise from Configuration
+            $plan = Plan::find($plan_id);
+            $providerType = $plan->provider_type ?? Configuration::get('PROVIDER_TYPE', env('PROVIDER_TYPE', 'Google'));
+    
             // Create or update order
             $order = Order::firstOrCreate(
                 ['chargebee_invoice_id' => $invoice->id],
@@ -401,6 +517,7 @@ class PlanController extends Controller
                     'currency' => $invoice->currencyCode,
                     'paid_at' => Carbon::createFromTimestamp($invoice->paidAt)->toDateTimeString(),
                     'meta' => $meta_json,
+                    'provider_type' => $providerType,
                 ]
             );
             $order_info = $request->session()->get('order_info');
@@ -643,12 +760,24 @@ class PlanController extends Controller
             // Send email notifications
             try {
                 // Send email to user
-                Mail::to($user->email)
-                    ->queue(new OrderCreatedMail(
-                        $order,
-                        $user,
-                        false
-                    ));
+                try {
+                    Mail::to($user->email)
+                        ->queue(new OrderCreatedMail(
+                            $order,
+                            $user,
+                            false
+                        ));
+                } catch (\Exception $e) {
+                    \Log::channel('email-failures')->error('Failed to send order creation email to user', [
+                        'exception' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString(),
+                        'order_id' => $order->id,
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'timestamp' => now()->toDateTimeString(),
+                        'context' => 'Customer\\PlanController::chargebeeHandleSubscriptionActivated'
+                    ]);
+                }
 
                 // Create notification for the customer after sending mail
                 Notification::create([
@@ -667,17 +796,34 @@ class PlanController extends Controller
                $superAdmins = User::where('role_id', 1)->get(); // Only super admins (role_id = 1)
 
                 foreach ($superAdmins as $superAdmin) {
-                    Mail::to($superAdmin->email)->queue(new OrderCreatedMail(
-                        $order,
-                        $user,
-                        true
-                    ));
+                    try {
+                        Mail::to($superAdmin->email)->queue(new OrderCreatedMail(
+                            $order,
+                            $user,
+                            true
+                        ));
+                    } catch (\Exception $e) {
+                        \Log::channel('email-failures')->error('Failed to send order creation email to super admin', [
+                            'exception' => $e->getMessage(),
+                            'stack_trace' => $e->getTraceAsString(),
+                            'order_id' => $order->id,
+                            'admin_id' => $superAdmin->id,
+                            'admin_email' => $superAdmin->email,
+                            'timestamp' => now()->toDateTimeString(),
+                            'context' => 'Customer\\PlanController::chargebeeHandleSubscriptionActivated'
+                        ]);
+                    }
                 }
 
                 
 
             } catch (\Exception $e) {
-                \Log::error('Failed to send order creation emails: ' . $e->getMessage());
+                \Log::channel('email-failures')->error('Failed to send order creation emails - general error', [
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
+                    'order_id' => $order->id,
+                    'timestamp' => now()->toDateTimeString()
+                ]);
                 // Continue execution since the order was already created
             }
             
@@ -694,7 +840,15 @@ class PlanController extends Controller
                                     true
                                 ));
                         } catch (\Exception $e) {
-                            \Log::error('Failed to send order notification to contractor: ' . $e->getMessage());
+                            \Log::channel('email-failures')->error('Failed to send order notification to contractor', [
+                                'exception' => $e->getMessage(),
+                                'stack_trace' => $e->getTraceAsString(),
+                                'order_id' => $order->id,
+                                'contractor_id' => $contractor->id,
+                                'contractor_email' => $contractor->email,
+                                'timestamp' => now()->toDateTimeString(),
+                                'context' => 'Customer\\PlanController::chargebeeHandleSubscriptionActivated'
+                            ]);
                         }
                     }
                 }
@@ -767,14 +921,14 @@ class PlanController extends Controller
     }
 
     /**
-     * Log initial payment data to order_payment_logs table (called once at start)
+     * Log initial payment data to order_payment_logs table 
+     * Uses updateOrCreate to prevent duplicate entries for same hosted_page_id
      */
     private function logInitialPaymentData($hostedPageId, $data = [], $paymentStatus = null)
     {
         try {
-            // Build complete initial data
-            $initialData = [
-                'hosted_page_id' => $hostedPageId,
+            // Build complete data for update/create
+            $logData = [
                 'user_id' => $data['user_id'] ?? null,
                 'is_exception' => true,
                 'chargebee_invoice_id' => $data['chargebee_invoice_id'] ?? null,
@@ -789,19 +943,25 @@ class PlanController extends Controller
                 'response' => $data['response'] ?? null,
             ];
 
-            // Create initial log entry
-            $paymentLog = OrderPaymentLog::create($initialData);
+            // Use updateOrCreate based on hosted_page_id to prevent duplicates
+            $paymentLog = OrderPaymentLog::updateOrCreate(
+                ['hosted_page_id' => $hostedPageId], // Match condition
+                $logData // Data to update or create with
+            );
             
-            \Log::info('Initial payment data logged successfully', [
+            \Log::info('Payment data logged successfully', [
                 'hosted_page_id' => $hostedPageId,
                 'payment_status' => $paymentStatus,
-                'log_id' => $paymentLog->id
+                'log_id' => $paymentLog->id,
+                'was_recently_created' => $paymentLog->wasRecentlyCreated,
+                'stage' => $data['response']['stage'] ?? 'unknown'
             ]);
             
         } catch (\Exception $e) {
-            \Log::error('Failed to log initial payment data: ' . $e->getMessage(), [
+            \Log::error('Failed to log payment data: ' . $e->getMessage(), [
                 'hosted_page_id' => $hostedPageId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }
@@ -1303,6 +1463,190 @@ class PlanController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Helper function to determine if a subscription belongs to a pool order or normal order
+     */
+    private function getSubscriptionType($subscriptionId)
+    {
+        // Check in subscriptions table (normal orders)
+        $normalSubscription = UserSubscription::where('chargebee_subscription_id', $subscriptionId)->first();
+        if ($normalSubscription) {
+            return [
+                // 'type' => 'pool',
+                'type' => 'normal',
+                'subscription' => $normalSubscription,
+                'order_id' => $normalSubscription->order_id,
+                'user_id' => $normalSubscription->user_id,
+                'plan_id' => $normalSubscription->plan_id
+            ];
+        }
+
+        // Check in pool_orders table (pool orders)
+        $poolOrder = \App\Models\PoolOrder::where('chargebee_subscription_id', $subscriptionId)->first();
+        if ($poolOrder) {
+            return [
+                'type' => 'pool',
+                'pool_order' => $poolOrder,
+                'pool_order_id' => $poolOrder->id,
+                'user_id' => $poolOrder->user_id,
+                'plan_id' => $poolOrder->pool_plan_id
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Handle pool order invoice webhook events
+     */
+    private function handlePoolOrderInvoice($eventType, $invoiceData, $content)
+    {
+        $subscriptionId = $invoiceData['subscription_id'] ?? null;
+        $customerId = $invoiceData['customer_id'] ?? null;
+
+        switch ($eventType) {
+            case 'invoice_updated':
+                $existingPoolInvoice = \App\Models\PoolInvoice::where('chargebee_invoice_id', $invoiceData['id'])->first();
+                
+                if ($existingPoolInvoice) {
+                    $oldStatus = $existingPoolInvoice->status;
+                    
+                    $existingPoolInvoice->update([
+                        'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'failed', $eventType),
+                        'paid_at' => isset($invoiceData['paid_at']) 
+                            ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
+                            : null,
+                        'amount' => isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : $existingPoolInvoice->amount,
+                        'meta' => json_encode(['invoice' => $invoiceData]),
+                        'updated_at' => now('UTC'),
+                    ]);
+                    
+                    // Remove payment failure records if invoice is now paid
+                    // if ($existingPoolInvoice->status === 'paid' && $subscriptionId && $customerId) {
+                    //     try {
+                    //         DB::table('payment_failures')
+                    //             ->where('chargebee_subscription_id', $subscriptionId)
+                    //             ->where('chargebee_customer_id', $customerId)
+                    //             ->where('created_at', '>=', now('UTC')->subHours(72))
+                    //             ->delete();
+
+                    //         Log::info("✅ Cleared payment failure for pool subscription: $subscriptionId");
+                    //     } catch (\Exception $e) {
+                    //         Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                    //     }
+                    // }
+                    
+                    Log::info('Pool invoice status updated successfully', [
+                        'invoice_id' => $existingPoolInvoice->id,
+                        'chargebee_invoice_id' => $invoiceData['id'],
+                        'old_status' => $oldStatus,
+                        'new_status' => $existingPoolInvoice->status,
+                        'event_type' => $eventType
+                    ]);
+                }
+                break;
+
+            case 'invoice_payment_failed':
+                $poolOrder = \App\Models\PoolOrder::where('chargebee_subscription_id', $subscriptionId)->first();
+                $user_id = $poolOrder ? $poolOrder->user_id : null;
+                $plan_id = $poolOrder ? $poolOrder->pool_plan_id : null;
+
+                // DB::table('payment_failures')->updateOrInsert(
+                //     [
+                //         'chargebee_subscription_id' => $subscriptionId,
+                //         'chargebee_customer_id' => $customerId,
+                //     ],
+                //     [
+                //         'type' => 'invoice',
+                //         'status' => 'failed',
+                //         'user_id' => $user_id,
+                //         'plan_id' => $plan_id,
+                //         'failed_at' => now('UTC'),
+                //         'invoice_data' => json_encode($invoiceData),
+                //         'updated_at' => now('UTC'),
+                //         'created_at' => now('UTC'),
+                //     ]
+                // );
+
+                Log::info('Pool payment failure recorded successfully', [
+                    'subscription_id' => $subscriptionId,
+                    'user_id' => $user_id,
+                    'plan_id' => $plan_id,
+                ]);
+                break;
+
+            case 'invoice_generated':
+                Log::info('Processing pool invoice event: invoice_generated', ['event_type' => $eventType]);
+                
+                // Calculate amount in dollars (Chargebee sends amount in cents)
+                $amount = isset($invoiceData['amount_paid']) ? ($invoiceData['amount_paid'] / 100) : 0;
+                if($amount <= 0){
+                    $amount = isset($invoiceData['total']) ? ($invoiceData['total'] / 100) : 0;
+                }
+                if($amount <= 0){
+                    $amount = isset($invoiceData['amount_due']) ? ($invoiceData['amount_due'] / 100) : 0;
+                }
+
+                // Get pool order details
+                $poolOrder = \App\Models\PoolOrder::where('chargebee_subscription_id', $subscriptionId)->first();
+                
+                if (!$poolOrder) {
+                    Log::warning('Pool order not found for subscription', ['subscription_id' => $subscriptionId]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Pool order not found for subscription'
+                    ], 404);
+                }
+
+                // Prepare metadata
+                $metadata = json_encode(['invoice' => $invoiceData]);
+
+                // Find or create pool invoice record
+                $poolInvoice = \App\Models\PoolInvoice::updateOrCreate(
+                    ['chargebee_invoice_id' => $invoiceData['id']],
+                    [
+                        'chargebee_customer_id' => $invoiceData['customer_id'] ?? null,
+                        'user_id' => $poolOrder->user_id,
+                        'pool_order_id' => $poolOrder->id,
+                        'amount' => $amount,
+                        'currency' => $invoiceData['currency_code'] ?? 'USD',
+                        'status' => $this->mapInvoiceStatus($invoiceData['status'] ?? 'failed', $eventType),
+                        'paid_at' => isset($invoiceData['paid_at']) 
+                            ? Carbon::createFromTimestamp($invoiceData['paid_at'])->toDateTimeString() 
+                            : null,
+                        'meta' => $metadata,
+                    ]
+                );
+                
+                // Remove any payment failure records if invoice is paid
+                // if ($poolInvoice->status == 'paid') {
+                //     try {
+                //         DB::table('payment_failures')
+                //             ->where('chargebee_subscription_id', $subscriptionId)
+                //             ->where('chargebee_customer_id', $customerId)
+                //             ->where('created_at', '>=', now('UTC')->subHours(72))
+                //             ->delete();
+
+                //         Log::info("✅ Cleared payment failure for pool subscription: $subscriptionId");
+                //     } catch (\Exception $e) {
+                //         Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
+                //     }
+                // }
+
+                Log::info('Pool invoice processed successfully', [
+                    'invoice_id' => $poolInvoice->id,
+                    'chargebee_invoice_id' => $invoiceData['id'],
+                    'status' => $poolInvoice->status,
+                    'event_type' => $eventType,
+                    'pool_order_id' => $poolOrder->id
+                ]);
+                break;
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     public function handleInvoiceWebhook(Request $request)
     {
         try {
@@ -1317,31 +1661,40 @@ class PlanController extends Controller
             if (!$eventType || !$content) {
                 throw new \Exception('Invalid webhook data received');
             }
+            
+            // Check if this is a pool order or normal order
+            $invoiceData = $content['invoice'] ?? null;
+            $subscriptionId = $invoiceData['subscription_id'] ?? null;
+            // $invoiceData['subscription_id'] = "AzywlcV0uqfj74sa"; // For testing pool order routing
+            // $invoiceData['customer_id'] = "AzywlcV0uqckV4ot"; // For testing pool order routing
+            if ($subscriptionId) {
+                $subscriptionInfo = $this->getSubscriptionType($subscriptionId);
+                
+                // If it's a pool order, handle it separately
+                if ($subscriptionInfo && $subscriptionInfo['type'] === 'pool') {
+                    Log::info('Routing to pool order invoice handler', [
+                        'subscription_id' => $subscriptionId,
+                        'event_type' => $eventType
+                    ]);
+                    return $this->handlePoolOrderInvoice($eventType, $invoiceData, $content);
+                }
+                // subscriptionInfo can be null if subscription not found
+                if (!$subscriptionInfo) {
+                    
+                    Log::warning('Subscription not found for invoice webhook', [
+                        'subscription_id' => $subscriptionId,
+                        'event_type' => $eventType
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Subscription not found for invoice webhook'
+                    ]);
+                }
+            }
+            
+            // Process normal order invoices
             // Process based on event type
             switch ($eventType) {
-                case 'invoice_created':
-                case 'invoice_paid':
-                    //  case 'invoice_payment_succeeded':
-                    // $invoiceData = $webhookData['content']['invoice'] ?? [];
-
-                    // $subscriptionId = $invoiceData['subscription_id'] ?? null;
-                    // $customerId = $invoiceData['customer_id'] ?? null;
-
-                    // // Attempt to remove any failure records for this subscription
-                    // try {
-                    //     DB::table('payment_failures')
-                    //         ->where('chargebee_subscription_id', $subscriptionId)
-                    //         ->where('chargebee_customer_id', $customerId)
-                    //         ->where('created_at', '>=', now('UTC')->subHours(72)) // Only remove if it's within 72 hours
-                    //         ->delete();
-
-                    //     Log::info("✅ Cleared payment failure for subscription: $subscriptionId");
-                    // } catch (\Exception $e) {
-                    //     Log::error("❌ Failed to clear payment failure: " . $e->getMessage());
-                    // }
-
-                    // break;
-                
                 case 'invoice_updated':
                     $invoiceData = $content['invoice'] ?? null;
                     $subscriptionId = $invoiceData['subscription_id'] ?? null;
@@ -1377,6 +1730,9 @@ class PlanController extends Controller
                         if (isset($invoiceData['paid_at']) && $subscriptionId) {
                             $subscription = UserSubscription::where('chargebee_subscription_id', $subscriptionId)->first();
                             if ($subscription) {
+                                // Define paidAtDate for fallback usage
+                                $paidAtDate = Carbon::createFromTimestamp($invoiceData['paid_at']);
+                                
                                 try {
                                     // Retrieve subscription from ChargeBee to get actual billing dates
                                     $chargebeeSubscription = \ChargeBee\ChargeBee\Models\Subscription::retrieve($subscriptionId);
@@ -1450,24 +1806,52 @@ class PlanController extends Controller
                                     // Send notification for important status changes
                                     if (in_array($existingInvoice->status, ['paid', 'failed'])) {
                                         // Send email to user about status change
-                                        Mail::to($user->email)
-                                            ->queue(new InvoiceGeneratedMail(
-                                                $existingInvoice,
-                                                $user,
-                                                false
-                                            ));
+                                        try {
+                                            Mail::to($user->email)
+                                                ->queue(new InvoiceGeneratedMail(
+                                                    $existingInvoice,
+                                                    $user,
+                                                    false
+                                                ));
+                                        } catch (\Exception $e) {
+                                            \Log::channel('email-failures')->error('Failed to send invoice update email to user', [
+                                                'exception' => $e->getMessage(),
+                                                'stack_trace' => $e->getTraceAsString(),
+                                                'invoice_id' => $existingInvoice->id,
+                                                'user_id' => $user->id,
+                                                'user_email' => $user->email,
+                                                'timestamp' => now()->toDateTimeString(),
+                                                'context' => 'Customer\\PlanController::handleChargebeeInvoice'
+                                            ]);
+                                        }
 
                                         // Send email to admin about status change
-                                        Mail::to(config('mail.admin_address', 'admin@example.com'))
-                                            ->queue(new InvoiceGeneratedMail(
-                                                $existingInvoice,
-                                                $user,
-                                                true
-                                            ));
+                                        try {
+                                            Mail::to(config('mail.admin_address', 'admin@example.com'))
+                                                ->queue(new InvoiceGeneratedMail(
+                                                    $existingInvoice,
+                                                    $user,
+                                                    true
+                                                ));
+                                        } catch (\Exception $e) {
+                                            \Log::channel('email-failures')->error('Failed to send invoice update email to admin', [
+                                                'exception' => $e->getMessage(),
+                                                'stack_trace' => $e->getTraceAsString(),
+                                                'invoice_id' => $existingInvoice->id,
+                                                'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                                                'timestamp' => now()->toDateTimeString(),
+                                                'context' => 'Customer\\PlanController::handleChargebeeInvoice'
+                                            ]);
+                                        }
                                     }
                                 }
                             } catch (\Exception $e) {
-                                Log::error('Failed to send invoice update emails: ' . $e->getMessage());
+                                \Log::channel('email-failures')->error('Failed to send invoice update emails - general error', [
+                                    'exception' => $e->getMessage(),
+                                    'stack_trace' => $e->getTraceAsString(),
+                                    'invoice_id' => $existingInvoice->id,
+                                    'timestamp' => now()->toDateTimeString()
+                                ]);
                             }
                         }
 
@@ -1680,25 +2064,53 @@ class PlanController extends Controller
                             $user = User::find($invoice->user_id);
                             if ($user) {
                                 // Send email to user
-                                Mail::to($user->email)
-                                    ->queue(new InvoiceGeneratedMail(
-                                        $invoice,
-                                        $user,
-                                        false
-                                    ));
+                                try {
+                                    Mail::to($user->email)
+                                        ->queue(new InvoiceGeneratedMail(
+                                            $invoice,
+                                            $user,
+                                            false
+                                        ));
+                                } catch (\Exception $e) {
+                                    \Log::channel('email-failures')->error('Failed to send invoice generated email to user', [
+                                        'exception' => $e->getMessage(),
+                                        'stack_trace' => $e->getTraceAsString(),
+                                        'invoice_id' => $invoice->id,
+                                        'user_id' => $user->id,
+                                        'user_email' => $user->email,
+                                        'timestamp' => now()->toDateTimeString(),
+                                        'context' => 'Customer\\PlanController::handleChargebeeInvoice'
+                                    ]);
+                                }
 
                                 // Send email to admin
-                                Mail::to(config('mail.admin_address', 'admin@example.com'))
-                                    ->queue(new InvoiceGeneratedMail(
-                                        $invoice,
-                                        $user,
-                                        true
-                                    ));
+                                try {
+                                    Mail::to(config('mail.admin_address', 'admin@example.com'))
+                                        ->queue(new InvoiceGeneratedMail(
+                                            $invoice,
+                                            $user,
+                                            true
+                                        ));
+                                } catch (\Exception $e) {
+                                    \Log::channel('email-failures')->error('Failed to send invoice generated email to admin', [
+                                        'exception' => $e->getMessage(),
+                                        'stack_trace' => $e->getTraceAsString(),
+                                        'invoice_id' => $invoice->id,
+                                        'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                                        'timestamp' => now()->toDateTimeString(),
+                                        'context' => 'Customer\\PlanController::handleChargebeeInvoice'
+                                    ]);
+                                }
                                 
                                 // Slack notification is now handled by InvoiceObserver
                             }
                         } catch (\Exception $e) {
-                            Log::error('Failed to send invoice generation emails: ' . $e->getMessage());
+                            \Log::channel('email-failures')->error('Failed to send invoice generation emails - general error', [
+                                'exception' => $e->getMessage(),
+                                'stack_trace' => $e->getTraceAsString(),
+                                'invoice_id' => $invoice->id,
+                                'timestamp' => now()->toDateTimeString()
+                            ]);
                         }
                     }
 
@@ -1879,7 +2291,14 @@ class PlanController extends Controller
                                         ]
                                     ]);
                                 } catch (\Exception $e) {
-                                    Log::error('Failed to send welcome email: ' . $e->getMessage());
+                                    \Log::channel('email-failures')->error('Failed to send welcome email', [
+                                        'exception' => $e->getMessage(),
+                                        'stack_trace' => $e->getTraceAsString(),
+                                        'user_id' => $user->id,
+                                        'user_email' => $email,
+                                        'timestamp' => now()->toDateTimeString(),
+                                        'context' => 'Customer\\PlanController::chargebeePaymentCallBack'
+                                    ]);
                                 }
                             } 
                             // Update existing user if they don't have chargebee_customer_id
@@ -2146,22 +2565,50 @@ class PlanController extends Controller
                                     // Send invoice notification email if payment succeeded
                                     if ($eventType === 'payment_succeeded') {
                                         try {
-                                            Mail::to($user->email)
-                                                ->queue(new InvoiceGeneratedMail(
-                                                    $invoice,
-                                                    $user,
-                                                    false
-                                                ));
+                                            try {
+                                                Mail::to($user->email)
+                                                    ->queue(new InvoiceGeneratedMail(
+                                                        $invoice,
+                                                        $user,
+                                                        false
+                                                    ));
+                                            } catch (\Exception $e) {
+                                                \Log::channel('email-failures')->error('Failed to send invoice email to user', [
+                                                    'exception' => $e->getMessage(),
+                                                    'stack_trace' => $e->getTraceAsString(),
+                                                    'invoice_id' => $invoice->id,
+                                                    'user_id' => $user->id,
+                                                    'user_email' => $user->email,
+                                                    'timestamp' => now()->toDateTimeString(),
+                                                    'context' => 'Customer\\PlanController::chargebeePaymentCallBack'
+                                                ]);
+                                            }
                                                 
                                             // Send to admin as well
-                                            Mail::to(config('mail.admin_address', 'admin@example.com'))
-                                                ->queue(new InvoiceGeneratedMail(
-                                                    $invoice,
-                                                    $user,
-                                                    true
-                                                ));
+                                            try {
+                                                Mail::to(config('mail.admin_address', 'admin@example.com'))
+                                                    ->queue(new InvoiceGeneratedMail(
+                                                        $invoice,
+                                                        $user,
+                                                        true
+                                                    ));
+                                            } catch (\Exception $e) {
+                                                \Log::channel('email-failures')->error('Failed to send invoice email to admin', [
+                                                    'exception' => $e->getMessage(),
+                                                    'stack_trace' => $e->getTraceAsString(),
+                                                    'invoice_id' => $invoice->id,
+                                                    'admin_email' => config('mail.admin_address', 'admin@example.com'),
+                                                    'timestamp' => now()->toDateTimeString(),
+                                                    'context' => 'Customer\\PlanController::chargebeePaymentCallBack'
+                                                ]);
+                                            }
                                         } catch (\Exception $e) {
-                                            Log::error('Failed to send invoice emails: ' . $e->getMessage());
+                                            \Log::channel('email-failures')->error('Failed to send invoice emails - general error', [
+                                                'exception' => $e->getMessage(),
+                                                'stack_trace' => $e->getTraceAsString(),
+                                                'invoice_id' => $invoice->id,
+                                                'timestamp' => now()->toDateTimeString()
+                                            ]);
                                         }
                                     }
                                 }
@@ -2385,10 +2832,14 @@ class PlanController extends Controller
 
                 $sentCount++;
             } catch (\Exception $e) {
-                Log::error('Failed to send failed payment email', [
+                \Log::channel('email-failures')->error('Failed to send failed payment email', [
+                    'exception' => $e->getMessage(),
+                    'stack_trace' => $e->getTraceAsString(),
                     'user_id' => $user->id,
+                    'user_email' => $user->email,
                     'failure_id' => $failure->id,
-                    'error' => $e->getMessage(),
+                    'timestamp' => now()->toDateTimeString(),
+                    'context' => 'Customer\\PlanController::sendMailsTo72HoursFailedPayments'
                 ]);
             }
         }
@@ -2402,3 +2853,5 @@ class PlanController extends Controller
 
 
 }
+
+

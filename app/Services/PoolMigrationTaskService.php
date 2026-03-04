@@ -1,0 +1,693 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Pool;
+use App\Models\PoolOrderMigrationTask;
+use Illuminate\Support\Facades\Log;
+use App\Services\PoolOrderCancelledService;
+
+class PoolMigrationTaskService
+{
+    /**
+     * Validate domain statuses before completing a task
+     * 
+     * @param PoolOrderMigrationTask $task
+     * @return array|null Returns array with error response data if validation fails, null if all domains are in-progress or used
+     */
+    public function validateDomainStatuses(PoolOrderMigrationTask $task): ?array
+    {
+        $poolOrder = $task->poolOrder;
+        
+        if (!$poolOrder || !$poolOrder->domains) {
+            return null;
+        }
+        
+        $domains = is_string($poolOrder->domains) 
+            ? json_decode($poolOrder->domains, true) 
+            : $poolOrder->domains;
+        
+        if (!is_array($domains)) {
+            return null;
+        }
+        
+        $nonValidDomains = [];
+        $validStatuses = ['in-progress', 'used'];
+        
+        foreach ($domains as $domain) {
+            // Check if domain has prefix_statuses (new format)
+            if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                $allPrefixesValid = true;
+                $nonValidPrefixes = [];
+
+                foreach ($domain['prefix_statuses'] as $variantKey => $statusData) {
+                    $status = $statusData['status'] ?? 'warming';
+                    
+                    if (!in_array($status, $validStatuses)) {
+                        $allPrefixesValid = false;
+                        $nonValidPrefixes[] = $variantKey . ': ' . $status;
+                    }
+                }
+
+                if (!$allPrefixesValid) {
+                    $domainName = $this->resolveDomainName($domain);
+                    $nonValidDomains[] = [
+                        'name' => $domainName,
+                        'status' => 'Policies not ready: ' . implode(', ', $nonValidPrefixes)
+                    ];
+                }
+            } else {
+                // Fallback to old format
+                $domainStatus = $domain['status'] ?? 'warming';
+                
+                // Only flag if status is not 'in-progress' or 'used'
+                if (!in_array($domainStatus, $validStatuses)) {
+                    $domainName = $this->resolveDomainName($domain);
+                    
+                    $nonValidDomains[] = [
+                        'name' => $domainName,
+                        'status' => $domainStatus
+                    ];
+                }
+            }
+        }
+        
+        if (empty($nonValidDomains)) {
+            return null;
+        }
+        
+        return [
+            'success' => false,
+            'requiresConfirmation' => true,
+            'message' => 'Some domains are not in valid status for completion',
+            'nonSubscribedDomains' => $nonValidDomains, // Keep the same key for frontend compatibility
+            'totalDomains' => count($domains),
+            'nonSubscribedCount' => count($nonValidDomains) // Keep the same key for frontend compatibility
+        ];
+    }
+    
+    /**
+     * Resolve domain name from various sources
+     * 
+     * @param array $domain
+     * @return string
+     */
+    private function resolveDomainName(array $domain): string
+    {
+        // Try multiple keys for domain name
+        $domainName = $domain['domain_name'] ?? $domain['name'] ?? null;
+        
+        // If still no name, try to get it from the pool
+        if (!$domainName && isset($domain['domain_id']) && isset($domain['pool_id'])) {
+            $pool = Pool::find($domain['pool_id']);
+            if ($pool && is_array($pool->domains)) {
+                foreach ($pool->domains as $poolDomain) {
+                    if (isset($poolDomain['id']) && $poolDomain['id'] == $domain['domain_id']) {
+                        $domainName = $poolDomain['name'] ?? null;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return $domainName ?: 'Domain #' . ($domain['domain_id'] ?? 'Unknown');
+    }
+    
+    /**
+     * Update pool migration task status with validation
+     * 
+     * @param PoolOrderMigrationTask $task
+     * @param string $status
+     * @param string|null $notes
+     * @param bool $force
+     * @param int|null $userId User ID for authorization check (optional)
+     * @return array Response data
+     */
+    public function updateTaskStatus(
+        PoolOrderMigrationTask $task, 
+        string $status, 
+        ?string $notes = null, 
+        bool $force = false,
+        ?int $userId = null
+    ): array {
+        try {
+            // Authorization check if userId is provided
+            if ($userId !== null && $task->assigned_to && $task->assigned_to !== $userId) {
+                return [
+                    'success' => false,
+                    'message' => 'You can only update tasks assigned to you.',
+                    'statusCode' => 403
+                ];
+            }
+            
+            // Check domain statuses before marking as completed (unless force is true)
+            if ($status === 'completed' && !$force) {
+                $validationError = $this->validateDomainStatuses($task);
+                
+                if ($validationError) {
+                    return array_merge($validationError, ['statusCode' => 422]);
+                }
+            }
+            
+            // Prepare updates
+            $updates = ['status' => $status];
+            
+            if ($notes !== null) {
+                $updates['notes'] = $notes;
+            }
+            
+            // Set timestamps based on status
+            if ($status === 'completed') {
+                $updates['completed_at'] = now();
+                
+                // Update domain statuses based on task type
+                if ($task->task_type !== 'cancellation') {
+                    $this->updateDomainStatusesToUsed($task);
+                }
+
+                // Update pool order status and completed_at
+                $poolOrder = $task->poolOrder;
+                if ($poolOrder) {
+                    $poolOrder->completed_at = now();
+                    // check task task_type = configuration then set status_manage_by_admin to completed
+                    if ($task->task_type === 'configuration') { 
+                        $poolOrder->status_manage_by_admin = 'completed';
+
+                    } else if ($task->task_type === 'cancellation') {
+                        // For cancellation tasks, set status_manage_by_admin to 'cancelled'
+                        $poolOrder->status_manage_by_admin = 'cancelled';
+                    }
+                    $poolOrder->save();
+                    
+                    Log::info("Pool order {$poolOrder->id} status set to completed for task {$task->id}");
+
+                    if ($task->task_type === 'cancellation') {
+                        $this->freeDomainsForCancellationTask($task);
+                    }
+                }
+            } elseif ($status === 'in-progress' && !$task->started_at) {
+                $updates['started_at'] = now();
+            }
+            
+            // Update the task
+            $task->update($updates);
+            
+            Log::info("Pool migration task {$task->id} status updated to {$status} by user {$userId}");
+            
+            return [
+                'success' => true,
+                'message' => 'Task status updated successfully',
+                'task' => [
+                    'id' => $task->id,
+                    'status' => $task->status,
+                    'notes' => $task->notes,
+                    'started_at' => $task->started_at,
+                    'completed_at' => $task->completed_at
+                ],
+                'statusCode' => 200
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('Error updating pool migration task status: ' . $e->getMessage());
+            
+            return [
+                'success' => false,
+                'message' => 'Failed to update task status: ' . $e->getMessage(),
+                'statusCode' => 500
+            ];
+        }
+    }
+    
+    /**
+     * Assign pool migration task to a user
+     * 
+     * @param PoolOrderMigrationTask $task
+     * @param int $userId
+     * @return array Response data
+     */
+    public function assignTask(PoolOrderMigrationTask $task, int $userId): array
+    {
+        try {
+            if ($task->assigned_to) {
+                return [
+                    'success' => false,
+                    'message' => 'This task is already assigned to someone',
+                    'statusCode' => 400
+                ];
+            }
+            
+            $task->update([
+                'assigned_to' => $userId,
+                'status' => 'in-progress',
+                'started_at' => now()
+            ]);
+            
+            Log::info("Pool migration task {$task->id} assigned to user {$userId}");
+            
+            return [
+                'success' => true,
+                'message' => 'Task assigned successfully',
+                'task' => [
+                    'id' => $task->id,
+                    'assigned_to' => $task->assigned_to,
+                    'status' => $task->status
+                ],
+                'statusCode' => 200
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('Error assigning pool migration task: ' . $e->getMessage());
+            
+            return [
+                'success' => false,
+                'message' => 'Failed to assign task: ' . $e->getMessage(),
+                'statusCode' => 500
+            ];
+        }
+    }
+
+    /**
+     * Reassign pool migration task to another user
+     * 
+     * @param PoolOrderMigrationTask $task
+     * @param int $userId
+     * @param string|null $notes
+     * @return array Response data
+     */
+    public function reassignTask(PoolOrderMigrationTask $task, int $userId, ?string $notes = null): array
+    {
+        try {
+            $oldAssigneeId = $task->assigned_to;
+
+            if ($oldAssigneeId === $userId) {
+                return [
+                    'success' => false,
+                    'message' => 'This task is already assigned to this user.',
+                    'statusCode' => 400
+                ];
+            }
+
+            $updateData = [
+                'assigned_to' => $userId,
+                'status' => 'in-progress', // Or keep current status if preferred
+            ];
+
+            if ($notes) {
+                $updateData['notes'] = $task->notes ? $task->notes . "\n" . $notes : $notes;
+            }
+
+            $task->update($updateData);
+            
+            Log::info("Pool migration task {$task->id} reassigned from user {$oldAssigneeId} to user {$userId}");
+            
+            return [
+                'success' => true,
+                'message' => 'Task reassigned successfully',
+                'task' => $task->fresh(),
+                'statusCode' => 200
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error reassigning pool migration task: ' . $e->getMessage(), ['exception' => $e]);
+            return ['success' => false, 'message' => 'Failed to reassign task: ' . $e->getMessage(), 'statusCode' => 500];
+        }
+    }
+
+    /**
+     * Get pool migration task details with full order information
+     * 
+     * @param int $taskId
+     * @param int|null $userId User ID for authorization check (null for admin, specific ID for contractor)
+     * @param bool $adminAccess Whether this is admin access (admins can see all tasks)
+     * @return array Response data
+     */
+    public function getTaskDetails(int $taskId, ?int $userId = null, bool $adminAccess = false): array
+    {
+        try {
+            $query = PoolOrderMigrationTask::with([
+                'poolOrder.poolPlan',
+                'poolOrder.user',
+                'user',
+                'assignedTo'
+            ]);
+
+            // If not admin access and userId provided, ensure contractor can only view their assigned tasks
+            if (!$adminAccess && $userId !== null) {
+                $query->where('assigned_to', $userId);
+            }
+
+            $task = $query->find($taskId);
+
+            if (!$task) {
+                return [
+                    'success' => false,
+                    'message' => 'Task not found or access denied',
+                    'statusCode' => 404
+                ];
+            }
+
+            $poolOrder = $task->poolOrder;
+            $user = $poolOrder ? $poolOrder->user : null;
+            $metadata = $task->metadata ?? [];
+
+            $taskInfo = [
+                'id' => $task->id,
+                'pool_order_id' => $task->pool_order_id,
+                'task_type' => $task->task_type,
+                'task_type_label' => $task->task_type === 'configuration' ? 'Configuration Task' : 'Cancellation Cleanup Task',
+                'task_type_icon' => $task->task_type === 'configuration' ? '📋' : '🔧',
+                'status' => $task->status,
+                'previous_status' => $task->previous_status,
+                'new_status' => $task->new_status,
+                'assigned_to' => $task->assigned_to,
+                'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : 'Unassigned',
+                'notes' => $task->notes,
+                'created_at' => $task->created_at->format('Y-m-d H:i:s'),
+                'started_at' => $task->started_at ? $task->started_at->format('Y-m-d H:i:s') : null,
+                'completed_at' => $task->completed_at ? $task->completed_at->format('Y-m-d H:i:s') : null,
+            ];
+
+            $orderInfo = [
+                'order_id' => $poolOrder->id ?? null,
+                'plan_name' => $metadata['plan_name'] ?? ($poolOrder && $poolOrder->poolPlan ? $poolOrder->poolPlan->name : 'N/A'),
+                'selected_domains_count' => $metadata['selected_domains_count'] ?? ($poolOrder->selected_domains_count ?? 0),
+                'total_inboxes' => $metadata['total_inboxes'] ?? ($poolOrder->total_inboxes ?? 0),
+                'hosting_platform' => $metadata['hosting_platform'] ?? ($poolOrder->hosting_platform ?? 'N/A'),
+                'customer_name' => $user ? $user->name : 'N/A',
+                'customer_email' => $user ? $user->email : 'N/A',
+                'has_domains' => $poolOrder && $poolOrder->hasDomains() ? true : false,
+            ];
+
+            return [
+                'success' => true,
+                'task' => $taskInfo,
+                'order' => $orderInfo,
+                'statusCode' => 200
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching pool migration task details: ' . $e->getMessage());
+            
+            return [
+                'success' => false,
+                'message' => 'Failed to fetch task details: ' . $e->getMessage(),
+                'statusCode' => 500
+            ];
+        }
+    }
+
+    /**
+     * Update domain statuses from 'in-progress' to 'used' when task is completed
+     * 
+     * @param PoolOrderMigrationTask $task
+     * @return void
+     */
+    private function updateDomainStatusesToUsed(PoolOrderMigrationTask $task): void
+    {
+        try {
+            $poolOrder = $task->poolOrder;
+            
+            if (!$poolOrder || !$poolOrder->domains) {
+                Log::info("Pool migration task {$task->id}: No domains to update");
+                return;
+            }
+            
+            $domains = is_string($poolOrder->domains) 
+                ? json_decode($poolOrder->domains, true) 
+                : $poolOrder->domains;
+            
+            if (!is_array($domains)) {
+                Log::warning("Pool migration task {$task->id}: Invalid domains format");
+                return;
+            }
+            
+            $domainsUpdated = false;
+            $updateCount = 0;
+            
+            // Update domains in pool_orders table
+            foreach ($domains as &$domain) {
+                // Handle new prefix_statuses format
+                if (isset($domain['prefix_statuses']) && is_array($domain['prefix_statuses'])) {
+                    $domainUpdated = false;
+                    foreach ($domain['prefix_statuses'] as &$statusData) {
+                        if (isset($statusData['status']) && $statusData['status'] === 'in-progress') {
+                            $statusData['status'] = 'used';
+                            $domainUpdated = true;
+                        }
+                    }
+                    
+                    if ($domainUpdated) {
+                        $domain['is_used'] = true;
+                        $domainsUpdated = true;
+                        $updateCount++;
+                        Log::info("Pool migration task {$task->id}: Updated prefixes for domain " . 
+                            ($domain['domain_name'] ?? $domain['name'] ?? 'Unknown'));
+                    }
+                } 
+                // Handle legacy format
+                elseif (isset($domain['status']) && $domain['status'] === 'in-progress') {
+                    $domain['status'] = 'used';
+                    $domain['is_used'] = true;
+                    $domainsUpdated = true;
+                    $updateCount++;
+                    
+                    Log::info("Pool migration task {$task->id}: Updated domain " . 
+                        ($domain['domain_name'] ?? $domain['name'] ?? 'Unknown') . 
+                        " from in-progress to used");
+                }
+            }
+            
+            if ($domainsUpdated) {
+                $poolOrder->domains = $domains;
+                $poolOrder->save();
+                Log::info("Pool migration task {$task->id}: Updated {$updateCount} domains in pool_orders table");
+            }
+            
+            // Also update domains in pools table if they exist
+            $this->updatePoolDomainStatuses($domains);
+            
+        } catch (\Exception $e) {
+            Log::error("Error updating domain statuses for task {$task->id}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Free domains once a cancellation task is completed.
+     */
+    private function freeDomainsForCancellationTask(PoolOrderMigrationTask $task): void
+    {
+        $poolOrder = $task->poolOrder;
+
+        if (!$poolOrder) {
+            Log::warning("Pool migration task {$task->id}: No pool order found to free domains");
+            return;
+        }
+
+        try {
+            // Check if this is a force cancellation (by super admin)
+            // If force_cancelled_by_admin_at has a value, skip warming period
+            $skipWarming = !empty($poolOrder->force_cancelled_by_admin_at);
+
+            /** @var PoolOrderCancelledService $cancellationService */
+            $cancellationService = app(PoolOrderCancelledService::class);
+            $result = $cancellationService->freeDomainsFromPoolOrder($poolOrder, $skipWarming);
+
+            Log::info("Pool migration cancellation task {$task->id}: Domains freed", [
+                'pool_order_id' => $poolOrder->id,
+                'force_cancelled' => $skipWarming,
+                'freed' => $result['freed'] ?? 0,
+                'skipped' => $result['skipped'] ?? 0,
+                'total' => $result['total'] ?? 0,
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Pool migration task {$task->id}: Failed to free domains after cancellation", [
+                'pool_order_id' => $poolOrder->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    /**
+     * Update domain statuses in the pools table
+     * 
+     * @param array $orderDomains Domains from pool_orders
+     * @return void
+     */
+    private function updatePoolDomainStatuses(array $orderDomains): void
+    {
+        try {
+            // Extract domain IDs and pool IDs from order domains
+            $domainUpdates = [];
+            
+            foreach ($orderDomains as $orderDomain) {
+                $domainId = $orderDomain['domain_id'] ?? $orderDomain['id'] ?? null;
+                $poolId = $orderDomain['pool_id'] ?? null;
+                
+                if ($domainId && $poolId) {
+                    if (!isset($domainUpdates[$poolId])) {
+                        $domainUpdates[$poolId] = [];
+                    }
+                    $domainUpdates[$poolId][] = $domainId;
+                }
+            }
+            
+            // Update domains in each affected pool
+            foreach ($domainUpdates as $poolId => $domainIds) {
+                $pool = Pool::find($poolId);
+                
+                if (!$pool || !is_array($pool->domains)) {
+                    continue;
+                }
+                
+                $poolDomains = $pool->domains;
+                $poolDomainsUpdated = false;
+                $poolUpdateCount = 0;
+                
+                foreach ($poolDomains as &$poolDomain) {
+                    if (isset($poolDomain['id']) && in_array($poolDomain['id'], $domainIds)) {
+                        // Handle new prefix_statuses format
+                        if (isset($poolDomain['prefix_statuses']) && is_array($poolDomain['prefix_statuses'])) {
+                            $poolDomainUpdated = false;
+                            foreach ($poolDomain['prefix_statuses'] as &$statusData) {
+                                if (isset($statusData['status']) && $statusData['status'] === 'in-progress') {
+                                    $statusData['status'] = 'used';
+                                    $poolDomainUpdated = true;
+                                }
+                            }
+                            
+                            if ($poolDomainUpdated) {
+                                $poolDomain['is_used'] = true;
+                                $poolDomainsUpdated = true;
+                                $poolUpdateCount++;
+                                Log::info("Updated prefixes for domain " . ($poolDomain['name'] ?? 'Unknown') . 
+                                    " in pool {$poolId}");
+                            }
+                        }
+                        // Handle legacy format
+                        elseif (isset($poolDomain['status']) && $poolDomain['status'] === 'in-progress') {
+                            $poolDomain['status'] = 'used';
+                            $poolDomain['is_used'] = true;
+                            $poolDomainsUpdated = true;
+                            $poolUpdateCount++;
+                            
+                            Log::info("Updated domain " . ($poolDomain['name'] ?? 'Unknown') . 
+                                " in pool {$poolId} from in-progress to used");
+                        }
+                    }
+                }
+                
+                if ($poolDomainsUpdated) {
+                    $pool->domains = $poolDomains;
+                    $pool->save();
+                    Log::info("Updated {$poolUpdateCount} domains in pool {$poolId}");
+                }
+            }
+            
+        } catch (\Exception $e) {
+            Log::error("Error updating domain statuses in pools table: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get paginated pool migration tasks for a specific user
+     * 
+     * @param int $userId User ID to filter tasks by
+     * @param array $filters Additional filters (status, task_type, date_from, date_to)
+     * @param int $perPage Number of items per page
+     * @param int $page Current page number
+     * @return array Response data with tasks and pagination
+     */
+    public function getMyPoolMigrationTasks(int $userId, array $filters = [], int $perPage = 12, int $page = 1): array
+    {
+        try {
+            $query = PoolOrderMigrationTask::with([
+                'poolOrder.poolPlan',
+                'poolOrder.user',
+                'user',
+                'assignedTo'
+            ])
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->where('assigned_to', $userId);
+            
+            // Filter by status if provided
+            if (!empty($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
+            
+            // Filter by task type if provided
+            if (!empty($filters['task_type'])) {
+                $query->where('task_type', $filters['task_type']);
+            }
+
+            // Filter by date range
+            if (!empty($filters['date_from'])) {
+                $query->whereDate('created_at', '>=', $filters['date_from']);
+            }
+
+            if (!empty($filters['date_to'])) {
+                $query->whereDate('created_at', '<=', $filters['date_to']);
+            }
+
+            // Apply ordering
+            $query->orderBy('created_at', 'desc');
+            
+            // Get paginated results
+            $paginatedTasks = $query->paginate($perPage, ['*'], 'page', $page);
+
+            // Format tasks data for the frontend
+            $tasksData = $paginatedTasks->getCollection()->map(function ($task) {
+                $poolOrder = $task->poolOrder;
+                $user = $poolOrder ? $poolOrder->user : null;
+                $metadata = $task->metadata ?? [];
+                
+                return [
+                    'id' => $task->id,
+                    'task_id' => $task->id,
+                    'type' => 'pool_migration',
+                    'pool_order_id' => $task->pool_order_id,
+                    'task_type' => $task->task_type,
+                    'task_type_label' => ucfirst($task->task_type),
+                    'task_type_icon' => $task->task_type === 'configuration' ? '⚙️' : '❌',
+                    'status' => $task->status,
+                    'customer_name' => $user ? $user->name : 'N/A',
+                    'customer_email' => $user ? $user->email : 'N/A',
+                    'customer_image' => $user && $user->profile_image 
+                        ? asset('storage/profile_images/' . $user->profile_image) 
+                        : null,
+                    'plan_name' => $metadata['plan_name'] ?? ($poolOrder && $poolOrder->poolPlan ? $poolOrder->poolPlan->name : 'N/A'),
+                    'amount' => $metadata['amount'] ?? 0,
+                    'quantity' => $metadata['quantity'] ?? 0,
+                    'domains_count' => $metadata['selected_domains_count'] ?? 0,
+                    'total_inboxes' => $metadata['total_inboxes'] ?? 0,
+                    'hosting_platform' => $metadata['hosting_platform'] ?? 'N/A',
+                    'assigned_to' => $task->assigned_to,
+                    'assigned_to_name' => $task->assignedTo ? $task->assignedTo->name : 'N/A',
+                    'notes' => $task->notes,
+                    'created_at' => $task->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $task->updated_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
+            return [
+                'success' => true,
+                'data' => $tasksData,
+                'pagination' => [
+                    'current_page' => $paginatedTasks->currentPage(),
+                    'per_page' => $paginatedTasks->perPage(),
+                    'total' => $paginatedTasks->total(),
+                    'last_page' => $paginatedTasks->lastPage(),
+                    'has_more_pages' => $paginatedTasks->hasMorePages()
+                ],
+                'statusCode' => 200
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching my pool migration tasks: ' . $e->getMessage());
+            
+            return [
+                'success' => false,
+                'message' => 'Error fetching pool migration tasks: ' . $e->getMessage(),
+                'statusCode' => 500
+            ];
+        }
+    }
+}

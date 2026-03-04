@@ -834,9 +834,33 @@
                             <option value="cancelled">Cancel EOBC</option>
                             <option value="cancelled_force">Force Cancel</option>
                             <option value="reject">Rejected</option>
+                            <option value="removed">Removed</option>
                             <!-- <option value="in-progress">In Progress</option> -->
                         </select>
                     </div>
+                    
+                    <div class="mb-3" id="providerTypeWrapper" style="display: none;">
+                        <label for="providerType" class="form-label">Provider Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="providerType">
+                            <option value="">-- Select Provider Type --</option>
+                            <option value="Google">Google</option>
+                            <option value="Microsoft 365">Microsoft 365</option>
+                        </select>
+                        <small class="form-text">Required when status is Completed</small>
+                    </div>
+                    
+                    <div class="mb-3" id="microsoftCsvWrapper" style="display: none;">
+                        <label for="microsoftCsvFile" class="form-label">
+                            Import CSV File for Microsoft 365 <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" class="form-control" id="microsoftCsvFile" accept=".csv">
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            CSV must contain: Display name, Username, Password, Licenses (optional). Total rows must match order's total inboxes.
+                        </small>
+                        <div id="csvValidationMessage" class="mt-2" style="display: none;"></div>
+                    </div>
+                    
                     <div class="mb-3">
                         <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
                         <textarea class="form-control" id="statusReason" rows="3" placeholder="Enter reason for status change..."></textarea>
@@ -1414,7 +1438,7 @@
             ? order.splits.map((split, index) => `
                 <tr>
                 <td style="font-size: 10px; padding: 5px !important;">${index + 1}</td>
-                <td style="font-size: 10px; padding: 5px !important;">${split.panel_id || 'N/A'}</td>
+                <td style="font-size: 10px; padding: 5px !important;">${ split.panel_sr_no || split.panel_id || 'N/A'}</td>
                 <td style="font-size: 10px; padding: 5px !important;">${split.inboxes_per_domain || 'N/A'}</td>
                 <td style="font-size: 10px; padding: 5px !important;">${split.domains_count || 0}</td>
                 <td style="padding: 5px !important;">
@@ -2049,7 +2073,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                             SPL-${split.id || 'N/A'}
                                         </span>
                                     </td>
-                                     <td>${split?.panel_id || 'N/A'}</td>
+                                     <td>${split?.panel_sr_no || split?.panel_id || 'N/A'}</td>
                                      <td>${split?.panel_title || 'N/A'}</td>
                                     <td>
                                         <span class="py-1 px-2 rounded-1 text-white text-capitalize ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
@@ -2184,6 +2208,11 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                 <span>${reorderInfo?.sequencer_password || 'N/A'}</span>
                             </div>
 
+                            <div class="d-flex flex-column mb-3">
+                                <span class="opacity-50">Backup Codes</span>
+                                <span>${reorderInfo?.backup_codes || 'N/A'}</span>
+                            </div>
+
                             <div class="d-flex flex-column">
                                 <h6 class="d-flex align-items-center gap-1">
                                     <div class="d-flex align-items-center justify-content-center" style="height: 35px; width: 35px; border-radius: 50px; color: var(--second-primary); border: 1px solid var(--second-primary)">
@@ -2202,7 +2231,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                     Panel Break ${String(index + 1).padStart(2, '0')}
                                                 </span>
-                                                <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>
+                                                <small class="fw-bold text-uppercase">PNL-${split.panel_sr_no || split.panel_id} | ${split.panel_title || 'N/A'}</small>
                                             </div>
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
@@ -2881,6 +2910,10 @@ function parseUTCDateTime(dateStr) {
             // Reset form
             document.getElementById('newStatus').value = '';
             document.getElementById('statusReason').value = '';
+            document.getElementById('providerType').value = '';
+            document.getElementById('providerTypeWrapper').style.display = 'none';
+            document.getElementById('microsoftCsvWrapper').style.display = 'none';
+            document.getElementById('microsoftCsvFile').value = '';
             
             // Store order ID for later use
             document.getElementById('changeStatusModal').setAttribute('data-order-id', orderId);
@@ -2890,11 +2923,40 @@ function parseUTCDateTime(dateStr) {
             modal.show();
         }
 
+        // Add event listener for status change to show/hide provider type
+        $(document).ready(function() {
+            $('#newStatus').on('change', function() {
+                const selectedStatus = $(this).val();
+                if (selectedStatus === 'completed') {
+                    $('#providerTypeWrapper').slideDown();
+                } else {
+                    $('#providerTypeWrapper').slideUp();
+                    $('#microsoftCsvWrapper').slideUp();
+                    $('#providerType').val('');
+                    $('#microsoftCsvFile').val('');
+                }
+            });
+
+            // Show/hide CSV upload based on provider type
+            $('#providerType').on('change', function() {
+                const selectedProvider = $(this).val();
+                if (selectedProvider === 'Microsoft 365') {
+                    $('#microsoftCsvWrapper').slideDown();
+                } else {
+                    $('#microsoftCsvWrapper').slideUp();
+                    $('#microsoftCsvFile').val('');
+                    $('#csvValidationMessage').hide();
+                }
+            });
+        });
+
         async function updateOrderStatus() {
             const modal = document.getElementById('changeStatusModal');
             const orderId = modal.getAttribute('data-order-id');
             const newStatus = document.getElementById('newStatus').value;
             const reason = document.getElementById('statusReason').value;
+            const providerType = document.getElementById('providerType').value;
+            const csvFileInput = document.getElementById('microsoftCsvFile');
             
             if (!newStatus) {
                 Swal.fire({
@@ -2905,6 +2967,42 @@ function parseUTCDateTime(dateStr) {
                 });
                 return;
             }
+
+            // Validate provider type when status is completed
+            if (newStatus === 'completed' && !providerType) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Provider Type',
+                    text: 'Please select a provider type (Google or Microsoft 365) before completing the order',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
+            // Validate CSV file for Microsoft 365
+            if (newStatus === 'completed' && providerType === 'Microsoft 365') {
+                if (!csvFileInput.files || csvFileInput.files.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Missing CSV File',
+                        text: 'Please upload a CSV file with email accounts for Microsoft 365',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+                
+                const file = csvFileInput.files[0];
+                if (!file.name.toLowerCase().endsWith('.csv')) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Invalid File Type',
+                        text: 'Please upload a valid CSV file',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+            }
+            
             // status is reject or cancelled
             if ((newStatus === 'reject' || newStatus === 'cancelled' || newStatus === 'cancelled_force') && !reason) {
                 Swal.fire({
@@ -2915,6 +3013,7 @@ function parseUTCDateTime(dateStr) {
                 });
                 return;
             }
+            
             // Show SweetAlert2 confirmation dialog
             const result = await Swal.fire({
                 title: 'Confirm Status Change',
@@ -2935,7 +3034,7 @@ function parseUTCDateTime(dateStr) {
             // Show SweetAlert2 loading dialog
             Swal.fire({
                 title: 'Updating Status...',
-                text: 'Please wait while we update the order status.',
+                text: 'Please wait while we update the order status and process the CSV file.',
                 icon: 'info',
                 allowOutsideClick: false,
                 allowEscapeKey: false,
@@ -2946,30 +3045,39 @@ function parseUTCDateTime(dateStr) {
             });
             
             try {
+                // Use FormData for file upload
+                const formData = new FormData();
+                formData.append('status', newStatus);
+                formData.append('reason', reason);
+                formData.append('provider_type', providerType);
+                
+                // Add CSV file if Microsoft 365
+                if (newStatus === 'completed' && providerType === 'Microsoft 365' && csvFileInput.files.length > 0) {
+                    formData.append('microsoft_csv', csvFileInput.files[0]);
+                }
+
                 const response = await fetch(`/admin/orders/${orderId}/change-status`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({
-                        status: newStatus,
-                        reason: reason
-                    })
+                    body: formData
                 });
                 
-                if (!response.ok) {
-                    throw new Error(response.message || 'Failed to update status');
-                }
-                
                 const result = await response.json();
+                
+                if (!response.ok) {
+                    // Extract error message from server response
+                    const errorMessage = result.message || result.error || 'Failed to update status';
+                    throw new Error(errorMessage);
+                }
                 
                 if (result.success) {
                     // Close loading dialog and show success
                     await Swal.fire({
                         title: 'Success!',
-                        text: 'Status updated successfully!',
+                        text: result.message || 'Status updated successfully!',
                         icon: 'success',
                         confirmButtonColor: '#28a745',
                         timer: 3000,
@@ -3007,7 +3115,7 @@ function parseUTCDateTime(dateStr) {
                 // Close loading dialog and show error
                 await Swal.fire({
                     title: 'Error!',
-                    text: 'Error updating status: ' + error.message,
+                    text: error.message || 'An unexpected error occurred',
                     icon: 'error',
                     confirmButtonColor: '#dc3545'
                 });

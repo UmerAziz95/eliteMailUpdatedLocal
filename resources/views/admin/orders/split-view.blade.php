@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+﻿@extends('admin.layouts.app')
 
 @section('title', 'Orders')
 
@@ -6,6 +6,39 @@
     OPTIMIZED VERSION: This view now uses the $orderPanel variable for more efficient data access
     instead of foreach loops through $order->orderPanels. This improves performance and code clarity.
 --}}
+
+@push('styles')
+<style>
+    .accordion {
+        --bs-accordion-bg: transparent !important;
+    }
+
+    .accordion-button:focus {
+        box-shadow: none !important
+    }
+
+    .button.collapsed {
+        background-color: var(--slide-bg) !important;
+        color: var(--light-color);
+        cursor: pointer;
+    }
+
+    .button {
+        background-color: var(--second-primary);
+        color: var(--light-color);
+        transition: all ease .4s;
+        cursor: pointer;
+    }
+
+    .accordion-body {
+        color: var(--light-color)
+    }
+
+    .transition-transform {
+        transition: transform 0.3s ease;
+    }
+</style>
+@endpush
 
 @section('content')
 <section class="py-3 overflow-hidden">
@@ -25,7 +58,20 @@
     <div class="d-flex align-items-center justify-content-between mt-3">
         <div>
             <h5 class="mb-3">Order #{{ $orderPanel->order->id ?? 'N/A' }} - Split Id #{{ $orderPanel->id }}</h5>
-            <h6><span class="opacity-50 fs-6">Order Date:</span> {{ $orderPanel->order->created_at ? $orderPanel->order->created_at->format('M d, Y') : 'N/A' }}</h6>
+            <h6 class="mb-2"><span class="opacity-50 fs-6">Order Date:</span> {{ $orderPanel->order->created_at ? $orderPanel->order->created_at->format('M d, Y') : 'N/A' }}</h6>
+            @if($orderPanel->order->provider_type)
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <span class="opacity-50 fs-6">Provider Type:</span>
+                <span class="badge {{ $orderPanel->order->provider_type === 'Google' ? 'bg-primary' : 'bg-info' }} d-flex align-items-center gap-1 px-3 py-2" style="font-size: 0.85rem; font-weight: 500;">
+                    @if($orderPanel->order->provider_type === 'Google')
+                        <i class="fab fa-google"></i>
+                    @elseif($orderPanel->order->provider_type === 'Microsoft 365')
+                        <i class="fab fa-microsoft"></i>
+                    @endif
+                    {{ $orderPanel->order->provider_type }}
+                </span>
+            </div>
+            @endif
         </div>
         <!-- <div class="d-flex align-items-center gap-2">
             <div class="border border-{{ $orderPanel->split_status_color ?? 'secondary' }} rounded-2 py-1 px-2 text-{{ $orderPanel->split_status_color ?? 'secondary' }} bg-transparent">
@@ -122,6 +168,7 @@
                     <span class="opacity-50">Profile Picture URL</span>
                     <span>{{ $orderPanel->order->reorderInfo->first()->profile_picture_link ?? 'N/A' }}</span>
                 </div> -->
+                <!--  -->
                 <div class="d-flex flex-column mt-3">
                     <span class="opacity-50">Profile Picture URLs</span>
                     @if($orderPanel->order->reorderInfo->first()->prefix_variants_details)
@@ -298,7 +345,7 @@
                     </div>
                     <div>
                        <h6 class="mb-0 fw-bold text-white">Customized Note</h6>
-                       <small class="text-light opacity-75">Additional information provided</small>
+                       <small class="opacity-75">Additional information provided</small>
                     </div>
                   </div>
                   
@@ -345,7 +392,7 @@
                             <!-- @if($orderPanel->order->status_manage_by_admin === 'pending' || $orderPanel->order->status_manage_by_admin === 'in-progress') -->
                                 
                             <!-- @endif -->
-                            <button id="addBulkEmail" class="btn btn-primary me-2" data-bs-toggle="modal"
+                            <button id="addBulkEmail" class="btn btn-primary me-2 d-none" data-bs-toggle="modal"
                                 data-bs-target="#BulkImportModal">
                                 <i class="fa-solid fa-plus me-1"></i> Emails Customization 
                             </button>
@@ -364,7 +411,7 @@
                             
                             @if($uploadedFilePath)
                                 <a href="{{ route('admin.order.panel.email.downloadCsv', ['orderPanelId' => $orderPanel->id]) }}" 
-                                   class="btn btn-outline-success me-2 btn-sm" 
+                                   class="btn btn-outline-success me-2 btn-sm d-none" 
                                    title="Download uploaded CSV file">
                                     <i class="fa-solid fa-download me-1"></i> Download CSV
                                 </a>
@@ -378,7 +425,7 @@
                             </button> -->
                         </div>
                     </div>
-                    <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2">
+                    <div class="email-stats d-flex align-items-center gap-3 bg- rounded p-2 d-none">
                         <div class="badge rounded-circle bg-primary p-2">
                             <i class="fa-solid fa-envelope text-white"></i>
                         </div>
@@ -395,20 +442,17 @@
                         </div>
                     </div>
                 </div>
-                <div class="table-responsive">
-                    <table id="email-configuration" class="display w-100">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Last Name</th>
-                                <th>Email</th>
-                                <th>Password</th>
-                                <!-- <th>Action</th> -->
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
+                                <div class="table-responsive">
+                    <!-- Batch-wise email display -->
+                    <div id="email-batches-container">
+                        <!-- Batches will be loaded dynamically via JavaScript -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Loading email batches...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -471,6 +515,68 @@
                         <button type="submit"
                             class="border border-success py-1 px-3 w-100 bg-transparent text-success rounded-2">Yes,
                             Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Batch-specific Import Modal -->
+<div class="modal fade" id="BatchImportModal" tabindex="-1" aria-labelledby="BatchImportModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="BatchImportModalLabel">
+                    <i class="fa-solid fa-layer-group me-2"></i>
+                    Import Emails for <span id="batchNumberTitle"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-info-circle me-2"></i>
+                    You are importing emails for <strong id="batchNumberInfo"></strong>. 
+                    Expected: <strong id="expectedCountInfo"></strong> emails.
+                </div>
+                
+                <div class="row text-muted" id="batchCsvInstructions">
+                    <p class="text-danger">Only .csv files are accepted.</p>
+                    <p class="text-danger">The CSV file must include the following headers: <strong>First Name</strong>,
+                        <strong>Last Name</strong>, <strong>Email address</strong>, and <strong>Password</strong>.
+                    </p>
+                    <p><a href="{{url('/').'/assets/samples/emails.csv'}}"><strong class="text-primary">Download
+                                Sample File</strong></a></p>
+                </div>
+                
+                <div class="alert alert-success d-none" id="batchFileSelectedInfo">
+                    <i class="fa-solid fa-check-circle me-2"></i>
+                    <span id="batchSelectedFileName">File selected successfully</span>
+                </div>
+                
+                <form id="BatchImportForm" action="{{ route('admin.order.panel.email.bulkImport') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="order_panel_id" value="{{ $orderPanel->id }}">
+                    <input type="hidden" name="batch_id" id="batch_id_input" value="">
+                    <input type="hidden" name="expected_count" id="expected_count_input" value="">
+                    
+                    <div class="mb-3">
+                        <label for="batch_file" class="form-label">Select CSV *</label>
+                        <input type="file" class="form-control" id="batch_file" name="bulk_file" accept=".csv"
+                            required>
+                    </div>
+
+                    <div class="modal-footer border-0 d-flex align-items-center justify-content-between flex-nowrap">
+                        <button type="button"
+                            class="border boder-white text-white py-1 px-3 w-100 bg-transparent rounded-2"
+                            data-bs-dismiss="modal">Cancel</button>
+                            
+                        <button type="submit"
+                            class="border border-success py-1 px-3 w-100 bg-transparent text-success rounded-2">
+                            <i class="fa-solid fa-upload me-1"></i>
+                            Import for Batch
+                        </button>
                     </div>
                 </form>
             </div>
@@ -571,7 +677,7 @@
         const selectedStatus = $('input[name="marked_status"]:checked').val();
         
         if (!selectedStatus) {
-            Swal.fire({
+            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                 icon: 'warning',
                 title: 'Status Required',
                 text: 'Please select a status before submitting.'
@@ -580,14 +686,12 @@
         }
 
         // Show loading alert
-        Swal.fire({
+        if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
             title: 'Updating Status...',
             text: 'Please wait while we update the panel status.',
             allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
+            didOpen: () => { Swal.showLoading(); }
+                    });
 
         // Submit the form via AJAX
         $.ajax({
@@ -600,7 +704,7 @@
                 Swal.close();
                 $('#order-split-status-update').modal('hide');
                 
-                Swal.fire({
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                     icon: 'success',
                     title: 'Success!',
                     text: response.message || 'Panel status updated successfully.',
@@ -625,7 +729,7 @@
                     }
                 }
                 
-                Swal.fire({
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                     icon: 'error',
                     title: 'Error!',
                     text: errorMessage,
@@ -660,39 +764,23 @@
         const splitTotalInboxes = {{ $splitTotalInboxes }};
         const maxEmails = splitTotalInboxes || 0; // If splitTotalInboxes is 0, allow unlimited emails
         
-        // Function declarations first
-        function updateRowCount(table) {
-            const rowCount = table.rows().count();
+        // Function to update the total email count display
+        function updateTotalCount(totalEmails) {
             if (maxEmails > 0) {
-                $('#totalRowCount').text(rowCount + "/" + splitTotalInboxes);
+                $('#totalRowCount').text(totalEmails + "/" + maxEmails);
             } else {
-                $('#totalRowCount').text(rowCount + " (Unlimited)");
+                $('#totalRowCount').text(totalEmails);
             }
-            updateProgressBar(table);
+            updateProgressBar(totalEmails);
         }
 
-        function updateAddButtonState(table) {
-            const rowCount = table.rows().count();
-            const addButton = $('#addNewBtn');
-            
-            if (maxEmails > 0 && rowCount >= maxEmails) {
-                addButton.prop('disabled', true);
-                addButton.attr('title', `Maximum limit of ${maxEmails} emails reached`);
-            } else {
-                addButton.prop('disabled', false);
-                addButton.removeAttr('title');
-            }
-        }
-
-        function updateProgressBar(table) {
-            const rowCount = table.rows().count();
+        function updateProgressBar(totalEmails) {
             let percentage = 0;
             
             if (maxEmails > 0) {
-                percentage = Math.min((rowCount / maxEmails) * 100, 100);
+                percentage = Math.min((totalEmails / maxEmails) * 100, 100);
             } else {
-                // For unlimited inboxes, use a different logic
-                percentage = Math.min((rowCount / 100) * 100, 100);
+                percentage = Math.min((totalEmails / 100) * 100, 100);
             }
             
             const progressBar = $('#emailProgressBar');
@@ -701,7 +789,6 @@
             
             progressBar.removeClass('bg-primary bg-warning bg-danger');
             if (maxEmails > 0) {
-                // For limited inboxes
                 if (percentage >= 90) {
                     progressBar.addClass('bg-danger');
                 } else if (percentage >= 70) {
@@ -710,243 +797,636 @@
                     progressBar.addClass('bg-primary');
                 }
             } else {
-                // For unlimited inboxes, always show primary color
                 progressBar.addClass('bg-primary');
             }
         }
-
-        // Initialize DataTable
-        let emailTable = $('#email-configuration').DataTable({
-            responsive: true,
-            paging: false,
-            searching: false,
-            info: false,
-            dom: 'frtip',
-            autoWidth: false,
-            columnDefs: [
-                { width: '25%', targets: 0 }, // Name column
-                { width: '25%', targets: 1 }, // Last Name column
-                { width: '25%', targets: 2 }, // Email column
-                { width: '25%', targets: 3 }, // Password column
-                // { width: '10%', targets: 4 }  // Action column
-            ],
-            responsive: {
-                details: {
-                    display: $.fn.dataTable.Responsive.display.modal({
-                        header: function(row) {
-                            return 'Email Details';
-                        }
-                    }),
-                    renderer: $.fn.dataTable.Responsive.renderer.tableAll()
-                }
-            },
-            ajax: {
-                url: '/admin/orders/panel/{{ $orderPanel->id }}/emails',
-                dataSrc: function(json) {
-                    return json.data || [];
-                }
-            },
-            columns: [
-                { 
-                    data: 'name',
-                    render: function(data, type, row) {
-                        return `<input type="text" class="form-control name" value="${data || ''}" placeholder="Enter name">`;
-                    }
-                },
-                { 
-                    data: 'last_name',
-                    defaultContent: '',
-                    render: function(data, type, row) {
-                        return `<input type="text" class="form-control last_name" value="${data || ''}" placeholder="Enter last name">`;
-                    }
-                },
-                { 
-                    data: 'email',
-                    render: function(data, type, row) {
-                        return `<input type="email" class="form-control email" value="${data || ''}" placeholder="Enter email">`;
-                    }
-                },
-                { 
-                    data: 'password',
-                    render: function(data, type, row) {
-                        return `<input type="password" class="form-control password" value="${data || ''}" placeholder="Enter password">`;
-                    }
-                }
-                // {
-                //     data: 'id',
-                //     render: function(data, type, row) {
-                //         return `<button class="bg-transparent p-0 border-0 deleteEmailBtn" data-id="${data || ''}"><i class="fa-regular fa-trash-can text-danger"></i></button>`;
-                //     }
-                // }
-            ],
-            drawCallback: function(settings) {
-                updateRowCount(this.api());
-                updateAddButtonState(this.api());
-            }
-        });
-
-        // Event listeners
-        emailTable.on('draw', function() {
-            updateRowCount(emailTable);
-            updateAddButtonState(emailTable);
-            updateProgressBar(emailTable);
-        });
-
-        // Add new row button click handler
-        $('#addNewBtn').click(function() {
-            const rowCount = emailTable.rows().count();
-            if (maxEmails > 0 && rowCount >= maxEmails) {
-                toastr.error(`You can only add up to ${maxEmails} email accounts as per your panel configuration.`);
-                return;
-            }
-
-            emailTable.row.add({
-                name: '',
-                last_name: '',
-                email: '',
-                password: '',
-                id: ''
-            }).draw(false);
-        });
-
-        // Save all button click handler
-        $('#saveAllBtn').click(function() {
-            const emailsToSave = [];
-            let isValid = true;
-
-            $(emailTable.rows().nodes()).each(function() {
-                const row = $(this);
-                const nameField = row.find('.name');
-                const lastNameField = row.find('.last_name');
-                const emailField = row.find('.email');
-                const passwordField = row.find('.password');
-
-                // Reset validation classes
-                nameField.removeClass('is-invalid');
-                lastNameField.removeClass('is-invalid');
-                emailField.removeClass('is-invalid');
-                passwordField.removeClass('is-invalid');
-
-                const name = nameField.val()?.trim();
-                const lastName = lastNameField.val()?.trim();
-                const email = emailField.val()?.trim();
-                const password = passwordField.val()?.trim();
-
-                // Validate fields
-                if (!name) {
-                    nameField.addClass('is-invalid');
-                    isValid = false;
-                }
-                if (!lastName) {
-                    lastNameField.addClass('is-invalid');
-                    isValid = false;
-                }
-                if (!email) {
-                    emailField.addClass('is-invalid');
-                    isValid = false;
-                }
-                if (!password) {
-                    passwordField.addClass('is-invalid');
-                    isValid = false;
-                }
-
-                if (name && lastName && email && password) {
-                    emailsToSave.push({ name, last_name: lastName, email, password });
-                }
-            });
-
-            if (!isValid) {
-                toastr.error('Please fill in all required fields');
-                return;
-            }
-
-            // Send as JSON to avoid max_input_vars limit
+        
+        // Function to load emails by batch
+        function loadEmailBatches() {
             $.ajax({
-                url: '/admin/orders/panel/emails',
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'Content-Type': 'application/json'
-                },
-                data: JSON.stringify({
-                    order_panel_id: {{ $orderPanel->id }},
-                    emails: emailsToSave
-                }),
+                url: '/admin/orders/panel/{{ $orderPanel->id }}/emails/batches',
+                method: 'GET',
                 success: function(response) {
-                    toastr.success('Emails saved successfully');
-                    emailTable.ajax.reload();
+                    if (response.success) {
+                        displayEmailBatches(response);
+                        updateTotalCount(response.total_emails);
+                    } else {
+                        showEmptyState();
+                    }
                 },
                 error: function(xhr) {
-                    console.error('Error response:', xhr.responseText);
-                    if (xhr.responseJSON && xhr.responseJSON.errors) {
-                        // Loop through each error and mark fields as invalid
-                        Object.keys(xhr.responseJSON.errors).forEach(function(key) {
-                            // Handle array fields like emails.0.email
-                            if (key.includes('emails.')) {
-                                const parts = key.split('.');
-                                const index = parseInt(parts[1]); // Get the row index as integer
-                                const field = parts[2]; // Get the field name (email, password, last_name, etc.)
-                                const errorMsg = xhr.responseJSON.errors[key][0]; // Get the first error message
-                                
-                                // Find the input field at the specific row
-                                const row = $(emailTable.rows().nodes()).eq(index);
-                                const input = row.find(`.${field}`);
-                                
-                                if (input.length) {
-                                    input.addClass('is-invalid');
-                                    
-                                    // Add tooltip or display error message
-                                    input.attr('title', errorMsg);
-                                    
-                                    // Optionally create/update feedback element
-                                    let feedback = input.next('.invalid-feedback');
-                                    if (!feedback.length) {
-                                        input.after(`<div class="invalid-feedback">${errorMsg}</div>`);
-                                    } else {
-                                        feedback.text(errorMsg);
-                                    }
-                                }
-                            }
-                        });
-                        toastr.error('Please correct the errors in the form');
-                    } else {
-                        toastr.error(xhr.responseJSON?.message || 'Error saving emails');
-                    }
+                    console.error('Error loading email batches:', xhr);
+                    showEmptyState('Error loading email batches. Please refresh the page.');
                 }
             });
-        });
+        }
 
-        // Delete button click handler
-        $('#email-configuration tbody').on('click', '.deleteEmailBtn', function() {
-            const button = $(this);
-            const row = button.closest('tr');
-            const id = button.data('id');
+        // Function to display email batches
+        function displayEmailBatches(response) {
+            const container = $('#email-batches-container');
+            container.empty();
+
+            if (!response.batches || response.batches.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            // Create accordion for batches
+            const accordionId = 'emailBatchesAccordion';
+            let accordionHtml = `<div class="accordion accordion-flush" id="${accordionId}">`;
+
+            response.batches.forEach((batch, index) => {
+                const batchNumber = batch.batch_number;
+                const emailCount = batch.email_count;
+                const expectedCount = batch.expected_count || 200;
+                const emails = batch.emails || [];
+                const isFirstBatch = index === 0;
+                
+                // Determine badge color and status based on email count
+                let badgeClass = 'bg-secondary';
+                let statusIcon = 'fa-circle-question';
+                let statusText = 'Unknown';
+                let cardBorder = 'border-secondary';
+                
+                if (emailCount === 0) {
+                    badgeClass = 'bg-info';
+                    statusIcon = 'fa-circle-dot';
+                    statusText = 'Default';
+                    cardBorder = 'border-info';
+                } else if (emailCount < expectedCount) {
+                    badgeClass = 'bg-warning text-dark';
+                    statusIcon = 'fa-circle-exclamation';
+                    statusText = 'Partial';
+                    cardBorder = 'border-warning';
+                } else {
+                    badgeClass = 'bg-success';
+                    statusIcon = 'fa-circle-check';
+                    statusText = 'Customized';
+                    cardBorder = 'border-success';
+                }
+
+                accordionHtml += `
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading${batchNumber}">
+                            <div class="button p-3 ${isFirstBatch ? '' : 'collapsed'} d-flex align-items-center justify-content-between" 
+                                 type="button"
+                                 aria-expanded="${isFirstBatch ? 'true' : 'false'}"
+                                 aria-controls="collapse${batchNumber}"
+                                 onclick="toggleBatchAccordion('collapse${batchNumber}', this, event)">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="d-flex align-items-center justify-content-center" 
+                                         style="width: 35px; height: 35px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; backdrop-filter: blur(10px);">
+                                        <i class="fa-solid fa-layer-group text-white" style="font-size: 0.85rem;"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold mb-0 text-white" style="font-size: 0.9rem;">Batch #${batchNumber}</div>
+                                        <small class="d-flex align-items-center gap-1" style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.7);">
+                                            <i class="fa-solid fa-envelope" style="font-size: 0.7rem;"></i>
+                                            ${emailCount} / ${expectedCount} emails
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge ${badgeClass} rounded-pill px-2 py-1 d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                                        <i class="fa-solid ${statusIcon}" style="font-size: 0.7rem;"></i>
+                                        ${statusText}
+                                    </span>
+                                    <i class="fas fa-chevron-down transition-transform" id="batch-accordion-icon-${batchNumber}" style="font-size: 12px; transform: rotate(${isFirstBatch ? '180' : '0'}deg);"></i>
+                                </div>
+                            </div>
+                        </h2>
+                        <div id="collapse${batchNumber}" class="accordion-collapse collapse ${isFirstBatch ? 'show' : ''}" 
+                             aria-labelledby="heading${batchNumber}" data-bs-parent="#${accordionId}">
+                            <div class="accordion-body" style="padding: 0.5rem;">
+                `;
+
+                if (emails.length > 0) {
+                    // Create table for this batch with search
+                    accordionHtml += `
+                        <!-- Search Bar -->
+                        <div class="mb-3 px-2">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); border: none; color: white;">
+                                    <i class="fa-solid fa-search"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control batch-search-input" 
+                                       data-batch="${batchNumber}" 
+                                       placeholder="Search by name, email, or password..." 
+                                       style="font-size: 0.85rem; border-color: #d1d5db;">
+                                <button class="btn btn-outline-secondary btn-sm batch-clear-search" 
+                                        data-batch="${batchNumber}" 
+                                        type="button"
+                                        style="font-size: 0.75rem;">
+                                    <i class="fa-solid fa-times"></i> Clear
+                                </button>
+                            </div>
+                            <small class="text-muted ms-1 batch-result-count" data-batch="${batchNumber}" style="font-size: 0.75rem;">
+                                Showing ${emails.length} of ${emails.length} emails
+                            </small>
+                        </div>
+                        
+                        <div class="table-responsive batch-table-container" data-batch="${batchNumber}" style="border-radius: 8px; overflow: hidden; max-height: 500px; overflow-y: auto;">
+                            <table class="table table-hover mb-0" style="background: transparent;">
+                                <thead style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); color: white; position: sticky; top: 0; z-index: 10;">
+                                    <tr>
+                                        <th style="width: 5%; padding: 0.5rem; font-size: 0.8rem;">#</th>
+                                        <th style="width: 25%; padding: 0.5rem; font-size: 0.8rem;">First Name</th>
+                                        <th style="width: 25%; padding: 0.5rem; font-size: 0.8rem;">Last Name</th>
+                                        <th style="width: 30%; padding: 0.5rem; font-size: 0.8rem;">Email Address</th>
+                                        <th style="width: 15%; padding: 0.5rem; font-size: 0.8rem;">Password</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="batch-table-body" data-batch="${batchNumber}">
+                    `;
+
+                    emails.forEach((email, emailIndex) => {
+                        accordionHtml += `
+                            <tr class="batch-row" data-batch="${batchNumber}" style="border-bottom: 1px solid #e0e2e5;">
+                                <td style="padding: 0.5rem;">
+                                    <span class="badge rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem; background: rgba(79, 70, 229, 0.1); color: var(--second-primary);">
+                                        ${emailIndex + 1}
+                                    </span>
+                                </td>
+                                <td class="searchable-name" style="padding: 0.5rem; font-size: 0.85rem;">${escapeHtml(email.name || '')}</td>
+                                <td class="searchable-lastname" style="padding: 0.5rem; font-size: 0.85rem;">${escapeHtml(email.last_name || '')}</td>
+                                <td class="searchable-email" style="padding: 0.5rem;">
+                                    <span class="badge px-2 py-1" style="font-weight: normal; font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                                        <i class="fa-solid fa-envelope me-1" style="font-size: 0.65rem;"></i>
+                                        ${escapeHtml(email.email || '')}
+                                    </span>
+                                </td>
+                                <td class="searchable-password" style="padding: 0.5rem;">
+                                    <code class="px-2 py-1 rounded" style="background: rgba(214, 51, 132, 0.1); color: #d63384; font-size: 0.75rem;">
+                                        ${escapeHtml(email.password || '')}
+                                    </code>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    accordionHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-2 py-2 border-top" style="background: rgba(234, 179, 8, 0.15); border-top-color: rgba(234, 179, 8, 0.3) !important;">
+                            <button class="btn btn-warning import-batch-btn px-3 py-1 shadow-sm" 
+                                    data-batch-id="${batchNumber}" 
+                                    data-expected-count="${expectedCount}" 
+                                    data-overwrite="true"
+                                    style="border-radius: 6px; font-weight: 500; font-size: 0.8rem; background: linear-gradient(135deg, #eab308 0%, #f59e0b 100%); border: none; color: white;">
+                                <i class="fa-solid fa-sync-alt me-1" style="font-size: 0.75rem;"></i>
+                                Overwrite Batch ${batchNumber}
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    // Empty batch - show import button
+                    accordionHtml += `
+                        <div class="py-4 px-3" style="background: transparent;">
+                            <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 180px;">
+                                <!-- Icon Container -->
+                                <div class="mb-3 d-flex align-items-center justify-content-center" 
+                                     style="width: 70px; height: 70px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; border: 2px dashed rgba(59, 130, 246, 0.3);">
+                                    <i class="fa-solid fa-inbox" style="font-size: 1.8rem; color: #3b82f6;"></i>
+                                </div>
+                                
+                                <!-- Message -->
+                                <div class="text-center mb-3">
+                                    <h6 class="mb-1 fw-bold" style="color: #e5e7eb;">Batch ${batchNumber} is Empty</h6>
+                                    <p class="mb-0 small" style="color: #9ca3af;">
+                                        <i class="fa-solid fa-circle-info me-1" style="font-size: 0.75rem;"></i>
+                                        Expected ${expectedCount} email accounts
+                                    </p>
+                                </div>
+                                
+                                <!-- Import Button -->
+                                <button class="btn import-batch-btn px-4 py-2 shadow-sm" 
+                                        data-batch-id="${batchNumber}" 
+                                        data-expected-count="${expectedCount}"
+                                        style="border-radius: 8px; font-weight: 500; font-size: 0.85rem; background: linear-gradient(135deg, var(--second-primary) 0%, #4f46e5 100%); border: none; color: white; transition: all 0.3s ease;">
+                                    <i class="fa-solid fa-upload me-2" style="font-size: 0.8rem;"></i>
+                                    Import Emails for Batch ${batchNumber}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                accordionHtml += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            accordionHtml += '</div>';
             
-            if (id) {
-                // Delete existing record
-                $.ajax({
-                    url: `/admin/orders/panel/emails/${id}`,
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function() {
-                        toastr.success('Email deleted successfully');
-                        // Remove just the deleted row instead of reloading the entire table
-                        emailTable.row(row).remove().draw(false);
-                        updateRowCount(emailTable);
-                        updateAddButtonState(emailTable);
-                    },
-                    error: function(xhr) {
-                        toastr.error(xhr.responseJSON?.message || 'Error deleting email');
+            // Add summary at the top
+            const summaryHtml = `
+                <div class="card mb-3 border-0 shadow-sm" style="background: linear-gradient(135deg, #1d2239 0%, #2a2f48 100%); border-radius: 10px; overflow: hidden;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between text-white mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; backdrop-filter: blur(10px);">
+                                    <i class="fa-solid fa-chart-bar"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold" style="font-size: 0.95rem;">Email Batches Summary</h6>
+                                    <div class="d-flex align-items-center gap-3 text-white opacity-75" style="font-size: 0.8rem;">
+                                        <span>
+                                            <i class="fa-solid fa-layer-group me-1" style="font-size: 0.75rem;"></i>
+                                            ${response.total_batches} Batches
+                                        </span>
+                                        <span>
+                                            <i class="fa-solid fa-envelope me-1" style="font-size: 0.75rem;"></i>
+                                            ${response.total_emails} / ${response.space_assigned} Emails
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="badge px-3 py-1" style="font-size: 0.85rem; background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 8px; backdrop-filter: blur(10px);">
+                                    <i class="fa-solid fa-database me-1" style="font-size: 0.75rem;"></i>
+                                    Space: ${response.space_assigned}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="position-relative" style="height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden;">
+                            <div class="position-absolute h-100" 
+                                 style="width: ${Math.min((response.total_emails / response.space_assigned) * 100, 100)}%; 
+                                        background: linear-gradient(90deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%);
+                                        border-radius: 10px;
+                                        transition: width 0.5s ease;
+                                        box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1" style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.7);">
+                            <span>${Math.round((response.total_emails / response.space_assigned) * 100)}% Complete</span>
+                            <span>${response.space_assigned - response.total_emails} Remaining</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.html(summaryHtml + accordionHtml);
+        }
+
+        // Function to show empty state
+        function showEmptyState(message = 'No email batches found. Please import emails using the CSV upload feature.') {
+            const container = $('#email-batches-container');
+            container.html(`
+                <div class="card border-0 shadow-sm" style="border-radius: 10px;">
+                    <div class="card-body text-center py-4">
+                        <div class="mb-3">
+                            <div class="d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 80px; height: 80px; background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%); border-radius: 50%;">
+                                <i class="fa-solid fa-inbox fa-2x" style="color: #6366f1;"></i>
+                            </div>
+                        </div>
+                        <h6 class="mb-2 fw-bold" style="color: #1d2239; font-size: 0.95rem;">${message}</h6>
+                        <p class="text-muted mb-3" style="font-size: 0.85rem;">Click "Emails Customization" button above to import emails.</p>
+                        <div class="d-inline-block px-3 py-2 rounded-pill" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px dashed #0ea5e9;">
+                            <i class="fa-solid fa-lightbulb text-info me-1" style="font-size: 0.85rem;"></i>
+                            <small class="text-info fw-medium" style="font-size: 0.8rem;">Upload a CSV file to get started</small>
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text ? text.toString().replace(/[&<>"']/g, m => map[m]) : '';
+        }
+
+        // Toggle batch accordions and rotate icon (global function)
+        window.toggleBatchAccordion = function(targetId, buttonElement, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            const target = document.getElementById(targetId);
+            if (!target) {
+                console.error('Target not found:', targetId);
+                return;
+            }
+
+            const batchNumber = targetId.replace('collapse', '');
+            const arrowIcon = document.getElementById(`batch-accordion-icon-${batchNumber}`);
+            const isExpanded = target.classList.contains('show');
+
+            if (isExpanded) {
+                // Close this accordion
+                $(target).collapse('hide');
+                buttonElement.setAttribute('aria-expanded', 'false');
+                buttonElement.classList.add('collapsed');
+                if (arrowIcon) {
+                    arrowIcon.style.transform = 'rotate(0deg)';
+                }
+            } else {
+                // Close other accordions first
+                document.querySelectorAll('#emailBatchesAccordion .accordion-collapse.show').forEach(openItem => {
+                    $(openItem).collapse('hide');
+                    const btn = openItem.previousElementSibling?.querySelector('.button');
+                    if (btn) {
+                        btn.setAttribute('aria-expanded', 'false');
+                        btn.classList.add('collapsed');
+                    }
+                    const collapseId = openItem.id;
+                    const batchNum = collapseId.replace('collapse', '');
+                    const icon = document.getElementById(`batch-accordion-icon-${batchNum}`);
+                    if (icon) {
+                        icon.style.transform = 'rotate(0deg)';
                     }
                 });
-            } else {
-                // Remove unsaved row and redraw the table
-                emailTable.row(row).remove().draw(false);
-                updateRowCount(emailTable);
-                updateAddButtonState(emailTable);
+
+                // Open this accordion
+                $(target).collapse('show');
+                buttonElement.setAttribute('aria-expanded', 'true');
+                buttonElement.classList.remove('collapsed');
+                if (arrowIcon) {
+                    arrowIcon.style.transform = 'rotate(180deg)';
+                }
             }
+        };
+
+        // Load email batches on page load
+        loadEmailBatches();
+
+        // Search functionality for batch tables
+        $(document).on('input', '.batch-search-input', function() {
+            const batchNumber = $(this).data('batch');
+            const searchTerm = $(this).val().toLowerCase().trim();
+            const rows = $(`.batch-row[data-batch="${batchNumber}"]`);
+            let visibleCount = 0;
+            const totalCount = rows.length;
+
+            rows.each(function() {
+                const $row = $(this);
+                const name = $row.find('.searchable-name').text().toLowerCase();
+                const lastName = $row.find('.searchable-lastname').text().toLowerCase();
+                const email = $row.find('.searchable-email').text().toLowerCase();
+                const password = $row.find('.searchable-password').text().toLowerCase();
+
+                const matches = name.includes(searchTerm) || 
+                               lastName.includes(searchTerm) || 
+                               email.includes(searchTerm) || 
+                               password.includes(searchTerm);
+
+                if (matches) {
+                    $row.show();
+                    visibleCount++;
+                } else {
+                    $row.hide();
+                }
+            });
+
+            // Update result count
+            $(`.batch-result-count[data-batch="${batchNumber}"]`).text(
+                `Showing ${visibleCount} of ${totalCount} emails`
+            );
+
+            // Show "no results" message if needed
+            const $tableContainer = $(`.batch-table-container[data-batch="${batchNumber}"]`);
+            $tableContainer.find('.no-results-message').remove();
+            
+            if (visibleCount === 0 && searchTerm !== '') {
+                const $tbody = $(`.batch-table-body[data-batch="${batchNumber}"]`);
+                $tbody.append(`
+                    <tr class="no-results-message">
+                        <td colspan="5" class="text-center py-4">
+                            <i class="fa-solid fa-search text-muted mb-2" style="font-size: 2rem;"></i>
+                            <p class="text-muted mb-0">No emails found matching "${escapeHtml(searchTerm)}"</p>
+                        </td>
+                    </tr>
+                `);
+            }
+        });
+
+        // Clear search functionality
+        $(document).on('click', '.batch-clear-search', function() {
+            const batchNumber = $(this).data('batch');
+            const $input = $(`.batch-search-input[data-batch="${batchNumber}"]`);
+            $input.val('').trigger('input');
+        });
+
+        // Handle batch-specific import button clicks
+        $(document).on('click', '.import-batch-btn', function() {
+            const batchId = $(this).data('batch-id');
+            const expectedCount = $(this).data('expected-count');
+            const isOverwrite = $(this).data('overwrite') === true;
+            
+            // Set modal content based on mode
+            if (isOverwrite) {
+                $('#batchNumberTitle').text('Overwrite Batch ' + batchId);
+                $('#BatchImportModalLabel h5').text('Overwrite Emails for Batch ' + batchId);
+            } else {
+                $('#batchNumberTitle').text('Batch ' + batchId);
+                $('#BatchImportModalLabel h5').text('Import Emails for Batch ' + batchId);
+            }
+            
+            $('#batchNumberInfo').text('Batch ' + batchId);
+            $('#expectedCountInfo').text(expectedCount);
+            $('#batch_id_input').val(batchId);
+            $('#expected_count_input').val(expectedCount);
+            
+            // Store overwrite flag in a hidden field or data attribute
+            if (isOverwrite) {
+                $('#BatchImportForm').attr('data-overwrite', 'true');
+            } else {
+                $('#BatchImportForm').removeAttr('data-overwrite');
+            }
+            
+            // Reset form
+            $('#BatchImportForm')[0].reset();
+            $('#batch_id_input').val(batchId);
+            $('#expected_count_input').val(expectedCount);
+            $('#batch_file').val('');
+            $('#batchCsvInstructions').removeClass('d-none');
+            $('#batchFileSelectedInfo').addClass('d-none');
+            
+            // Show modal
+            $('#BatchImportModal').modal('show');
+        });
+
+        // Batch file selection handler
+        $(document).on('change', '#batch_file', function() {
+            const fileInput = $(this);
+            const file = fileInput[0].files[0];
+            const csvInstructions = $('#batchCsvInstructions');
+            const fileSelectedInfo = $('#batchFileSelectedInfo');
+            const selectedFileName = $('#batchSelectedFileName');
+            
+            fileInput.removeClass('is-invalid is-valid');
+            fileInput.next('.invalid-feedback').remove();
+            
+            if (file) {
+                if (file.type === 'text/csv' || file.type === 'application/csv' || file.name.toLowerCase().endsWith('.csv')) {
+                    csvInstructions.addClass('d-none');
+                    fileSelectedInfo.removeClass('d-none');
+                    selectedFileName.text(`File selected: ${file.name}`);
+                    fileInput.addClass('is-valid');
+                } else {
+                    csvInstructions.removeClass('d-none');
+                    fileSelectedInfo.addClass('d-none');
+                    fileInput.addClass('is-invalid');
+                    if (!fileInput.next('.invalid-feedback').length) {
+                        fileInput.after('<div class="invalid-feedback">Please select a valid CSV file.</div>');
+                    }
+                }
+            } else {
+                csvInstructions.removeClass('d-none');
+                fileSelectedInfo.addClass('d-none');
+                fileInput.removeClass('is-invalid is-valid');
+            }
+        });
+
+        // Batch Import Form submission
+        $(document).on('submit', '#BatchImportForm', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const form = $(this);
+            const fileInput = $('#batch_file');
+            const file = fileInput[0].files[0];
+            const batchId = $('#batch_id_input').val();
+            const expectedCount = $('#expected_count_input').val();
+            
+            if (!file) {
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
+                    icon: 'warning',
+                    title: 'No File Selected',
+                    text: 'Please select a CSV file to import.',
+                    confirmButtonColor: '#3085d6'
+                });
+                $('#BulkImportForm button[type="submit"]').prop('disabled', false);
+                return false;
+            }
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
+            
+            if (!file.type.includes('csv') && !file.name.toLowerCase().endsWith('.csv')) {
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid File Type',
+                    text: 'Please select a valid CSV file.',
+                    confirmButtonColor: '#3085d6'
+                });
+                $('#BulkImportForm button[type="submit"]').prop('disabled', false);
+                return false;
+            }
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
+
+            const formData = new FormData(this);
+            formData.append('order_panel_id', {{ $orderPanel->id }});
+            formData.append('split_total_inboxes', {{ $splitTotalInboxes }});
+            
+            // Check if this is an overwrite operation
+            const isOverwrite = $('#BatchImportForm').attr('data-overwrite') === 'true';
+            if (isOverwrite) {
+                formData.append('overwrite', '1');
+            }
+
+            const confirmTitle = isOverwrite ? 'Overwrite Batch ' + batchId + '?' : 'Import Batch ' + batchId + '?';
+            const confirmText = isOverwrite 
+                ? `This will REPLACE all existing ${expectedCount} emails in Batch ${batchId} with new data from the CSV file.`
+                : `This will import up to ${expectedCount} emails for Batch ${batchId}.`;
+            const confirmButton = isOverwrite ? 'Yes, Overwrite!' : 'Yes, Import!';
+
+            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
+                title: confirmTitle,
+                text: confirmText,
+                icon: isOverwrite ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonColor: isOverwrite ? '#f39c12' : '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: confirmButton,
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait while we process your file...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+
+                    $.ajax({
+                        url: form.attr('action'),
+                        method: 'POST',
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        timeout: 60000,
+                        success: function(response) {
+                            $('#BatchImportModal').modal('hide');
+                            
+                            const successTitle = isOverwrite ? 'Overwritten Successfully!' : 'Imported Successfully!';
+                            const successText = response.message || (isOverwrite 
+                                ? `Batch ${batchId} has been overwritten successfully.`
+                                : `Batch ${batchId} has been imported successfully.`);
+                            
+                            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
+                                icon: 'success',
+                                title: successTitle,
+                                text: successText,
+                                confirmButtonColor: '#3085d6',
+                                timer: 5000,
+                                timerProgressBar: true
+                            }).then(() => {
+                                loadEmailBatches();
+                            });
+                        },
+                        error: function(xhr, status, error) {
+                            // Re-enable submit button on error
+                            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
+                            let errorMessage = 'An error occurred while processing the file.';
+                            
+                            if (status === 'timeout') {
+                                errorMessage = 'File processing timed out. Please try with a smaller file.';
+                            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            
+                            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
+                                icon: 'error',
+                                title: 'Import Failed',
+                                text: errorMessage,
+                                confirmButtonColor: '#3085d6'
+                            });
+                        }
+                    });
+                } else {
+                    // Re-enable submit if user cancels the confirmation dialog
+                    $('#BatchImportForm button[type="submit"]').prop('disabled', false);
+                }
+            });
+            
+            return false;
+        });
+
+        // Ensure Batch Import submit is enabled when modal opens/closes
+        $('#BatchImportModal').on('show.bs.modal', function() {
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
+        });
+        $('#BatchImportModal').on('hidden.bs.modal', function() {
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
         });
 
         // Bulk import functionality
@@ -1069,31 +1549,35 @@
             
             // Validate file selection
             if (!file) {
-                Swal.fire({
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                     icon: 'warning',
                     title: 'No File Selected',
                     text: 'Please select a CSV file to import.',
                     confirmButtonColor: '#3085d6'
                 });
+                $('#BatchImportForm button[type="submit"]').prop('disabled', false);
                 return false;
             }
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
             
             // Validate file type
             if (!file.type.includes('csv') && !file.name.toLowerCase().endsWith('.csv')) {
-                Swal.fire({
+                if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                     icon: 'warning',
                     title: 'Invalid File Type',
                     text: 'Please select a valid CSV file.',
                     confirmButtonColor: '#3085d6'
                 });
+                $('#BatchImportForm button[type="submit"]').prop('disabled', false);
                 return false;
             }
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
 
             const formData = new FormData(this);
             const order_panel_id = {{ $orderPanel->id }};
             const split_total_inboxes = {{ $splitTotalInboxes }};
 
-            Swal.fire({
+            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                 title: 'Are you sure?',
                 text: 'Do you want to import this CSV file?',
                 icon: 'warning',
@@ -1109,15 +1593,13 @@
                     formData.append('split_total_inboxes', split_total_inboxes);
 
                     // Show processing dialog
-                    Swal.fire({
+                    if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                         title: 'Processing...',
                         text: 'Please wait while we process your file...',
                         allowOutsideClick: false,
                         allowEscapeKey: false,
                         showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
+                        didOpen: () => { Swal.showLoading(); }
                     });
 
                     $.ajax({
@@ -1137,7 +1619,7 @@
                             $('#BulkImportModal').modal('hide');
                             
                             // Show success message
-                            Swal.fire({
+                            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                                 icon: 'success',
                                 title: 'Success!',
                                 text: response.message || 'File has been imported successfully.',
@@ -1145,10 +1627,8 @@
                                 timer: 5000,
                                 timerProgressBar: true
                             }).then(() => {
-                                // Reload the email table
-                                if (typeof emailTable !== 'undefined') {
-                                    emailTable.ajax.reload();
-                                }
+                                // Reload the email batches instead of the old table
+                                loadEmailBatches();
                             });
                         },
                         error: function(xhr, status, error) {
@@ -1173,7 +1653,7 @@
                                 }
                             }
                             
-                            Swal.fire({
+                            if (document.activeElement) { try { document.activeElement.blur(); } catch(e){} } Swal.fire({
                                 icon: 'error',
                                 title: 'Import Failed',
                                 text: errorMessage,
@@ -1183,12 +1663,27 @@
                         }
                     });
                 } else {
-                    console.log('Import cancelled by user');
+                    // User cancelled confirmation: ensure submit stays enabled
+                    $('#BatchImportForm button[type="submit"]').prop('disabled', false);
                 }
             });
             
             return false;
         });
+
+        // Ensure submit buttons are re-enabled if the SweetAlert is cancelled/closed
+        $(document).on('click', '.swal2-cancel, .swal2-close', function() {
+            $('#BulkImportForm button[type="submit"]').prop('disabled', false);
+            $('#BatchImportForm button[type="submit"]').prop('disabled', false);
+        });
     });
 </script>
 @endpush
+
+
+
+
+
+
+
+

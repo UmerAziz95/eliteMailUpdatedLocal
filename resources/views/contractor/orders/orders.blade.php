@@ -697,14 +697,34 @@
                     <label class="form-label">Current Status: <span id="modalCurrentStatus" class="badge"></span></label>
                 </div>
                 <div class="mb-3">
-                    <label for="newStatus" class="form-label">Select New Status</label>
-                    <select class="form-select" id="newStatus" required>
+                    <label for="contractorNewStatus" class="form-label">Select New Status</label>
+                    <select class="form-select" id="contractorNewStatus" required>
                         <option value="">-- Select Status --</option>
                         <!-- <option value="pending">Pending</option> -->
                         <option value="completed">Completed</option>
                         <!-- <option value="cancelled">Cancelled</option> -->
                         <option value="reject">Rejected</option>
                     </select>
+                </div>
+                <div class="mb-3" id="providerTypeWrapper" style="display: none;">
+                    <label for="providerType" class="form-label">Provider Type <span class="text-danger">*</span></label>
+                    <select class="form-select" id="providerType">
+                        <option value="">-- Select Provider Type --</option>
+                        <option value="Google">Google</option>
+                        <option value="Microsoft 365">Microsoft 365</option>
+                    </select>
+                    <small class="text-muted">Required when status is Completed</small>
+                </div>
+                <div class="mb-3" id="microsoftCsvWrapper" style="display: none;">
+                    <label for="microsoftCsvFile" class="form-label">
+                        Import CSV File for Microsoft 365 <span class="text-danger">*</span>
+                    </label>
+                    <input type="file" class="form-control" id="microsoftCsvFile" accept=".csv">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        CSV must contain: Display name, Username, Password, Licenses (optional). Total rows must match order's total inboxes.
+                    </small>
+                    <div id="csvValidationMessage" class="mt-2" style="display: none;"></div>
                 </div>
                 <div class="mb-3">
                     <label for="statusReason" class="form-label">Reason for Status Change (Optional)</label>
@@ -1649,7 +1669,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                             SPL-${split.id || 'N/A'}
                                         </span>
                                     </td>
-                                     <td>${split?.panel_id || 'N/A'}</td>
+                                     <td>${ split?.panel_sr_no || split?.panel_id || 'N/A'}</td>
                                      <td>${split?.panel_title || 'N/A'}</td>
                                     <td>
                                         <span class="py-1 px-2 rounded-1 text-white text-capitalize ${getStatusBadgeClass(split.status)}">${split.status || 'Unknown'}</span>
@@ -1802,7 +1822,7 @@ function calculateOrderTimer(createdAt, status, completedAt = null, timerStarted
                                                 <span class="badge bg-white text-dark me-2" style="font-size: 10px; font-weight: bold;">
                                                     Split ${String(index + 1).padStart(2, '0')}
                                                 </span>
-                                                <small class="fw-bold text-uppercase">PNL-${split.panel_id} | ${split.panel_title || 'N/A'}</small>
+                                                <small class="fw-bold text-uppercase">PNL-${ split.panel_sr_no || split.panel_id} | ${split.panel_title || 'N/A'}</small>
                                             </div>
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-white bg-opacity-25 text-white me-2" style="font-size: 9px;">
@@ -2677,6 +2697,10 @@ function parseUTCDateTime(dateStr) {
     
     function startTimer(durationSeconds) {
       const container = document.getElementById('flip-timer');
+      if (!container) {
+        console.warn('flip-timer container not found; skipping timer initialization.');
+        return;
+      }
       const digitElements = [];
     
       const formatTime = (s) => {
@@ -2730,8 +2754,16 @@ function parseUTCDateTime(dateStr) {
         statusBadge.className = 'badge ' + getStatusBadgeClass(currentStatus);
         
         // Reset form
-        document.getElementById('newStatus').value = '';
+        document.getElementById('contractorNewStatus').value = '';
         document.getElementById('statusReason').value = '';
+        const providerTypeField = document.getElementById('providerType');
+        if (providerTypeField) {
+            providerTypeField.value = '';
+        }
+        const providerWrapper = document.getElementById('providerTypeWrapper');
+        if (providerWrapper) {
+            providerWrapper.style.display = 'none';
+        }
         
         // Store order ID for later use
         document.getElementById('changeStatusModal').setAttribute('data-order-id', orderId);
@@ -2740,6 +2772,49 @@ function parseUTCDateTime(dateStr) {
         const modal = new bootstrap.Modal(document.getElementById('changeStatusModal'));
         modal.show();
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusSelect = document.getElementById('contractorNewStatus');
+        const providerWrapper = document.getElementById('providerTypeWrapper');
+        const providerSelect = document.getElementById('providerType');
+        const microsoftCsvWrapper = document.getElementById('microsoftCsvWrapper');
+        const microsoftCsvFile = document.getElementById('microsoftCsvFile');
+        
+        if (!statusSelect || !providerWrapper || !providerSelect) {
+            return;
+        }
+
+        statusSelect.addEventListener('change', function() {
+            console.log('Selected status:', this.value);
+            if (this.value === 'completed') {
+                providerWrapper.style.display = 'block';
+            } else {
+                providerWrapper.style.display = 'none';
+                providerSelect.value = '';
+                if (microsoftCsvWrapper) {
+                    microsoftCsvWrapper.style.display = 'none';
+                }
+                if (microsoftCsvFile) {
+                    microsoftCsvFile.value = '';
+                }
+            }
+            console.log('Provider type wrapper display:', providerWrapper.style.display);
+        });
+
+        // Show/hide CSV upload based on provider type
+        if (providerSelect && microsoftCsvWrapper) {
+            providerSelect.addEventListener('change', function() {
+                if (this.value === 'Microsoft 365') {
+                    microsoftCsvWrapper.style.display = 'block';
+                } else {
+                    microsoftCsvWrapper.style.display = 'none';
+                    if (microsoftCsvFile) {
+                        microsoftCsvFile.value = '';
+                    }
+                }
+            });
+        }
+    });
 
     // Helper function to get status badge class
     function getStatusBadgeClass(status) {
@@ -2758,8 +2833,10 @@ function parseUTCDateTime(dateStr) {
     async function updateOrderStatus() {
         const modal = document.getElementById('changeStatusModal');
         const orderId = modal.getAttribute('data-order-id');
-        const newStatus = document.getElementById('newStatus').value;
+        const newStatus = document.getElementById('contractorNewStatus').value;
         const reason = document.getElementById('statusReason').value;
+        const providerType = document.getElementById('providerType') ? document.getElementById('providerType').value : '';
+        const microsoftCsvFile = document.getElementById('microsoftCsvFile');
         
         if (!newStatus) {
             Swal.fire({
@@ -2770,6 +2847,29 @@ function parseUTCDateTime(dateStr) {
             });
             return;
         }
+        if (newStatus === 'completed' && !providerType) {
+            Swal.fire({
+                title: 'Missing Provider Type',
+                text: 'Please select a provider type (Google or Microsoft 365) before completing the order',
+                icon: 'warning',
+                confirmButtonColor: '#f39c12'
+            });
+            return;
+        }
+        
+        // Validate CSV file for Microsoft 365
+        if (newStatus === 'completed' && providerType === 'Microsoft 365') {
+            if (!microsoftCsvFile || !microsoftCsvFile.files || microsoftCsvFile.files.length === 0) {
+                Swal.fire({
+                    title: 'Missing CSV File',
+                    text: 'Please upload a CSV file for Microsoft 365 orders',
+                    icon: 'warning',
+                    confirmButtonColor: '#f39c12'
+                });
+                return;
+            }
+        }
+        
         // Validate reason if status is not completed
         if (newStatus !== 'completed' && !reason) {
             Swal.fire({
@@ -2813,17 +2913,37 @@ function parseUTCDateTime(dateStr) {
         });
         
         try {
-            const response = await fetch(`/contractor/orders/${orderId}/change-status`, {
-                method: 'POST',
-                headers: {
+            // Use FormData if CSV file is present
+            let body, headers;
+            if (newStatus === 'completed' && providerType === 'Microsoft 365' && microsoftCsvFile && microsoftCsvFile.files[0]) {
+                const formData = new FormData();
+                formData.append('status', newStatus);
+                formData.append('reason', reason || '');
+                formData.append('provider_type', providerType);
+                formData.append('microsoft_csv', microsoftCsvFile.files[0]);
+                
+                body = formData;
+                headers = {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+            } else {
+                body = JSON.stringify({
+                    status: newStatus,
+                    reason: reason,
+                    provider_type: providerType
+                });
+                headers = {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                     'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    status: newStatus,
-                    reason: reason
-                })
+                };
+            }
+            
+            const response = await fetch(`/contractor/orders/${orderId}/change-status`, {
+                method: 'POST',
+                headers: headers,
+                body: body
             });
             
             if (!response.ok) {
