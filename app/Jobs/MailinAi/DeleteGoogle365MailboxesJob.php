@@ -15,6 +15,15 @@ class DeleteGoogle365MailboxesJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /**
+     * Large Google/365 orders can exceed typical worker timeouts if we process
+     * too many mailboxes per run. Keep each job small and retry safely.
+     */
+    public $timeout = 300;
+    public $tries = 15;
+    public $maxExceptions = 10;
+    public $backoff = [30, 60, 120, 300];
+
     protected $orderId;
     protected $batchSize;
     protected $offset;
@@ -29,7 +38,8 @@ class DeleteGoogle365MailboxesJob implements ShouldQueue
     public function __construct(int $orderId, int $batchSize = 50, int $offset = 0)
     {
         $this->orderId = $orderId;
-        $this->batchSize = $batchSize;
+        // Smaller batches reduce timeouts on large orders.
+        $this->batchSize = max(1, min($batchSize, 10));
         $this->offset = $offset;
     }
 
@@ -52,6 +62,18 @@ class DeleteGoogle365MailboxesJob implements ShouldQueue
                 $this->batchSize,
                 $this->offset
             );
+
+            if (!is_array($result) || !isset($result['processed'], $result['deleted'], $result['failed'], $result['not_found'], $result['lookup_failed'], $result['has_more'])) {
+                Log::channel('mailin-ai')->warning('DeleteGoogle365MailboxesJob: Unexpected result shape; releasing for retry', [
+                    'action' => 'delete_google365_mailboxes_batch',
+                    'order_id' => $this->orderId,
+                    'offset' => $this->offset,
+                    'batch_size' => $this->batchSize,
+                    'result_type' => gettype($result),
+                ]);
+                $this->release(60);
+                return;
+            }
 
             Log::channel('mailin-ai')->info('DeleteGoogle365MailboxesJob: Batch completed', [
                 'action' => 'delete_google365_mailboxes_batch',
@@ -89,7 +111,7 @@ class DeleteGoogle365MailboxesJob implements ShouldQueue
                     'total_processed' => $result['processed'],
                     'total_deleted' => $result['deleted'],
                     'total_failed' => $result['failed'],
-                ]);
+                ]);        
             }
 
         } catch (\Exception $e) {
@@ -101,10 +123,12 @@ class DeleteGoogle365MailboxesJob implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Re-throw to mark job as failed
-            throw $e;
+            // Do not hard-fail and stop mid-way. Retry the same offset.
+            // Queue worker will apply backoff; also explicitly release in case of transient timeouts.
+            $this->release(120);
+            return;
         }
-    }
+    }   
 
     /**
      * Update order status to 'cancelled' when all batches are complete.
