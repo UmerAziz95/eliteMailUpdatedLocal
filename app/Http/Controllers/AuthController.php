@@ -80,7 +80,14 @@ class AuthController extends Controller
             'password' => 'required',
             'discord_setting_page_id'=> 'nullable|exists:discord_user_login_sessions,discord_setting_page_id'
         ]);
-    
+           $userCheck=User::where('email',$request->email)->first();
+        if(!$userCheck){
+             return back()->withErrors(['email' => 'Account does not exist!']);
+        }
+        if($userCheck->status==0)
+         {
+            return back()->withErrors(['email' => 'Your account is inactive. Please contact support for assistance.']);
+           }    
          $remember = $request->has('remember');
          $type_id=session()->get('iam_discounted_user'); // 
        
