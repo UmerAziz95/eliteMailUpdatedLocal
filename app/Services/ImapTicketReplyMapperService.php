@@ -13,7 +13,7 @@ class ImapTicketReplyMapperService
     {
         $imapInboxEmails = TicketsImapEmails::where('folder', 'INBOX')
             ->get();
-            Log::info("Found " . $imapInboxEmails->count() . " emails in INBOX.");
+            // Log::info("Found " . $imapInboxEmails->count() . " emails in INBOX.");
 
         foreach ($imapInboxEmails as $email) {
             $this->mapEmailToTicketReply($email);
@@ -22,18 +22,18 @@ class ImapTicketReplyMapperService
 
     private function mapEmailToTicketReply($email)
     {
-        Log::info("Mapping email ID {$email->id} to ticket reply.");
+        // Log::info("Mapping email ID {$email->id} to ticket reply.");
 
         $subjectTicketId = $this->extractTicketIdFromSubject($email->subject);
 
         if (!$subjectTicketId) {
-            Log::warning("Email {$email->id} has no ticket ID in subject: {$email->subject}");
+            // Log::warning("Email {$email->id} has no ticket ID in subject: {$email->subject}");
             return;
         }
 
         $ticket = SupportTicket::where('ticket_number', $subjectTicketId)->first();
 
-        Log::info("Found ticket: " . ($ticket ? $ticket->id : 'None'));
+        // Log::info("Found ticket: " . ($ticket ? $ticket->id : 'None'));
 
         if ($ticket) {
             TicketReply::updateOrCreate(
