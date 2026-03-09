@@ -29,8 +29,19 @@ class MailboxCreationService
         array $prefixVariantsDetails,
         bool $force = false
     ): array {
-        // GATE: Check ALL domains across ALL splits are active
-        if (!OrderProviderSplit::areAllDomainsActiveForOrder($order->id)) {
+        Log::channel('mailin-ai')->info('Mailin createMailboxesForOrder: started', [
+            'order_id' => $order->id,
+            'force' => $force,
+            'prefix_variants_count' => count($prefixVariants),
+        ]);
+
+        // GATE: Check ALL domains across ALL splits are active (skip when force=true)
+        $allActive = OrderProviderSplit::areAllDomainsActiveForOrder($order->id);
+        if (!$allActive && !$force) {
+            Log::channel('mailin-ai')->warning('Mailin createMailboxesForOrder: aborted - not all domains active', [
+                'order_id' => $order->id,
+                'reason' => 'Run mailin:activate-domains first or use --force',
+            ]);
             return [
                 'success' => false,
                 'error' => 'Not all domains are active. Run mailin:activate-domains first.',
@@ -39,6 +50,13 @@ class MailboxCreationService
         }
 
         $splits = OrderProviderSplit::where('order_id', $order->id)->get();
+        Log::channel('mailin-ai')->info('Mailin createMailboxesForOrder: splits loaded', [
+            'order_id' => $order->id,
+            'splits_count' => $splits->count(),
+            'split_ids' => $splits->pluck('id')->toArray(),
+            'provider_slugs' => $splits->pluck('provider_slug')->toArray(),
+        ]);
+
         $allResults = [];
         $totalCreated = 0;
         $totalFailed = 0;
@@ -48,9 +66,11 @@ class MailboxCreationService
             // New Logic: If force is true, only process splits that are fully active
             // Skip splits that are not active to avoid errors
             if ($force && !$split->all_domains_active) {
-                Log::channel('mailin-ai')->info('Skipping inactive provider split in force mode', [
+                Log::channel('mailin-ai')->info('Mailin createMailboxesForOrder: skipping inactive split (force mode)', [
                     'order_id' => $order->id,
-                    'provider' => $split->provider_slug,
+                    'split_id' => $split->id,
+                    'provider_slug' => $split->provider_slug,
+                    'all_domains_active' => $split->all_domains_active,
                 ]);
                 continue;
             }
@@ -134,10 +154,20 @@ class MailboxCreationService
             'failed' => [],
         ];
 
+        Log::channel('mailin-ai')->info('Mailin createMailboxesForSplit: started', [
+            'order_id' => $order->id,
+            'split_id' => $split->id,
+            'provider_slug' => $split->provider_slug,
+            'domains' => $split->domains ?? [],
+            'domains_count' => count($split->domains ?? []),
+            'prefix_variants' => array_values($prefixVariants),
+        ]);
+
         // Get provider credentials
         $providerConfig = SmtpProviderSplit::getBySlug($split->provider_slug);
         if (!$providerConfig) {
-            Log::channel('mailin-ai')->error('Provider not found for mailbox creation', [
+            Log::channel('mailin-ai')->error('Mailin createMailboxesForSplit: provider config not found', [
+                'order_id' => $order->id,
                 'provider_slug' => $split->provider_slug,
             ]);
             return $results;
@@ -147,14 +177,24 @@ class MailboxCreationService
         $provider = $this->createProvider($split->provider_slug, $credentials);
 
         if (!$provider->authenticate()) {
-            Log::channel('mailin-ai')->error('Provider auth failed for mailbox creation', [
-                'provider' => $split->provider_slug,
+            Log::channel('mailin-ai')->error('Mailin createMailboxesForSplit: provider auth failed', [
+                'order_id' => $order->id,
+                'provider_slug' => $split->provider_slug,
             ]);
             return $results;
         }
 
-        // Process each domain
-        foreach ($split->domains ?? [] as $domain) {
+        // Process each domain with delay between domains to avoid Mailin.ai rate limits
+        $delayBetweenDomains = (int) config('mailin_ai.mailbox_creation_delay_between_domains', 3);
+        $domains = $split->domains ?? [];
+        $domainIndex = 0;
+
+        foreach ($domains as $domain) {
+            if ($domainIndex > 0 && $delayBetweenDomains > 0) {
+                sleep($delayBetweenDomains);
+            }
+            $domainIndex++;
+
             $domainResult = $this->createMailboxesForDomain(
                 $order,
                 $split,
@@ -786,13 +826,25 @@ class MailboxCreationService
             ];
         }
 
+        $expectedEmails = array_column($mailboxes, 'username');
+        Log::channel('mailin-ai')->info('Mailin createMailboxesForDomain: starting', [
+            'order_id' => $order->id,
+            'split_id' => $split->id,
+            'domain' => $domain,
+            'provider_slug' => $split->provider_slug,
+            'expected_emails' => $expectedEmails,
+            'expected_count' => count($expectedEmails),
+        ]);
+
         // Call provider API
         try {
             $apiResult = $provider->createMailboxes($mailboxes);
         } catch (\Exception $e) {
-            Log::channel('mailin-ai')->error('Mailbox creation exception', [
+            Log::channel('mailin-ai')->error('Mailin createMailboxesForDomain: API exception', [
+                'order_id' => $order->id,
                 'domain' => $domain,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
@@ -800,6 +852,14 @@ class MailboxCreationService
                 'failed' => array_column($mailboxes, 'username'),
             ];
         }
+
+        Log::channel('mailin-ai')->info('Mailin createMailboxesForDomain: createMailboxes API response', [
+            'order_id' => $order->id,
+            'domain' => $domain,
+            'api_success' => $apiResult['success'] ?? false,
+            'api_message' => $apiResult['message'] ?? $apiResult['error'] ?? null,
+            'domain_not_registered' => $apiResult['domain_not_registered'] ?? false,
+        ]);
 
         if (!$apiResult['success']) {
             // Handle specific case where domain is not registered
@@ -845,13 +905,26 @@ class MailboxCreationService
             $createdMailboxes = $provider->getMailboxesByDomain($domain);
             $foundCount = count($createdMailboxes['mailboxes'] ?? []);
 
+            Log::channel('mailin-ai')->info('Mailin createMailboxesForDomain: getMailboxesByDomain response', [
+                'order_id' => $order->id,
+                'domain' => $domain,
+                'attempt' => $retryCount + 1,
+                'found_count' => $foundCount,
+                'expected_at_least' => count($mailboxes),
+                'api_success' => $createdMailboxes['success'] ?? null,
+                'api_emails_sample' => array_slice(array_map(function ($mb) {
+                    return $mb['email'] ?? $mb['username'] ?? null;
+                }, $createdMailboxes['mailboxes'] ?? []), 0, 5),
+            ]);
+
             // Wait until we find at least as many mailboxes as we just created
             // This prevents partial ID saving if the API returns them one by one
             if ($foundCount >= count($mailboxes)) {
                 break;
             }
 
-            Log::channel('mailin-ai')->info('Waiting for all mailboxes to appear in API...', [
+            Log::channel('mailin-ai')->info('Mailin createMailboxesForDomain: waiting for mailboxes to appear in API', [
+                'order_id' => $order->id,
                 'domain' => $domain,
                 'attempt' => $retryCount + 1,
                 'found_count' => $foundCount,
@@ -863,12 +936,6 @@ class MailboxCreationService
 
         $mailboxIdMap = [];
 
-        Log::channel('mailin-ai')->debug('Mapping mailbox IDs', [
-            'domain' => $domain,
-            'api_response_count' => count($createdMailboxes['mailboxes'] ?? []),
-            'created_mailboxes_preview' => array_slice($createdMailboxes['mailboxes'] ?? [], 0, 3),
-        ]);
-
         if (!empty($createdMailboxes['mailboxes'])) {
             foreach ($createdMailboxes['mailboxes'] as $mb) {
                 $email = $mb['email'] ?? $mb['username'] ?? '';
@@ -877,14 +944,33 @@ class MailboxCreationService
             }
         }
 
+        Log::channel('mailin-ai')->info('Mailin createMailboxesForDomain: mailboxIdMap built', [
+            'order_id' => $order->id,
+            'domain' => $domain,
+            'map_keys_count' => count($mailboxIdMap),
+            'map_keys_lowercase' => array_keys($mailboxIdMap),
+            'expected_emails_lowercase' => array_map('strtolower', $expectedEmails),
+            'match_hint' => 'Lookup uses strtolower(data[mailbox]); if API returns different email format/case, lookup fails.',
+        ]);
+
         $successfulMailboxes = [];
         $pendingMailboxes = [];
+        $storeChecks = [];
 
         // Store in JSON column with mailbox IDs
         foreach ($mailboxDataMap as $prefixKey => $data) {
             $targetEmail = strtolower($data['mailbox']);
             $mailboxInfo = $mailboxIdMap[$targetEmail] ?? null;
             $mailboxId = $mailboxInfo['id'] ?? null;
+            $inMap = array_key_exists($targetEmail, $mailboxIdMap);
+
+            $storeChecks[] = [
+                'prefix_key' => $prefixKey,
+                'expected_email' => $data['mailbox'],
+                'target_email_lower' => $targetEmail,
+                'in_map' => $inMap,
+                'mailbox_id' => $mailboxId,
+            ];
 
             if ($mailboxId) {
                 // Mailbox found and has ID - mark as active
@@ -899,150 +985,39 @@ class MailboxCreationService
 
                 $successfulMailboxes[] = $data['mailbox'];
                 $split->addMailbox($domain, $prefixKey, $data);
+
+                Log::channel('mailin-ai')->info('Mailin createMailboxesForDomain: stored to split', [
+                    'order_id' => $order->id,
+                    'domain' => $domain,
+                    'prefix_key' => $prefixKey,
+                    'mailbox_email' => $data['mailbox'],
+                    'mailbox_id' => $mailboxId,
+                ]);
             } else {
-                // Mailbox NOT found in API yet - keep as pending
-                // DO NOT mark as active without ID
-                // DO NOT save to DB to force retry/pending state in validation
-                $data['status'] = 'pending_id_fetch';
-                $data['mailbox_id'] = null;
+                // Mailbox NOT found in API yet - do NOT save to DB so validation sees pending
                 $pendingMailboxes[] = $data['mailbox'];
 
-            }
-        }
-
-        Log::channel('mailin-ai')->info('Mailboxes processed for domain', [
-            'domain' => $domain,
-            'total_requested' => count($mailboxes),
-            'successful' => count($successfulMailboxes),
-            'pending_id' => count($pendingMailboxes),
-            'provider' => $split->provider_slug,
-        ]);
-
-        // Return successfully created ones in 'created'
-        // Return ones waiting for IDs in 'pending' (this handles the "created but not ready" state)
-        // If we return them as 'created', the order might complete prematurely
-
-        $result = [
-            'created' => $successfulMailboxes,
-            'failed' => [],
-        ];
-
-        // If we have pending mailboxes (created but no ID yet), add to a custom key or treat as pending?
-        // The calling method (createMailboxesForOrder) checks 'pending' key from this return?
-        // Let's check createMailboxesForSplit -> it aggregates 'created', 'failed', 'pending'
-
-        if (!empty($pendingMailboxes)) {
-            // We need to return these as pending so validateOrderMailboxCompletion 
-            // and the main loop sees them as not fully done.
-            // But createMailboxesForOrder structure is:
-            // $results['created'], $results['failed']
-            // It doesn't seem to explicitly handle 'pending' from createMailboxesForDomain return in the current code
-            // currently createMailboxesForDomain returns ['created' => ..., 'failed' => ...]
-            // Let's check createMailboxesForSplit (lines 102-159)
-            // It mimics: $results['created'] = array_merge..., $results['failed'] = ...
-            // It DOES NOT map 'pending' from createMailboxesForDomain result.
-            // I need to update createMailboxesForSplit as well or change how I return this.
-
-            // To be safe, I will treat them as FAILED for now so they are not counted as 'created'.
-            // Or better, I should treat them as PENDING if I can modify the caller.
-            // Let's look at createMailboxesForSplit again (I'll read it after this thought if needed, but I have it in context)
-            // Line 154: $results['created'] = array_merge($results['created'], $domainResult['created']);
-            // Line 155: $results['failed'] = array_merge($results['failed'], $domainResult['failed']);
-            // It only looks for created and failed.
-
-            // So I should return them as 'failed' (or rather, just NOT created) 
-            // so the count doesn't match expected. 
-            // If I return them as 'failed', the order will say "Failed: X".
-            // If I return them as empty (neither created nor failed), the validation logic 
-            // (validateOrderMailboxCompletion) will see count mismatch and report "Pending".
-
-            // Let's check validateOrderMailboxCompletion (lines 805+).
-            // It compares count($domainMailboxes) where they are stored in DB.
-            // Wait, I AM storing them in DB: $split->addMailbox($domain, $prefixKey, $data).
-            // $data['status'] = 'pending_id_fetch'.
-
-            // The validation logic (lines 841) checks:
-            // if ($createdCount < $expectedForDomain)
-            // $createdCount comes from count($domainMailboxes).
-            // So if I save them to DB, they COUNT as created in validation!
-
-            // ERROR IN PLAN: simple "pending" status in JSON might still count as "created" 
-            // if the validation just counts array entries.
-            // I need to check how validation counts.
-
-            // Validation: 
-            // $domainMailboxes = $splitMailboxes[$domain] ?? [];
-            // $createdCount = count($domainMailboxes);
-
-            // YES, validation just counts entries in the JSON.
-            // So if I add them to JSON, validation thinks they exist.
-
-            // CORRECTION:
-            // I should ONLY add them to JSON if they have an ID.
-            // OR I should update validation to check status?
-            // Modifying validation is risky/bigger scope.
-
-            // Better approach:
-            // DO NOT add them to the split via addMailbox if they don't have an ID?
-            // If I don't add them, validation sees count < expected. -> Pending.
-            // This is safer.
-            // BUT, if I don't add them, the user won't see "pending" in UI? (Maybe they see nothing).
-            // And next run?
-            // Next run (CheckPendingDomains) calls createMailboxesForOrder again.
-            // It calls createMailboxesForSplit -> createMailboxesForDomain.
-            // createMailboxesForDomain generates the list again.
-            // If I didn't save them, it creates them AGAIN via API?
-            // The API provider check "already exists"?
-            // Yes, Mailin provider returns "success" if already exists.
-
-            // So, safer flow:
-            // 1. Try create.
-            // 2. Try fetch ID.
-            // 3. If ID missing -> DO NOT SAVE to DB.
-            // 4. Return as 'failed' (or 'pending' if I can pass that up).
-
-            // If I don't save to DB:
-            // -> Validation logic sees 0 created.
-            // -> Validation says "Pending: 150".
-            // -> Order NOT marked completed.
-            // -> Status remains "In Progress".
-            // -> Next schedule run (CheckPendingDomains) picks it up.
-            // -> Calls createMailboxesForOrder.
-            // -> Tries to create (API says "already exists OK").
-            // -> Tries to fetch ID (Hopefully it works now).
-            // -> ID found -> Saves to DB.
-            // -> Success.
-
-            // This seems correct and robust.
-
-            // So, change in this block:
-            // Only call $split->addMailbox if $mailboxId is present.
-
-            if ($mailboxId) {
-                // Mailbox found and has ID - mark as active
-                $data['status'] = 'active';
-                $data['mailbox_id'] = $mailboxId;
-                $split->addMailbox($domain, $prefixKey, $data);
-                $successfulMailboxes[] = $data['mailbox'];
-            } else {
-                // Mailbox NOT found in API yet
-                // DO NOT save to DB so validation fails (correctly) logic
-                $pendingMailboxes[] = $data['mailbox'];
-
-                Log::channel('mailin-ai')->warning('Could not find mailbox ID for email - NOT saving to DB to force retry', [
-                    'email' => $data['mailbox'],
-                    'target_lookup' => $targetEmail,
+                Log::channel('mailin-ai')->warning('Mailin createMailboxesForDomain: NOT storing - no mailbox ID from API', [
+                    'order_id' => $order->id,
+                    'domain' => $domain,
+                    'prefix_key' => $prefixKey,
+                    'expected_email' => $data['mailbox'],
+                    'target_email_lower' => $targetEmail,
+                    'in_map' => $inMap,
                     'available_map_keys' => array_keys($mailboxIdMap),
+                    'reason' => $inMap ? 'mailbox_id missing in API response' : 'email not found in getMailboxesByDomain response (case/format mismatch?)',
                 ]);
             }
         }
 
-        Log::channel('mailin-ai')->info('Mailboxes processed for domain', [
+        Log::channel('mailin-ai')->info('Mailin createMailboxesForDomain: store check summary', [
+            'order_id' => $order->id,
             'domain' => $domain,
             'total_requested' => count($mailboxes),
-            'successful' => count($successfulMailboxes),
-            'pending_retry' => count($pendingMailboxes),
-            'provider' => $split->provider_slug,
+            'stored_count' => count($successfulMailboxes),
+            'skipped_no_id_count' => count($pendingMailboxes),
+            'store_checks' => $storeChecks,
+            'provider_slug' => $split->provider_slug,
         ]);
 
         return [

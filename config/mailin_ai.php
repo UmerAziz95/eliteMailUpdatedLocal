@@ -26,6 +26,14 @@ return [
     'retry_attempts' => env('MAILIN_AI_RETRY_ATTEMPTS', 3),
     'retry_delay' => env('MAILIN_AI_RETRY_DELAY', 5), // seconds
 
+    // Rate limit (429) handling for all API calls
+    'rate_limit_max_retries' => env('MAILIN_AI_RATE_LIMIT_MAX_RETRIES', 6),
+    'rate_limit_base_delay' => env('MAILIN_AI_RATE_LIMIT_BASE_DELAY', 10), // seconds; delay = base_delay * (2 ^ retry)
+    'rate_limit_delay_cap' => env('MAILIN_AI_RATE_LIMIT_DELAY_CAP', 120), // max seconds to wait before retry
+
+    // Mailbox creation: delay between processing each domain to avoid hitting rate limits
+    'mailbox_creation_delay_between_domains' => env('MAILIN_AI_MAILBOX_DELAY_BETWEEN_DOMAINS', 3), // seconds
+
     // Domain transfer rate limiting settings
     'domain_transfer_delay' => env('MAILIN_AI_DOMAIN_TRANSFER_DELAY', 2), // seconds between individual transfers
     'domain_transfer_batch_size' => env('MAILIN_AI_DOMAIN_TRANSFER_BATCH_SIZE', 10), // domains per batch

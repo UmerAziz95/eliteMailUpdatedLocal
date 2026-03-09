@@ -202,7 +202,7 @@ class MailinAiService
      * @return \Illuminate\Http\Client\Response
      * @throws \Exception
      */
-    public function makeRequest($method, $endpoint, $data = [], $maxRetries = 3)
+    public function makeRequest($method, $endpoint, $data = [], $maxRetries = null)
     {
         $token = $this->getToken();
 
@@ -210,9 +210,14 @@ class MailinAiService
             throw new \Exception('Failed to authenticate with Mailin.ai API');
         }
 
+        if ($maxRetries === null) {
+            $maxRetries = (int) config('mailin_ai.rate_limit_max_retries', 6);
+        }
+        $baseDelay = (int) config('mailin_ai.rate_limit_base_delay', 10);
+        $delayCap = (int) config('mailin_ai.rate_limit_delay_cap', 120);
+
         $url = rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
         $retryCount = 0;
-        $baseDelay = 2; // Base delay in seconds for exponential backoff
 
         while ($retryCount <= $maxRetries) {
             Log::channel('mailin-ai')->info('Making Mailin.ai API request', [
@@ -292,11 +297,9 @@ class MailinAiService
                 $responseBody = $response->json();
                 $errorMessage = $responseBody['message'] ?? 'Too Many Attempts.';
 
-                // Calculate exponential backoff delay: 2^retryCount * baseDelay seconds
-                $delay = pow(2, $retryCount) * $baseDelay;
-
-                // Cap delay at 60 seconds to avoid extremely long waits
-                $delay = min($delay, 60);
+                // Exponential backoff: baseDelay * (2 ^ retryCount) seconds
+                $delay = $baseDelay * (int) pow(2, $retryCount);
+                $delay = min($delay, $delayCap);
 
                 if ($retryCount < $maxRetries) {
                     Log::channel('mailin-ai')->warning('Mailin.ai API returned 429 (rate limit), retrying with exponential backoff', [
@@ -308,10 +311,9 @@ class MailinAiService
                         'error_message' => $errorMessage,
                     ]);
 
-                    // Wait before retrying
                     sleep($delay);
                     $retryCount++;
-                    continue; // Retry the request
+                    continue;
                 } else {
                     // Max retries reached, throw exception
                     Log::channel('mailin-ai')->error('Mailin.ai API rate limit exceeded after max retries', [
