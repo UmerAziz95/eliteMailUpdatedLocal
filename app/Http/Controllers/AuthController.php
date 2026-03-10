@@ -74,8 +74,8 @@ class AuthController extends Controller
 
     //Handle login
     public function login(Request $request)
-    {
-        $credentials = $request->validate([
+    {            
+        $credentials = $request->validate([                    
             'email' => 'required|email',
             'password' => 'required',
             'discord_setting_page_id'=> 'nullable|exists:discord_user_login_sessions,discord_setting_page_id'
@@ -84,30 +84,30 @@ class AuthController extends Controller
         if(!$userCheck){
              return back()->withErrors(['email' => 'Account does not exist!']);
         }
-        if($userCheck->status==0)
-         {
-            return back()->withErrors(['email' => 'Your account is inactive. Please contact support for assistance.']);
+        if($userCheck->status==0)    
+         {                                         
+            return back()->withErrors(['email' => 'Your account is inactive. Please contact support for assistance.']);          
            }    
          $remember = $request->has('remember');
          $type_id=session()->get('iam_discounted_user'); // 
        
          
-        // First login attempt - check credentials before any other validations
+        // First login attempt - check credentials before any other validations                                              
         $credentials = $request->only('email', 'password');
         
         if (Auth::attempt($credentials, $remember)) {
-            // Store successful login attempt temporarily
+            // Store successful login attempt temporarily                                                   
             $loginSuccessful = true;
         } else {
             $loginSuccessful = false;
-        }
+        }   
 
-        // if status = -1 then show inactive message
+        // if status = -1 then show inactive message           
         if (Auth::check() && Auth::user()->status == -1) {
             return back()->withErrors(['email' => 'Your account is inactive. Please contact support.']);
         }
 
-        // check session then forget it
+        // check session then forget it  
         if (session()->has('temp_user_custom_checkout')) {
             session()->forget('temp_user_custom_checkout');
         }
@@ -121,7 +121,7 @@ class AuthController extends Controller
         }
         
         // // Logout immediately to perform additional checks
-        // Auth::logout();
+        // Auth::logout();                                                                    
 
         $userCheck=User::where('email',$request->email)->first();
         if(!$userCheck){
@@ -130,8 +130,8 @@ class AuthController extends Controller
         
         // session('static_link_hit') and session('static_plan_data') are not set then proceed
         if($userCheck->status==0 && !(session('static_link_hit') && session('static_plan_data'))){
-            // Generate new verification code
-            $verificationCode = rand(1000, 9999);
+            // Generate new verification code                                  
+            $verificationCode = rand(1000, 9999);                         
             $userCheck->email_verification_code = $verificationCode;
             $userCheck->save();
 

@@ -1,0 +1,556 @@
+{
+    "App\\Models\\Coupon": {
+        "plan": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Plan"
+        }
+    },
+    "App\\Models\\DomainHealthCheck": {
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        }
+    },
+    "App\\Models\\DomainRemovalTask": {
+        "user": "BelongsTo",
+        "order": "BelongsTo",
+        "assignedTo": "BelongsTo"
+    },
+    "App\\Models\\DomainTransfer": {
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        }
+    },
+    "App\\Models\\ErrorLog": {
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        }
+    },
+    "App\\Models\\Feature": {
+        "plans": {
+            "type": "BelongsToMany",
+            "related": "App\\Models\\Plan"
+        }
+    },
+    "App\\Models\\InternalOrder": {
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "plan": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Plan"
+        },
+        "assignedTo": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "rejectedBy": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        }
+    },
+    "App\\Models\\Invoice": {
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        }
+    },
+    "App\\Models\\Log": {
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "performedOn": {
+            "type": "MorphTo",
+            "related": "App\\Models\\Log"
+        }
+    },
+    "App\\Models\\MasterPlan": {
+        "volumeItems": {
+            "type": "HasMany",
+            "related": "App\\Models\\Plan"
+        }
+    },
+    "App\\Models\\Notification": {
+        "user": "BelongsTo"
+    },
+    "App\\Models\\Order": {
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "invoice": {
+            "type": "HasMany",
+            "related": "App\\Models\\Invoice"
+        },
+        "subscription": {
+            "type": "HasOne",
+            "related": "App\\Models\\Subscription"
+        },
+        "reorderInfo": {
+            "type": "HasMany",
+            "related": "App\\Models\\ReorderInfo"
+        },
+        "plan": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Plan"
+        },
+        "panels": {
+            "type": "BelongsToMany",
+            "related": "App\\Models\\Panel"
+        },
+        "orderPanels": {
+            "type": "HasMany",
+            "related": "App\\Models\\OrderPanel"
+        },
+        "assignedTo": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "userOrderPanelAssignments": {
+            "type": "HasMany",
+            "related": "App\\Models\\UserOrderPanelAssignment"
+        },
+        "orderTracking": {
+            "type": "HasOne",
+            "related": "App\\Models\\OrderTracking"
+        },
+        "supportTickets": {
+            "type": "HasMany",
+            "related": "App\\Models\\SupportTicket"
+        },
+        "rejectedBy": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "domainHealthChecks": {
+            "type": "HasMany",
+            "related": "App\\Models\\DomainHealthCheck"
+        },
+        "platformCredentials": {
+            "type": "HasMany",
+            "related": "App\\Models\\PlatformCredential"
+        },
+        "domainTransfers": {
+            "type": "HasMany",
+            "related": "App\\Models\\DomainTransfer"
+        },
+        "usedEmailsInOrder": {
+            "type": "HasOne",
+            "related": "App\\Models\\UsedEmailsInOrder"
+        },
+        "orderProviderSplits": {
+            "type": "HasMany",
+            "related": "App\\Models\\OrderProviderSplit"
+        }
+    },
+    "App\\Models\\OrderAutomation": {
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        }
+    },
+    "App\\Models\\OrderEmail": {
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        },
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "orderSplit": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\OrderPanelSplit"
+        },
+        "contractor": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        }
+    },
+    "App\\Models\\OrderPanel": {
+        "panel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Panel"
+        },
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        },
+        "contractor": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "orderPanelSplits": {
+            "type": "HasMany",
+            "related": "App\\Models\\OrderPanelSplit"
+        },
+        "userOrderPanelAssignments": {
+            "type": "HasMany",
+            "related": "App\\Models\\UserOrderPanelAssignment"
+        }
+    },
+    "App\\Models\\OrderPanelSplit": {
+        "orderPanel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\OrderPanel"
+        },
+        "userPanelAssignment": {
+            "type": "HasOne",
+            "related": "App\\Models\\UserOrderPanelAssignment"
+        }
+    },
+    "App\\Models\\OrderPaymentLog": {
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "plan": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Plan"
+        }
+    },
+    "App\\Models\\OrderProviderSplit": {
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        },
+        "smtpProviderSplit": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\SmtpProviderSplit"
+        }
+    },
+    "App\\Models\\OrderTracking": {
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        }
+    },
+    "App\\Models\\Panel": {
+        "order_panels": {
+            "type": "HasMany",
+            "related": "App\\Models\\OrderPanel"
+        }
+    },
+    "App\\Models\\PanelReassignmentHistory": {
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        },
+        "orderPanel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\OrderPanel"
+        },
+        "fromPanel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Panel"
+        },
+        "toPanel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Panel"
+        },
+        "reassignedBy": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "assignedTo": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        }
+    },
+    "App\\Models\\Plan": {
+        "features": {
+            "type": "BelongsToMany",
+            "related": "App\\Models\\Feature"
+        },
+        "subscriptions": {
+            "type": "HasMany",
+            "related": "App\\Models\\Subscription"
+        },
+        "masterPlan": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\MasterPlan"
+        },
+        "coupons": {
+            "type": "HasMany",
+            "related": "App\\Models\\Coupon"
+        }
+    },
+    "App\\Models\\PlatformCredential": {
+        "order": "BelongsTo"
+    },
+    "App\\Models\\Pool": {
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "assignedTo": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "rejectedBy": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "plan": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Plan"
+        },
+        "smtpProvider": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\SmtpProvider"
+        },
+        "poolPanelSplits": {
+            "type": "HasMany",
+            "related": "App\\Models\\PoolPanelSplit"
+        }
+    },
+    "App\\Models\\PoolInvoice": {
+        "user": "BelongsTo",
+        "poolOrder": "BelongsTo"
+    },
+    "App\\Models\\PoolOrder": {
+        "user": "BelongsTo",
+        "poolPlan": "BelongsTo",
+        "assignedTo": "BelongsTo",
+        "poolInvoices": {
+            "type": "HasMany",
+            "related": "App\\Models\\PoolInvoice"
+        },
+        "invoices": {
+            "type": "HasMany",
+            "related": "App\\Models\\Invoice"
+        }
+    },
+    "App\\Models\\PoolOrderMigrationTask": {
+        "poolOrder": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\PoolOrder"
+        },
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "assignedTo": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        }
+    },
+    "App\\Models\\PoolPanel": {
+        "creator": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "updater": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "poolPanelSplits": {
+            "type": "HasMany",
+            "related": "App\\Models\\PoolPanelSplit"
+        }
+    },
+    "App\\Models\\PoolPanelReassignmentHistory": {
+        "pool": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Pool"
+        },
+        "poolPanel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\PoolPanel"
+        },
+        "fromPoolPanel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\PoolPanel"
+        },
+        "toPoolPanel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\PoolPanel"
+        },
+        "poolPanelSplit": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\PoolPanelSplit"
+        },
+        "reassignedBy": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "assignedTo": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        }
+    },
+    "App\\Models\\PoolPanelSplit": {
+        "poolPanel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\PoolPanel"
+        },
+        "panel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\PoolPanel"
+        },
+        "pool": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Pool"
+        }
+    },
+    "App\\Models\\PoolPlan": {
+        "features": {
+            "type": "BelongsToMany",
+            "related": "App\\Models\\Feature"
+        }
+    },
+    "App\\Models\\ReorderInfo": {
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "plan": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Plan"
+        },
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        }
+    },
+    "App\\Models\\SmtpProvider": {
+        "pools": {
+            "type": "HasMany",
+            "related": "App\\Models\\Pool"
+        }
+    },
+    "App\\Models\\Subscription": {
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        },
+        "plan": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Plan"
+        }
+    },
+    "App\\Models\\SupportTicket": {
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "assignedTo": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "replies": {
+            "type": "HasMany",
+            "related": "App\\Models\\TicketReply"
+        },
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        }
+    },
+    "App\\Models\\TicketReply": {
+        "ticket": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\SupportTicket"
+        },
+        "user": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        }
+    },
+    "App\\Models\\UsedEmailsInOrder": {
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        }
+    },
+    "App\\Models\\User": {
+        "orders": {
+            "type": "HasMany",
+            "related": "App\\Models\\Order"
+        },
+        "role": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Role"
+        },
+        "subscription": {
+            "type": "HasOne",
+            "related": "App\\Models\\Subscription"
+        },
+        "currentPlan": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Plan"
+        },
+        "logs": {
+            "type": "HasMany",
+            "related": "App\\Models\\Log"
+        },
+        "tickets": {
+            "type": "HasMany",
+            "related": "App\\Models\\SupportTicket"
+        },
+        "assignedTickets": {
+            "type": "HasMany",
+            "related": "App\\Models\\SupportTicket"
+        },
+        "ticketReplies": {
+            "type": "HasMany",
+            "related": "App\\Models\\TicketReply"
+        },
+        "panels": {
+            "type": "BelongsToMany",
+            "related": "App\\Models\\Panel"
+        },
+        "userOrderPanelAssignments": {
+            "type": "HasMany",
+            "related": "App\\Models\\UserOrderPanelAssignment"
+        },
+        "tokens": {
+            "type": "MorphMany",
+            "related": "Laravel\\Sanctum\\PersonalAccessToken"
+        },
+        "notifications": {
+            "type": "MorphMany",
+            "related": "Illuminate\\Notifications\\DatabaseNotification"
+        },
+        "readNotifications": {
+            "type": "MorphMany",
+            "related": "Illuminate\\Notifications\\DatabaseNotification"
+        },
+        "unreadNotifications": {
+            "type": "MorphMany",
+            "related": "Illuminate\\Notifications\\DatabaseNotification"
+        },
+        "roles": "BelongsToMany",
+        "permissions": "BelongsToMany"
+    },
+    "App\\Models\\UserOrderPanelAssignment": {
+        "orderPanel": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\OrderPanel"
+        },
+        "contractor": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\User"
+        },
+        "order": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\Order"
+        },
+        "orderPanelSplit": {
+            "type": "BelongsTo",
+            "related": "App\\Models\\OrderPanelSplit"
+        }
+    }
+}

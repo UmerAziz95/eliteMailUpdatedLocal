@@ -223,7 +223,7 @@
     <section class="py-3 ">
         <div class="row gy-4">
 
-
+        <!-- ->where('orders.provider_type', '!=', 'Private SMTP') -->
 
         <!-- Panel Capacity Alert -->
         @php
@@ -232,7 +232,7 @@
                 ->whereNotNull('order_tracking.total_inboxes')
                 ->where('order_tracking.total_inboxes', '>', 0)
                 ->join('orders', 'order_tracking.order_id', '=', 'orders.id')
-                ->where('orders.provider_type', '!=', 'Private SMTP')
+                
                 ->select('order_tracking.*')
                 ->get();
             

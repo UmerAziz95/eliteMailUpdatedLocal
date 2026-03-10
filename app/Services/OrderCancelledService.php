@@ -587,8 +587,8 @@ class OrderCancelledService
                     'action' => 'delete_smtp_order_mailboxes',
                     'order_id' => $order->id,
                 ]);
-                return;
-            }
+                return;      
+            }          
 
             // Collect all email addresses
             $allEmailAddresses = $orderEmails->pluck('email')->unique()->values();
@@ -600,30 +600,30 @@ class OrderCancelledService
                 'total_emails_count' => $allEmailAddresses->count(),
                 'emails_from_order_emails_count' => $orderEmails->count(),
                 'emails' => $allEmailAddresses->toArray(), // Full list of emails to be deleted
-            ]);
+            ]);           
 
             // Store emails in used_emails_in_order table - BEFORE deletion
             $usedEmailsRecord = UsedEmailsInOrder::create([
                 'order_id' => $order->id,
                 'emails' => $allEmailAddresses->toArray(),
                 'count' => $allEmailAddresses->count(),
-            ]);
-
+            ]);                                                      
+                
             Log::info("Stored emails in used_emails_in_order table before deletion", [
                 'order_id' => $order->id,
                 'provider_type' => $order->provider_type,
                 'used_emails_record_id' => $usedEmailsRecord->id,
                 'emails_count' => $usedEmailsRecord->count,
-            ]);
+            ]);    
 
             Log::info("Starting mailbox deletion for SMTP order", [
                 'order_id' => $order->id,
                 'provider_type' => $order->provider_type,
-                'total_emails' => $allEmailAddresses->count(),
+                'total_emails' => $allEmailAddresses->count(),  
                 'emails_stored_in_used_emails_table' => true,
-            ]);
+            ]);  
 
-            // Get active provider credentials (or fallback to config)
+            // Get active provider credentials (or fallback to config)  
             $activeProvider = SmtpProviderSplit::getActiveProvider();
             $credentials = $activeProvider ? $activeProvider->getCredentials() : null;
             $mailinService = new MailinAiService($credentials);
