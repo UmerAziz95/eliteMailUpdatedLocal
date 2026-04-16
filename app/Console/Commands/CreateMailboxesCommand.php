@@ -131,12 +131,12 @@ class CreateMailboxesCommand extends Command
 
         $this->info("Total mailboxes created: " . ($result['total_created'] ?? 0));
 
-        // Refresh order
+        // Refresh order 
         $order->refresh();
         if ($order->status_manage_by_admin === 'completed') {
             $this->info("✓ Order marked as COMPLETED");
-        }
+        } 
 
         return 0;
-    }
-}
+    } 
+}     
