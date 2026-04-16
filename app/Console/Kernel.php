@@ -131,7 +131,7 @@ class Kernel extends ConsoleKernel
 
 
 
-                // Delete expired mailboxes for EOBC cancelled subscriptions every hour
+                // Delete expired mailboxes for EOBC cancelled subscriptions every hour 
                 $schedule->command('mailboxes:delete-expired')
                         ->hourly()
                         ->withoutOverlapping()
