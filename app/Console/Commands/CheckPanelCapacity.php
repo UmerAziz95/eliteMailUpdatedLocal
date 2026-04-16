@@ -147,7 +147,7 @@ class CheckPanelCapacity extends Command
         }
     }
     
-    /**
+    /**   
      * Get available panel space for specific order size
      */
     private function getAvailablePanelSpaceForOrder(int $orderSize, int $inboxesPerDomain): int
