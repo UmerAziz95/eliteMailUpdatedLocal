@@ -391,6 +391,13 @@ class OrderCancelledService
     public function deleteOrderMailboxes(Order $order, $reason = null)
     {
         try {
+            // if($order->id==1034){
+            //     Log::info("Debug: Entered deleteOrderMailboxes for Order ID 1034", [
+            //         'order_id' => $order->id,
+            //     ]);
+            //     return true; // Skip actual deletion for this order
+            // } 
+
             // Check if order is already in cancellation process
             if ($order->status_manage_by_admin === 'cancellation-in-process') {
                 Log::info("Order already in cancellation process, skipping duplicate deletion", [
@@ -398,7 +405,7 @@ class OrderCancelledService
                     'order_id' => $order->id,
                 ]);
                 return true; // Indicate that deletion is already in progress
-            }
+            } 
 
             // Check if Mailin.ai automation is enabled
             $automationEnabled = config('mailin_ai.automation_enabled', false);
@@ -423,7 +430,7 @@ class OrderCancelledService
                 if ($providerSplits->isNotEmpty()) {
                     // New system: Use order_provider_splits (PremiumInboxes calls POST /orders/{id}/cancel to cancel order + all inboxes)
                     return $this->deleteMailboxesFromProviderSplits($order, $providerSplits);
-                }
+                } 
 
                 // Legacy path: no provider splits – delete SMTP order mailboxes directly
                 $this->deleteSmtpOrderMailboxes($order);
@@ -486,11 +493,19 @@ class OrderCancelledService
     public function deleteMailboxesFromProviderSplits(Order $order, $splits)
     {
         try {
+        //    if($order->id==1034){
+        //         Log::info("Debug: Entered deleteOrderMailboxes for Order ID 1034", [
+        //             'order_id' => $order->id,
+        //         ]);
+        //         return true; // Skip actual deletion for this order
+        //     }
+
+
             Log::info("Starting mailbox deletion from order_provider_splits", [
                 'action' => 'delete_mailboxes_from_provider_splits',
                 'order_id' => $order->id,
                 'splits_count' => $splits->count(),
-            ]);
+            ]);   
 
             $hasAsyncOperations = false;
 
