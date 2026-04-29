@@ -389,7 +389,7 @@ class OrderCancelledService
      * @return bool|void Returns true if deletion is in progress (async), void otherwise
      */
     public function deleteOrderMailboxes(Order $order, $reason = null)
-    {
+    {  
         try {
             // if($order->id==1034){
             //     Log::info("Debug: Entered deleteOrderMailboxes for Order ID 1034", [
@@ -431,7 +431,6 @@ class OrderCancelledService
                     // New system: Use order_provider_splits (PremiumInboxes calls POST /orders/{id}/cancel to cancel order + all inboxes)
                     return $this->deleteMailboxesFromProviderSplits($order, $providerSplits);
                 } 
-
                 // Legacy path: no provider splits – delete SMTP order mailboxes directly
                 $this->deleteSmtpOrderMailboxes($order);
                 return;
@@ -570,6 +569,10 @@ class OrderCancelledService
                 'order_id' => $order->id,
             ]);
 
+            if (!$hasAsyncOperations) {
+                $this->markOrderAsRemoved($order, 'delete_mailboxes_from_provider_splits');
+            }
+
             return $hasAsyncOperations;
 
         } catch (\Exception $e) {
@@ -602,6 +605,7 @@ class OrderCancelledService
                     'action' => 'delete_smtp_order_mailboxes',
                     'order_id' => $order->id,
                 ]);
+                $this->markOrderAsRemoved($order, 'delete_smtp_order_mailboxes_no_mailboxes');
                 return;      
             }          
 
@@ -647,7 +651,7 @@ class OrderCancelledService
             $errors = [];
             $emailsChecked = [];
             $emailsDeleted = [];
-            $emailsFailed = [];
+            $emailsFailed = [];  
 
             Log::info("Starting to check emails on Mailin.ai for SMTP order", [
                 'order_id' => $order->id,
@@ -670,7 +674,7 @@ class OrderCancelledService
                         'order_id' => $order->id,
                         'email' => $email,
                         'mailin_mailbox_id' => $orderEmail->mailin_mailbox_id,
-                    ]);
+                    ]); 
 
                     $result = $mailinService->deleteMailbox($orderEmail->mailin_mailbox_id);
 
@@ -770,6 +774,10 @@ class OrderCancelledService
                 );
             }
 
+            if ($failedCount === 0) {
+                $this->markOrderAsRemoved($order, 'delete_smtp_order_mailboxes');
+            }
+
         } catch (\Exception $e) {
             Log::error('Error deleting SMTP order mailboxes during order cancellation', [
                 'action' => 'delete_smtp_order_mailboxes',
@@ -778,6 +786,25 @@ class OrderCancelledService
                 'trace' => $e->getTraceAsString(),
             ]);
         }
+    }
+
+    private function markOrderAsRemoved(Order $order, string $source): void
+    {
+        $currentStatus = strtolower((string) $order->status_manage_by_admin);
+        if ($currentStatus === 'removed') {
+            return;
+        }
+
+        $order->update([
+            'status_manage_by_admin' => 'removed',
+        ]);
+
+        Log::info('Order status updated to removed after mailbox deletion completion', [
+            'action' => $source,
+            'order_id' => $order->id,
+            'previous_status' => $currentStatus,
+            'new_status' => 'removed',
+        ]);
     }
 
     /**

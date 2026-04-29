@@ -247,45 +247,49 @@ class OrderController extends Controller
     {
         try {
             $orders = Order::query()
-                ->with(['user', 'plan', 'reorderInfo', 'orderPanels.orderPanelSplits', 'assignedTo'])
+                ->with([
+                    'user:id,name,email',
+                    'plan:id,name',
+                    'reorderInfo',
+                    'assignedTo:id,name',
+                ])
                 ->select('orders.*')
                 ->leftJoin('plans', 'orders.plan_id', '=', 'plans.id')
                 ->leftJoin('users', 'orders.user_id', '=', 'users.id');
-
-            // Apply plan filter if provided
-            if ($request->has('plan_id') && $request->plan_id != '') {
+    
+            /*
+            |--------------------------------------------------------------------------
+            | Filters
+            |--------------------------------------------------------------------------
+            */
+    
+            if ($request->filled('plan_id')) {
                 $orders->where('orders.plan_id', $request->plan_id);
             }
-
-            // Apply filters
-            if ($request->has('orderId') && $request->orderId != '') {
-                $orders->where('orders.id', 'like', "%{$request->orderId}%");
+    
+            if ($request->filled('orderId')) {
+                $orders->where('orders.id', $request->orderId);
             }
-
-            if ($request->has('status') && $request->status != '') {
+    
+            if ($request->filled('status')) {
                 $orders->where('orders.status_manage_by_admin', $request->status);
             }
-
-            if ($request->has('email') && $request->email != '') {
-                $orders->where('users.email', 'like', "%{$request->email}%");
+    
+            if ($request->filled('email')) {
+                $orders->where('users.email', 'like', '%' . $request->email . '%');
             }
-
-            if ($request->has('name') && $request->name != '') {
-                $orders->where('users.name', 'like', "%{$request->name}%");
+    
+            if ($request->filled('name')) {
+                $orders->where('users.name', 'like', '%' . $request->name . '%');
             }
-
-            if ($request->has('domain') && $request->domain != '') {
+    
+            if ($request->filled('domain')) {
                 $orders->whereHas('reorderInfo', function ($query) use ($request) {
-                    $query->where('forwarding_url', 'like', "%{$request->domain}%");
+                    $query->where('forwarding_url', 'like', '%' . $request->domain . '%');
                 });
             }
-
-            // if ($request->has('totalInboxes') && $request->totalInboxes != '') {
-            //     $orders->whereHas('reorderInfo', function($query) use ($request) {
-            //         $query->where('total_inboxes', $request->totalInboxes);
-            //     });
-            // }
-            if ($request->has('totalInboxes') && $request->totalInboxes != '') {
+    
+            if ($request->filled('totalInboxes')) {
                 $orders->whereHas('reorderInfo', function ($query) use ($request) {
                     $query->whereRaw('(
                         CASE 
@@ -295,22 +299,37 @@ class OrderController extends Controller
                         END
                     ) = ?', [$request->totalInboxes]);
                 });
-
             }
-
-            if ($request->has('startDate') && $request->startDate != '') {
-                $orders->whereDate('orders.created_at', '>=', $request->startDate);
+    
+            /*
+            |--------------------------------------------------------------------------
+            | Date Filters
+            | Avoid whereDate() because it can ignore created_at index.
+            |--------------------------------------------------------------------------
+            */
+    
+            if ($request->filled('startDate')) {
+                $orders->where('orders.created_at', '>=', $request->startDate . ' 00:00:00');
             }
-
-            if ($request->has('endDate') && $request->endDate != '') {
-                $orders->whereDate('orders.created_at', '<=', $request->endDate);
+    
+            if ($request->filled('endDate')) {
+                $orders->where('orders.created_at', '<=', $request->endDate . ' 23:59:59');
             }
-
+    
+            /*
+            |--------------------------------------------------------------------------
+            | Default Sorting
+            | Uses composite index: plan_id + created_at
+            |--------------------------------------------------------------------------
+            */
+    
+            $orders->orderByDesc('orders.created_at');
+    
             return DataTables::of($orders)
                 ->addColumn('action', function ($order) {
                     $statuses = $this->statuses;
                     $statusOptions = '';
-
+    
                     foreach ($statuses as $status => $color) {
                         $statusOptions .= '<li>
                             <a class="dropdown-item status-change" href="javascript:void(0)" data-order-id="' . $order->id . '" data-status="' . strtolower($status) . '">
@@ -318,65 +337,56 @@ class OrderController extends Controller
                             </a>
                         </li>';
                     }
-
-                    $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes text-warning me-2" title="Shared Order"></i>' : '';
-                    $shareToggleText = $order->is_shared ? 'Unshare' : 'Share';
-                    $shareToggleIcon = $order->is_shared ? 'fa-unlink' : 'fa-share-nodes';
-
+    
                     return '<div class="dropdown">
-                    <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a class="dropdown-item" href="' . route('admin.orders.view', $order->id) . '">
-                                <i class="fa-solid fa-eye"></i> &nbsp;View
-                            </a>
-                        </li>'
-                        . (in_array($order->status_manage_by_admin, ['pending', 'in-progress']) ? '
-                        <li>
-                            <a class="dropdown-item" href="' . route('admin.orders.edit', $order->id) . '">
-                                <i class="fa-solid fa-edit"></i> &nbsp;Edit
-                            </a>
-                        </li>' : '') .
-                        (auth()->user()->hasPermissionTo('Mod') ? '' : '
-                        
-                        <li>
-                            <a href="#" class="dropdown-item"  onclick="viewOrderSplits(' . $order->id . ')" 
-                                data-order-id="' . $order->id . '">
-                                <i class="fa-solid fa-columns"></i> &nbsp;Panel View
-                            </a>
-                        </li>
-                        ') .
-
-                        '<li>
-                            <a href="javascript:;" class="dropdown-item" data-bs-toggle="offcanvas" data-bs-target="#actionLogCanvas" aria-controls="actionLogCanvas" data-order-id="' . $order->id . '">
-                                <i class="fa-solid fa-history"></i> &nbsp;Log View
-                            </a>
-                        </li>
-                        <li>
-                            <a href="javascript:;" class="dropdown-item order-fixed-manually" data-order-id="' . $order->id . '">
-                                <i class="fa-solid fa-wrench text-warning"></i> &nbsp;Order Fixed Manually
-                            </a>
-                        </li>
-                        ' . ($order->status_manage_by_admin === 'completed' && $order->is_verified == 0 && auth()->user()->hasPermissionTo('Verify Order') ? '
-                        <li>
-                            <a href="javascript:void(0);"
-                                class="dropdown-item text-success verify-order-btn"
-                                data-order-id="' . $order->id . '">
-                                <i class="fa-solid fa-circle-check"></i> &nbsp;Verify Order
-                            </a>
-                        </li>' : '') . '
-                    </ul>
-                </div>';
-
+                        <button class="p-0 bg-transparent border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="' . route('admin.orders.view', $order->id) . '">
+                                    <i class="fa-solid fa-eye"></i> &nbsp;View
+                                </a>
+                            </li>'
+                            . (in_array($order->status_manage_by_admin, ['pending', 'in-progress']) ? '
+                            <li>
+                                <a class="dropdown-item" href="' . route('admin.orders.edit', $order->id) . '">
+                                    <i class="fa-solid fa-edit"></i> &nbsp;Edit
+                                </a>
+                            </li>' : '')
+                            . (auth()->user()->hasPermissionTo('Mod') ? '' : '
+                            <li>
+                                <a href="#" class="dropdown-item" onclick="viewOrderSplits(' . $order->id . ')" data-order-id="' . $order->id . '">
+                                    <i class="fa-solid fa-columns"></i> &nbsp;Panel View
+                                </a>
+                            </li>')
+                            . '
+                            <li>
+                                <a href="javascript:;" class="dropdown-item" data-bs-toggle="offcanvas" data-bs-target="#actionLogCanvas" aria-controls="actionLogCanvas" data-order-id="' . $order->id . '">
+                                    <i class="fa-solid fa-history"></i> &nbsp;Log View
+                                </a>
+                            </li>
+                            <li>
+                                <a href="javascript:;" class="dropdown-item order-fixed-manually" data-order-id="' . $order->id . '">
+                                    <i class="fa-solid fa-wrench text-warning"></i> &nbsp;Order Fixed Manually
+                                </a>
+                            </li>'
+                            . ($order->status_manage_by_admin === 'completed' && $order->is_verified == 0 && auth()->user()->hasPermissionTo('Verify Order') ? '
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item text-success verify-order-btn" data-order-id="' . $order->id . '">
+                                    <i class="fa-solid fa-circle-check"></i> &nbsp;Verify Order
+                                </a>
+                            </li>' : '')
+                        . '</ul>
+                    </div>';
                 })
+    
                 ->editColumn('id', function ($order) {
-                    // Provider type icon
                     $providerIcon = '';
+    
                     if ($order->provider_type) {
                         $providerType = strtolower($order->provider_type);
+    
                         if ($providerType === 'google') {
                             $providerIcon = '<i class="fa-brands fa-google text-danger me-1" title="Google"></i>';
                         } elseif ($providerType === 'microsoft365' || $providerType === 'microsoft 365') {
@@ -385,30 +395,35 @@ class OrderController extends Controller
                             $providerIcon = '<i class="fa-solid fa-envelope text-info me-1" title="SMTP"></i>';
                         }
                     }
-
-                    // Determine icon color based on shared status and helpers assignment
-                    $iconColor = 'text-secondary'; // default color
+    
+                    $iconColor = 'text-secondary';
+    
                     if ($order->is_shared) {
-                        // Check if helpers are assigned (not null, not empty array)
                         $hasHelpers = !empty($order->helpers_ids) && is_array($order->helpers_ids) && count($order->helpers_ids) > 0;
                         $iconColor = $hasHelpers ? 'text-success' : 'text-warning';
                     }
-
-                    $sharedIcon = $order->is_shared ? '<i class="fa-solid fa-share-nodes ' . $iconColor . ' me-2" title="Shared Order"></i>' : '';
-                    $share_request_link = '<a href="' . route('admin.orders.shared-order-requests') . '" class="text-primary">' . $sharedIcon . '</a>';
-                    $order_view_link = '<a href="' . route('admin.orders.view', $order->id) . '">' . $providerIcon . $order->id . '</a>';
-                    return $order_view_link . ' ' . $share_request_link;
+    
+                    $sharedIcon = $order->is_shared
+                        ? '<i class="fa-solid fa-share-nodes ' . $iconColor . ' me-2" title="Shared Order"></i>'
+                        : '';
+    
+                    $shareRequestLink = '<a href="' . route('admin.orders.shared-order-requests') . '" class="text-primary">' . $sharedIcon . '</a>';
+    
+                    $orderViewLink = '<a href="' . route('admin.orders.view', $order->id) . '">' . $providerIcon . $order->id . '</a>';
+    
+                    return $orderViewLink . ' ' . $shareRequestLink;
                 })
+    
                 ->editColumn('created_at', function ($order) {
                     return $order->created_at ? $order->created_at->format('d M, Y') : '';
                 })
+    
                 ->editColumn('status', function ($order) {
-
                     $status = strtolower($order->status_manage_by_admin ?? 'n/a');
                     $statusClass = $this->statuses[$status] ?? 'secondary';
-
+    
                     $verificationIcon = '';
-
+    
                     if ($status === 'completed') {
                         if ((int) $order->is_verified === 1) {
                             $verificationIcon = '<i class="fa-solid fa-circle-check text-success" title="Verified"></i>';
@@ -416,51 +431,45 @@ class OrderController extends Controller
                             $verificationIcon = '<i class="fa-solid fa-circle-xmark text-danger" title="Not Verified"></i>';
                         }
                     }
-
+    
                     return '
                         <div class="d-inline-flex align-items-center gap-1">
-                            <span class="py-1 px-2 text-nowrap text-' . $statusClass . '
-                                border border-' . $statusClass . ' rounded-2 bg-transparent">
+                            <span class="py-1 px-2 text-nowrap text-' . $statusClass . ' border border-' . $statusClass . ' rounded-2 bg-transparent">
                                 ' . ucfirst($status) . '
                             </span>
                             ' . ($verificationIcon ? '<span>' . $verificationIcon . '</span>' : '') . '
                         </div>
                     ';
                 })
+    
                 ->addColumn('name', function ($order) {
                     return $order->user ? $order->user->name : 'N/A';
                 })
+    
                 ->addColumn('email', function ($order) {
                     return $order->user ? $order->user->email : 'N/A';
                 })
-                // ->addColumn('split_counts', function ($order) {
-                //     // Count the number of order panel splits for this order
-                //     $splitCount = 0;
-                //     if ($order->orderPanels && $order->orderPanels->count() > 0) {
-                //         foreach ($order->orderPanels as $orderPanel) {
-                //             $splitCount += $orderPanel->orderPanelSplits ? $orderPanel->orderPanelSplits->count() : 0;
-                //         }
-                //     }
-                //     return $splitCount > 0 ? $splitCount . ' split(s)' : 'No splits';
-                // })
+    
                 ->addColumn('plan_name', function ($order) {
                     return $order->plan ? $order->plan->name : 'N/A';
                 })
+    
                 ->addColumn('total_inboxes', function ($order) {
                     if (!$order->reorderInfo || !$order->reorderInfo->first()) {
                         return 'N/A';
                     }
-
+    
                     $reorderInfo = $order->reorderInfo->first();
                     $domains = $reorderInfo->domains ?? '';
                     $inboxesPerDomain = $reorderInfo->inboxes_per_domain ?? 1;
-
-                    // Parse domains and count them
+    
                     $domainsArray = [];
                     $lines = preg_split('/\r\n|\r|\n/', $domains);
+    
                     foreach ($lines as $line) {
                         if (trim($line)) {
                             $lineItems = explode(',', $line);
+    
                             foreach ($lineItems as $item) {
                                 if (trim($item)) {
                                     $domainsArray[] = trim($item);
@@ -468,14 +477,16 @@ class OrderController extends Controller
                             }
                         }
                     }
-
+    
                     $totalDomains = count($domainsArray);
                     $calculatedTotalInboxes = $totalDomains * $inboxesPerDomain;
-
-                    return $calculatedTotalInboxes > 0 ? $calculatedTotalInboxes : ($reorderInfo->total_inboxes ?? 'N/A');
+    
+                    return $calculatedTotalInboxes > 0
+                        ? $calculatedTotalInboxes
+                        : ($reorderInfo->total_inboxes ?? 'N/A');
                 })
+    
                 ->addColumn('timer', function ($order) {
-                    // Return timer data as JSON for JavaScript processing
                     return json_encode([
                         'created_at' => $order->created_at ? $order->created_at->toISOString() : null,
                         'status' => strtolower($order->status_manage_by_admin ?? 'n/a'),
@@ -483,24 +494,26 @@ class OrderController extends Controller
                         'timer_started_at' => $order->timer_started_at ? $order->timer_started_at->toISOString() : null,
                         'timer_paused_at' => $order->timer_paused_at ? $order->timer_paused_at->toISOString() : null,
                         'total_paused_seconds' => $order->total_paused_seconds ?? 0,
-                        'order_id' => $order->id
+                        'order_id' => $order->id,
                     ]);
                 })
-                // contractor name
+    
                 ->addColumn('contractor_name', function ($order) {
                     return $order->assignedTo ? $order->assignedTo->name : 'Unassigned';
                 })
+    
                 ->rawColumns(['action', 'status', 'timer', 'id'])
                 ->make(true);
+    
         } catch (Exception $e) {
             Log::error('Error in getOrders', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-
+    
             return response()->json([
                 'error' => true,
-                'message' => 'Error loading orders: ' . $e->getMessage()
+                'message' => 'Error loading orders: ' . $e->getMessage(),
             ], 500);
         }
     }

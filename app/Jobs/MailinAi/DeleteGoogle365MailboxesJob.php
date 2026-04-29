@@ -102,8 +102,7 @@ class DeleteGoogle365MailboxesJob implements ShouldQueue
                 // Dispatch next batch
                 self::dispatch($this->orderId, $this->batchSize, $nextOffset);
             } else {
-                // All batches completed - update status to 'cancelled'
-                $this->updateOrderStatusToCancelled();
+                $this->updateOrderStatusToRemoved();
                 
                 Log::channel('mailin-ai')->info('DeleteGoogle365MailboxesJob: All batches completed', [
                     'action' => 'delete_google365_mailboxes_batch',
@@ -133,21 +132,20 @@ class DeleteGoogle365MailboxesJob implements ShouldQueue
     /**
      * Update order status to 'cancelled' when all batches are complete.
      */
-    protected function updateOrderStatusToCancelled(): void
+    protected function updateOrderStatusToRemoved(): void
     {
         try {
             $order = Order::find($this->orderId);
             
-            if ($order && $order->status_manage_by_admin === 'cancellation-in-process') {
+            if ($order && in_array($order->status_manage_by_admin, ['cancellation-in-process', 'cancelled'])) {
                 $order->update([
-                    'status_manage_by_admin' => 'cancelled',
+                    'status_manage_by_admin' => 'removed',
                 ]);
                 
-                Log::channel('mailin-ai')->info('DeleteGoogle365MailboxesJob: Updated order status to cancelled', [
+                Log::channel('mailin-ai')->info('DeleteGoogle365MailboxesJob: Updated order status to removed', [
                     'action' => 'update_order_status',
                     'order_id' => $this->orderId,
-                    'previous_status' => 'cancellation-in-process',
-                    'new_status' => 'cancelled',
+                    'new_status' => 'removed',
                 ]);
             }
         } catch (\Exception $e) {

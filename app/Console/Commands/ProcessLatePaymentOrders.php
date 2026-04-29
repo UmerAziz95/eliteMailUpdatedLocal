@@ -61,18 +61,30 @@ class ProcessLatePaymentOrders extends Command
                             $subscription = UserSubscription::where('chargebee_subscription_id', $order->chargebee_subscription_id)->first();
 
                             if ($subscription && $subscription->status === 'cancelled') {
-                                Log::info("Queuing subscription reactivation for Order #{$order->id} (Sub ID: {$order->chargebee_subscription_id})");
+                                $currentAdminStatus = strtolower((string) $order->status_manage_by_admin);
+                                if ($currentAdminStatus === 'removed') {
+                                    Log::info("Skipping subscription reactivation queue for removed Order #{$order->id} (Sub ID: {$order->chargebee_subscription_id})");
+                                } else {
+                                    $existingPendingReactivation = SubscriptionReactivation::where('order_id', $order->id)
+                                        ->where('chargebee_subscription_id', $order->chargebee_subscription_id)
+                                        ->where('status', 'pending')
+                                        ->exists();
 
-                                // Create pending reactivation record
-                                SubscriptionReactivation::create([
-                                    'user_id' => $order->user_id,
-                                    'order_id' => $order->id,
-                                    'chargebee_subscription_id' => $order->chargebee_subscription_id,
-                                    'status' => 'pending',
-                                    'message' => 'Queued for reactivation. Waiting for invoice period expiration.',
-                                    'latest_invoice_start_date' => $subscription->last_billing_date ? \Carbon\Carbon::parse($subscription->last_billing_date) : null,
-                                    'latest_invoice_end_date' => $subscription->end_date ? \Carbon\Carbon::parse($subscription->end_date) : null,
-                                ]);
+                                    if ($existingPendingReactivation) {
+                                        Log::info("Pending reactivation already exists for Order #{$order->id} (Sub ID: {$order->chargebee_subscription_id}), skipping duplicate queue.");
+                                    } else {
+                                        Log::info("Queuing subscription reactivation for Order #{$order->id} (Sub ID: {$order->chargebee_subscription_id})");
+                                        SubscriptionReactivation::create([
+                                            'user_id' => $order->user_id,
+                                            'order_id' => $order->id,
+                                            'chargebee_subscription_id' => $order->chargebee_subscription_id,
+                                            'status' => 'pending',
+                                            'message' => 'Queued for reactivation. Waiting for invoice period expiration.',
+                                            'latest_invoice_start_date' => $subscription->last_billing_date ? \Carbon\Carbon::parse($subscription->last_billing_date) : null,
+                                            'latest_invoice_end_date' => $subscription->end_date ? \Carbon\Carbon::parse($subscription->end_date) : null,
+                                        ]);
+                                    }
+                                }
                             }
                         }
 

@@ -1249,3 +1249,15 @@ Route::get('/clear-session', function () {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 })->name('clear.session');
+
+
+Route::get('/clear-log', function () {
+    $logPath = storage_path('logs/laravel.log');
+
+    if (file_exists($logPath)) {
+        file_put_contents($logPath, ''); // empty the file
+        return response()->json(['success' => true, 'message' => 'Log file cleared successfully']);
+    }
+
+    return response()->json(['success' => false, 'message' => 'Log file not found']);
+});

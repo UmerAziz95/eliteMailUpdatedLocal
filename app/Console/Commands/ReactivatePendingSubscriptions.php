@@ -48,6 +48,17 @@ class ReactivatePendingSubscriptions extends Command
 
         foreach ($pendingReactivations as $reactivation) {
             try {
+                $order = $reactivation->order_id ? Order::find($reactivation->order_id) : null;
+                if ($order && strtolower((string) $order->status_manage_by_admin) === 'removed') {
+                    $reactivation->update([
+                        'status' => 'failed',
+                        'message' => 'Skipped reactivation because order status_manage_by_admin is removed.',
+                    ]);
+                    Log::info("Skipped reactivation #{$reactivation->id} for Order #{$order->id} because order status_manage_by_admin is removed.");
+                    $bar->advance();
+                    continue;
+                }
+
                 // Find local subscription
                 $subscription = UserSubscription::where('chargebee_subscription_id', $reactivation->chargebee_subscription_id)->first();
 
@@ -137,11 +148,17 @@ class ReactivatePendingSubscriptions extends Command
                             // Cancel the Order locally
                             $order = Order::find($reactivation->order_id);
                             if ($order) {
-                                $order->update([
-                                    'status' => 'cancelled',
-                                    'status_manage_by_admin' => 'cancelled',
-                                ]);
-                                Log::info("Order #{$order->id} cancelled due to failed subscription reactivation max retries.");
+                                $currentAdminStatus = strtolower((string) $order->status_manage_by_admin);
+
+                                if ($currentAdminStatus === 'removed') {
+                                    Log::info("Order #{$order->id} status update skipped after failed subscription reactivation max retries because status_manage_by_admin is removed.");
+                                } else {
+                                    $order->update([
+                                        'status' => 'cancelled',
+                                        'status_manage_by_admin' => 'cancelled',
+                                    ]);
+                                    Log::info("Order #{$order->id} cancelled due to failed subscription reactivation max retries.");
+                                }
                             } else {
                                 Log::error("Order #{$reactivation->order_id} not found for cancellation.");
                             }
