@@ -44,7 +44,7 @@ class CreateMailboxesCommand extends Command
         // Get splits
         $splits = OrderProviderSplit::where('order_id', $orderId)->get();
         if ($splits->isEmpty()) {
-            $this->error("No provider splits found for order #{$orderId}");
+            $this->error("No provider splits found for order==== #{$orderId}");
             return 1;
         }
 

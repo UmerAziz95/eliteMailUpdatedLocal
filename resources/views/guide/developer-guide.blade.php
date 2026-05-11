@@ -79,13 +79,14 @@
 
         <div class="d-flex justify-content-between align-items-center mb-2">
           <span class="text-muted small">Table of Contents</span>
-          <span class="badge text-bg-primary toc-badge">13</span>
+          <span class="badge text-bg-primary toc-badge">14</span>
         </div>
 
         <nav>
           <ul id="tocList" class="nav nav-pills flex-column gap-1">
             <li class="nav-item"><a class="nav-link" href="#1-overview">1. Overview</a></li>
             <li class="nav-item"><a class="nav-link" href="#flow-diagrams">Flow diagrams (technical)</a></li>
+            <li class="nav-item"><a class="nav-link" href="#mailin-flow-questions-answers">Mailin flow Q&amp;A</a></li>
             <li class="nav-item"><a class="nav-link" href="#provider-split-logic">Provider split logic</a></li>
             <li class="nav-item"><a class="nav-link" href="#2-code-structure-interface--services">2. Code Structure</a></li>
             <li class="nav-item"><a class="nav-link" href="#3-database-schema--data-storage">3. Database Schema</a></li>
@@ -124,6 +125,7 @@
           <ul id="tocListMobile" class="nav nav-pills flex-column gap-1">
             <li class="nav-item"><a class="nav-link" href="#1-overview" data-bs-dismiss="offcanvas">1. Overview</a></li>
             <li class="nav-item"><a class="nav-link" href="#flow-diagrams" data-bs-dismiss="offcanvas">Flow diagrams</a></li>
+            <li class="nav-item"><a class="nav-link" href="#mailin-flow-questions-answers" data-bs-dismiss="offcanvas">Mailin flow Q&amp;A</a></li>
             <li class="nav-item"><a class="nav-link" href="#provider-split-logic" data-bs-dismiss="offcanvas">Provider split logic</a></li>
             <li class="nav-item"><a class="nav-link" href="#2-code-structure-interface--services" data-bs-dismiss="offcanvas">2. Code Structure</a></li>
             <li class="nav-item"><a class="nav-link" href="#3-database-schema--data-storage" data-bs-dismiss="offcanvas">3. Database Schema</a></li>
@@ -233,6 +235,110 @@ flowchart TD
   MORE -->|No| DONE
               </div>
             </div>
+          </section>
+
+          <section id="mailin-flow-questions-answers" class="mb-5">
+            <h2 class="h4 section-title">Mailin flow questions and answers</h2>
+
+            <h3 class="h5 mt-3">Question 1</h3>
+            <p class="mb-2"><strong>Is this the correct flow of EliteMailBoxes for creating mailboxes on Mailin?</strong></p>
+
+            <h4 class="h6 text-muted">Answer</h4>
+            <p class="mb-2">Tracing the Mailin automation flow in EliteMailBoxes confirms your flow is mostly correct, with important corrections and extras from implementation.</p>
+
+            <h5 class="h6 mt-3">Given flow</h5>
+            <ol>
+              <li>User places an order with domains.</li>
+              <li>System authenticates with Mailin API to get access token.</li>
+              <li>System checks if domain already exists in Mailin.</li>
+              <li>If not, system transfers/adds domain to Mailin.</li>
+              <li>Mailin returns required nameservers.</li>
+              <li>System updates nameservers via registrar API.</li>
+              <li>If nameservers updated successfully, Mailin activates domain.</li>
+              <li>Mailboxes are created for the domain.</li>
+              <li>If nameserver update fails, order is rejected.</li>
+            </ol>
+
+            <h5 class="h6 mt-3">What matches your flow</h5>
+            <ul>
+              <li>Order with domains: yes. Private SMTP automation uses <code>ProcessMailAutomationJob</code> (split → activate → mailbox creation when ready).</li>
+              <li>Authenticate with Mailin API token: yes. <code>MailinProviderService::activateDomainsForSplit</code> calls <code>authenticate()</code> before domain work.</li>
+              <li>Check if domain already exists or active in Mailin: yes, via <code>checkDomainStatus($domain)</code>. If already active, it is treated as good and stored active in split, including nameserver values when needed.</li>
+              <li>If not active, transfer/add domain in Mailin: yes, through <code>transferDomain($domain)</code>.</li>
+              <li>Mailin returns nameservers: yes. Nameservers come from transfer result <code>name_servers</code> or status/fallback nameserver fetch.</li>
+              <li>Update nameservers at registrar: yes, but not only Namecheap. <code>DomainActivationService::updateNameservers</code> uses Namecheap or Spaceship from <code>reorder_info.hosting_platform</code>.</li>
+              <li>Mailboxes created: yes, only when <code>OrderProviderSplit::areAllDomainsActiveForOrder</code> becomes true for all splits, then mailbox APIs run through <code>MailboxCreationService</code>.</li>
+              <li>If nameserver update fails: yes, updateNameservers exception path leads to <code>rejectOrder()</code> with reason.</li>
+            </ul>
+
+            <h5 class="h6 mt-3">Important correction</h5>
+            <p class="mb-2">After nameserver update success, domain is not always instantly marked active. In implementation it is often stored pending first; DNS propagation happens, then scheduler polling (<code>mailin:check-pending-domains</code> → <code>activateDomainsForOrder</code>) flips it to active when <code>checkDomainStatus</code> reports active.</p>
+
+            <h5 class="h6 mt-3">Extra failure paths</h5>
+            <ul>
+              <li>Domain transfer fails with non rate-limit error: order rejected with transfer error.</li>
+              <li>Conflicting mailboxes/prefixes already exist on domain: order rejected.</li>
+              <li>Rate-limited transfer: domain marked failed for retry, not always full rejection in same pass.</li>
+              <li>Auth fails: domains go failed in split; this path may not directly call rejectOrder and can stall unless handled by another path.</li>
+            </ul>
+
+            <p class="mb-0"><strong>Conclusion:</strong> your sequence is conceptually correct, and the actual code adds registrar branching (Namecheap/Spaceship), conflict checks, pending-to-active polling, and scheduled re-runs before mailbox creation.</p>
+
+            <h3 class="h5 mt-4">Question 2</h3>
+            <p class="mb-2"><strong>When updating nameservers provided by Mailin, which credentials are used? Per order credentials or common system credentials?</strong></p>
+
+            <h4 class="h6 text-muted">Answer</h4>
+            <h5 class="h6 mt-2">Registrar API credentials (Namecheap / Spaceship)</h5>
+            <ul>
+              <li>Used per order from table row in <code>platform_credentials</code>.</li>
+              <li>Spaceship: <code>Order::getPlatformCredential('spaceship')</code> provides <code>api_key</code> and <code>api_secret_key</code>.</li>
+              <li>Namecheap: <code>Order::getPlatformCredential('namecheap')</code> provides <code>api_user</code> and <code>api_key</code>.</li>
+              <li>This means each order uses that order's stored registrar credentials, not one shared company-level Namecheap/Spaceship account for all orders.</li>
+            </ul>
+
+            <h5 class="h6 mt-3">Important note</h5>
+            <ul>
+              <li>Namecheap request still includes fixed <code>ClientIp</code> from app/server environment, but auth user/key values are still from the order credentials.</li>
+            </ul>
+
+            <h5 class="h6 mt-3">Mailin API credentials (not registrar credentials)</h5>
+            <ul>
+              <li>Mailin login/token/domain/mailbox actions use provider integration credentials configured for Mailin split/integration.</li>
+              <li>These are shared infrastructure credentials for Mailin automation, not per-order registrar credentials.</li>
+            </ul>
+
+            <p class="mb-2"><strong>Summary:</strong> nameserver updates at registrar use per-order credentials; Mailin API uses system/provider Mailin credentials.</p>
+
+            <h3 class="h5 mt-4">Question 3</h3>
+            <p class="mb-2"><strong>Who provides the credentials in platform_credentials for an order? User submission or system generated later?</strong></p>
+
+            <h4 class="h6 text-muted">Answer</h4>
+            <ul>
+              <li>Credentials are provided by customer/order submitter, not generated by system.</li>
+              <li><code>api_user</code> is taken from request field <code>platform_login</code>.</li>
+              <li><code>api_key</code> is taken from request field <code>namecheap_api_key</code>.</li>
+              <li>They are saved by <code>PlatformCredential::updateOrCreate</code> in customer order store/update flow.</li>
+            </ul>
+
+            <h5 class="h6 mt-3">Where this is written in code</h5>
+            <p class="mb-2">In <code>Customer\OrderController::store</code>, when <code>edit_id</code> and <code>order_id</code> are present, hosting platform is Namecheap, and required fields are non-empty, credentials are persisted for that order.</p>
+
+            <pre><code class="language-php">\App\Models\PlatformCredential::updateOrCreate(
+    [
+        'order_id' => $order->id,
+        'platform_type' => 'namecheap',
+    ],
+    [
+        'credentials' => [
+            'api_user' => $request->platform_login,
+            'api_key' => $request->namecheap_api_key,
+        ],
+    ]
+);</code></pre>
+
+            <p class="mb-2">So if you see credentials in <code>platform_credentials</code> for an order (for example order 1102), those values came from order form submission flow, not system-side generation.</p>
+            <p class="mb-2">There is no separate system-wide Namecheap key row written into <code>platform_credentials</code> in this path; admin controllers do not create these rows in this context.</p>
+            <p class="mb-0"><strong>Security note:</strong> API keys in database are sensitive and should be protected in logs/exports/backups.</p>
           </section>
 
           <!-- Provider split logic (technical) -->

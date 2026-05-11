@@ -63,6 +63,7 @@ use App\Models\ShortEncryptedLink;
 use Flasher\Laravel\Facade\Flasher;
 use Flasher\Noty\Prime\NotyInterface;
 use App\Http\Controllers\Admin\InternalOrderManagerController;
+use App\Http\Controllers\ClickFunnelApiController;
 
 use Illuminate\Support\Facades\Session;
 /*
@@ -1261,3 +1262,11 @@ Route::get('/clear-log', function () {
 
     return response()->json(['success' => false, 'message' => 'Log file not found']);
 });
+
+
+
+
+
+
+// CLICK FUNNEL API ROUTE HERE
+Route::get('get-contact-detail',[ClickFunnelApiController::class,'getContactDetailByEmailFromActiveCampaignCrm']);

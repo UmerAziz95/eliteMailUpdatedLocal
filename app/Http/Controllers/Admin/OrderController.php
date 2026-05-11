@@ -3892,6 +3892,15 @@ class OrderController extends Controller
                 try {
                     Log::info("Manual fix run for Order #{$orderId}");
                 } catch (\Exception $e) {
+                
+                    Log::error('Manual fix failed', [
+                        'order_id' => $orderId,
+                        'message'  => $e->getMessage(),
+                        'file'     => $e->getFile(),
+                        'line'     => $e->getLine(),
+                        'trace'    => $e->getTraceAsString(),
+                    ]);
+                
                 }
 
             } catch (\Exception $e) {
