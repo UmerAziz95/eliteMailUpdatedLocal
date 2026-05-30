@@ -79,12 +79,13 @@
 
         <div class="d-flex justify-content-between align-items-center mb-2">
           <span class="text-muted small">Table of Contents</span>
-          <span class="badge text-bg-primary toc-badge">14</span>
+          <span class="badge text-bg-primary toc-badge">15</span>
         </div>
 
         <nav>
           <ul id="tocList" class="nav nav-pills flex-column gap-1">
             <li class="nav-item"><a class="nav-link" href="#1-overview">1. Overview</a></li>
+            <li class="nav-item"><a class="nav-link" href="#order-lifecycle-practical-flow">Order lifecycle (practical flow)</a></li>
             <li class="nav-item"><a class="nav-link" href="#flow-diagrams">Flow diagrams (technical)</a></li>
             <li class="nav-item"><a class="nav-link" href="#mailin-flow-questions-answers">Mailin flow Q&amp;A</a></li>
             <li class="nav-item"><a class="nav-link" href="#provider-split-logic">Provider split logic</a></li>
@@ -124,6 +125,7 @@
 
           <ul id="tocListMobile" class="nav nav-pills flex-column gap-1">
             <li class="nav-item"><a class="nav-link" href="#1-overview" data-bs-dismiss="offcanvas">1. Overview</a></li>
+            <li class="nav-item"><a class="nav-link" href="#order-lifecycle-practical-flow" data-bs-dismiss="offcanvas">Order lifecycle (practical flow)</a></li>
             <li class="nav-item"><a class="nav-link" href="#flow-diagrams" data-bs-dismiss="offcanvas">Flow diagrams</a></li>
             <li class="nav-item"><a class="nav-link" href="#mailin-flow-questions-answers" data-bs-dismiss="offcanvas">Mailin flow Q&amp;A</a></li>
             <li class="nav-item"><a class="nav-link" href="#provider-split-logic" data-bs-dismiss="offcanvas">Provider split logic</a></li>
@@ -175,6 +177,121 @@
                 For Google/365, status is set to <code>cancellation-in-process</code> and a job processes batches until done, then status is set to <code>cancelled</code>.
               </li>
             </ul>
+          </section>
+
+          <section id="order-lifecycle-practical-flow" class="mb-5">
+            <h2 class="h4 section-title">Order lifecycle (practical flow)</h2>
+            <p class="mb-3">
+              This section is a practical end-to-end flow from order start to completion. It focuses on status movement, what operations happen, and which tables are created or updated at each step.
+            </p>
+
+            <h3 class="h5 mt-3">A. Order starts (draft or pending/in-progress)</h3>
+            <ul>
+              <li><strong>If saved as draft:</strong> order starts with <code>orders.status_manage_by_admin = 'draft'</code>.</li>
+              <li><strong>If submitted normally:</strong> order starts as <code>pending</code>, and for Private SMTP automation path it is moved to <code>in-progress</code> immediately.</li>
+              <li><strong>Main write operations:</strong>
+                <code>orders</code> row is created/updated, <code>reorder_infos</code> stores domains + prefix variants + form data, and <code>platform_credentials</code> stores registrar credentials (when provided).
+              </li>
+            </ul>
+
+            <h3 class="h5 mt-4">B. Automation job is dispatched (Private SMTP only)</h3>
+            <ul>
+              <li>Automation dispatch happens only when order is not draft, automation flag is enabled, provider type is Private SMTP, hosting platform is supported, and domains/prefixes exist.</li>
+              <li><strong>Status at this point:</strong> typically <code>in-progress</code>.</li>
+              <li><strong>Main operation:</strong> <code>ProcessMailAutomationJob</code> is queued for background processing.</li>
+              <li><strong>Main table impact:</strong> no mailbox table write yet; this step schedules processing.</li>
+            </ul>
+
+            <h3 class="h5 mt-4">C. Domains are split per provider</h3>
+            <ul>
+              <li>Domains are distributed using active provider percentages and priority from <code>smtp_provider_splits</code>.</li>
+              <li>A separate split row is created per provider for that order.</li>
+              <li><strong>Main table updates:</strong> <code>order_provider_splits</code> <code>updateOrCreate</code> per provider with <code>domains</code>, <code>domain_count</code>, <code>split_percentage</code>, <code>all_domains_active = false</code>, <code>domain_statuses = null</code>, <code>mailboxes = null</code>.</li>
+              <li>If provider configuration changed, old split rows for inactive providers are removed for that order.</li>
+            </ul>
+
+            <h3 class="h5 mt-4">D. Domain activation and nameserver work</h3>
+            <ul>
+              <li>Each provider split is processed one by one for activation.</li>
+              <li>System checks domain state, may transfer/add domains, may update nameservers through registrar API, then waits for propagation if needed.</li>
+              <li><strong>Main table updates:</strong> <code>order_provider_splits.domain_statuses</code> is filled per domain, and <code>all_domains_active</code> is toggled true only when all domains in that split are active.</li>
+              <li><strong>Status usually remains:</strong> <code>in-progress</code> while domains are pending.</li>
+            </ul>
+
+            <h3 class="h5 mt-4">E. Waiting/retry phase (common in real orders)</h3>
+            <ul>
+              <li>If all domains are not active yet, order does not fail immediately in many cases; it waits in <code>in-progress</code>.</li>
+              <li>Scheduler command (<code>mailin:check-pending-domains</code>) rechecks pending orders and retries activation logic.</li>
+              <li><strong>Main table updates:</strong> mostly repeated updates in <code>order_provider_splits.domain_statuses</code>, <code>all_domains_active</code>, and provider metadata fields.</li>
+            </ul>
+
+            <h3 class="h5 mt-4">F. Mailbox creation phase</h3>
+            <ul>
+              <li>Mailbox creation starts only after all splits report domains active (plus provider-specific readiness checks, e.g., PremiumInboxes order state).</li>
+              <li>Mailboxes are created/fetched per provider split and written into split JSON.</li>
+              <li><strong>Main table updates:</strong> <code>order_provider_splits.mailboxes</code> is populated (domain/prefix-wise mailbox data).</li>
+            </ul>
+
+            <h3 class="h5 mt-4">G. Order completion</h3>
+            <ul>
+              <li>After mailbox validation confirms expected output, order is marked complete.</li>
+              <li><strong>Main table updates:</strong> <code>orders.status_manage_by_admin = 'completed'</code> and <code>orders.completed_at</code> is set.</li>
+              <li>At this point, operationally the order lifecycle is finished.</li>
+            </ul>
+
+            <h3 class="h5 mt-4">H. Practical exception paths (important)</h3>
+            <ul>
+              <li><strong>Reject path:</strong> if activation/nameserver/conflict checks hit hard failure, order can move to <code>reject</code> with reason handling.</li>
+              <li><strong>Fix and resume path:</strong> when admin moves <code>reject -&gt; in-progress</code>, system re-syncs <code>order_provider_splits</code> from current order domains, then automation can continue.</li>
+              <li><strong>Panel-driven status updates:</strong> panel status changes can force order status to <code>in-progress</code>, <code>reject</code>, or <code>completed</code> based on aggregate panel state.</li>
+              <li><strong>Draft exclusion:</strong> draft orders skip automation until user submits properly.</li>
+              <li><strong>Cancellation branch:</strong> cancellation flow is separate; it updates order status to <code>cancelled</code> or <code>cancellation-in-process</code> and runs mailbox deletion logic.</li>
+            </ul>
+
+            <h3 class="h5 mt-4">I. Table-by-table quick summary</h3>
+            <div class="table-responsive">
+              <table class="table table-sm table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th>Table</th>
+                    <th>When it is touched in lifecycle</th>
+                    <th>What is stored/updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>orders</code></td>
+                    <td>Start, status changes, completion, cancellation</td>
+                    <td>Status (<code>draft/pending/in-progress/reject/completed/cancelled</code>), completion timestamp, reason/meta</td>
+                  </tr>
+                  <tr>
+                    <td><code>reorder_infos</code></td>
+                    <td>Order create/edit</td>
+                    <td>Domains, prefix variants, variant details, inbox counts, form configuration</td>
+                  </tr>
+                  <tr>
+                    <td><code>platform_credentials</code></td>
+                    <td>Order create/edit when registrar credentials provided</td>
+                    <td>Namecheap/Spaceship credentials used for nameserver updates</td>
+                  </tr>
+                  <tr>
+                    <td><code>smtp_provider_splits</code></td>
+                    <td>Read during split and provider execution</td>
+                    <td>Provider activation config, split percentages, priority, credentials</td>
+                  </tr>
+                  <tr>
+                    <td><code>order_provider_splits</code></td>
+                    <td>Split creation, activation retries, mailbox creation, fix/resync</td>
+                    <td>Per-provider domains, status per domain, all-active flag, mailbox JSON, provider external IDs/metadata</td>
+                  </tr>
+                  <tr>
+                    <td><code>order_panels</code> / <code>order_panel_splits</code></td>
+                    <td>Panel assignment/workflow</td>
+                    <td>Panel-level execution status that can influence final order status</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </section>
 
           <!-- Flow diagrams (technical) -->
