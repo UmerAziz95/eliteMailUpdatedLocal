@@ -23,7 +23,7 @@ class CreateMailboxesCommand extends Command
      */
     protected $description = 'Create mailboxes for an order (requires all domains to be active)';
 
-    /**
+      /**
      * Execute the console command.
      */
     public function handle(MailboxCreationService $service)
